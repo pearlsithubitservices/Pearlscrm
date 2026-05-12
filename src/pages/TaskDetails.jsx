@@ -28,7 +28,7 @@ export default function TaskDetails() {
     try {
 
       const response = await fetch(
-        `http://localhost:5000/api/tasks/${id}`
+        `https://pearlscrm.onrender.com/api/tasks/${id}`
       );
 
       const data = await response.json();
@@ -55,7 +55,7 @@ export default function TaskDetails() {
     try {
 
       await fetch(
-        `http://localhost:5000/api/tasks/${id}`,
+        `https://pearlscrm.onrender.com/api/tasks/${id}`,
         {
           method: 'PUT',
 

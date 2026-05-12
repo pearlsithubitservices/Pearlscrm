@@ -44,7 +44,7 @@ async () => {
 
     const response =
       await fetch(
-        "http://localhost:5000/api/dashboard"
+        "https://pearlscrm.onrender.com/api/dashboard"
       );
 
     const data =

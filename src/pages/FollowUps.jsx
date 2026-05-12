@@ -31,7 +31,7 @@ export default function FollowUps() {
 
         const response =
           await fetch(
-            "http://localhost:5000/api/followups"
+            "https://pearlscrm.onrender.com/api/followups"
           );
 
         const data =
