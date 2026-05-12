@@ -11,7 +11,13 @@ import Projects from './pages/Projects';
 import Clients from './pages/Clients';
 import Payments from './pages/Payments';
 import Login from './pages/Login';
-
+import CreateLead from './pages/CreateLead'
+import CreateTask from './pages/createTask';
+import TaskDetails from './pages/TaskDetails';
+import EmployeeDashboard from './pages/EmployeeDashboard';
+import EmployeeLayout
+from './layouts/EmployeeLayout';
+import Employees from './pages/Employees';
 // Placeholder components for Phase 3
 function PlaceholderPage({ title }) {
   return (
@@ -29,23 +35,111 @@ export default function App() {
     <AuthProvider>
       <IndustryProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            
-            <Route element={<Layout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/leads" element={<LeadManagement />} />
-              <Route path="/tasks" element={<Tasks />} />
-              <Route path="/follow-ups" element={<FollowUps />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/clients" element={<Clients />} />
-              <Route path="/payments" element={<Payments />} />
-              <Route path="/reports" element={<PlaceholderPage title="Business Intelligence Reports" />} />
-              <Route path="/settings" element={<PlaceholderPage title="System Settings" />} />
-            </Route>
+         <Routes>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+  {/* LOGIN */}
+
+  <Route
+    path="/login"
+    element={<Login />}
+  />
+
+  {/* ADMIN ROUTES */}
+
+  <Route element={<Layout />}>
+
+    <Route
+      path="/"
+      element={<Dashboard />}
+    />
+
+    <Route
+      path="/leads"
+      element={<LeadManagement />}
+    />
+
+    <Route
+      path="/tasks"
+      element={<Tasks />}
+    />
+
+    <Route
+      path="/follow-ups"
+      element={<FollowUps />}
+    />
+
+    <Route
+      path="/projects"
+      element={<Projects />}
+    />
+
+    <Route
+      path="/clients"
+      element={<Clients />}
+    />
+
+    <Route
+      path="/payments"
+      element={<Payments />}
+    />
+
+    <Route
+      path="/reports"
+      element={
+        <PlaceholderPage
+          title="Business Intelligence Reports"
+        />
+      }
+    />
+
+    <Route
+      path="/settings"
+      element={
+        <PlaceholderPage
+          title="System Settings"
+        />
+      }
+    />
+
+    <Route
+      path="/create-lead"
+      element={<CreateLead />}
+    />
+
+    <Route
+      path="/createTask"
+      element={<CreateTask />}
+    />
+
+ <Route
+  path="/edit-task/:id"
+  element={<TaskDetails />}
+/>
+
+  </Route>
+
+  {/* EMPLOYEE ROUTES */}
+
+  <Route
+    path="/employee-dashboard"
+    element={
+      <EmployeeLayout>
+        <EmployeeDashboard />
+      </EmployeeLayout>
+    }
+  />
+
+  {/* FALLBACK */}
+
+  <Route
+    path="*"
+    element={<Navigate to="/" replace />}
+  />
+<Route
+  path="/employees"
+  element={<Employees />}
+/>
+</Routes>
         </BrowserRouter>
       </IndustryProvider>
     </AuthProvider>

@@ -1,90 +1,236 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  BarChart3, 
-  Users, 
-  CheckSquare, 
-  Briefcase, 
-  UserCircle, 
-  CreditCard, 
-  FileText, 
+
+import {
+  BarChart3,
+  Users,
+  CheckSquare,
+  Briefcase,
+  UserCircle,
+  CreditCard,
+  FileText,
   LogOut,
-  CalendarDays
+  CalendarDays,
+  GraduationCap,
+  BookOpen,
 } from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 import { useIndustry } from '../context/IndustryContext';
-import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export default function Sidebar() {
-  const { profile, logout } = useAuth();
+
+  const { user, logout } = useAuth();
   const { config } = useIndustry();
 
-  const navItems = [
-    { name: 'Dashboard', icon: BarChart3, path: '/' },
-    { name: config.labels.leads, icon: Users, path: '/leads' },
-    { name: 'Tasks', icon: CheckSquare, path: '/tasks' },
-    { name: 'Follow-ups', icon: CalendarDays, path: '/follow-ups' },
-    { name: config.labels.projects, icon: Briefcase, path: '/projects' },
-    { name: config.labels.clients, icon: UserCircle, path: '/clients' },
-    { name: 'Payments', icon: CreditCard, path: '/payments' },
-    { name: 'Reports', icon: FileText, path: '/reports' },
-  ];
+ 
+
+  const mainItems = [
+  {
+    name: 'Dashboard',
+    icon: BarChart3,
+    path: '/',
+  },
+
+  {
+    name: config.labels.leads,
+    icon: Users,
+    path: '/leads',
+  },
+
+  {
+    name: 'Tasks',
+    icon: CheckSquare,
+    path: '/tasks',
+  },
+
+  {
+    name: 'Follow - ups',
+    icon: CalendarDays,
+    path: '/follow-ups',
+  },
+
+  {
+    name: 'Employees',
+    path: '/employees',
+    icon: Users,
+  },
+];
+
+const manageItems = [
+  {
+    name: 'Courses',
+    icon: BookOpen,
+    path: '/courses',
+  },
+
+  {
+    name: 'Students',
+    icon: GraduationCap,
+    path: '/students',
+  },
+
+  {
+    name: 'Payments',
+    icon: CreditCard,
+    path: '/payments',
+  },
+
+  {
+    name: 'Reports',
+    icon: FileText,
+    path: '/reports',
+  },
+];
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0">
-      <div className="p-6">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">P</span>
+
+    <aside className="w-[250px] min-h-screen bg-[#13132b] text-white flex flex-col justify-between px-6 py-8">
+
+      {/* TOP */}
+      <div>
+
+        {/* LOGO */}
+        <div className="flex items-center gap-3 mb-14">
+
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+
+            <span className="font-bold text-lg">
+              🌐
+            </span>
+
           </div>
-          <span className="font-bold text-xl tracking-tight">Pearls CRM</span>
+
+          <h1 className="font-bold text-2xl tracking-wide">
+            PEARLS IT HUB
+          </h1>
+
         </div>
 
-        <nav className="space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-gray-50 text-black" 
-                  : "text-gray-500 hover:text-black hover:bg-gray-50"
-              )}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.name}
-            </NavLink>
-          ))}
-        </nav>
+        {/* MAIN */}
+        <div className="mb-10">
+
+          <p className="text-gray-500 text-xs uppercase tracking-[0.2em] mb-5">
+            Main
+          </p>
+
+          <div className="space-y-3">
+
+            {mainItems.map((item) => (
+
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `
+                  flex items-center gap-3 px-5 py-3 rounded-2xl text-[15px] transition-all duration-300
+                  ${
+                    isActive
+                      ? 'bg-[#d9d6de] text-[#3a3645] font-semibold'
+                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  }
+                  `
+                }
+              >
+
+                <item.icon className="w-4 h-4" />
+
+                {item.name}
+
+              </NavLink>
+
+            ))}
+
+          </div>
+
+        </div>
+
+        {/* MANAGE */}
+        <div>
+
+          <p className="text-gray-500 text-xs uppercase tracking-[0.2em] mb-5">
+            Manage
+          </p>
+
+          <div className="space-y-3">
+
+            {manageItems.map((item) => (
+
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `
+                  flex items-center gap-3 px-5 py-3 rounded-2xl text-[15px] transition-all duration-300
+                  ${
+                    isActive
+                      ? 'bg-[#d9d6de] text-[#3a3645] font-semibold'
+                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  }
+                  `
+                }
+              >
+
+                <item.icon className="w-4 h-4" />
+
+                {item.name}
+
+              </NavLink>
+
+            ))}
+
+          </div>
+
+        </div>
+
       </div>
 
-      <div className="mt-auto p-6 border-t border-gray-100">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-            {profile?.avatar ? (
-              <img src={profile.avatar} alt="" className="w-full h-full rounded-full" />
-            ) : (
-              <span className="text-gray-400 font-medium">
-                {profile?.displayName?.charAt(0) || 'U'}
-              </span>
-            )}
+      {/* BOTTOM */}
+      <div>
+
+        {/* PROFILE CARD */}
+        <div className="bg-gradient-to-r from-[#ff7b7b] to-[#ff3df5] rounded-2xl px-3 py-3 flex items-center gap-3 mb-5">
+
+          <img
+            src={
+              user?.photoURL ||
+              'https://i.pravatar.cc/100'
+            }
+            alt=""
+            className="w-11 h-11 rounded-xl object-cover"
+          />
+
+          <div className="min-w-0">
+
+            <h3 className="font-semibold text-sm truncate">
+              {user?.displayName || 'Ragavi M'}
+            </h3>
+
+            <p className="text-xs text-white/80 truncate">
+              Admin - Education
+            </p>
+
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-black truncate">{profile?.displayName}</p>
-            <p className="text-xs text-gray-400 truncate">{profile?.role}</p>
-          </div>
+
         </div>
 
-        <button 
+        {/* LOGOUT */}
+        <button
           onClick={() => logout()}
-          className="flex items-center gap-3 px-3 py-2 w-full text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition-all px-3"
         >
+
           <LogOut className="w-4 h-4" />
-          Log out
+
+          <span className="text-sm">
+            Log out
+          </span>
+
         </button>
+
       </div>
+
     </aside>
   );
 }

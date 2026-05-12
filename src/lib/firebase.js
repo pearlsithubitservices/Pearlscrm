@@ -3,12 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyBuh-0ZNvqbMG8XfXpWpGHkWPHS_LjzEZM",
+  authDomain: "pearlscrm-fbf72.firebaseapp.com",
+  projectId: "pearlscrm-fbf72",
+  storageBucket: "pearlscrm-fbf72.firebasestorage.app",
+  messagingSenderId: "324927871298",
+  appId: "1:324927871298:web:335c2c53375f94a1c350db",
+  measurementId: "G-MFV1THQHWL"
 };
 
 const app = initializeApp(firebaseConfig);

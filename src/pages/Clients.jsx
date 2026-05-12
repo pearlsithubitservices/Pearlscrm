@@ -18,11 +18,7 @@ export default function Clients() {
   const { config } = useIndustry();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const clients = [
-    { id: '1', name: 'John Smith', company: 'Acme Corp', email: 'john@acme.com', phone: '+1 234 567 890', location: 'New York, NY', projects: 2, totalSpent: '$12,400' },
-    { id: '2', name: 'Sarah Wilson', company: 'Global Tech', email: 'sarah@global.tech', phone: '+1 987 654 321', location: 'San Francisco, CA', projects: 1, totalSpent: '$8,500' },
-    { id: '3', name: 'Emma Davis', company: 'Health First', email: 'emma@healthfirst.com', phone: '+1 444 777 888', location: 'Chicago, IL', projects: 3, totalSpent: '$24,000' },
-  ];
+  const clients = [];
 
   return (
     <div className="p-8">
