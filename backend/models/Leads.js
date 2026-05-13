@@ -1,43 +1,72 @@
-const mongoose = require("mongoose");
+const mongoose =
+  require("mongoose");
 
-const leadSchema = new mongoose.Schema(
-  {
-    name: String,
-    company: String,
-    phone: String,
-    email: String,
-    service: String,
-    status: String,
-    assignedTo: String,
-    notes: String,
-  },
-  { timestamps: true }
-);
-const createLead = async () => {
-
-  const response = await fetch(
-    "https://pearlscrm.onrender.com/api/leads",
+const leadSchema =
+  new mongoose.Schema(
     {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+
+      name: {
+        type: String,
       },
 
-      body: JSON.stringify({
-        name: "Ragavi",
-        company: "Pearls IT Hub",
-        phone: "8015613840",
-        email: "test@gmail.com",
-        service: "CRM",
-        status: "Interested",
-        assignedTo: "Sakthi",
-      }),
+      company: {
+        type: String,
+      },
+
+      phone: {
+        type: String,
+      },
+
+      email: {
+        type: String,
+      },
+
+      website: {
+        type: String,
+      },
+
+      source: {
+        type: String,
+      },
+
+      budget: {
+        type: String,
+      },
+
+      platform: {
+        type: String,
+      },
+
+      nextAction: {
+        type: String,
+      },
+
+      service: {
+        type: String,
+      },
+
+      status: {
+        type: String,
+        default: "New",
+      },
+
+      assignedTo: {
+        type: String,
+        default: "",
+      },
+
+      notes: {
+        type: String,
+      },
+
+    },
+    {
+      timestamps: true,
     }
   );
 
-  const data = await response.json();
-
-  console.log(data);
-};
-
-module.exports = mongoose.model("Lead", leadSchema);
+module.exports =
+  mongoose.model(
+    "Lead",
+    leadSchema
+  );

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import EmployeeSidebar from
-'../pages/EmployeeSidebar';
+'../pages/employee/EmployeeSidebar';
 
 export default function EmployeeLayout({
   children

@@ -1,147 +1,258 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { IndustryProvider } from './context/IndustryContext';
+
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate
+} from 'react-router-dom';
+
+import {
+  AuthProvider
+} from './context/AuthContext';
+
+import {
+  IndustryProvider
+} from './context/IndustryContext';
+
+// ADMIN LAYOUT
+
 import Layout from './components/Layout';
+
+// ADMIN PAGES
+
 import Dashboard from './pages/Dashboard';
+
 import LeadManagement from './pages/LeadManagement';
+
 import Tasks from './pages/Tasks';
+
 import FollowUps from './pages/FollowUps';
+
 import Projects from './pages/Projects';
+
 import Clients from './pages/Clients';
+
 import Payments from './pages/Payments';
-import Login from './pages/Login';
-import CreateLead from './pages/CreateLead'
-import CreateTask from './pages/createTask';
-import TaskDetails from './pages/TaskDetails';
-import EmployeeDashboard from './pages/EmployeeDashboard';
-import EmployeeLayout
-from './layouts/EmployeeLayout';
+
 import Employees from './pages/Employees';
-// Placeholder components for Phase 3
-function PlaceholderPage({ title }) {
+
+import CreateLead from './pages/CreateLead';
+
+import CreateTask from './pages/createTask';
+
+import TaskDetails from './pages/TaskDetails';
+
+import Login from './pages/Login';
+
+// EMPLOYEE
+
+import EmployeeLayout from './layouts/EmployeeLayout';
+
+import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+
+import EmployeeTasks from './pages/employee/EmployeeTasks';
+
+import EmployeeLeads from './pages/employee/EmployeeLeads';
+
+import EmployeeFollowups from './pages/employee/EmployeeFollowups';
+
+// PLACEHOLDER
+
+function PlaceholderPage({
+  title
+}) {
+
   return (
+
     <div className="p-8 h-full flex items-center justify-center">
+
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">{title}</h2>
-        <p className="text-gray-500 italic">This module is coming soon in Phase 3 of the MVP.</p>
+
+        <h2 className="text-2xl font-bold mb-2">
+
+          {title}
+
+        </h2>
+
+        <p className="text-gray-500 italic">
+
+          This module is coming soon in Phase 3 of the MVP.
+
+        </p>
+
       </div>
+
     </div>
+
   );
+
 }
 
 export default function App() {
+
   return (
+
     <AuthProvider>
+
       <IndustryProvider>
+
         <BrowserRouter>
-         <Routes>
 
-  {/* LOGIN */}
+          <Routes>
 
-  <Route
-    path="/login"
-    element={<Login />}
-  />
+            {/* LOGIN */}
 
-  {/* ADMIN ROUTES */}
+            <Route
+              path="/login"
+              element={<Login />}
+            />
 
-  <Route element={<Layout />}>
+            {/* ADMIN ROUTES */}
 
-    <Route
-      path="/"
-      element={<Dashboard />}
-    />
+            <Route element={<Layout />}>
 
-    <Route
-      path="/leads"
-      element={<LeadManagement />}
-    />
+              <Route
+                path="/"
+                element={<Dashboard />}
+              />
 
-    <Route
-      path="/tasks"
-      element={<Tasks />}
-    />
+              <Route
+                path="/leads"
+                element={<LeadManagement />}
+              />
 
-    <Route
-      path="/follow-ups"
-      element={<FollowUps />}
-    />
+              <Route
+                path="/tasks"
+                element={<Tasks />}
+              />
 
-    <Route
-      path="/projects"
-      element={<Projects />}
-    />
+              <Route
+                path="/follow-ups"
+                element={<FollowUps />}
+              />
 
-    <Route
-      path="/clients"
-      element={<Clients />}
-    />
+              <Route
+                path="/projects"
+                element={<Projects />}
+              />
 
-    <Route
-      path="/payments"
-      element={<Payments />}
-    />
+              <Route
+                path="/clients"
+                element={<Clients />}
+              />
 
-    <Route
-      path="/reports"
-      element={
-        <PlaceholderPage
-          title="Business Intelligence Reports"
-        />
-      }
-    />
+              <Route
+                path="/payments"
+                element={<Payments />}
+              />
 
-    <Route
-      path="/settings"
-      element={
-        <PlaceholderPage
-          title="System Settings"
-        />
-      }
-    />
+              <Route
+                path="/employees"
+                element={<Employees />}
+              />
 
-    <Route
-      path="/create-lead"
-      element={<CreateLead />}
-    />
+              <Route
+                path="/create-lead"
+                element={<CreateLead />}
+              />
 
-    <Route
-      path="/createTask"
-      element={<CreateTask />}
-    />
+              <Route
+                path="/createTask"
+                element={<CreateTask />}
+              />
 
- <Route
-  path="/edit-task/:id"
-  element={<TaskDetails />}
-/>
+              <Route
+                path="/edit-task/:id"
+                element={<TaskDetails />}
+              />
 
-  </Route>
+              <Route
+                path="/reports"
+                element={
+                  <PlaceholderPage
+                    title="Business Intelligence Reports"
+                  />
+                }
+              />
 
-  {/* EMPLOYEE ROUTES */}
+              <Route
+                path="/settings"
+                element={
+                  <PlaceholderPage
+                    title="System Settings"
+                  />
+                }
+              />
 
-  <Route
-    path="/employee-dashboard"
-    element={
-      <EmployeeLayout>
-        <EmployeeDashboard />
-      </EmployeeLayout>
-    }
-  />
+            </Route>
 
-  {/* FALLBACK */}
+            {/* EMPLOYEE ROUTES */}
 
-  <Route
-    path="*"
-    element={<Navigate to="/" replace />}
-  />
-<Route
-  path="/employees"
-  element={<Employees />}
-/>
-</Routes>
+            <Route
+              path="/employee-dashboard"
+              element={
+                <EmployeeLayout>
+
+                  <EmployeeDashboard />
+
+                </EmployeeLayout>
+              }
+            />
+
+            <Route
+              path="/employee/tasks"
+              element={
+                <EmployeeLayout>
+
+                  <EmployeeTasks />
+
+                </EmployeeLayout>
+              }
+            />
+
+            <Route
+              path="/employee/leads"
+              element={
+                <EmployeeLayout>
+
+                  <EmployeeLeads />
+
+                </EmployeeLayout>
+              }
+            />
+
+            <Route
+              path="/employee/followups"
+              element={
+                <EmployeeLayout>
+
+                  <EmployeeFollowups />
+
+                </EmployeeLayout>
+              }
+            />
+
+            {/* FALLBACK */}
+
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="/"
+                  replace
+                />
+              }
+            />
+
+          </Routes>
+
         </BrowserRouter>
+
       </IndustryProvider>
+
     </AuthProvider>
+
   );
+
 }
