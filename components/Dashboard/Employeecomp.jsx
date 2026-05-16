@@ -5,7 +5,7 @@ const Employeecomp = () => {
 
     const [employees, setEmployees] = useState([]);
     const [leads, setLeads] = useState([]);
-
+const [loading, setLoading]=useState(false);
 
     useEffect(() => {
         fetchLeads();
@@ -18,6 +18,7 @@ const Employeecomp = () => {
 
             try {
 
+                 setLoading(true);
                 const response =
                     await fetch(
                         'https://pearlscrm.onrender.com/api/leads'
@@ -32,6 +33,9 @@ const Employeecomp = () => {
 
                 console.log(error);
 
+            }
+            finally{
+                setLoading(false);  //👈 stop loading no matter what
             }
 
         };
@@ -70,6 +74,15 @@ const Employeecomp = () => {
         return () => unsubscribe();
 
     }, []);
+
+    if (loading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-gray-600 font-medium">Loading data...</p>
+      </div>
+    );
+  }
 
     return (
         <div
