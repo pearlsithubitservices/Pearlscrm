@@ -58,11 +58,7 @@ export default function Sidebar() {
     path: '/projects',
   },
 
-  {
-    name: 'Employees',
-    path: '/employees',
-    icon: Users,
-  },
+  
 ];
 
 const manageItems = [
@@ -76,6 +72,11 @@ const manageItems = [
     name: 'Client Management',
     icon: CircleUser,
     path: '/clientmanagement',
+  },
+  {
+    name: 'Employee Management',
+    path: '/employees',
+    icon: Users,
   },
 
   {
@@ -129,7 +130,7 @@ const manageItems = [
                 to={item.path}
                 className={({ isActive }) =>
                   `
-                  flex items-center gap-3 px-5 py-3 rounded-xl text-[14px] transition-all duration-300
+                  flex items-center gap-3 px-1 py-3 rounded-xl text-[14px] transition-all duration-300
                   ${
                     isActive
                       ? 'bg-[#2563a9] text-white font-semibold'
@@ -167,7 +168,7 @@ const manageItems = [
                 to={item.path}
                 className={({ isActive }) =>
                   `
-                  flex items-center gap-3 px-5 py-3 rounded-xl text-[15px] transition-all duration-300
+                  flex items-center gap-3 px-1 py-3 rounded-xl text-[15px] transition-all duration-300
                   ${
                     isActive
                       ? 'bg-[#2563a9] text-white '
@@ -188,7 +189,7 @@ const manageItems = [
             {/* LOGOUT */}
         <button
           onClick={() => logout()}
-          className="flex items-center gap-3  text-white hover:text-red-400 transition-all px-3 ml-3"
+          className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
         >
 
           <LogOut className="w-4 h-4 mb-4" />

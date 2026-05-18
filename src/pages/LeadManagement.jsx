@@ -1,6 +1,6 @@
 
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -25,14 +25,70 @@ import {
   ArrowRightCircleIcon,
 } from "lucide-react";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Pagination from "../components/Pagination";
+import CreateLead from "./CreateLead";
 
 export default function LeadManagement() {
 
+  const[leaddetails, setLeaddetails]=useState([]);
+  const [dashboarddata, setDashboardData]=useState([]);
+  
+
+  useEffect(()=>{
+    //FETCH DASHBOARD
+  const fetchDashboard =
+    async () => {
+
+      try {
+
+        const response =
+          await fetch(
+            "https://pearlscrm.onrender.com/api/dashboard"
+          );
+
+        const data =
+          await response.json();
+
+        setDashboardData(data);
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
+
+    // Fetch Leads
+
+    const fetchleads =
+    async () => {
+
+      try {
+
+        const response =
+          await fetch(
+            "https://pearlscrm.onrender.com/api/leads"
+          );
+
+        const data =
+          await response.json();
+          console.log(data);
+        setLeaddetails(data);
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
+  },[]);
 
 
-   const leads = Array(6).fill({
+
+  const leads = Array(6).fill({
     name: "Sarah Chen",
     company: "Nexigen Corp",
     status: "Qualified",
@@ -52,19 +108,20 @@ export default function LeadManagement() {
   const totalPages = Math.ceil(leads.length / filesPerPage);
 
   const [active, setActive] = useState(0);
+  const[openlead, setOpenlead]=useState(false);
 
   const buttons = ["All", "Hot", "Warm", "Cold"];
 
   const navigate = useNavigate();
 
   const stats = [
-    { icon: Users2, title: "Total Lead", value: "1243" },
+    { icon: Users2, title: "Total Lead", value: leaddetails.length },
     { icon: Briefcase, title: "Hot Leads", value: "48" },
     { icon: ChartNoAxesCombined, title: "Conversion Rate", value: "24.6%" },
     { icon: IndianRupee, title: "Pipeline Value", value: "₹4.2M" },
   ];
 
- 
+
 
   return (
     <div className="flex min-h-screen bg-[#f3f0eb]">
@@ -88,7 +145,7 @@ export default function LeadManagement() {
 
 
             <button
-              onClick={() => navigate('/create-lead')}
+              onClick={() =>setOpenlead(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
             >
               <Plus size={16} />
@@ -226,14 +283,63 @@ export default function LeadManagement() {
 
           {/*PAGINATION*/}
           <Pagination
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-          totalPages={totalPages}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            totalPages={totalPages}
           />
 
         </div>
 
       </div>
+      {/**ADD LEADS */}
+      <AnimatePresence>
+
+        {openlead && (
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
+          >
+
+            {/* Modal */}
+
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 100,
+                scale: 0.9
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1
+              }}
+              exit={{
+                opacity: 0,
+                y: 100,
+                scale: 0.9
+              }}
+              transition={{
+                duration: .4
+              }}
+
+              className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
+            >
+
+              <CreateLead 
+              onClose={() => setOpenlead(false)}
+              />
+
+            </motion.div>
+
+          </motion.div>
+
+        )}
+
+      </AnimatePresence>
     </div>
   );
 }

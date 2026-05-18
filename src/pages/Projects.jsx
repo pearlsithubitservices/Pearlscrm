@@ -4,6 +4,7 @@ import React, {
   useEffect
 } from 'react';
 
+
 import {
   Plus,
   Search,
@@ -38,13 +39,16 @@ import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 
 import * as XLSX from 'xlsx';
+import CreateProjects from './CreateProjects.jsx'
 
 
-export default function ClientManagement() {
+export default function ProjectManagement() {
 
   const [active, setActive] = useState(0);
 
   const buttons = ["All", "on Track", "At Risk"];
+
+  const [open, setOpen]=useState(false);
 
   const stats = [
     {
@@ -118,7 +122,7 @@ export default function ClientManagement() {
         <div className="flex items-center gap-4">
 
           <button
-            onClick={() => navigate('/create-client')}
+            onClick={() => setOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
           >
             <Plus size={16} />
@@ -148,14 +152,14 @@ export default function ClientManagement() {
           {stats.map((item, i) => (
             < motion.div
               key={i}
-              whileHover={{scale:1.03}}
+              whileHover={{ scale: 1.03 }}
               className="bg-white border border-black/10 p-4 rounded-xl"
-             >
+            >
 
               <div className="flex items-center justify-between mb-3">
 
                 <div className="bg-gray-100 rounded w-10 h-10 flex items-center justify-center">
-                  <item.icon  className="w-5 h-5 text-[#0b2b57]" />
+                  <item.icon className="w-5 h-5 text-[#0b2b57]" />
                 </div>
 
                 <span className="text-green-500 bg-green-100 px-2 py-1 rounded text-xs font-semibold">
@@ -276,12 +280,12 @@ export default function ClientManagement() {
                 </div>
                 <div className='ml-40 flex items-center gap-4'>
                   <div className='flex items-center gap-2'>
-                  <MessageSquareText size={18} className='text-gray-400'/><p>2</p>
+                    <MessageSquareText size={18} className='text-gray-400' /><p>2</p>
                   </div>
                   <div className='flex items-center gap-2'>
-                  <Paperclip size={18} className='text-gray-400'/><p>2</p>
+                    <Paperclip size={18} className='text-gray-400' /><p>2</p>
                   </div>
-                  </div>
+                </div>
               </div>
 
               {/** Bottom */}
@@ -319,7 +323,7 @@ export default function ClientManagement() {
 
                 <h1 className="text-md lg:text-lg">
 
-                  <div className='flex items-center font-bold text-[#2563a9]'><Calendar size={18} className='text-[#0b2b57]'/><p>May 12</p></div>
+                  <div className='flex items-center font-bold text-[#2563a9]'><Calendar size={18} className='text-[#0b2b57]' /><p>May 12</p></div>
 
                 </h1>
 
@@ -331,6 +335,55 @@ export default function ClientManagement() {
         </motion.div>
 
       </div>
+      {/**ADD PROJECTS */}
+      <AnimatePresence>
+
+        {open && (
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
+          >
+
+            {/* Modal */}
+
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 100,
+                scale: 0.9
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1
+              }}
+              exit={{
+                opacity: 0,
+                y: 100,
+                scale: 0.9
+              }}
+              transition={{
+                duration: .4
+              }}
+
+              className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
+            >
+
+              <CreateProjects 
+              onClose={()=>setOpen(false)}
+              />
+
+            </motion.div>
+
+          </motion.div>
+
+        )}
+
+      </AnimatePresence>
     </div>
   );
 

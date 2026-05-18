@@ -59,6 +59,8 @@ import EmployeeLeads from './pages/employee/EmployeeLeads';
 
 import EmployeeFollowups from './pages/employee/EmployeeFollowups';
 
+import Reports from './pages/Reports.jsx'
+
 // PLACEHOLDER
 
 function PlaceholderPage({
@@ -174,9 +176,7 @@ export default function App() {
               <Route
                 path="/reports"
                 element={
-                  <PlaceholderPage
-                    title="Business Intelligence Reports"
-                  />
+                  <Reports/>
                 }
               />
 

@@ -41,9 +41,9 @@ const Pagination = ({
             setCurrentPage(index + 1)
           }
           className={`
-            w-10
-            h-10
-            rounded-lg
+            w-6
+            h-6
+            rounded-full
             font-semibold
             transition-all
             ${
@@ -70,7 +70,7 @@ const Pagination = ({
           flex
           items-center
           justify-center
-          rounded-lg
+          rounded-full
           text-blue-700
           disabled:text-gray-300
         "

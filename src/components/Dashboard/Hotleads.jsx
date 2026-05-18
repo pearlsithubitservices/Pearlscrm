@@ -62,13 +62,11 @@ const Hotleads = () => {
 
     return (
         <>
-
-
             <div
                 className="
             grid
             grid-cols-1
-            xl:grid-cols-3
+            md:grid-cols-3
             gap-6
             bg-[#f3f0eb]
           "
@@ -76,11 +74,10 @@ const Hotleads = () => {
 
                 {/* TABLE */}
 
-                <div className="xl:col-span-2 p-2">
+                <div className="lg:col-span-2 p-2">
 
                     <div
-                        className="
-                
+                        className="               
                 rounded-xl        
                 overflow-hidden
                 ml-6  "
@@ -219,7 +216,7 @@ const Hotleads = () => {
                 {/* RIGHT PANEL */}
                 <div
                     className="  rounded-2xl p-2 mr-2 "
-                >
+                 >
 
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6 border rounded-xl p-2 bg-white">

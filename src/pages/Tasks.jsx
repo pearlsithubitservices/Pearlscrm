@@ -3,7 +3,7 @@ import React, {
   useEffect
 } from 'react';
 
-import { motion } from "framer-motion";
+
 import {
   Plus,
   Search,
@@ -31,6 +31,8 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import Pagination from '../components/Pagination';
 import LoadingPage from '../components/Dashboard/Loading';
+import CreateTask from './createTask.jsx'
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function Tasks() {
   const [tasks, setTasks] =
@@ -53,6 +55,8 @@ export default function Tasks() {
   const buttons = ["All", "High", "Medium", "Low"];
 
   const navigate = useNavigate();
+
+  const [open, setOpen]=useState(false);
 
 
   console.log(tasks);
@@ -201,7 +205,7 @@ export default function Tasks() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/create-lead')}
+              onClick={() => setOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
             >
               <Plus size={16} />
@@ -299,7 +303,7 @@ export default function Tasks() {
 
                   {/* TOP */}
 
-                  <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
+                  <div className="flex flex-row w-full justify-between lg:flex-row lg:items-start lg:justify-between gap-5">
 
                     {/* LEFT */}
 
@@ -437,6 +441,55 @@ export default function Tasks() {
           }
         </div>
       </div>
+      {/**ADD TASKS */}
+      <AnimatePresence>
+
+                {open && (
+
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
+                    >
+
+                        {/* Modal */}
+
+                        <motion.div
+                            initial={{
+                                opacity: 0,
+                                y: 100,
+                                scale: 0.9
+                            }}
+                            animate={{
+                                opacity: 1,
+                                y: 0,
+                                scale: 1
+                            }}
+                            exit={{
+                                opacity: 0,
+                                y: 100,
+                                scale: 0.9
+                            }}
+                            transition={{
+                                duration: .4
+                            }}
+
+                            className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
+                        >
+
+                            <CreateTask
+                                onClose={() => setOpen(false)}
+                            />
+
+                        </motion.div>
+
+                    </motion.div>
+
+                )}
+
+            </AnimatePresence>
     </div>
   );
 

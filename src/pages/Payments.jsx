@@ -1,185 +1,449 @@
-import React, { useState } from 'react';
-import { 
-  CreditCard, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  Plus, 
-  Search, 
-  Filter, 
-  FileText,
-  DollarSign,
-  PieChart,
-  Calendar
-} from 'lucide-react';
-import { useIndustry } from '../context/IndustryContext';
-import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
 
-const data = [
-  { name: 'Income', value: 45000, color: '#000' },
-  { name: 'Expense', value: 12000, color: '#E2E8F0' },
-  { name: 'Revenue', value: 33000, color: '#3B82F6' },
-];
 
-export default function Payments() {
-  const { config } = useIndustry();
+import React, { useState } from "react";
+import { data, Link, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  CheckSquare,
+  FolderKanban,
+  Settings,
+  LogOut,
+  Search,
+  Filter,
+  Bell,
+  Plus,
+  IndianRupee,
+  CheckCircle2,
+  ChartNoAxesCombined,
+  Users2,
+  CheckCircle,
+  Briefcase,
+  ArrowLeft,
+  ArrowLeftCircleIcon,
+  ArrowRightFromLine,
+  ArrowRightCircleIcon,
+  Clock4,
+  CircleAlert,
+  CircleCheckBig,
+  BanknoteArrowUp,
+} from "lucide-react";
 
-  const transactions = [
-    { id: '1', client: 'Acme Corp', type: 'Income', amount: '$4,200', status: 'Paid', date: 'May 5, 2024', invoice: 'INV-2024-001' },
-    { id: '2', client: 'Global Tech', type: 'Income', amount: '$850', status: 'Pending', date: 'May 4, 2024', invoice: 'INV-2024-002' },
-    { id: '3', client: 'AWS Cloud', type: 'Expense', amount: '$1,200', status: 'Paid', date: 'May 3, 2024', invoice: 'SUB-2024-001' },
-    { id: '4', client: 'Sarah Wilson', type: 'Income', amount: '$2,400', status: 'Partial', date: 'May 2, 2024', invoice: 'INV-2024-003' },
+import { Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart } from "recharts";
+
+import { motion, AnimatePresence } from "framer-motion";
+import Pagination from "../components/Pagination";
+import CreateLead from "./CreateLead";
+
+
+export default function LeadManagement() {
+
+
+
+  const leads = Array(6).fill({
+    name: "Sarah Chen",
+    company: "Nexigen Corp",
+    status: "pending",
+    temp: "warm",
+    budget: "$120,000",
+    source: "LinkedIn",
+    follow: "Today"
+  });
+
+  // PAGINATION
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const filesPerPage = 5;
+  const lastIndex = currentPage * filesPerPage;
+  const firstIndex = lastIndex - filesPerPage;
+  const currentFiles = leads.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(leads.length / filesPerPage);
+
+  const [active, setActive] = useState(0);
+  const [openlead, setOpenlead] = useState(false);
+
+  const buttons = ["All", "Paid", "Pending", "Partial", "Overdue"];
+
+  const navigate = useNavigate();
+
+  const [selectedPeriod, setSelectedPeriod] = useState("thismonth");
+
+  const stats = [
+    { icon: BanknoteArrowUp, title: "Total Revenue", value: "₹1243" },
+    { icon: Clock4, title: "Pending", value: "₹48,830" },
+    { icon: CircleAlert, title: "OverDue", value: "₹17,830" },
+    { icon: CircleCheckBig, title: "Paid this Month", value: "₹4.2M" },
   ];
 
+  const monthdata = [
+    { month: "Jan", revenue: 20000, target: 15000 },
+    { month: "Feb", revenue: 30000, target: 25000 },
+    { month: "Mar", revenue: 25000, target: 20000 },
+    { month: "Apr", revenue: 45000, target: 35000 },
+    { month: "May", revenue: 35000, target: 30000 },
+    { month: "Jun", revenue: 50000, target: 40000 }
+  ];
+
+  const yeardata = [
+    { year: "2020", revenue: 250000, target: 220000 },
+    { year: "2021", revenue: 320000, target: 300000 },
+    { year: "2022", revenue: 410000, target: 380000 },
+    { year: "2023", revenue: 530000, target: 500000 },
+    { year: "2024", revenue: 620000, target: 580000 },
+    { year: "2025", revenue: 750000, target: 700000 }
+  ];
+
+
+
   return (
-    <div className="p-8">
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-black mb-1">Financial Center</h1>
-          <p className="text-gray-500">Monitor revenue, expenses, and pending invoices.</p>
+    <div className="flex min-h-screen bg-[#f3f0eb]">
+
+      {/* MAIN */}
+      <div className="flex-1 flex flex-col">
+
+        {/* TOPBAR */}
+        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
+
+          <div>
+            <h1 className="text-2xl font-bold text-[#023167] p-2">
+              Payment Management
+            </h1>
+            <p className="text-sm text-gray-500">
+              Track and manage Payments
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+
+
+            <button
+              onClick={() => setOpenlead(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
+            >
+              <Plus size={16} />
+              New Invoice
+            </button>
+
+            <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
+              <Filter size={18} className='text-white' />
+            </button>
+
+            <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
+              <Bell size={18} className='text-white' />
+            </button>
+
+          </div>
+
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl font-medium hover:bg-gray-800 transition-colors">
-          <Plus className="w-4 h-4" />
-          New Invoice
-        </button>
-      </header>
+        {/* CONTENT */}
+        <div className="p-4 md:p-6 lg:p-8 bg-[#f3f0eb]">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <div className="p-2 bg-green-50 rounded-lg">
-                <ArrowDownLeft className="w-4 h-4 text-green-600" />
-              </div>
-            </div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Received</p>
-            <h3 className="text-2xl font-bold text-black">$84,200</h3>
-          </div>
-          <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <div className="p-2 bg-red-50 rounded-lg">
-                <ArrowUpRight className="w-4 h-4 text-red-600" />
-              </div>
-            </div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Pending Amount</p>
-            <h3 className="text-2xl font-bold text-black font-sans text-orange-600">$12,450</h3>
-          </div>
-          <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <PieChart className="w-4 h-4 text-blue-600" />
-              </div>
-            </div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Net Revenue</p>
-            <h3 className="text-2xl font-bold text-black">$71,750</h3>
+          {/* STATS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {stats.map((s, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-6 rounded-xl border"
+              >
+                <div className='bg-gray-200  rounded w-8 h-8'>
+                  <s.icon className="w-8 h-8 text-black p-2" />
+                </div>
+                <p className="text-sm text-gray-500">{s.title}</p>
+                <h2 className="text-2xl font-bold text-[#0b2b57]">
+                  {s.value}
+                </h2>
+              </motion.div>
+            ))}
+
           </div>
 
-          <div className="md:col-span-3 p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-            <h3 className="text-lg font-bold mb-6">Cash Flow Summary</h3>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} layout="vertical">
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} tick={{fontSize: 12, fontWeight: 600}} />
-                  <Tooltip cursor={{fill: 'transparent'}} />
-                  <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={20}>
-                    {data.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+          {/* FILTER BAR */}
+          <div className="mt-6 bg-white p-3 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className=" font-bold text-xl text-[#0b2b57]"  >
+              <p>Payment List</p>
             </div>
+
+            <div className="flex gap-3">
+              {buttons.map((btn, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActive(index)}
+                  className={`px-4  rounded-xl font-medium transition-all
+            ${active === index
+                      ? "bg-[#2563a9] text-white"
+                      : "text-gray-400  hover:bg-[#2563a9] hover:text-white"
+                    }`}
+                >
+                  {btn}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center border bg-gray-200 rounded px-3 py-2 w-full md:w-80">
+              <Search size={16} className="text-black" />
+              <input
+                className="ml-2 w-full outline-none text-sm bg-gray-200"
+                placeholder="Search Lead.."
+              />
+            </div>
+
           </div>
+
+          {/* TABLE */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 bg-white rounded-lg overflow-x-auto border">
+
+            <table className="min-w-[900px] w-full text-sm border">
+
+              <thead className="bg-gray-50 text-left text-gray-600">
+                <tr>
+
+                  <th className="p-3">CLIENTS</th>
+                  <th>ISSUED</th>
+                  <th>DUE</th>
+                  <th>AMOUNT</th>
+                  <th>STATUS</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+
+
+              <tbody>
+
+                {currentFiles.map((l, i) => (
+                  <tr key={i} className="border-t">
+
+                    <td className="p-3">
+                      <p className="font-medium">{l.name}</p>
+                      <p className="text-xs text-gray-400">{l.company}</p>
+                    </td>
+
+                    <td>
+                      <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
+                        {l.issued || "No"}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded text-xs">
+                        {l.due || "NO"}
+                      </span>
+                    </td>
+
+                    <td>{l.amount || "No"}</td>
+
+                    <td>
+                      <span className={`bg-gray-100 px-2 py-1 rounded-xl text-xs ${l.status.toLowerCase() === "paid" ? "bg-green-200" : l.status.toLowerCase() === "pending" ? "bg-yellow-200" : "bg-red-300"}`}>
+                        {l.status || "No"}
+                      </span>
+                    </td>
+
+                    <td className="text-black">{l.action || "No"}</td>
+
+                  </tr>
+                ))}
+
+              </tbody>
+
+            </table>
+            {/*PAGINATION*/}
+            <div className="mb-2">
+              <Pagination
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                totalPages={totalPages}
+              />
+            </div>
+          </motion.div>
+
+
+
         </div>
 
-        <div className="bg-black rounded-3xl p-6 text-white overflow-hidden relative shadow-2xl">
-          <div className="relative z-10">
-            <div className="flex justify-between items-start mb-12">
-              <CreditCard className="w-8 h-8 opacity-50" />
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-gray-500 uppercase">Operational Account</p>
-                <p className="text-xs font-bold">**** 4291</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-400 mb-1">Total Balance</p>
-            <h3 className="text-3xl font-bold mb-8">$142,500.00</h3>
-            <div className="flex justify-between items-end">
+        <div className="flex gap-2 items-start justify-between   border-black mb-4  ">
+
+
+          <div className="flex flex-col items-center  justify-between h-[400px] w-[600px] bg-white  ml-8 rounded-xl">
+            <div className="flex gap-18 items-center   justify-between w-full mb-4 mt-2 p-2">
               <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase">Card Holder</p>
-                <p className="text-sm font-bold uppercase tracking-widest">Administrator</p>
+                <h2 className="text-xl font-bold  text-blue-700 tracking-wide">
+                  Monthly revenue overview
+                </h2>
+                <p className="text-sm text-gray-400">Track your clients revenue</p>
               </div>
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" className="h-4 brightness-0 invert" alt="" />
+              <div>
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="bg-gray-200 text-black/80 rounded mr-2">
+                  <option value="thismonth"> This month</option>
+                  <option value="thisyear"> This year</option>
+                </select>
+              </div>
             </div>
-          </div>
-          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl" />
-        </div>
-      </div>
 
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-50 flex justify-between items-center">
-          <h3 className="text-lg font-bold">Recent Transactions</h3>
-          <div className="flex gap-2">
-            <button className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <Search className="w-4 h-4 text-gray-400" />
-            </button>
-            <button className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <Filter className="w-4 h-4 text-gray-400" />
-            </button>
+            <ResponsiveContainer width="100%" height="100%" >
+
+              <BarChart data={selectedPeriod === "thismonth" ? monthdata : yeardata}>
+
+                <CartesianGrid strokeDasharray="3 3" />
+                {selectedPeriod === "thismonth" ? <XAxis dataKey="month" /> : <XAxis dataKey="year" />}
+
+                <YAxis />
+                <Tooltip />
+
+
+                {/* Revenue → Blue */}
+                <Bar
+                  dataKey="revenue"
+                  fill="#ddead1"
+                  radius={[8, 8, 0, 0]}
+                />
+
+                {/* Target → Red */}
+                <Bar
+                  dataKey="target"
+                  fill="#2563a9"
+                  radius={[8, 8, 0, 0]}
+                />
+
+              </BarChart>
+
+            </ResponsiveContainer>
           </div>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {transactions.map((t) => (
-            <div key={t.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center",
-                  t.type === 'Income' ? 'bg-green-50' : 'bg-red-50'
-                )}>
-                  {t.type === 'Income' ? (
-                    <ArrowDownLeft className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <ArrowUpRight className="w-5 h-5 text-red-600" />
-                  )}
+
+          <div className="flex flex-col gap-2 items-center justify-between mr-8 h-[400px] bg-white rounded-xl  overflow-y-scroll no-scrollbar">
+            <div className="flex gap-16 items-center justify-between  mt-2 p-2">
+              <h1 className="font-bold tracking-wide text-blue-900">Overdue Alerts</h1>
+              <h3 className="text-blue-700 tracking-wide font-bold">4 INVOICES</h3>
+            </div>
+            {[
+              {
+                profile: "Rk",
+                clientname: "Rajesh",
+                companyname: "tidelpark",
+                amout: "47,000",
+                days: "4"
+              },
+              {
+                profile: "Rk",
+                clientname: "Rajesh",
+                companyname: "tidelpark",
+                amout: "47,000",
+                days: "4"
+              },
+              {
+                profile: "Rk",
+                clientname: "Rajesh",
+                companyname: "tidelpark",
+                amout: "47,000",
+                days: "4"
+              },
+              {
+                profile: "Rk",
+                clientname: "Rajesh",
+                companyname: "tidelpark",
+                amout: "47,000",
+                days: "4"
+              },
+               {
+                profile: "Rk",
+                clientname: "Rajesh",
+                companyname: "tidelpark",
+                amout: "47,000",
+                days: "4"
+              },
+               {
+                profile: "Rk",
+                clientname: "Rajesh",
+                companyname: "tidelpark",
+                amout: "47,000",
+                days: "4"
+              },
+               {
+                profile: "Rk",
+                clientname: "Rajesh",
+                companyname: "tidelpark",
+                amout: "47,000",
+                days: "4"
+              },
+            ].map((ev, i) => (
+              <div
+              key={i}
+              className="flex items-center justify-between gap-10 mb-4">
+                <div className="rounded-full w-10 h-10 bg-rose-200 items-center p-2 font-bold text-xl"> {ev.profile}</div>
+                <div>
+                  <h1 className="text-black font-bold tracking-wide">{ev.clientname}</h1>
+                  <p className="text-[12px] text-gray-500 ">{ev.companyname}</p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-black">{t.client}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] font-bold text-gray-400">{t.invoice}</span>
-                    <span className="text-[10px] text-gray-400">•</span>
-                    <span className="text-[10px] text-gray-400">{t.date}</span>
-                  </div>
+                  <h3 className=" text-red-400">₹{ev.amout}</h3>
+                  <p className="bg-orange-100 text-red-500 rounded-xl p-1">{ev.days} days</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className={cn(
-                  "text-sm font-bold mb-1 font-sans",
-                  t.type === 'Income' ? 'text-black' : 'text-red-500'
-                )}>
-                  {t.type === 'Income' ? '+' : '-'}{t.amount}
-                </p>
-                <span className={cn(
-                  "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase",
-                  t.status === 'Paid' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'
-                )}>
-                  {t.status}
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
+
+          </div>
+
+          
         </div>
+
       </div>
+      {/**ADD LEADS */}
+      <AnimatePresence>
+
+        {openlead && (
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
+          >
+
+            {/* Modal */}
+
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 100,
+                scale: 0.9
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1
+              }}
+              exit={{
+                opacity: 0,
+                y: 100,
+                scale: 0.9
+              }}
+              transition={{
+                duration: .4
+              }}
+
+              className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
+            >
+
+              <CreateLead
+                onClose={() => setOpenlead(false)}
+              />
+
+            </motion.div>
+
+          </motion.div>
+
+        )}
+
+      </AnimatePresence>
     </div>
   );
 }
+

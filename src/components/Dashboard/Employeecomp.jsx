@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { collection, count, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
-import Loading from '../Dashboard/Loading'
-
 const Employeecomp = () => {
 
     const [employees, setEmployees] = useState([]);
@@ -77,15 +75,21 @@ const Employeecomp = () => {
 
     }, []);
 
-
+    if (loading) {
+        return (
+            <div className="h-screen w-full flex flex-col items-center justify-center bg-white">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-gray-600 font-medium">Loading data...</p>
+            </div>
+        );
+    }
 
     return (
-
         <div
             className="
             grid
             grid-cols-1
-            xl:grid-cols-3
+            md:grid-cols-3
             gap-6
             bg-[#f3f0eb]
           "
@@ -93,11 +97,10 @@ const Employeecomp = () => {
 
             {/* TABLE */}
 
-            <div className="xl:col-span-2 p-2">
+            <div className="md:col-span-2 p-2">
 
                 <div
-                    className="
-                
+                    className="           
                 rounded-xl        
                 overflow-hidden
                 ml-6  "
@@ -129,7 +132,6 @@ const Employeecomp = () => {
 
                     </div>
 
-
                     <div className="overflow-x-auto rounded bg-white text-black  p-8">
                         <div >
                             <div className='flex justify-between items-center '>
@@ -137,41 +139,36 @@ const Employeecomp = () => {
                                 <p className='font-semibold'>Leads</p>
                                 <p className='font-semibold'> Progress</p>
                             </div>
-                            {
-                                loading ? <div className="p-6 bg-white rounded-xl">
-                                    <Loading />
-                                </div> : employees.length > 0 ? employees.slice(0, 5).map((data) => (
+                            {employees ? (employees.slice(0, 5).map((data) => (
 
-                                    <div key={data.id} className='flex  justify-between mt-4 gap-2 items-center font-sans'>
-                                        <div className='flex  gap-2'>
-                                            <div className="w-12 h-12 bg-red-300 rounded-full flex items-center justify-center font-bold">
-                                                {(data.name || "")
-                                                    .split(" ")
-                                                    .map(v => v[0])
-                                                    .join("")
-                                                    .toUpperCase()}
-                                            </div>
-                                            <div className='w-fit '>
-                                                <p className='font-semibold text-black'>{data.name}</p>
-                                                <p className='text-sm text-gray-400 '>{data.role}</p>
-
-                                            </div>
+                                <div key={data._id} className='flex  justify-between mt-4 gap-2 items-center font-sans'>
+                                    <div className='flex  gap-2'>
+                                        <div className="w-12 h-12 bg-red-300 rounded-full flex items-center justify-center font-bold">
+                                            {(data.name || "")
+                                                .split(" ")
+                                                .map(v => v[0])
+                                                .join("")
+                                                .toUpperCase()}
                                         </div>
+                                        <div className='w-fit '>
+                                            <p className='font-semibold text-black'>{data.name}</p>
+                                            <p className='text-sm text-gray-400 '>{data.role}</p>
 
-                                        <p className='text-sm text-gray-400  '>42 Leads</p>
-
-                                        <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                            <div
-                                                className="h-full bg-red-500 rounded-full"
-                                                style={{ width: "70%" }}
-                                            />
                                         </div>
                                     </div>
-                                )) :
 
-                                    <p className='text-black'>NoData</p>
+                                    <p className='text-sm text-gray-400  items-center '>42 Leads</p>
 
-                            }
+                                    <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                        <div
+                                            className="h-full bg-red-500 rounded-full"
+                                            style={{ width: "70%" }}
+                                        />
+                                    </div>
+                                </div>
+                            ))) :
+
+                                (<p className='text-black'>NoData</p>)}
 
                         </div>
 
@@ -213,15 +210,7 @@ const Employeecomp = () => {
                             </tr>
                         </thead>
 
-                        {loading ? (
-                            <tbody>
-                                <tr>
-                                    <td colSpan={3} className='p-2 text-center'>
-                                        <Loading />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        ) : (<tbody className="text-sm">
+                        <tbody className="text-sm">
                             {leads.slice(0, 5).map((lead) => (
                                 <tr key={lead._id} className="border-t">
 
@@ -247,7 +236,7 @@ const Employeecomp = () => {
 
                                 </tr>
                             ))}
-                        </tbody>)}
+                        </tbody>
 
                     </table>
                 </div>
@@ -255,7 +244,6 @@ const Employeecomp = () => {
             </div>
 
         </div>
-
     )
 }
 

@@ -340,14 +340,7 @@ export default function ClientManagement() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
 
-                        className="
-              fixed inset-0
-              bg-black/40
-              backdrop-blur-sm
-              flex justify-center items-center
-              z-50
-              p-4
-            "
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
                     >
 
                         {/* Modal */}
@@ -372,16 +365,11 @@ export default function ClientManagement() {
                                 duration: .4
                             }}
 
-                            className="
-                w-full
-                max-w-6xl
-                max-h-[80vh]
-                overflow-y-auto
-              "
+                            className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
                         >
 
-                            <CreateClients 
-                            onClose={()=>setOpen(false)}
+                            <CreateClients
+                                onClose={() => setOpen(false)}
                             />
 
                         </motion.div>

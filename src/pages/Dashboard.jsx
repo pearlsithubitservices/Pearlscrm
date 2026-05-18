@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Employeecomp from '../components/Dashboard/Employeecomp.jsx';
 import { AnimatePresence, motion, scale } from 'framer-motion';
+import CreateLead from './CreateLead.jsx';
 
 
 export default function Dashboard() {
@@ -44,6 +45,8 @@ export default function Dashboard() {
       recentLeads: [],
       todayTasks: [],
     });
+
+    console.log(dashboardData);
 
   //Skeleton
 
@@ -93,6 +96,7 @@ export default function Dashboard() {
       }
 
     };
+    
   const stats = [
     {
       title: 'Total Leads',
@@ -142,6 +146,9 @@ export default function Dashboard() {
   const tasks =
     dashboardData?.todayTasks || [];
 
+  const [open, setOpen]=useState(false);
+
+
 
   return (
     <AnimatePresence mode='wait'>
@@ -180,10 +187,7 @@ export default function Dashboard() {
 
 
             <button className="flex items-center gap-2 px-3 transition-transform duration-300 py-2 rounded bg-[#2563a9] font-semibold hover:scale-110"
-              onClick={() =>
-                navigate(
-                  '/create-lead'
-                )}
+              onClick={() => setOpen(true)}
             >
               <Plus className="w-4 h-4" />
               Add Lead
@@ -259,6 +263,56 @@ export default function Dashboard() {
       </div>
       )
       }
+
+      {/**ADD LEADS */}
+      <AnimatePresence>
+      
+              {open && (
+      
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+      
+                  className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
+                >
+      
+                  {/* Modal */}
+      
+                  <motion.div
+                    initial={{
+                      opacity: 0,
+                      y: 100,
+                      scale: 0.9
+                    }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      scale: 1
+                    }}
+                    exit={{
+                      opacity: 0,
+                      y: 100,
+                      scale: 0.9
+                    }}
+                    transition={{
+                      duration: .4
+                    }}
+      
+                    className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
+                  >
+      
+                    <CreateLead 
+                    onClose={() => setOpen(false)}
+                    />
+      
+                  </motion.div>
+      
+                </motion.div>
+      
+              )}
+      
+            </AnimatePresence>
 
     </AnimatePresence>
   );

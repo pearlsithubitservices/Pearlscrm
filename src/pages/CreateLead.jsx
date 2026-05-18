@@ -7,6 +7,8 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
+import { Phone,Users, IndianRupee } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   collection,
   getDocs,
@@ -15,7 +17,9 @@ import {
 
 import { db } from '../lib/firebase';
 
-export default function CreateLead() {
+import InputField from '../components/InputField';
+
+export default function CreateLead({onClose}) {
 
   const navigate =
     useNavigate();
@@ -156,215 +160,60 @@ export default function CreateLead() {
 
   return (
 
-    <div className="min-h-screen bg-[#070B1A] text-white p-6">
+    <div className="max-w-5xl mx-auto p-10 rounded-[40px] bg-[#e9e7e2]">
 
-      <div className="max-w-6xl mx-auto bg-white/5 border border-white/10 rounded-3xl p-8">
+      <div className="grid md:grid-cols-2 gap-5">
 
-        <h1 className="text-5xl font-bold mb-3">
+        <InputField
+          label="Lead Name"
+          placeholder="John Doe"
+        />
 
-          Create Lead
+        <InputField
+          label="Company Name"
+          placeholder="Innovatech"
+        />
 
-        </h1>
+        <InputField
+          label="Phone Number"
+          placeholder="+1 555"
+          Icon={Phone}
+        />
 
-        <p className="text-gray-400 mb-10">
+        <InputField
+          label="Assigned To"
+          placeholder="Agent"
+          Icon={Users}
+        />
 
-          Add and assign leads easily
+        <InputField
+          label="Budget"
+          placeholder="₹0.00"
+          Icon={IndianRupee}
+        />
 
-        </p>
-
-        <div className="grid grid-cols-2 gap-6">
-
-          <input
-            type="text"
-            name="name"
-            placeholder="Client Name"
-            value={lead.name}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          />
-
-          <input
-            type="text"
-            name="company"
-            placeholder="Company Name"
-            value={lead.company}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          />
-
-          <input
-            type="text"
-            name="phone"
-            placeholder="Phone Number"
-            value={lead.phone}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          />
-
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={lead.email}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          />
-
-          <input
-            type="text"
-            name="website"
-            placeholder="Website"
-            value={lead.website}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          />
-
-          <input
-            type="text"
-            name="source"
-            placeholder="Lead Source"
-            value={lead.source}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          />
-
-          <input
-            type="text"
-            name="budget"
-            placeholder="Budget"
-            value={lead.budget}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          />
-
-          <input
-            type="text"
-            name="platform"
-            placeholder="Platform"
-            value={lead.platform}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          />
-
-          {/* ASSIGN EMPLOYEE */}
-
-          <select
-            name="assignedTo"
-            value={lead.assignedTo}
-            onChange={(e) => {
-
-              const selectedEmployee =
-                employees.find(
-                  (emp) =>
-                    emp.uid ===
-                    e.target.value
-                );
-
-              if (selectedEmployee) {
-
-                setLead({
-
-                  ...lead,
-
-                  assignedTo:
-                    selectedEmployee.uid,
-
-                  assignedEmployee:
-                    selectedEmployee.name,
-
-                });
-
-              }
-
-            }}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          >
-
-            <option value="">
-
-              Select Employee
-
-            </option>
-
-            {employees.map(
-              (employee) => (
-
-                <option
-                  key={employee.id}
-                  value={employee.uid}
-                >
-
-                  {employee.name}
-
-                </option>
-
-              )
-            )}
-
-          </select>
-
-          {/* STATUS */}
-
-          <select
-            name="status"
-            value={lead.status}
-            onChange={handleChange}
-            className="bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none"
-          >
-
-            <option>
-
-              New
-
-            </option>
-
-            <option>
-
-              Interested
-
-            </option>
-
-            <option>
-
-              Follow-up
-
-            </option>
-
-            <option>
-
-              Closed
-
-            </option>
-
-          </select>
-
-          {/* NOTES */}
-
-          <textarea
-            name="notes"
-            placeholder="Notes..."
-            value={lead.notes}
-            onChange={handleChange}
-            className="col-span-2 bg-[#111827] border border-white/10 rounded-2xl p-4 outline-none min-h-[150px]"
-          />
-
-          {/* BUTTON */}
-
-          <button
-            onClick={addLead}
-            className="col-span-2 py-5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 font-bold text-xl"
-          >
-
-            + Create Lead
-
-          </button>
-
-        </div>
+        <InputField
+          label="Lead Temp"
+          placeholder="Hot"
+        />
 
       </div>
+      <div className="border-t pt-8 flex gap-4">
+
+                    <button className="px-10 py-4 border rounded-xl bg-blue-700 hover:bg-blue-600 text-white" onClick={onClose}>
+                        Cancel
+                    </button>
+
+                    <button className="flex-1 bg-blue-700 hover:bg-blue-600 text-white rounded-xl">
+
+                        + Add Lead
+
+                    </button>
+
+                </div>
 
     </div>
 
-  );
+  )
 
 }
