@@ -207,11 +207,11 @@ export default function EmployeeDashboard() {
 
         {/* HEADER */}
 
-        <div className=" flex  lg:flex-row  justify-between items-center mb-10 ">
+        <div className="flex justify-between items-center mb-10">
 
           <div>
 
-            <h1 className="sm:text-l md:text-3xl lg:text-5xl font-black mb-2  ">
+            <h1 className="text-5xl font-black mb-2">
 
               Employee Dashboard
 
@@ -231,10 +231,9 @@ export default function EmployeeDashboard() {
 
           {/* SEARCH */}
 
-          <div className="relative w-[120px] lg:w-[320px] mb-2  ">
+          <div className="relative w-[320px]">
 
-
-            <Search className="absolute md:left-4 right-2 top-0   md:top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
 
             <input
               type="text"
@@ -245,7 +244,7 @@ export default function EmployeeDashboard() {
                   e.target.value
                 )
               }
-              className="w-full bg-[#111827] border border-white/10 rounded-2xl pl-12 pr-5 py-4 outline-none focus:border-purple-500 hidden sm:block"
+              className="w-full bg-[#111827] border border-white/10 rounded-2xl pl-12 pr-5 py-4 outline-none focus:border-purple-500"
             />
 
           </div>
@@ -254,16 +253,16 @@ export default function EmployeeDashboard() {
 
         {/* STATS */}
 
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6   mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
           {stats.map((item, i) => (
 
             <div
               key={i}
-              className={`bg-gradient-to-r ${item.color} rounded-3xl lg:w-full  p-6 `}
+              className={`bg-gradient-to-r ${item.color} rounded-3xl p-6`}
             >
 
-              <div className="flex justify-between mb-6 ">
+              <div className="flex justify-between mb-6">
 
                 <item.icon className="w-10 h-10" />
 
@@ -297,7 +296,7 @@ export default function EmployeeDashboard() {
 
           <div className="bg-[#111827] border border-white/10 rounded-3xl p-6">
 
-            <h2 className=" sm:text-l md:text-xl lg:text-2xl font-bold mb-6">
+            <h2 className="text-2xl font-bold mb-6">
 
               Recent Tasks
 

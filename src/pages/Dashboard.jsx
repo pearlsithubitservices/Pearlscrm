@@ -1,6 +1,8 @@
 import React from 'react';
-import 
-{
+import { Dashboardskeleton } from "../components/Dashboard/Skeleton.jsx";
+
+import Hotleads from '../components/Dashboard/Hotleads.jsx'
+import {
   useEffect,
   useState
 } from 'react';
@@ -13,72 +15,105 @@ import {
   Plus,
   MessageSquare,
   IndianRupee,
+  Search,
+  ChartNoAxesCombined,
+  Briefcase
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import Employeecomp from '../components/Dashboard/Employeecomp.jsx';
+import { AnimatePresence, motion, scale } from 'framer-motion';
 
 
 export default function Dashboard() {
 
+  const [loading, setLoading] = useState(!sessionStorage.getItem("loaded"));
+
   const { user } = useAuth();
-  
-const [dashboardData,
-setDashboardData] = useState({
-  totalLeads: 0,
-  pendingTasks: 0,
-  completedTasks: 0,
-  followupsToday: 0,
-  recentLeads: [],
-  todayTasks: [],
-});
-useEffect(() => {
+  const navigate = useNavigate();
 
-  fetchDashboard();
 
-}, []);
 
-const fetchDashboard =
-async () => {
+  const [dashboardData,
+    setDashboardData] = useState({
+      totalLeads: 0,
+      pendingTasks: 0,
+      completedTasks: 0,
+      followupsToday: 0,
+      recentLeads: [],
+      todayTasks: [],
+    });
 
-  try {
+  //Skeleton
 
-    const response =
-      await fetch(
-        "https://pearlscrm.onrender.com/api/dashboard"
-      );
+ useEffect(() => {
 
-    const data =
-      await response.json();
+    if (!sessionStorage.getItem("loaded")) {
 
-    setDashboardData(data);
+      const timer = setTimeout(() => {
 
-  } catch (error) {
+        setLoading(false);
 
-    console.log(error);
+        sessionStorage.setItem(
+          "loaded",
+          "true"
+        );
 
-  }
+      }, 2500);
 
-};
+      return () => clearTimeout(timer);
+    }
+
+  }, []);
+
+
+
+
+  //FETCH DASHBOARD
+  const fetchDashboard =
+    async () => {
+
+      try {
+
+        const response =
+          await fetch(
+            "https://pearlscrm.onrender.com/api/dashboard"
+          );
+
+        const data =
+          await response.json();
+
+        setDashboardData(data);
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
   const stats = [
     {
       title: 'Total Leads',
-     value: dashboardData.totalLeads,
+      value: dashboardData.totalLeads,
       icon: Users,
       color: 'from-purple-500 to-pink-500',
     },
 
+
+
+    {
+      title: 'Hot Lead',
+      value: dashboardData.completedTasks,
+      icon: Briefcase,
+      color: 'from-green-500 to-emerald-500',
+    },
     {
       title: 'Follow-ups Today',
       value: dashboardData.followupsToday,
-      icon: Phone,
+      icon: ChartNoAxesCombined,
       color: 'from-blue-500 to-cyan-500',
-    },
-
-    {
-      title: 'Converted Clients',
-      value: dashboardData.completedTasks,
-      icon: CheckCircle2,
-      color: 'from-green-500 to-emerald-500',
     },
 
     {
@@ -89,177 +124,142 @@ async () => {
     },
   ];
 
-const recentLeads =
-dashboardData?.recentLeads || [];
-const tasks =
-dashboardData?.todayTasks || [];
+
+
+  //current Date 
+
+  const today = new Date();
+
+  const fullDate = today.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const recentLeads =
+    dashboardData?.recentLeads || [];
+  const tasks =
+    dashboardData?.todayTasks || [];
+
+
   return (
+    <AnimatePresence mode='wait'>
 
-   <div className="text-white">
+      {loading ? (<motion.div>
+        <Dashboardskeleton />
+      </motion.div>) : (<div className="text-white">
 
-      {/* TOPBAR */}
+        {/* TOPBAR */}
 
-      <div className="flex items-center justify-between border-b border-white/10 px-8 py-6">
+        <div className="flex items-center justify-between bg-white border-black/20 px-8 py-6">
 
-        <div>
+          <div>
 
-          <h1 className="text-3xl font-bold">
-            Welcome, {user?.displayName || 'Ragavi'}
-          </h1>
+            <h1 className="text-2xl text-[#023167] font-bold">
+              Welcome, {user?.displayName || 'Ragavi'}
+            </h1>
 
-          <p className="text-gray-400 mt-1">
-            Pearls IT Hub CRM Dashboard
-          </p>
+            <p className="text-gray-400 mt-1">
+              {fullDate}
+            </p>
 
-        </div>
+          </div>
 
-        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
 
-          <button className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center">
-            <Bell className="w-5 h-5" />
-          </button>
+            {/* SEARCH */}
+            <div className="flex items-center border bg-gray-200 rounded px-3 py-2 w-full md:w-80">
+              <Search size={16} className="text-black" />
+              <input
+                className="ml-2 w-full outline-none text-sm text-black bg-gray-200"
+                placeholder="Search Lead.."
+              />
+            </div>
 
-          <button className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 font-semibold">
-            <Plus className="w-4 h-4" />
-            Add Lead
-          </button>
 
-        </div>
 
-      </div>
-
-      <div className="p-8">
-
-        {/* STATS */}
-
-        <div className="grid grid-cols-4 gap-6 mb-8">
-
-          {stats.map((item, i) => (
-
-            <div
-              key={i}
-              className={`bg-gradient-to-r ${item.color} rounded-3xl p-6`}
+            <button className="flex items-center gap-2 px-3 transition-transform duration-300 py-2 rounded bg-[#2563a9] font-semibold hover:scale-110"
+              onClick={() =>
+                navigate(
+                  '/create-lead'
+                )}
             >
+              <Plus className="w-4 h-4" />
+              Add Lead
+            </button>
 
-              <div className="flex justify-between items-center mb-6">
-
-                <item.icon className="w-10 h-10" />
-
-              </div>
-
-              <p className="text-sm opacity-80 mb-2">
-                {item.title}
-              </p>
-
-              <h2 className="text-4xl font-bold">
-                {item.value}
-              </h2>
-
-            </div>
-
-          ))}
-
-        </div>
-
-        {/* SECOND SECTION */}
-
-        <div className="grid grid-cols-3 gap-8">
-
-          {/* RECENT LEADS */}
-
-          <div className="col-span-2 bg-white text-black rounded-3xl p-6">
-
-            <div className="flex items-center justify-between mb-6">
-
-              <h2 className="text-2xl font-bold">
-                Recent Leads
-              </h2>
-
-              <button className="text-purple-600 font-semibold">
-                View All
-              </button>
-
-            </div>
-
-            <div className="space-y-5">
-
-              {recentLeads.map((lead, i) => (
-
-                <div
-                  key={i}
-                  className="flex items-center justify-between border border-gray-200 rounded-2xl p-4"
-                >
-
-                  <div>
-
-                    <h3 className="font-bold text-lg">
-                      {lead.name}
-                    </h3>
-
-                    <p className="text-gray-500">
-                      {lead.service}
-                    </p>
-
-                  </div>
-
-                  <div>
-
-                    <span className="px-4 py-2 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold">
-                      {lead.status}
-                    </span>
-
-                  </div>
-
-                </div>
-
-              ))}
-
-            </div>
-
-          </div>
-
-          {/* TASKS */}
-
-          <div className="bg-white text-black rounded-3xl p-6">
-
-            <div className="flex items-center gap-3 mb-6">
-
-              <Calendar className="w-6 h-6 text-purple-600" />
-
-              <h2 className="text-2xl font-bold">
-                Today's Tasks
-              </h2>
-
-            </div>
-
-            <div className="space-y-4">
-
-              {tasks.map((task, i) => (
-
-                <div
-                  key={i}
-                  className="flex items-start gap-3 border border-gray-200 rounded-2xl p-4"
-                >
-
-                  <MessageSquare className="w-5 h-5 text-purple-600 mt-1" />
-
-                  <p className="font-medium">
-                   {task.title}
-                  </p>
-
-                </div>
-
-              ))}
-
-            </div>
+            <button className="w-10 h-10 rounded bg-[#2563a9] flex items-center justify-center hover:scale-110 transition-transform duration-300">
+              <Bell size={28} className="w-15 h-15 p-1 " />
+            </button>
 
           </div>
 
         </div>
+
+        <div className="p-8 bg-[#f3f0eb]">
+
+          {/* STATS */}
+
+          <div className="grid grid-cols-4 gap-6 ">
+
+            {stats.map((item, i) => (
+
+              <motion.div
+                key={i}
+                whileHover={{scale:1.03}}
+                className={"bg-white rounded-xl p-1 h-30 border border-gray-300"}
+              >
+
+                <div
+                  className="flex items-center justify-between w-full  p-2 mb-2"
+                >
+
+                  <div className='bg-gray-200  rounded w-8 h-8'>
+                    <item.icon className="w-8 h-8 text-black p-2" />
+                  </div>
+
+                  <div
+                    className="
+                   text-green-500  bg-green-100 px-3 py-1 rounded text-sm  font-semibold "
+                  >
+                    ↑ 8.4%
+                  </div>
+
+                </div>
+
+                <p className="text-sm opacity-80  text-gray-500">
+                  {item.title}
+                </p>
+
+                <h2 className="text-5xl text-[#0b2b57] font-bold">
+                  {item.value}
+                </h2>
+
+              </motion.div>
+
+            ))}
+
+          </div>
+        </div>
+        {/**HOT LEADS AND VIEW ALL */}
+
+        <Hotleads />
+
+        {/**Employee section */}
+
+        <Employeecomp />
+
+
+
+        {/* EMPLOYEE SECTION */}
+
+
 
       </div>
+      )
+      }
 
-    </div>
-
+    </AnimatePresence>
   );
 }

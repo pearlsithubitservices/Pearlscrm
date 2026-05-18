@@ -35,7 +35,7 @@ export default function EmployeeSidebar({
 
   return (
 
-    <div className="w-[280px] bg-[#0f1725] border-r border-white/10 p-6 hidden sm:flex  flex-col justify-between  ">
+    <div className="w-[280px] bg-[#0f1725] border-r border-white/10 p-6 flex flex-col justify-between">
 
       <div>
 
