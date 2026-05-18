@@ -375,7 +375,7 @@ export default function ClientManagement() {
                             className="
                 w-full
                 max-w-6xl
-                max-h-[90vh]
+                max-h-[80vh]
                 overflow-y-auto
               "
                         >
