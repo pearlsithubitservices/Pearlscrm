@@ -123,20 +123,17 @@ export default function TaskManagement() {
 };
 
   const filteredTasks =
-    tasks.filter((task) =>
+  tasks.filter((task) =>
 
-      task.company
-  ?.toLowerCase()
-  .includes(search.toLowerCase()) ||
+    task.company
+      ?.toLowerCase()
+      .includes(search.toLowerCase()) ||
 
-task.assignedEmployee
-  ?.toLowerCase()
-  .includes(search.toLowerCase())
-        .includes(
-          search.toLowerCase()
-        )
+    task.assignedEmployee
+      ?.toLowerCase()
+      .includes(search.toLowerCase())
 
-    );
+  );
 
   return (
 
