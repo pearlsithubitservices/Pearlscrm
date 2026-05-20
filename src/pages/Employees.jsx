@@ -1,7 +1,8 @@
 
 import React, {
   useState,
-  useEffect
+  useEffect,
+  use
 } from 'react';
 
 import {
@@ -47,6 +48,8 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import Pagination from '../components/Pagination';
 import LoadingPage from '../components/Dashboard/Loading';
+import Createemployee from './Createemployee';
+import AnimateModals from '../components/Dashboard/AnimateModals';
 
 
 export default function ClientManagement() {
@@ -54,7 +57,8 @@ export default function ClientManagement() {
   const [active, setActive] = useState(0);
   const buttons = ["All", "Sales", "Engineering", "Design"];
   const [employees, setEmployees] = useState([]);
-  const [loading, setLoading]=useState(true);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
 
   //PAGINATION
   const [currentPage, setCurrentPage] = useState(1);
@@ -145,7 +149,7 @@ export default function ClientManagement() {
 
         }
 
-        finally{
+        finally {
           setLoading(false);
         }
 
@@ -156,10 +160,6 @@ export default function ClientManagement() {
 
 
   }, []);
-
-
-
-
 
   return (
     <div className="text-black">
@@ -182,7 +182,7 @@ export default function ClientManagement() {
         <div className="flex items-center gap-4">
 
           <button
-            onClick={() => navigate('/create-client')}
+            onClick={() => setOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
           >
             <Plus size={16} />
@@ -212,9 +212,9 @@ export default function ClientManagement() {
           {stats.map((item, i) => (
             < motion.div
               key={i}
-              initial={{opacity:0, y:50}}
-              animate={{opacity:1, y:0}}
-              transition={{duration:0.6, ease:easeOut}}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: easeOut }}
               whileHover={{ scale: 1.03 }}
               className="bg-white border border-black/10 p-4 rounded-xl"
             >
@@ -266,7 +266,7 @@ export default function ClientManagement() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 bg-gray-200 border px-3 py-2 rounded w-[350px]">
+          <div className="flex items-center gap-2 bg-gray-200 border px-3 py-2 rounded w-[300px]">
 
             <Search size={16} className="text-black" />
 
@@ -397,6 +397,14 @@ export default function ClientManagement() {
         </div>
 
       </div>
+
+      {/**Add Employee Modal */}
+     {open && (
+  <AnimateModals>
+    <Createemployee onClose={() => setOpen(false)} />
+  </AnimateModals>
+)}
+
     </div>
   );
 

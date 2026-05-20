@@ -28,63 +28,73 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Pagination from "../components/Pagination";
 import CreateLead from "./CreateLead";
+import AnimateModals from "../components/Dashboard/AnimateModals";
+import LoadingPage from "../components/Dashboard/Loading";
 
 export default function LeadManagement() {
 
-  const[leaddetails, setLeaddetails]=useState([]);
-  const [dashboarddata, setDashboardData]=useState([]);
-  
+  const [leaddetails, setLeaddetails] = useState([]);
+  const [dashboarddata, setDashboardData] = useState();
+  console.log(leaddetails);
 
-  useEffect(()=>{
+  useEffect(() => {
     //FETCH DASHBOARD
-  const fetchDashboard =
-    async () => {
+    const fetchDashboard =
+      async () => {
 
-      try {
+        try {
 
-        const response =
-          await fetch(
-            "https://pearlscrm.onrender.com/api/dashboard"
-          );
+          const response =
+            await fetch(
+              "https://pearlscrm.onrender.com/api/dashboard"
+            );
 
-        const data =
-          await response.json();
+          const data =
+            await response.json();
 
-        setDashboardData(data);
+          setDashboardData(data);
 
-      } catch (error) {
+        } catch (error) {
 
-        console.log(error);
+          console.log(error);
 
-      }
+        }
 
-    };
+      };
 
     // Fetch Leads
 
     const fetchleads =
-    async () => {
+      async () => {
+        setLoading(true);
 
-      try {
+        try {
 
-        const response =
-          await fetch(
-            "https://pearlscrm.onrender.com/api/leads"
-          );
+          const response =
+            await fetch(
+              "https://pearlscrm.onrender.com/api/leads"
+            );
 
-        const data =
-          await response.json();
-          console.log(data);
-        setLeaddetails(data);
+          const data =
+            await response.json();
 
-      } catch (error) {
 
-        console.log(error);
+          setLeaddetails(data);
 
-      }
+        } catch (error) {
 
-    };
-  },[]);
+          console.log(error);
+
+        }
+        finally {
+          setLoading(false);
+        }
+
+      };
+
+    fetchleads();
+    fetchDashboard();
+  }, []);
 
 
 
@@ -104,13 +114,14 @@ export default function LeadManagement() {
   const filesPerPage = 5;
   const lastIndex = currentPage * filesPerPage;
   const firstIndex = lastIndex - filesPerPage;
-  const currentFiles = leads.slice(firstIndex, lastIndex);
-  const totalPages = Math.ceil(leads.length / filesPerPage);
+  const currentFiles = leaddetails?.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(leaddetails.length / filesPerPage);
 
   const [active, setActive] = useState(0);
-  const[openlead, setOpenlead]=useState(false);
+  const [openlead, setOpenlead] = useState(false);
 
   const buttons = ["All", "Hot", "Warm", "Cold"];
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -145,7 +156,7 @@ export default function LeadManagement() {
 
 
             <button
-              onClick={() =>setOpenlead(true)}
+              onClick={() => setOpenlead(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
             >
               <Plus size={16} />
@@ -242,38 +253,44 @@ export default function LeadManagement() {
 
               <tbody>
 
-                {currentFiles.map((l, i) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-10">
+                      <LoadingPage />
+                    </td>
+                  </tr>
+                ) : (currentFiles.map((l, i) => (
                   <tr key={i} className="border-t">
 
                     <td className="p-3">
-                      <p className="font-medium">{l.name}</p>
-                      <p className="text-xs text-gray-400">{l.company}</p>
+                      <p className="font-medium">{l.name || "John Doe"}</p>
+                      <p className="text-xs text-gray-400">{l.company || "ABC Corp"}</p>
                     </td>
 
                     <td>
                       <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
-                        {l.status}
+                        {l.status || "New"}
                       </span>
                     </td>
 
                     <td>
                       <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded text-xs">
-                        {l.temp}
+                        {l.temp || "Low"}
                       </span>
                     </td>
 
-                    <td>{l.budget}</td>
+                    <td>{l.budget || "1,20,00"}</td>
 
                     <td>
                       <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                        {l.source}
+                        {l.source || "LinkedIn"}
                       </span>
                     </td>
 
-                    <td>{l.follow}</td>
+                    <td>{l.follow || "Not Set"}</td>
 
                   </tr>
-                ))}
+                )))}
 
               </tbody>
 
@@ -292,54 +309,11 @@ export default function LeadManagement() {
 
       </div>
       {/**ADD LEADS */}
-      <AnimatePresence>
-
-        {openlead && (
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
-          >
-
-            {/* Modal */}
-
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 100,
-                scale: 0.9
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1
-              }}
-              exit={{
-                opacity: 0,
-                y: 100,
-                scale: 0.9
-              }}
-              transition={{
-                duration: .4
-              }}
-
-              className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
-            >
-
-              <CreateLead 
-              onClose={() => setOpenlead(false)}
-              />
-
-            </motion.div>
-
-          </motion.div>
-
-        )}
-
-      </AnimatePresence>
+      {openlead && (
+        <AnimateModals>
+          <CreateLead onClose={() => setOpenlead(false)} />
+        </AnimateModals>
+      )}
     </div>
   );
 }

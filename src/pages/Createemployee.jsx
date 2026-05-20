@@ -27,10 +27,13 @@ import {
     Users,
     Activity,
     Calendar,
+    Phone,
+    Mail,
+    Locate,
     X
 } from 'lucide-react';
 
-export default function Createinvoice({ onClose }) {
+export default function Createemployee({ onClose }) {
 
     const navigate =
         useNavigate();
@@ -168,14 +171,14 @@ export default function Createinvoice({ onClose }) {
             </div>
 
             <InputField
-                label="Client Name"
-                placeholder="Enter the Client name..."
+                label="Employee Name"
+                placeholder="Enter the Employee name..."
             />
 
             <div className="mt-5">
                 <InputField
-                    label="Company Name"
-                    placeholder="Enter the company name"
+                    label="Employee Role"
+                    placeholder="Enter the Employee role"
                 />
 
 
@@ -184,17 +187,15 @@ export default function Createinvoice({ onClose }) {
             <div className="grid md:grid-cols-2 gap-5 mt-5">
 
                 <InputField
-                    label="Issued Date"
-                    placeholder="0000-00-00"
-                    Icon={Users}
-                    type='date'
+                    label="Contact Number"
+                    placeholder="Enter the Employee contact number"
+                    Icon={Phone}
                 />
 
                 <InputField
-                    label="Due Date"
-                    placeholder="0000-00-00"
-                    Icon={Users}
-                    type='date'
+                    label="Email"
+                    placeholder="Enter the Employee email"
+                    Icon={Mail}
                 />
 
             </div>
@@ -202,20 +203,21 @@ export default function Createinvoice({ onClose }) {
             <div className="grid md:grid-cols-2 gap-5 mt-5">
 
                 <InputField
-                    label="Budget"
-                    placeholder="INR 0.000"
-                    Icon={Activity}
+                    label="Location"
+                    placeholder="Enter the Employee location"
+                    Icon={Locate}
                 />
 
                 <InputField
-                    label="Status"
-                    placeholder="paid"
+                    label="Join Date"
+                    placeholder="0000-00-00"
                     Icon={Calendar}
+                    type='date'
                 />
 
             </div>
             <label className="font-bold text-[#0b2b57] mt-2">
-                Payment Description
+                Employee Description
             </label>
 
             <textarea
@@ -230,7 +232,7 @@ export default function Createinvoice({ onClose }) {
 
                 <button className="flex-1 bg-blue-700 text-white rounded-xl hover:bg-blue-600">
 
-                    + Add INVOICE
+                    + Add Employee
 
                 </button>
 

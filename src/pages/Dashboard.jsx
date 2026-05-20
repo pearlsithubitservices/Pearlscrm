@@ -45,12 +45,13 @@ export default function Dashboard() {
       recentLeads: [],
       todayTasks: [],
     });
+    
 
-    console.log(dashboardData);
+  console.log(dashboardData);
 
   //Skeleton
 
- useEffect(() => {
+  useEffect(() => {
 
     if (!sessionStorage.getItem("loaded")) {
 
@@ -71,7 +72,9 @@ export default function Dashboard() {
   }, []);
 
 
-
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
 
   //FETCH DASHBOARD
   const fetchDashboard =
@@ -96,7 +99,7 @@ export default function Dashboard() {
       }
 
     };
-    
+
   const stats = [
     {
       title: 'Total Leads',
@@ -146,7 +149,7 @@ export default function Dashboard() {
   const tasks =
     dashboardData?.todayTasks || [];
 
-  const [open, setOpen]=useState(false);
+  const [open, setOpen] = useState(false);
 
 
 
@@ -211,7 +214,7 @@ export default function Dashboard() {
 
               <motion.div
                 key={i}
-                whileHover={{scale:1.03}}
+                whileHover={{ scale: 1.03 }}
                 className={"bg-white rounded-xl p-1 h-30 border border-gray-300"}
               >
 
@@ -253,66 +256,59 @@ export default function Dashboard() {
         {/**Employee section */}
 
         <Employeecomp />
-
-
-
-        {/* EMPLOYEE SECTION */}
-
-
-
       </div>
       )
       }
 
       {/**ADD LEADS */}
-      <AnimatePresence>
-      
-              {open && (
-      
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-      
-                  className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
-                >
-      
-                  {/* Modal */}
-      
-                  <motion.div
-                    initial={{
-                      opacity: 0,
-                      y: 100,
-                      scale: 0.9
-                    }}
-                    animate={{
-                      opacity: 1,
-                      y: 0,
-                      scale: 1
-                    }}
-                    exit={{
-                      opacity: 0,
-                      y: 100,
-                      scale: 0.9
-                    }}
-                    transition={{
-                      duration: .4
-                    }}
-      
-                    className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
-                  >
-      
-                    <CreateLead 
-                    onClose={() => setOpen(false)}
-                    />
-      
-                  </motion.div>
-      
-                </motion.div>
-      
-              )}
-      
-            </AnimatePresence>
+
+
+      {open && (
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
+        >
+
+          {/* Modal */}
+
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 100,
+              scale: 0.9
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1
+            }}
+            exit={{
+              opacity: 0,
+              y: 100,
+              scale: 0.9
+            }}
+            transition={{
+              duration: .4
+            }}
+
+            className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
+          >
+
+            <CreateLead
+              onClose={() => setOpen(false)}
+            />
+
+          </motion.div>
+
+        </motion.div>
+
+      )}
+
+
 
     </AnimatePresence>
   );

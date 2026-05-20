@@ -40,42 +40,74 @@ import { useNavigate } from 'react-router-dom';
 
 import * as XLSX from 'xlsx';
 import CreateProjects from './CreateProjects.jsx'
+import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
+import LoadingPage from '../components/Dashboard/Loading.jsx';
 
 
 export default function ProjectManagement() {
+
+
+  //GET ALL PROJECTS
+
+  useEffect(() => {
+    fetchProjects();
+
+  }, []);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/projects");
+      const data = await response.json();
+      setProject(data);
+    } catch (error) {
+      console.log(error);
+    }
+    finally{
+      setLoading(false);
+    }
+  };
+
+  const [project, setProject] = useState([]);
+  console.log(project);
 
   const [active, setActive] = useState(0);
 
   const buttons = ["All", "on Track", "At Risk"];
 
-  const [open, setOpen]=useState(false);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const stats = [
     {
       title: "Total projects",
-      value: "50",
+      value: project.length,
       icon: Users,
       color: "text-blue-600",
       bg: "bg-blue-50"
     },
     {
       title: "onTrack",
-      value: "48",
+      value: project.filter((p) => p.status.toLowerCase() === "inprogress").length,
       icon: TrendingUp,
       color: "text-green-600",
       bg: "bg-green-50"
     },
     {
       title: "At Risk",
-      value: "12",
+      value: project.filter((p) => p.dueDate < new Date()).length,
       icon: AlertTriangle,
       color: "text-red-600",
       bg: "bg-red-50"
     },
     {
       title: "Avg Progress",
-      value: "24%",
-      icon: LoaderCircle,
+      value:
+        (
+          project.filter(
+            (p) => p.status.toLowerCase() === "completed"
+          ).length / project.length
+        ) * 100, icon: LoaderCircle,
       color: "text-purple-600",
       bg: "bg-purple-50"
     }
@@ -217,14 +249,16 @@ export default function ProjectManagement() {
         </div>
 
         {/* PROJECT CARDS */}
-        <motion.div
+        {loading? <div className='h-screen w-full'>
+          <LoadingPage/>
+        </div> : <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4">
 
-          {projects.map((p, i) => (
+          {project.map((p) => (
             <div
-              key={i}
+              key={p.id}
               className="bg-white border border-black/10 p-5 rounded"
             >
 
@@ -233,21 +267,21 @@ export default function ProjectManagement() {
 
                 <div>
                   <h3 className="text-lg font-bold text-[#0b2b57]">
-                    {p.name}
+                    Company Title: {p.title}
                   </h3>
                   <p className="text-gray-500 text-sm">
-                    {p.company}
+                    Company Name: {p.company || "No Company"}
                   </p>
                 </div>
 
                 <div className='flex flex-col items-center'>
                   <div className="flex gap-2">
-                    <span className="bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded">
+                    <span className={`bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded ${p.status.toLowerCase() === "pending" ? "bg-yellow-100 text-yellow-600" : p.status.toLowerCase() === "in progress" ? "bg-blue-100 text-blue-600" : p.status.toLowerCase() === "completed" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600"}`} >
                       {p.status}
                     </span>
 
                     <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
-                      {p.type}
+                      {p.dueDate? p.dueDate < new Date() ? "At Risk" : "On Track" : "No" }
                     </span>
                   </div>
                   <div className='text-sm text-gray-400 '><p>Assigned by: Ragavi</p></div>
@@ -269,7 +303,7 @@ export default function ProjectManagement() {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{
-                        width: "60%",
+                        width: `${p.progress}%`,
                       }}
                       transition={{ duration: 1 }}
                       className="h-full bg-blue-500 rounded-full"
@@ -300,11 +334,11 @@ export default function ProjectManagement() {
 
                   <div className="flex -space-x-3">
 
-                    {["RK", "VL", "LT"].map((item, index) => (
+                    {p.members?.map((item, index) => (
 
                       <div
                         key={index}
-                        className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold border-4 border-white ${index === 0
+                        className={`w-14 h-14 rounded-full flex items-center justify-center text-[12px] text-white font-bold border-4 border-white ${index === 0
                           ? "bg-purple-800"
                           : index === 1
                             ? "bg-green-500"
@@ -323,7 +357,7 @@ export default function ProjectManagement() {
 
                 <h1 className="text-md lg:text-lg">
 
-                  <div className='flex items-center font-bold text-[#2563a9]'><Calendar size={18} className='text-[#0b2b57]' /><p>May 12</p></div>
+                  <div className='flex items-center font-bold text-[#2563a9]'><Calendar size={18} className='text-[#0b2b57]' /><p>{p.dueDate?new Date(p.dueDate).toLocaleDateString() : "NO DueDate"}</p></div>
 
                 </h1>
 
@@ -332,58 +366,17 @@ export default function ProjectManagement() {
             </div>
           ))}
 
-        </motion.div>
+        </motion.div>}
 
       </div>
       {/**ADD PROJECTS */}
-      <AnimatePresence>
+      {open && (
 
-        {open && (
+        <AnimateModals>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
-          >
-
-            {/* Modal */}
-
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 100,
-                scale: 0.9
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1
-              }}
-              exit={{
-                opacity: 0,
-                y: 100,
-                scale: 0.9
-              }}
-              transition={{
-                duration: .4
-              }}
-
-              className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
-            >
-
-              <CreateProjects 
-              onClose={()=>setOpen(false)}
-              />
-
-            </motion.div>
-
-          </motion.div>
-
-        )}
-
-      </AnimatePresence>
+          <CreateProjects onClose={() => setOpen(false)} />
+        </AnimateModals>
+      )}
     </div>
   );
 

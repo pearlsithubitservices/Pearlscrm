@@ -33,10 +33,25 @@ import Pagination from '../components/Pagination';
 import LoadingPage from '../components/Dashboard/Loading';
 import CreateTask from './createTask.jsx'
 import { AnimatePresence, motion } from "framer-motion";
+import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
+import useTaskfilter from '../Hooks/useTaskfilter.js'
 
 export default function Tasks() {
   const [tasks, setTasks] =
     useState([]);
+
+  const [search, setSearch] =
+    useState('');
+
+  const [active, setActive] = useState("All");
+  console.log(active);
+  const buttons = ["All", "Hot", "Warm", "Cold"];
+  const q = search.toLowerCase();
+  const selectedactive = buttons[active];
+
+const filterdata=useTaskfilter(tasks,search,active);
+
+
 
 
   const [loading, setLoading] = useState(true);
@@ -44,24 +59,23 @@ export default function Tasks() {
   const filesPerPage = 5;
   const lastIndex = currentPage * filesPerPage;
   const firstIndex = lastIndex - filesPerPage;
-  const currentFiles = tasks.slice(firstIndex, lastIndex);
-  const totalPages = Math.ceil(tasks.length / filesPerPage);
+  const currentFiles = filterdata.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(filterdata.length / filesPerPage);
 
 
   const today = new Date();
 
-  const [active, setActive] = useState(0);
 
-  const buttons = ["All", "High", "Medium", "Low"];
+
+
 
   const navigate = useNavigate();
 
-  const [open, setOpen]=useState(false);
+  const [open, setOpen] = useState(false);
 
 
   console.log(tasks);
-  const [search, setSearch] =
-    useState('');
+
   const [employees, setEmployees] =
     useState([]);
 
@@ -125,7 +139,7 @@ export default function Tasks() {
           console.log(error);
 
         }
-        finally{
+        finally {
           setLoading(false);             //SetLoading false stop loading
         }
 
@@ -137,56 +151,34 @@ export default function Tasks() {
 
   }, []);
 
- 
+  //SEARCH FILTER
 
-  const getStatusStyle = (
-    status
-  ) => {
 
-    switch (status) {
 
-      case 'Completed':
+  //STATS
 
-        return 'bg-green-100 text-green-700';
+  const inprogress = tasks.filter((task) =>
+    task.status.toLowerCase() === "in progress"
+  );
+  const completed = tasks.filter((task) =>
+    task.status.toLowerCase() === "completed"
+  );
 
-      case 'In Progress':
-
-        return 'bg-blue-100 text-blue-700';
-
-      default:
-
-        return 'bg-orange-100 text-orange-700';
-
-    }
-
-  };
-
-  const filteredTasks =
-    tasks.filter((task) =>
-
-      task.company
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
-
-      task.assignedEmployee
-        ?.toLowerCase()
-        .includes(search.toLowerCase())
-        .includes(
-          search.toLowerCase()
-        )
-
-    );
+  const overdue = tasks.filter((task) =>
+    new Date(task.dueDate) < new Date()
+  );
 
   const stats = [
-    { icon: User2, label: "Total Tasks", value: 50 },
-    { icon: TrendingUp, label: "In Progress", value: 48 },
-    { icon: CheckCheck, label: "Completed", value: 12 },
-    { icon: CalendarArrowDown, label: "Overdue", value: 24 },
+    { icon: User2, label: "Total Tasks", value: tasks.length },
+    { icon: TrendingUp, label: "In Progress", value: inprogress.length },
+    { icon: CheckCheck, label: "Completed", value: completed.length },
+    { icon: CalendarArrowDown, label: "Overdue", value: overdue.length },
   ];
 
-
-
-
+  //SET CURRENT PRIORITY
+  function handleactiveindex(activeindex) {
+    setActive(activeindex);
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -256,9 +248,9 @@ export default function Tasks() {
               {buttons.map((btn, index) => (
                 <button
                   key={index}
-                  onClick={() => setActive(index)}
+                  onClick={() => handleactiveindex(btn)}
                   className={`px-4  rounded-xl font-medium transition-all
-                      ${active === index
+                      ${active === btn
                       ? "bg-[#2563a9] text-white"
                       : "text-gray-400  hover:bg-[#2563a9] hover:text-white"
                     }`}
@@ -271,6 +263,7 @@ export default function Tasks() {
             <div className="flex items-center border bg-gray-200 rounded px-3 py-2 w-full md:w-80">
               <Search size={16} className="text-black" />
               <input
+                onChange={(e) => setSearch(e.target.value)}
                 className="ml-2 w-full outline-none text-sm bg-gray-200"
                 placeholder="Search Lead.."
               />
@@ -310,8 +303,7 @@ export default function Tasks() {
                     <div>
 
                       <h1 className="text-sm md:text-xl font-bold text-[#082f57]">
-                        {task.assignedEmployee
-                        }
+                        {task.assignedTo}
                       </h1>
 
                       <p className="mt-1 text-lg md:text-xl">
@@ -328,7 +320,8 @@ export default function Tasks() {
 
                         <div
                           className={`
-                          ${task.statusColor}
+                          ${task.status.toLowerCase() === "pending" ? "bg-red-200 text-red-600" : task.status.toLowerCase() === "in progress" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
+                          
                           px-4
                           py-2
                           rounded-full
@@ -337,27 +330,27 @@ export default function Tasks() {
                           text-blue-500
                         `}
                         >
-                          ● {task.status}
+                          ● {task.status || "Pending"}
                         </div>
 
                         <div
                           className={`
-                          ${task.priorityColor}
+                          ${task.priority.toLowerCase() === "urgent" ? "bg-red-200 text-red-600" : task.priority.toLowerCase() === "medium" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
                           px-4
                           py-2
                           rounded-full
                           text-sm
-                          bg-red-200
-                          text-red-600
+                         
                         `}
                         >
-                          ● {task.priority}
+                          ● {task.priority || "Medium"}
                         </div>
 
                       </div>
 
                       <p className="text-gray-500 text-md mr-2">
-                        Assigned by : Ragavi
+                        Assigned by :{task.assignedEmployee || " Ragavi"}
+
                       </p>
 
                     </div>
@@ -398,7 +391,7 @@ export default function Tasks() {
                     <div
                       className={`
                       flex items-center gap-2 text-lg
-                      ${task.dueDate > today
+                      ${new Date(task.dueDate) < new Date(today)
                           ? "text-orange-500"
                           : "text-gray-500"
                         }
@@ -442,54 +435,11 @@ export default function Tasks() {
         </div>
       </div>
       {/**ADD TASKS */}
-      <AnimatePresence>
-
-                {open && (
-
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
-                    >
-
-                        {/* Modal */}
-
-                        <motion.div
-                            initial={{
-                                opacity: 0,
-                                y: 100,
-                                scale: 0.9
-                            }}
-                            animate={{
-                                opacity: 1,
-                                y: 0,
-                                scale: 1
-                            }}
-                            exit={{
-                                opacity: 0,
-                                y: 100,
-                                scale: 0.9
-                            }}
-                            transition={{
-                                duration: .4
-                            }}
-
-                            className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
-                        >
-
-                            <CreateTask
-                                onClose={() => setOpen(false)}
-                            />
-
-                        </motion.div>
-
-                    </motion.div>
-
-                )}
-
-            </AnimatePresence>
+      {open && (
+        <AnimateModals>
+          <CreateTask onClose={() => setOpen(false)} />
+        </AnimateModals>
+      )}
     </div>
   );
 

@@ -35,34 +35,42 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 import CreateClients from './CreateClients.jsx'
-
+import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
+import useClients from "../Hooks/useclients.js";
+import { formatNumber } from '../Utils/formatNumber.js'
+import useTaskfilter from '../Hooks/useTaskfilter.js';
 
 export default function ClientManagement() {
 
+    const { clients, loading, setClients } = useClients();
+    console.log(clients);
+
     const [active, setActive] = useState(0);
 
-    const buttons = ["All", "Hot", "Enterprises"];
+    const buttons = ["All", "Low", "Medium", "High"];
+    const [search, setSearch] = useState("");
 
     const [open, setOpen] = useState(false);
+
 
     const stats = [
         {
             title: "Total Clients",
-            value: "50",
+            value: clients.length,
             icon: Users,
             color: "text-blue-600",
             bg: "bg-blue-50"
         },
         {
             title: "Portfolio Value",
-            value: "$548",
+            value: formatNumber(clients.reduce((acc, client) => acc + Number(client.budget), 0)),
             icon: Briefcase,
             color: "text-green-600",
             bg: "bg-green-50"
         },
         {
             title: "Overdue Invoice",
-            value: "12",
+            value: clients.filter((client) => (client.dueDate ? new Date(client.dueDate) < new Date() : false)).length,
             icon: AlertCircle,
             color: "text-red-600",
             bg: "bg-red-50"
@@ -76,31 +84,21 @@ export default function ClientManagement() {
         }
     ];
 
-    const projects = [
-        {
-            name: "TechFlow CRM Implementation",
-            company: "TechFlow Solutions",
-            status: "Active",
-            type: "Enterprise",
-            paid: "₹68,400",
-            pending: "₹30,000",
-            health: "88%",
-            contract: "₹1,20,000"
-        },
-        {
-            name: "TechFlow CRM Implementation",
-            company: "TechFlow Solutions",
-            status: "Active",
-            type: "Prospect",
-            paid: "₹68,400",
-            pending: "₹30,000",
-            health: "88%",
-            contract: "₹1,20,000"
-        }
-    ];
+    const filteredClients=useTaskfilter(clients, search, buttons[active]);
+/*
+    const q = search.toLowerCase();
+    const selectedactive = buttons[active];
 
+    const filteredClients = clients.filter((client) => {
+        const searchedclients =
+            client.companyName?.toLowerCase().includes(q) ||
+            client.headquarters?.toLowerCase().includes(q) ||
+            client.priority?.toLowerCase().includes(q) ||
+            client.status?.toLowerCase().includes(q)
 
-
+        const filter = selectedactive.toLowerCase() === "all" ? true : client.priority.toLowerCase() === selectedactive.toLowerCase();
+        return searchedclients && filter;
+    });*/
 
     return (
         <div className="text-black">
@@ -208,7 +206,8 @@ export default function ClientManagement() {
                         <Search size={16} className="text-black" />
 
                         <input
-                            placeholder="Search project..."
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search by company, location, priority, status..."
                             className="w-full outline-none text-sm bg-gray-200"
                         />
 
@@ -222,9 +221,9 @@ export default function ClientManagement() {
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-4">
 
-                    {projects.map((p, i) => (
+                    {filteredClients?.map((p) => (
                         <div
-                            key={i}
+                            key={p._id}
                             className="bg-white border border-black/10 p-5 rounded"
                         >
 
@@ -233,21 +232,21 @@ export default function ClientManagement() {
 
                                 <div>
                                     <h3 className="text-lg font-bold text-[#0b2b57]">
-                                        {p.name}
+                                        {p.companyName}
                                     </h3>
                                     <p className="text-gray-500 text-sm">
-                                        {p.company}
+                                        {p.headquarters}
                                     </p>
                                 </div>
 
                                 <div className='flex flex-col items-center'>
                                     <div className="flex gap-2">
                                         <span className="bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded">
-                                            {p.status}
+                                            {p.status || "pending"}
                                         </span>
 
                                         <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
-                                            {p.type}
+                                            {p.priority || "No Type"}
                                         </span>
                                     </div>
                                     <div className='text-sm text-gray-400 '><p>Renewal Dec 2024</p></div>
@@ -260,12 +259,12 @@ export default function ClientManagement() {
 
                                 <div>
                                     <p className="text-gray-500">PAID</p>
-                                    <p className="font-semibold text-green-600">{p.paid}</p>
+                                    <p className="font-semibold text-green-600">{p.paid || "300000"}</p>
                                 </div>
 
                                 <div>
                                     <p className="text-gray-500">PENDING</p>
-                                    <p className="font-semibold text-red-500">{p.pending}</p>
+                                    <p className="font-semibold text-red-500">{p.pending || "30000"}</p>
                                 </div>
 
                                 <div>
@@ -275,7 +274,7 @@ export default function ClientManagement() {
 
                                 <div>
                                     <p className="text-gray-500">HEALTH</p>
-                                    <p className="font-semibold text-green-600">{p.health}</p>
+                                    <p className="font-semibold text-green-600">{p.health || "23%"}</p>
                                 </div>
 
                             </div>
@@ -292,18 +291,18 @@ export default function ClientManagement() {
 
                                     <div className="flex -space-x-3">
 
-                                        {["RK", "VL", "LT"].map((item, index) => (
+                                        {p.managers?.map((item, index) => (
 
                                             <div
                                                 key={index}
-                                                className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold border-4 border-white ${index === 0
+                                                className={`w-14 h-14 rounded-full text-[12px] flex items-center justify-center text-white font-bold border-4 border-white ${index === 0
                                                     ? "bg-purple-800"
                                                     : index === 1
                                                         ? "bg-green-500"
                                                         : "bg-purple-600"
                                                     }
-                          `}
-                                            >
+                                                `}>
+
                                                 {item}
                                             </div>
 
@@ -317,8 +316,8 @@ export default function ClientManagement() {
 
                                     Contract Value :
                                     <span className="font-bold text-lg text-[#2563a9]">
-                                        {" "}
-                                        ₹ 1,20,000
+                                        {p.budget}
+
                                     </span>
 
                                 </h1>
@@ -331,54 +330,11 @@ export default function ClientManagement() {
                 </motion.div>
 
             </div>
-            <AnimatePresence>
-
-                {open && (
-
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
-                    >
-
-                        {/* Modal */}
-
-                        <motion.div
-                            initial={{
-                                opacity: 0,
-                                y: 100,
-                                scale: 0.9
-                            }}
-                            animate={{
-                                opacity: 1,
-                                y: 0,
-                                scale: 1
-                            }}
-                            exit={{
-                                opacity: 0,
-                                y: 100,
-                                scale: 0.9
-                            }}
-                            transition={{
-                                duration: .4
-                            }}
-
-                            className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
-                        >
-
-                            <CreateClients
-                                onClose={() => setOpen(false)}
-                            />
-
-                        </motion.div>
-
-                    </motion.div>
-
-                )}
-
-            </AnimatePresence>
+            {open && (
+                <AnimateModals>
+                    <CreateClients onClose={() => setOpen(false)} />
+                </AnimateModals>
+            )}
 
         </div>
     );

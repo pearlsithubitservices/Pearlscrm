@@ -15,6 +15,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import AnimateModals from "../components/Dashboard/AnimateModals.jsx";
 
 export default function Reports() {
   const [loading, setLoading] = useState(
@@ -207,55 +208,12 @@ export default function Reports() {
 
       {/* Modal */}
 
-      <AnimatePresence>
+     { open && (
+      <AnimateModals>
 
-        {open && (
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4"
-          >
-
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 100,
-                scale: 0.9
-              }}
-
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1
-              }}
-
-              exit={{
-                opacity: 0,
-                y: 100,
-                scale: 0.9
-              }}
-
-              transition={{
-                duration: 0.4
-              }}
-
-              className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar"
-            >
-
-              <Createinvoice
-                onClose={() => setOpen(false)}
-              />
-
-            </motion.div>
-
-          </motion.div>
-
-        )}
-
-      </AnimatePresence>
+        <Createinvoice onClose={() => setOpen(false)} />
+      </AnimateModals>
+     )}
     </>
   );
 }

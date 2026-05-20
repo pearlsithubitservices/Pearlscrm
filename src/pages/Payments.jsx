@@ -34,6 +34,8 @@ import { Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 import { motion, AnimatePresence } from "framer-motion";
 import Pagination from "../components/Pagination";
 import CreateLead from "./CreateLead";
+import AnimateModals from "../components/Dashboard/AnimateModals";
+import Createinvoice from "./Createinvoice";
 
 
 export default function LeadManagement() {
@@ -60,7 +62,7 @@ export default function LeadManagement() {
   const totalPages = Math.ceil(leads.length / filesPerPage);
 
   const [active, setActive] = useState(0);
-  const [openlead, setOpenlead] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const buttons = ["All", "Paid", "Pending", "Partial", "Overdue"];
 
@@ -117,7 +119,7 @@ export default function LeadManagement() {
 
 
             <button
-              onClick={() => setOpenlead(true)}
+              onClick={() => setOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
             >
               <Plus size={16} />
@@ -351,21 +353,21 @@ export default function LeadManagement() {
                 amout: "47,000",
                 days: "4"
               },
-               {
+              {
                 profile: "Rk",
                 clientname: "Rajesh",
                 companyname: "tidelpark",
                 amout: "47,000",
                 days: "4"
               },
-               {
+              {
                 profile: "Rk",
                 clientname: "Rajesh",
                 companyname: "tidelpark",
                 amout: "47,000",
                 days: "4"
               },
-               {
+              {
                 profile: "Rk",
                 clientname: "Rajesh",
                 companyname: "tidelpark",
@@ -374,8 +376,8 @@ export default function LeadManagement() {
               },
             ].map((ev, i) => (
               <div
-              key={i}
-              className="flex items-center justify-between gap-10 mb-4">
+                key={i}
+                className="flex items-center justify-between gap-10 mb-4">
                 <div className="rounded-full w-10 h-10 bg-rose-200 items-center p-2 font-bold text-xl"> {ev.profile}</div>
                 <div>
                   <h1 className="text-black font-bold tracking-wide">{ev.clientname}</h1>
@@ -390,59 +392,17 @@ export default function LeadManagement() {
 
           </div>
 
-          
+
         </div>
 
       </div>
       {/**ADD LEADS */}
-      <AnimatePresence>
+      {open && (
+        <AnimateModals>
+          <Createinvoice onClose={() => setOpen(false)} />
 
-        {openlead && (
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
-          >
-
-            {/* Modal */}
-
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 100,
-                scale: 0.9
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1
-              }}
-              exit={{
-                opacity: 0,
-                y: 100,
-                scale: 0.9
-              }}
-              transition={{
-                duration: .4
-              }}
-
-              className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
-            >
-
-              <CreateLead
-                onClose={() => setOpenlead(false)}
-              />
-
-            </motion.div>
-
-          </motion.div>
-
-        )}
-
-      </AnimatePresence>
+        </AnimateModals>
+      )}
     </div>
   );
 }

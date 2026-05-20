@@ -224,7 +224,7 @@ const Hotleads = () => {
                     </div>
                     <div className=' flex flex-col  p-2 rounded-xl absolute right-2 top-0  '>
                         <div className='flex justify-between  bg-white w-[300px] rounded-xl p-2 '>
-                            <h1 className='text-blue-700 font-bold text-xl tracking-wide'>LEAD FUNNEL</h1>
+                            <h1 className='text-blue-700 font-bold text-xl tracking-wide'>Top Performers</h1>
                             <button className='text-blue-700 underline tracking-wide cursor-pointer'>Full Report</button>
 
                         </div>

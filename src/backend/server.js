@@ -10,6 +10,10 @@ const leadRoutes = require("./routes/leadRoutes");
 const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const ProjectsRoutes = require("./routes/ProjectsRoutes");
+const ClientRoutes = require("./routes/ClientRoutes");
+
+
 
 connectDB();
 
@@ -35,7 +39,9 @@ app.use("/api/leads", leadRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/followups", followupRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-
+app.use("/api/projects", ProjectsRoutes);
+app.use("/api/clients", ClientRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
+  console.log("Connected to database");
 });

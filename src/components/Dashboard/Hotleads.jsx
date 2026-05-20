@@ -152,7 +152,7 @@ const Hotleads = () => {
                                         </tbody>)
                                     : (<tbody className='border-r text-sm '>
 
-                                        {leads.slice(0, 5).map((lead) => (
+                                        {leads .slice(0, 5).map((lead) => (
 
                                             <tr
                                                 key={lead._id}
