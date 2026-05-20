@@ -7,12 +7,9 @@ require('../models/Attendance');
 
 
 // LOGIN
-
 router.post('/login', async (req, res) => {
 
   try {
-
-    console.log(req.body);
 
     const {
       employee_uid,
@@ -27,7 +24,39 @@ router.post('/login', async (req, res) => {
 
     }
 
-    const attendance =
+    // CHECK EXISTING ONLINE SESSION
+
+    let attendance =
+      await Attendance.findOne({
+
+        employee_uid,
+
+        status: {
+          $ne: 'Offline'
+        }
+
+      });
+
+    // IF ALREADY ONLINE
+
+    if (attendance) {
+
+      return res.json({
+
+        success: true,
+
+        attendanceId:
+          attendance._id,
+
+        alreadyLoggedIn: true
+
+      });
+
+    }
+
+    // CREATE NEW SESSION
+
+    attendance =
       await Attendance.create({
 
         employee_uid,
