@@ -57,7 +57,7 @@ import EmployeeLeads from './pages/employee/EmployeeLeads';
 
 import EmployeeFollowups from './pages/employee/EmployeeFollowups';
 import Attendance from './pages/Attendance';
-import AttendanceManagement from './pages/admin/AttendanceManagement';
+import AttendanceManagement from './pages/Admin/AttendanceManagement';
 
 // PLACEHOLDER
 
