@@ -56,6 +56,8 @@ import EmployeeTasks from './pages/employee/EmployeeTasks';
 import EmployeeLeads from './pages/employee/EmployeeLeads';
 
 import EmployeeFollowups from './pages/employee/EmployeeFollowups';
+import Attendance from './pages/Attendance';
+import AttendanceManagement from './pages/admin/AttendanceManagement';
 
 // PLACEHOLDER
 
@@ -121,6 +123,14 @@ export default function App() {
                 path="/leads"
                 element={<LeadManagement />}
               />
+              <Route
+  path="/attendance"
+  element={<Attendance />}
+/>
+<Route
+  path="/attendance-management"
+  element={<AttendanceManagement />}
+/>
 
               <Route
                 path="/tasks"

@@ -17,6 +17,7 @@ import {
 import {
   auth
 } from '../../lib/firebase';
+import { Clock3 } from 'lucide-react';
 
 export default function EmployeeSidebar({
   currentUser
@@ -72,6 +73,18 @@ export default function EmployeeSidebar({
             Tasks
 
           </button>
+          <button
+  onClick={() =>
+    navigate('/attendance')
+  }
+  className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/5 hover:bg-purple-600 transition-all"
+>
+
+  <Clock3 className="w-5 h-5" />
+
+  Attendance
+
+</button>
 
           <button
             onClick={() =>

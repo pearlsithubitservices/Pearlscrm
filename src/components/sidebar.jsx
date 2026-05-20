@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
+import { Clock3 } from 'lucide-react';
 import { useIndustry } from '../context/IndustryContext';
 import { motion } from 'framer-motion';
 
@@ -56,6 +57,11 @@ export default function Sidebar() {
     path: '/employees',
     icon: Users,
   },
+{
+  name: 'Attendance Management',
+  icon: Clock3,
+  path: '/attendance-management',
+},
 ];
 
 const manageItems = [
