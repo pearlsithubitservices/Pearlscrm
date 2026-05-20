@@ -11,7 +11,7 @@ const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const attendanceRoutes =
-require("./routes/attendanceRoutes");
+require("./routes/AttendanceRoutes");
 connectDB();
 
 const app = express();
