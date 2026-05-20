@@ -19,7 +19,7 @@ app.use(
   cors({
     origin: [
       'http://localhost:5173',
-      'https://yourfrontend.vercel.app'
+      'https://pearlscrm.vercel.app'
     ],
     methods: [
       'GET',
