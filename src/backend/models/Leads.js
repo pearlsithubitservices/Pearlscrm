@@ -54,10 +54,26 @@ const leadSchema =
         type: String,
         default: "",
       },
+      assignedEmployee: {
+        type:String,
+        default: "",
+      },
 
       notes: {
         type: String,
       },
+
+
+      followUpCount: {
+        type: Number,
+        default: 0,
+      },
+
+      priority: {
+        type: String,
+        default: "Cold",
+      }
+
 
     },
     {

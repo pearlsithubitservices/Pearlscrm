@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-
+import logo from '../assets/logo.png';
 import {
   BarChart3,
   Users,
@@ -13,6 +13,11 @@ import {
   CalendarDays,
   GraduationCap,
   BookOpen,
+  CircleUser,
+  MessageSquare,
+  Bell,
+  Mail,
+  FolderOpen,
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -51,30 +56,57 @@ export default function Sidebar() {
     icon: CalendarDays,
     path: '/follow-ups',
   },
-
-  {
-    name: 'Employees',
-    path: '/employees',
-    icon: Users,
+   {
+    name: 'Projects',
+    icon: FolderOpen,
+    path: '/projects',
   },
 {
   name: 'Attendance Management',
   icon: Clock3,
   path: '/attendance-management',
 },
+{
+  name: 'Meetings',
+  icon: CalendarDays,
+  path: '/meetings',
+},
+
+{
+  name: 'Internal Chat',
+  icon: MessageSquare,
+  path: '/chat',
+},
+
+{
+  name: 'Files & Documents',
+  icon: FolderOpen,
+  path: '/files',
+},
+
+{
+  name: 'Analytics',
+  icon: BarChart3,
+  path: '/analytics',
+},
 ];
 
 const manageItems = [
-  {
+  /*{
     name: 'Courses',
     icon: BookOpen,
     path: '/courses',
-  },
+  },*/
 
   {
-    name: 'Students',
-    icon: GraduationCap,
-    path: '/students',
+    name: 'Client Management',
+    icon: CircleUser,
+    path: '/clientmanagement',
+  },
+  {
+    name: 'Employee Management',
+    path: '/employees',
+    icon: Users,
   },
 
   {
@@ -88,34 +120,55 @@ const manageItems = [
     icon: FileText,
     path: '/reports',
   },
+  {
+  name: 'HR Management',
+  icon: UserCircle,
+  path: '/hr-management',
+},
+
+{
+  name: 'Role Management',
+  icon: Briefcase,
+  path: '/roles',
+},
+
+{
+  name: 'Notifications',
+  icon: Bell,
+  path: '/notifications',
+},
+
+{
+  name: 'Email Center',
+  icon: Mail,
+  path: '/email-center',
+},
 ];
 
   return (
 
-    <aside className="w-[250px] min-h-screen bg-[#13132b] text-white flex flex-col justify-between px-6 py-8">
+    <aside className="w-[250px] min-h-screen bg-[#0b2b57] text-white flex flex-col justify-between px-6 py-8 ">
 
       {/* TOP */}
       <div>
 
         {/* LOGO */}
-        <div className="flex items-center gap-3 mb-14">
+        <div className="flex items-center gap-3 mb-8">
 
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
 
-            <span className="font-bold text-lg">
-              🌐
-            </span>
+           <img src={logo} alt='logo' className='w-full h-full rounded-full'/>
 
           </div>
 
-          <h1 className="font-bold text-2xl tracking-wide">
+          <h1 className="font-bold text-l tracking-wide">
             PEARLS IT HUB
           </h1>
 
         </div>
 
         {/* MAIN */}
-        <div className="mb-10">
+        <div className="mb-10 " >
 
           <p className="text-gray-500 text-xs uppercase tracking-[0.2em] mb-5">
             Main
@@ -130,11 +183,11 @@ const manageItems = [
                 to={item.path}
                 className={({ isActive }) =>
                   `
-                  flex items-center gap-3 px-5 py-3 rounded-2xl text-[15px] transition-all duration-300
+                  flex items-center gap-3 px-1 py-3 rounded-xl text-[14px] transition-all duration-300
                   ${
                     isActive
-                      ? 'bg-[#d9d6de] text-[#3a3645] font-semibold'
-                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-[#2563a9] text-white font-semibold'
+                      : 'text-white hover:bg-white/5 hover:text-white'
                   }
                   `
                 }
@@ -168,11 +221,11 @@ const manageItems = [
                 to={item.path}
                 className={({ isActive }) =>
                   `
-                  flex items-center gap-3 px-5 py-3 rounded-2xl text-[15px] transition-all duration-300
+                  flex items-center gap-3 px-1 py-3 rounded-xl text-[15px] transition-all duration-300
                   ${
                     isActive
-                      ? 'bg-[#d9d6de] text-[#3a3645] font-semibold'
-                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-[#2563a9] text-white '
+                      : 'text-white hover:bg-white/5 '
                   }
                   `
                 }
@@ -186,6 +239,20 @@ const manageItems = [
 
             ))}
 
+            {/* LOGOUT */}
+        <button
+          onClick={() => logout()}
+          className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
+        >
+
+          <LogOut className="w-4 h-4 mb-4" />
+
+          <span className="text-sm mb-4 ">
+            Log out
+          </span>
+
+        </button>
+
           </div>
 
         </div>
@@ -196,7 +263,7 @@ const manageItems = [
       <div>
 
         {/* PROFILE CARD */}
-        <div className="bg-gradient-to-r from-[#ff7b7b] to-[#ff3df5] rounded-2xl px-3 py-3 flex items-center gap-3 mb-5">
+        <div className="bg-[#2563a9] rounded px-3 py-3 flex items-center h-12 w-50 gap-3 mb-5">
 
           <img
             src={
@@ -204,7 +271,7 @@ const manageItems = [
               'https://i.pravatar.cc/100'
             }
             alt=""
-            className="w-11 h-11 rounded-xl object-cover"
+            className="w-10 h-10 rounded-full object-cover"
           />
 
           <div className="min-w-0">
@@ -221,19 +288,7 @@ const manageItems = [
 
         </div>
 
-        {/* LOGOUT */}
-        <button
-          onClick={() => logout()}
-          className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition-all px-3"
-        >
-
-          <LogOut className="w-4 h-4" />
-
-          <span className="text-sm">
-            Log out
-          </span>
-
-        </button>
+        
 
       </div>
 

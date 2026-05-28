@@ -9,3 +9,14 @@
     @apply font-sans antialiased text-gray-900 bg-[#FBFBFA];
   }
 }
+
+/* Hide scrollbar */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

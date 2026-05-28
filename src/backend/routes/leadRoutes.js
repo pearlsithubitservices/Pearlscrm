@@ -8,6 +8,7 @@ const Lead =
   require("../models/Leads");
 
 
+
 // CREATE LEAD
 
 router.post(
@@ -15,6 +16,8 @@ router.post(
   async (req, res) => {
 
     try {
+
+
 
       const lead =
         await Lead.create(
@@ -125,6 +128,18 @@ router.post(
 
   }
 );
+router.get("/hot", async (req, res) => {
+  try {
+    const data = await Lead.find({ leadTemp: "Hot" });
 
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+});
 module.exports =
   router;

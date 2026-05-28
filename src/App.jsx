@@ -45,6 +45,8 @@ import TaskDetails from './pages/TaskDetails';
 
 import Login from './pages/Login';
 
+import ClientManagement from './pages/ClientManagement';
+
 // EMPLOYEE
 
 import EmployeeLayout from './layouts/EmployeeLayout';
@@ -58,6 +60,8 @@ import EmployeeLeads from './pages/employee/EmployeeLeads';
 import EmployeeFollowups from './pages/employee/EmployeeFollowups';
 import Attendance from './pages/Attendance';
 import AttendanceManagement from './pages/Admin/AttendanceManagement';
+
+import Reports from './pages/Reports.jsx'
 
 // PLACEHOLDER
 
@@ -151,6 +155,8 @@ export default function App() {
                 path="/clients"
                 element={<Clients />}
               />
+              <Route path="/clientmanagement"
+              element={<ClientManagement/>}/>
 
               <Route
                 path="/payments"
@@ -180,9 +186,7 @@ export default function App() {
               <Route
                 path="/reports"
                 element={
-                  <PlaceholderPage
-                    title="Business Intelligence Reports"
-                  />
+                  <Reports/>
                 }
               />
 
