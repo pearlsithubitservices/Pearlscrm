@@ -12,6 +12,7 @@ const followupRoutes = require("./routes/followupRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const ProjectsRoutes = require("./routes/ProjectsRoutes");
 const ClientRoutes = require("./routes/ClientRoutes");
+const EmployeeRoutes= require('./routes/EmployeeRoutes');
 
 
 
@@ -41,7 +42,13 @@ app.use("/api/followups", followupRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
+app.use("/api/employees", EmployeeRoutes);
+
+
+
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
   console.log("Connected to database");
 });
+
+

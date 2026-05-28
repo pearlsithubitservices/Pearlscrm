@@ -49,7 +49,7 @@ export default function Tasks() {
   const q = search.toLowerCase();
   const selectedactive = buttons[active];
 
-const filterdata=useTaskfilter(tasks,search,active);
+  const filterdata = useTaskfilter(tasks, search, active);
 
 
 
@@ -78,6 +78,7 @@ const filterdata=useTaskfilter(tasks,search,active);
 
   const [employees, setEmployees] =
     useState([]);
+  console.log(employees);
 
   useEffect(() => {
 
@@ -107,7 +108,27 @@ const filterdata=useTaskfilter(tasks,search,active);
 
       );
 
+    /* const fetchTasks = async () => {
 
+      try {   
+        const response=await fetch("http://localhost:5000/api/tasks");
+        const data=await response.json();
+        if(response.ok){
+          setTasks(data);
+          console.log(data);
+          
+        }
+        
+      } catch (error) {
+
+        console.log(error); 
+      }
+      finally {
+        setLoading(false);             //SetLoading false stop loading
+      }
+    };
+
+    fetchTasks();*/
 
     // EMPLOYEES
 
@@ -167,6 +188,8 @@ const filterdata=useTaskfilter(tasks,search,active);
   const overdue = tasks.filter((task) =>
     new Date(task.dueDate) < new Date()
   );
+
+
 
   const stats = [
     { icon: User2, label: "Total Tasks", value: tasks.length },
@@ -250,7 +273,7 @@ const filterdata=useTaskfilter(tasks,search,active);
                   key={index}
                   onClick={() => handleactiveindex(btn)}
                   className={`px-4  rounded-xl font-medium transition-all
-                      ${active === btn
+                        ${active === btn
                       ? "bg-[#2563a9] text-white"
                       : "text-gray-400  hover:bg-[#2563a9] hover:text-white"
                     }`}
@@ -278,150 +301,156 @@ const filterdata=useTaskfilter(tasks,search,active);
               <div className='h-screen '>
                 <LoadingPage />
               </div> :
-              currentFiles?.map((task, index) => (
+              currentFiles?.map((task, index) => {
+                const employeename = employees.find(
+                  (emp) => emp.id === task.assignedTo
+                );
+                console.log(employeename);
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 25 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="
+                    bg-white
+                    border
+                    border-gray-200
+                    rounded-2xl
+                    p-5 md:p-7
+                  "
+                  >
 
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 25 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="
-                  bg-white
-                  border
-                  border-gray-200
-                  rounded-2xl
-                  p-5 md:p-7
-                "
-                >
+                    {/* TOP */}
 
-                  {/* TOP */}
+                    <div className="flex flex-row w-full justify-between lg:flex-row lg:items-center lg:justify-between gap-5">
 
-                  <div className="flex flex-row w-full justify-between lg:flex-row lg:items-start lg:justify-between gap-5">
+                      {/* LEFT */}
 
-                    {/* LEFT */}
+                      <div>
+
+                        <h1 className="text-sm md:text-xl font-bold text-[#082f57]">
+                          {employeename?.name || "Unassigned"}
+                        </h1>
+
+                        <p className="mt-1 text-lg md:text-xl">
+                          {task.title || " Redesign onboarding flow for enterprise clients"}
+                        </p>
+
+                      </div>
+
+                      {/* RIGHT */}
+
+                      <div className="flex flex-col items-start xl:items-end gap-4">
+
+                        <div className="flex items-center gap-3 flex-wrap">
+
+                          <div
+                            className={`
+                            ${task.status.toLowerCase() === "pending" ? "bg-red-200 text-red-600" : task.status.toLowerCase() === "in progress" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
+                            
+                            px-4
+                            py-2
+                            rounded-full
+                            text-sm
+                            bg-blue-100
+                            text-blue-500
+                          `}
+                          >
+                            ● {task.status || "Pending"}
+                          </div>
+
+                          <div
+                            className={`
+                            ${task.priority.toLowerCase() === "hot" ? "bg-red-200 text-red-600" : task.priority.toLowerCase() === "warm" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
+                            px-4
+                            py-2
+                            rounded-full
+                            text-sm
+                          
+                          `}
+                          >
+                            ● {task.priority || "Medium"}
+                          </div>
+
+                        </div>
+                        <div className='overflow-hidden w-[180px]'>
+                          <p className="text-gray-500 text-md mr-2 overflow-hidden ">
+                            Assigned by :{task.assignedEmployee || " Ragavi"}
+
+                          </p>
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                    {/* PROGRESS */}
 
                     <div>
 
-                      <h1 className="text-sm md:text-xl font-bold text-[#082f57]">
-                        {task.assignedTo}
-                      </h1>
+                      <div className="flex flex-col md:flex-row md:items-center gap-5">
 
-                      <p className="mt-1 text-lg md:text-xl">
-                        {task.title || " Redesign onboarding flow for enterprise clients"}
-                      </p>
+                        <h1 className="text-xl text-yellow-600 min-w-fit">
+                          Overall progress
+                        </h1>
 
-                    </div>
+                        <div className="w-[500px] h-2 bg-gray-200 rounded-full overflow-hidden">
 
-                    {/* RIGHT */}
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{
+                              width: "60%",
+                            }}
+                            transition={{ duration: 1 }}
+                            className="h-full bg-blue-500 rounded-full"
+                          />
 
-                    <div className="flex flex-col items-start xl:items-end gap-4">
-
-                      <div className="flex items-center gap-3 flex-wrap">
-
-                        <div
-                          className={`
-                          ${task.status.toLowerCase() === "pending" ? "bg-red-200 text-red-600" : task.status.toLowerCase() === "in progress" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
-                          
-                          px-4
-                          py-2
-                          rounded-full
-                          text-sm
-                          bg-blue-100
-                          text-blue-500
-                        `}
-                        >
-                          ● {task.status || "Pending"}
-                        </div>
-
-                        <div
-                          className={`
-                          ${task.priority.toLowerCase() === "urgent" ? "bg-red-200 text-red-600" : task.priority.toLowerCase() === "medium" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
-                          px-4
-                          py-2
-                          rounded-full
-                          text-sm
-                         
-                        `}
-                        >
-                          ● {task.priority || "Medium"}
                         </div>
 
                       </div>
 
-                      <p className="text-gray-500 text-md mr-2">
-                        Assigned by :{task.assignedEmployee || " Ragavi"}
-
-                      </p>
-
                     </div>
 
-                  </div>
+                    {/* BOTTOM */}
 
-                  {/* PROGRESS */}
+                    <div className="flex flex-wrap items-center justify-end gap-5  text-gray-500">
 
-                  <div>
+                      <div
+                        className={`
+                        flex items-center gap-2 text-lg
+                        ${new Date(task.dueDate) < new Date(today)
+                            ? "text-orange-500"
+                            : "text-gray-500"
+                          }
+                      `}
+                      >
 
-                    <div className="flex flex-col md:flex-row md:items-center gap-5">
+                        <Calendar1 size={18} />
+                        {task.dueDate || "0000-00-00"}
 
-                      <h1 className="text-xl text-yellow-600 min-w-fit">
-                        Overall progress
-                      </h1>
+                      </div>
 
-                      <div className="w-[500px] h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="flex items-center gap-2 text-lg">
 
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{
-                            width: "60%",
-                          }}
-                          transition={{ duration: 1 }}
-                          className="h-full bg-blue-500 rounded-full"
-                        />
+                        <MessageSquareText size={18} />
+                        4
+
+                      </div>
+
+                      <div className="flex items-center gap-2 text-lg">
+
+                        <Paperclip size={18} />
+                        2
 
                       </div>
 
                     </div>
 
-                  </div>
+                  </motion.div>
 
-                  {/* BOTTOM */}
-
-                  <div className="flex flex-wrap items-center justify-end gap-5  text-gray-500">
-
-                    <div
-                      className={`
-                      flex items-center gap-2 text-lg
-                      ${new Date(task.dueDate) < new Date(today)
-                          ? "text-orange-500"
-                          : "text-gray-500"
-                        }
-                    `}
-                    >
-
-                      <Calendar1 size={18} />
-                      {task.dueDate || "0000-00-00"}
-
-                    </div>
-
-                    <div className="flex items-center gap-2 text-lg">
-
-                      <MessageSquareText size={18} />
-                      4
-
-                    </div>
-
-                    <div className="flex items-center gap-2 text-lg">
-
-                      <Paperclip size={18} />
-                      2
-
-                    </div>
-
-                  </div>
-
-                </motion.div>
-
-              ))}
+                )
+              })}
 
           </div>
           {/**PAGINATION */}

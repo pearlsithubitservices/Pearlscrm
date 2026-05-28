@@ -30,15 +30,21 @@ import Pagination from "../components/Pagination";
 import CreateLead from "./CreateLead";
 import AnimateModals from "../components/Dashboard/AnimateModals";
 import LoadingPage from "../components/Dashboard/Loading";
-
+import useLeadfilter from "../Hooks/useLeadfilter"
 export default function LeadManagement() {
 
   const [leaddetails, setLeaddetails] = useState([]);
   const [dashboarddata, setDashboardData] = useState();
   console.log(leaddetails);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    //FETCH DASHBOARD
+    
+
+    fetchleads();
+    fetchDashboard();
+  }, []);
+  //FETCH DASHBOARD
     const fetchDashboard =
       async () => {
 
@@ -92,21 +98,12 @@ export default function LeadManagement() {
 
       };
 
-    fetchleads();
-    fetchDashboard();
-  }, []);
+  const [active, setActive] = useState(0);
+ 
+  const buttons = ["All", "Hot", "Warm", "Cold"];
+   console.log(buttons[active]);
+  const filteredLeads = useLeadfilter(leaddetails, search, buttons[active]);
 
-
-
-  const leads = Array(6).fill({
-    name: "Sarah Chen",
-    company: "Nexigen Corp",
-    status: "Qualified",
-    temp: "warm",
-    budget: "$120,000",
-    source: "LinkedIn",
-    follow: "Today"
-  });
 
   // PAGINATION
 
@@ -114,21 +111,24 @@ export default function LeadManagement() {
   const filesPerPage = 5;
   const lastIndex = currentPage * filesPerPage;
   const firstIndex = lastIndex - filesPerPage;
-  const currentFiles = leaddetails?.slice(firstIndex, lastIndex);
-  const totalPages = Math.ceil(leaddetails.length / filesPerPage);
+  const currentFiles = filteredLeads?.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(filteredLeads.length / filesPerPage);
 
-  const [active, setActive] = useState(0);
+
   const [openlead, setOpenlead] = useState(false);
 
-  const buttons = ["All", "Hot", "Warm", "Cold"];
+
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const convertedLeads=leaddetails.filter((lead)=>(lead.status.toLowerCase() === "converted")).length;
+const convertedPercent=leaddetails.length > 0 ?((convertedLeads/leaddetails.length)*100).toFixed(2):0;
+
 
   const stats = [
     { icon: Users2, title: "Total Lead", value: leaddetails.length },
-    { icon: Briefcase, title: "Hot Leads", value: "48" },
-    { icon: ChartNoAxesCombined, title: "Conversion Rate", value: "24.6%" },
+    { icon: Briefcase, title: "Hot Leads", value: leaddetails.filter((leads)=>(leads.priority?.toLowerCase() === "hot")).length },
+    { icon: ChartNoAxesCombined, title: "Conversion Rate", value: `${convertedPercent}%` },
     { icon: IndianRupee, title: "Pipeline Value", value: "₹4.2M" },
   ];
 
@@ -224,6 +224,7 @@ export default function LeadManagement() {
             <div className="flex items-center border bg-gray-200 rounded px-3 py-2 w-full md:w-80">
               <Search size={16} className="text-black" />
               <input
+              onChange={(e)=>setSearch(e.target.value)}
                 className="ml-2 w-full outline-none text-sm bg-gray-200"
                 placeholder="Search Lead.."
               />
@@ -260,7 +261,7 @@ export default function LeadManagement() {
                     </td>
                   </tr>
                 ) : (currentFiles.map((l, i) => (
-                  <tr key={i} className="border-t">
+                  <tr key={i} className="border-t" onClick={()=>navigate(`/leadDetails/${l._id}`)}>
 
                     <td className="p-3">
                       <p className="font-medium">{l.name || "John Doe"}</p>
@@ -275,7 +276,7 @@ export default function LeadManagement() {
 
                     <td>
                       <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded text-xs">
-                        {l.temp || "Low"}
+                        {l.priority || "cold"}
                       </span>
                     </td>
 
@@ -311,7 +312,8 @@ export default function LeadManagement() {
       {/**ADD LEADS */}
       {openlead && (
         <AnimateModals>
-          <CreateLead onClose={() => setOpenlead(false)} />
+          <CreateLead onClose={() => setOpenlead(false)} 
+            fetchleads={fetchleads}/>
         </AnimateModals>
       )}
     </div>

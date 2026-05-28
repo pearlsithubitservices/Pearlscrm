@@ -42,6 +42,8 @@ import * as XLSX from 'xlsx';
 import CreateProjects from './CreateProjects.jsx'
 import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
 import LoadingPage from '../components/Dashboard/Loading.jsx';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 
 export default function ProjectManagement() {
@@ -51,7 +53,7 @@ export default function ProjectManagement() {
 
   useEffect(() => {
     fetchProjects();
-
+    fetchEmployees();
   }, []);
 
   const fetchProjects = async () => {
@@ -63,13 +65,50 @@ export default function ProjectManagement() {
     } catch (error) {
       console.log(error);
     }
-    finally{
+    finally {
       setLoading(false);
     }
   };
+  const fetchEmployees =
+    async () => {
+
+      try {
+
+        const snapshot =
+          await getDocs(
+            collection(db, 'employees')
+          );
+
+        const employeeList = [];
+
+        snapshot.forEach((doc) => {
+
+          employeeList.push({
+            id: doc.id,
+            ...doc.data(),
+          });
+
+        });
+
+        setEmployees(employeeList);
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+
+
+
+    };
+
+
 
   const [project, setProject] = useState([]);
   console.log(project);
+  const [employees, setEmployees] = useState([]);
+  console.log(employees);
 
   const [active, setActive] = useState(0);
 
@@ -249,122 +288,130 @@ export default function ProjectManagement() {
         </div>
 
         {/* PROJECT CARDS */}
-        {loading? <div className='h-screen w-full'>
-          <LoadingPage/>
+        {loading ? <div className='h-screen w-full'>
+          <LoadingPage />
         </div> : <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4">
 
-          {project.map((p) => (
-            <div
-              key={p.id}
-              className="bg-white border border-black/10 p-5 rounded"
-            >
+          {project.map((p) => {
 
-              {/* HEADER */}
-              <div className="flex justify-between items-center">
 
-                <div>
-                  <h3 className="text-lg font-bold text-[#0b2b57]">
-                    Company Title: {p.title}
-                  </h3>
-                  <p className="text-gray-500 text-sm">
-                    Company Name: {p.company || "No Company"}
-                  </p>
-                </div>
+            return (
+              <div
+                key={p.id}
+                className="bg-white border border-black/10 p-5 rounded"
+              >
 
-                <div className='flex flex-col items-center'>
-                  <div className="flex gap-2">
-                    <span className={`bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded ${p.status.toLowerCase() === "pending" ? "bg-yellow-100 text-yellow-600" : p.status.toLowerCase() === "in progress" ? "bg-blue-100 text-blue-600" : p.status.toLowerCase() === "completed" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600"}`} >
-                      {p.status}
-                    </span>
+                {/* HEADER */}
+                <div className="flex justify-between items-center">
 
-                    <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
-                      {p.dueDate? p.dueDate < new Date() ? "At Risk" : "On Track" : "No" }
-                    </span>
+                  <div>
+                    <h3 className="text-lg font-bold text-[#0b2b57]">
+                      Company Title: {p.title}
+                    </h3>
+                    <p className="text-gray-500 text-sm">
+                      Company Name: {p.company || "No Company"}
+                    </p>
                   </div>
-                  <div className='text-sm text-gray-400 '><p>Assigned by: Ragavi</p></div>
-                </div>
 
-              </div>
+                  <div className='flex flex-col items-center'>
+                    <div className="flex gap-2">
+                      <span className={`bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded ${p.status.toLowerCase() === "pending" ? "bg-yellow-100 text-yellow-600" : p.status.toLowerCase() === "in progress" ? "bg-blue-100 text-blue-600" : p.status.toLowerCase() === "completed" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600"}`} >
+                        {p.status}
+                      </span>
 
-              {/* DETAILS */}
-              <div className=" flex  gap-14 mt-4 text-sm">
-
-                <div className="flex flex-col md:flex-row md:items-center gap-5">
-
-                  <h1 className="text-xl text-yellow-600 min-w-fit">
-                    Overall progress
-                  </h1>
-
-                  <div className="w-[500px] h-2 bg-gray-200 rounded-full overflow-hidden">
-
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{
-                        width: `${p.progress}%`,
-                      }}
-                      transition={{ duration: 1 }}
-                      className="h-full bg-blue-500 rounded-full"
-                    />
-
+                      <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
+                        {p.dueDate ? p.dueDate < new Date() ? "At Risk" : "On Track" : "No"}
+                      </span>
+                    </div>
+                    <div className='text-sm text-gray-400 '><p>Assigned by: Ragavi</p></div>
                   </div>
 
                 </div>
-                <div className='ml-40 flex items-center gap-4'>
-                  <div className='flex items-center gap-2'>
-                    <MessageSquareText size={18} className='text-gray-400' /><p>2</p>
+
+                {/* DETAILS */}
+                <div className=" flex  gap-14 mt-4 text-sm">
+
+                  <div className="flex flex-col md:flex-row md:items-center gap-5">
+
+                    <h1 className="text-xl text-yellow-600 min-w-fit">
+                      Overall progress
+                    </h1>
+
+                    <div className="w-[500px] h-2 bg-gray-200 rounded-full overflow-hidden">
+
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${p.progress}%`,
+                        }}
+                        transition={{ duration: 1 }}
+                        className="h-full bg-blue-500 rounded-full"
+                      />
+
+                    </div>
+
                   </div>
-                  <div className='flex items-center gap-2'>
-                    <Paperclip size={18} className='text-gray-400' /><p>2</p>
+                  <div className='ml-40 flex items-center gap-4'>
+                    <div className='flex items-center gap-2'>
+                      <MessageSquareText size={18} className='text-gray-400' /><p>2</p>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <Paperclip size={18} className='text-gray-400' /><p>2</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/** Bottom */}
+                {/** Bottom */}
 
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 ">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 ">
 
-                <div className="flex items-center  flex-wrap">
+                  <div className="flex items-center  flex-wrap">
 
-                  <h1 className="text-xl font-bold text-[#2563a9]">
-                    Project Members :
-                  </h1>
+                    <h1 className="text-xl font-bold text-[#2563a9]">
+                      Project Members :
+                    </h1>
 
-                  <div className="flex -space-x-3">
+                    <div className="flex -space-x-3">
 
-                    {p.members?.map((item, index) => (
+                      {p.members?.map((item, index) => {
+                         const member=employees.find((emp)=>(emp.id === item));
 
-                      <div
-                        key={index}
-                        className={`w-14 h-14 rounded-full flex items-center justify-center text-[12px] text-white font-bold border-4 border-white ${index === 0
-                          ? "bg-purple-800"
-                          : index === 1
-                            ? "bg-green-500"
-                            : "bg-purple-600"
-                          }
+                        return (
+
+                          <div
+                            key={item}
+                            className={`w-14 h-14 rounded-full flex items-center justify-center text-[12px] text-white font-bold border-4 border-white ${index === 0
+                              ? "bg-purple-800"
+                              : index === 1
+                                ? "bg-green-500"
+                                : "bg-purple-600"
+                              }
                           `}
-                      >
-                        {item}
-                      </div>
+                          >
+                            {member?.name? member.name.charAt(0).toUpperCase():item.charAt(0).toUpperCase()}
+                          </div>
 
-                    ))}
+                        )
+                      })}
+
+                    </div>
 
                   </div>
 
+                  <h1 className="text-md lg:text-lg">
+
+                    <div className='flex items-center font-bold text-[#2563a9]'><Calendar size={18} className='text-[#0b2b57]' /><p>{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "NO DueDate"}</p></div>
+
+                  </h1>
+
                 </div>
 
-                <h1 className="text-md lg:text-lg">
-
-                  <div className='flex items-center font-bold text-[#2563a9]'><Calendar size={18} className='text-[#0b2b57]' /><p>{p.dueDate?new Date(p.dueDate).toLocaleDateString() : "NO DueDate"}</p></div>
-
-                </h1>
-
               </div>
-
-            </div>
-          ))}
+            )
+          })}
 
         </motion.div>}
 

@@ -39,7 +39,16 @@ export default function Createemployee({ onClose }) {
         useNavigate();
 
     const [employees, setEmployees] =
-        useState([]);
+        useState({
+            employeeName: '',
+            employeeRole: '',
+            contact: '',
+            email: '',
+            location: '',
+            joinDate: '',
+            notes: '',
+
+        });
 
     const [task, setTask] =
         useState({
@@ -60,50 +69,85 @@ export default function Createemployee({ onClose }) {
 
         });
 
-    useEffect(() => {
-
-        fetchEmployees();
-
-    }, []);
 
     // FETCH EMPLOYEES
 
-    const fetchEmployees =
-        async () => {
+    /* const fetchEmployees =
+         async () => {
+ 
+             try {
+ 
+                 const snapshot =
+                     await getDocs(
+                         collection(
+                             db,
+                             'employees'
+                         )
+                     );
+ 
+                 const employeeList = [];
+ 
+                 snapshot.forEach((doc) => {
+ 
+                     employeeList.push({
+ 
+                         id: doc.id,
+ 
+                         ...doc.data(),
+ 
+                     });
+ 
+                 });
+ 
+                 setEmployees(employeeList);
+ 
+             } catch (error) {
+ 
+                 console.log(error);
+ 
+             }
+ 
+         };*/
 
-            try {
+    //  Add Employees
 
-                const snapshot =
-                    await getDocs(
-                        collection(
-                            db,
-                            'employees'
-                        )
-                    );
+    const addEmployees = async () => {
+        try {
+            const response = await fetch(
+                "http://localhost:5000/api/employees",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(employees),
+                }
+            );
 
-                const employeeList = [];
+            const data = await response.json();
 
-                snapshot.forEach((doc) => {
+            console.log(data);
 
-                    employeeList.push({
-
-                        id: doc.id,
-
-                        ...doc.data(),
-
-                    });
-
-                });
-
-                setEmployees(employeeList);
-
-            } catch (error) {
-
-                console.log(error);
-
+            if (response.ok) {
+                alert("Added successfully");
+                onClose();
+                navigate("/employees");
+            } else {
+                alert(data.message || "Failed to add employee");
             }
 
-        };
+        } catch (error) {
+            console.log(error);
+            alert("Failed to upload");
+        }
+    };
+    //HANDLE EMPLOYEES 
+    function handleEmployee(e) {
+        setEmployees({
+            ...employees,
+            [e.target.name]: e.target.value,
+        })
+    }
 
     // HANDLE CHANGE
 
@@ -172,12 +216,18 @@ export default function Createemployee({ onClose }) {
 
             <InputField
                 label="Employee Name"
+                name="employeeName"
+                value={employees.employeeName}
+                onChange={handleEmployee}
                 placeholder="Enter the Employee name..."
             />
 
             <div className="mt-5">
                 <InputField
                     label="Employee Role"
+                    name="employeeRole"
+                    value={employees.employeeRole}
+                    onChange={handleEmployee}
                     placeholder="Enter the Employee role"
                 />
 
@@ -188,14 +238,22 @@ export default function Createemployee({ onClose }) {
 
                 <InputField
                     label="Contact Number"
+                    name="contact"
+                    value={employees.contact}
+                    onChange={handleEmployee}
                     placeholder="Enter the Employee contact number"
                     Icon={Phone}
+                    type='number'
                 />
 
                 <InputField
                     label="Email"
+                    name='email'
+                    value={employees.email}
+                    onChange={handleEmployee}
                     placeholder="Enter the Employee email"
                     Icon={Mail}
+                    type='email'
                 />
 
             </div>
@@ -204,12 +262,18 @@ export default function Createemployee({ onClose }) {
 
                 <InputField
                     label="Location"
+                    name='location'
+                    value={employees.location}
+                    onChange={handleEmployee}
                     placeholder="Enter the Employee location"
                     Icon={Locate}
                 />
 
                 <InputField
                     label="Join Date"
+                    name='joinDate'
+                    value={employees.joinDate}
+                    onChange={handleEmployee}
                     placeholder="0000-00-00"
                     Icon={Calendar}
                     type='date'
@@ -221,6 +285,9 @@ export default function Createemployee({ onClose }) {
             </label>
 
             <textarea
+                name='notes'
+                value={employees.notes}
+                onChange={handleEmployee}
                 className="w-full h-40 p-4 rounded-xl mt-2"
             />
             <div className="border-t pt-8 flex gap-4">
@@ -230,7 +297,9 @@ export default function Createemployee({ onClose }) {
                     Cancel
                 </button>
 
-                <button className="flex-1 bg-blue-700 text-white rounded-xl hover:bg-blue-600">
+                <button
+                    onClick={addEmployees}
+                    className="flex-1 bg-blue-700 text-white rounded-xl hover:bg-blue-600">
 
                     + Add Employee
 

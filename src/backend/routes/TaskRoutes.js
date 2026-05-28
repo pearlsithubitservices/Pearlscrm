@@ -16,7 +16,7 @@ router.post("/", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const tasks = await Task.find().sort({ createdAt: -1 });
+    const tasks = await Task.find().sort({ createdAt: -1 }).populate("assignedTo");
 
     res.json(tasks);
   } catch (error) {

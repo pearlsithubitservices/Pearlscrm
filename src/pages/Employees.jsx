@@ -57,16 +57,17 @@ export default function ClientManagement() {
   const [active, setActive] = useState(0);
   const buttons = ["All", "Sales", "Engineering", "Design"];
   const [employees, setEmployees] = useState([]);
+  
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-
+  console.log(employees);
   //PAGINATION
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 5;
   const lastIndex = currentPage * filesPerPage;
   const firstIndex = lastIndex - filesPerPage;
-  const currentFiles = employees?.slice(firstIndex, lastIndex);
-  const totalPages = Math.ceil(employees?.length / filesPerPage);
+  const currentFiles = employees?.slice(firstIndex, lastIndex) || [];
+  const totalPages = Math.ceil(employees?.length || 0 / filesPerPage);
 
   const stats = [
     {
@@ -158,7 +159,23 @@ export default function ClientManagement() {
 
     fetchEmployees();
 
+    /*const fetchEmployees = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/employees");
+        const data = await response.json();
+        setEmployees(data);
+        console.log(data);
 
+      }
+      catch (error) {
+        console.log(error);
+      }
+      finally {
+        setLoading(false);
+      }
+    }
+
+    fetchEmployees();*/
   }, []);
 
   return (
@@ -399,11 +416,11 @@ export default function ClientManagement() {
       </div>
 
       {/**Add Employee Modal */}
-     {open && (
-  <AnimateModals>
-    <Createemployee onClose={() => setOpen(false)} />
-  </AnimateModals>
-)}
+      {open && (
+        <AnimateModals>
+          <Createemployee onClose={() => setOpen(false)} />
+        </AnimateModals>
+      )}
 
     </div>
   );

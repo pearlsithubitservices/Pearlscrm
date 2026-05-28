@@ -60,6 +60,7 @@ import EmployeeLeads from './pages/employee/EmployeeLeads';
 import EmployeeFollowups from './pages/employee/EmployeeFollowups';
 
 import Reports from './pages/Reports.jsx'
+import LeadDetails from './pages/LeadDetails.jsx';
 
 // PLACEHOLDER
 
@@ -125,6 +126,9 @@ export default function App() {
                 path="/leads"
                 element={<LeadManagement />}
               />
+              <Route path='/leadDetails/:id'
+                element={<LeadDetails />} />
+
 
               <Route
                 path="/tasks"
@@ -146,7 +150,7 @@ export default function App() {
                 element={<Clients />}
               />
               <Route path="/clientmanagement"
-              element={<ClientManagement/>}/>
+                element={<ClientManagement />} />
 
               <Route
                 path="/payments"
@@ -176,7 +180,7 @@ export default function App() {
               <Route
                 path="/reports"
                 element={
-                  <Reports/>
+                  <Reports />
                 }
               />
 

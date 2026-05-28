@@ -59,6 +59,8 @@ const Hotleads = () => {
 
         };
 
+        const filteredLeads=leads.filter((lead)=>(lead.priority?.toLowerCase() === "hot"));
+
 
     return (
         <>
@@ -111,9 +113,9 @@ const Hotleads = () => {
 
                         <div className="overflow-x-auto rounded bg-white text-black  p-8">
 
-                            <table className="w-full border ">
+                            <table className="w-full max-h-[400px] border overflow-y-auto ">
 
-                                <thead className="bg-gray-50 ">
+                                <thead className="bg-gray-50  sticky top-0 z-10">
 
                                     <tr className='text-[#0b2b57] ' >
 
@@ -152,7 +154,7 @@ const Hotleads = () => {
                                         </tbody>)
                                     : (<tbody className='border-r text-sm '>
 
-                                        {leads .slice(0, 5).map((lead) => (
+                                        {filteredLeads?.slice(0, 5).map((lead) => (
 
                                             <tr
                                                 key={lead._id}
@@ -162,11 +164,11 @@ const Hotleads = () => {
                                                 <td className="p-4 border-r" >
 
                                                     <h2 className="font-bold ml-4">
-                                                        {lead.company}
+                                                        {lead.name|| "john doe"}
                                                     </h2>
 
                                                     <p className="text-gray-400 text-sm ml-4 ">
-                                                        {lead.name}
+                                                        {lead.company || "ABC Corp"}
                                                     </p>
 
                                                 </td>
@@ -178,15 +180,7 @@ const Hotleads = () => {
                                                 <td className="p-1 border-r">
 
                                                     <span
-                                                        className="
-                              bg-red-100
-                              text-red-500
-                              px-4
-                              py-2
-                              rounded-full
-                              text-sm
-                            "
-                                                    >
+                                                        className=" bg-red-100 text-red-500 px-4 py-2 rounded-full text-sm">
 
                                                         🔴 High
 
@@ -333,7 +327,7 @@ const Hotleads = () => {
 
 
                             {/* Center Text */}
-                            <div className="absolute flex flex-col items-center justify-center leading-tight ml-3">
+                            <div className="absolute flex flex-col items-center justify-center leading-tight ml-1 mb-2">
 
                                 <h1 className="text-lg font-bold text-black">
                                     100%

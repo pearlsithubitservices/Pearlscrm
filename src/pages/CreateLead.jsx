@@ -20,7 +20,7 @@ import { db } from '../lib/firebase';
 
 import InputField from '../components/InputField';
 
-export default function CreateLead({ onClose }) {
+export default function CreateLead({ onClose , fetchleads}) {
 
   const navigate =
     useNavigate();
@@ -128,6 +128,9 @@ console.log(lead);
       );
 
       const data = await response.json();
+      if(response.ok){
+        fetchleads();
+      }
 
       console.log(data);
 
@@ -246,7 +249,7 @@ console.log(lead);
       </div>
       <div className='mt-2'>
         <label className="font-bold text-[#0b2b57] mt-2">
-          Payment Description
+          Lead Description
         </label>
 
         <textarea

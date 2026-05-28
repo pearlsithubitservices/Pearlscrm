@@ -1,13 +1,23 @@
-import React, { useState } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo
+} from "react";
 
 import InputField from "../components/InputField.jsx";
 
 import {
-  Users,
   Calendar,
   IndianRupee,
   X
 } from "lucide-react";
+
+import {
+  collection,
+  getDocs
+} from "firebase/firestore";
+
+import { db } from "../lib/firebase.js";
 
 export default function ProjectForm({ onClose }) {
 
@@ -17,98 +27,143 @@ export default function ProjectForm({ onClose }) {
     title: "",
     description: "",
     members: [],
-    memberInput: "",
     assignedDate: "",
     dueDate: "",
     leader: "",
     budget: ""
   });
 
-  //ADD PROJECT
+  const [employees, setEmployees] = useState([]);
 
-  const handleAddProject = async () => {
+  // FETCH EMPLOYEES
+  const fetchEmployees = async () => {
+
     try {
-      console.log("Adding project:", project);
-      const response = await fetch("http://localhost:5000/api/projects", 
-        {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(project)
-      });
-      const data = await response.json();
-      
-      console.log("Response from server:", data);
-      
 
-      if (response.ok) {
-        console.log("Project added successfully:", data);
-        alert("Project Added Successfully");
-        onClose();
-      } else {
-        console.error("Error adding project:", data.message);
-      }
-    } 
-    catch (error) {
+      const snapshot = await getDocs(
+        collection(db, "employees")
+      );
+
+      const employeeList = [];
+
+      snapshot.forEach((doc) => {
+
+        employeeList.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+
+      });
+
+      setEmployees(employeeList);
+
+    } catch (error) {
+
       console.log(error);
-      alert("Failed to add project. Please try again.");
 
     }
+
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  // EMPLOYEE MAP
+  const employeeMap = useMemo(() => {
+
+    const map = {};
+
+    employees.forEach((emp) => {
+      map[emp.id] = emp;
+    });
+
+    return map;
+
+  }, [employees]);
+
+  // ADD PROJECT
+  const handleAddProject = async () => {
+
+    try {
+
+      console.log("Adding project:", project);
+
+      const response = await fetch(
+        "http://localhost:5000/api/projects",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(project)
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("Response from server:", data);
+
+      if (response.ok) {
+
+        console.log(
+          "Project added successfully:",
+          data
+        );
+
+        alert("Project Added Successfully");
+
+        onClose();
+
+      } else {
+
+        console.error(
+          "Error adding project:",
+          data.message
+        );
+
+      }
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert(
+        "Failed to add project. Please try again."
+      );
+
+    }
+
   };
 
   const handleChange = (e) => {
+
     setProject({
       ...project,
       [e.target.name]: e.target.value
     });
-  };
 
-  // Add member when Enter pressed
-  const handleAddMember = (e) => {
-
-    if (e.key === "Enter" && project.memberInput.trim()) {
-      e.preventDefault();
-
-      if (
-        !project.members.includes(
-          project.memberInput
-        )
-      ) {
-        setProject({
-          ...project,
-          members: [
-            ...project.members,
-            project.memberInput
-          ],
-          memberInput: ""
-        });
-      }
-    }
-  };
-
-  const removeMember = (member) => {
-    setProject({
-      ...project,
-      members: project.members.filter(
-        (m) => m !== member
-      )
-    });
   };
 
   return (
 
     <div className="max-w-5xl mx-auto bg-[#e9e7e2] p-10 rounded-[40px] relative">
 
+      {/* CLOSE BUTTON */}
+
       <div className="absolute top-5 right-5 text-red-600 hover:bg-white rounded">
+
         <X
           size={22}
           strokeWidth={3}
           onClick={onClose}
         />
+
       </div>
 
       <div className="space-y-5">
+
+        {/* COMPANY */}
 
         <InputField
           label="Company Name"
@@ -126,6 +181,8 @@ export default function ProjectForm({ onClose }) {
           placeholder="Company Location"
         />
 
+        {/* TITLE */}
+
         <InputField
           label="Project Title"
           name="title"
@@ -134,7 +191,7 @@ export default function ProjectForm({ onClose }) {
           placeholder="Project title"
         />
 
-        
+        {/* DESCRIPTION */}
 
         <label className="font-bold text-[#0b2b57]">
           Project Description
@@ -155,49 +212,133 @@ export default function ProjectForm({ onClose }) {
             Add Project Members
           </label>
 
-          <div className="bg-white rounded-xl p-3">
+          <div className="bg-white rounded-xl p-3 border relative">
 
-            <div className="flex flex-wrap gap-2 mb-2">
+            {/* SELECT EMPLOYEE */}
 
-              {project.members.map((member) => (
+            <select
+              value=""
+              onChange={(e) => {
 
-                <div
-                  key={member}
-                  className="flex items-center gap-2 bg-blue-100 px-3 py-1 rounded-full"
+                const selectedId =
+                  e.target.value;
+
+                if (!selectedId) return;
+
+                // Prevent duplicates
+                if (
+                  project.members.includes(
+                    selectedId
+                  )
+                ) {
+                  return;
+                }
+
+                setProject({
+                  ...project,
+                  members: [
+                    ...project.members,
+                    selectedId
+                  ]
+                });
+
+              }}
+              className="
+                w-full
+                border
+                rounded-lg
+                p-2
+                outline-none
+              "
+            >
+
+              <option value="">
+                Select Employee
+              </option>
+
+              {employees.map((emp) => (
+
+                <option
+                  key={emp.id}
+                  value={emp.id}
                 >
-                  {member}
 
-                  <button
-                    onClick={() =>
-                      removeMember(member)
-                    }
-                  >
-                    <X size={14} />
-                  </button>
+                  {emp.name}
 
-                </div>
+                </option>
 
               ))}
 
-            </div>
+            </select>
 
-            <input
-              type="text"
-              value={project.memberInput}
-              onChange={(e) =>
-                setProject({
-                  ...project,
-                  memberInput: e.target.value
-                })
-              }
-              onKeyDown={handleAddMember}
-              placeholder="Type member name and press Enter"
-              className="w-full outline-none"
-            />
+            {/* SELECTED MEMBERS */}
+
+            <div className="flex flex-wrap gap-2 mt-4">
+
+              {project.members.map(
+                (memberId) => {
+
+                  const employee =
+                    employeeMap[memberId];
+
+                  return (
+
+                    <div
+                      key={memberId}
+                      className="
+                        flex
+                        items-center
+                        gap-2
+                        bg-blue-100
+                        text-blue-700
+                        px-3
+                        py-1
+                        rounded-full
+                      "
+                    >
+
+                      <span>
+                        {employee?.name ||
+                          "Unknown"}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+
+                          setProject({
+                            ...project,
+                            members:
+                              project.members.filter(
+                                (id) =>
+                                  id !== memberId
+                              ),
+                          });
+
+                        }}
+                        className="
+                          hover:text-red-500
+                        "
+                      >
+
+                        <X size={14} />
+
+                      </button>
+
+                    </div>
+
+                  );
+
+                }
+              )}
+
+            </div>
 
           </div>
 
         </div>
+
+        {/* DATES */}
 
         <div className="grid md:grid-cols-2 gap-5">
 
@@ -221,6 +362,8 @@ export default function ProjectForm({ onClose }) {
 
         </div>
 
+        {/* LEADER + BUDGET */}
+
         <div className="grid md:grid-cols-2 gap-5">
 
           <InputField
@@ -229,6 +372,11 @@ export default function ProjectForm({ onClose }) {
             value={project.leader}
             onChange={handleChange}
             placeholder="Leader"
+            type="select"
+           options={employees.map((emp) => ({
+            label: emp.name,
+            value: emp.id
+          }))}
           />
 
           <InputField
@@ -243,10 +391,19 @@ export default function ProjectForm({ onClose }) {
 
         </div>
 
+        {/* BUTTONS */}
+
         <div className="border-t pt-8 flex gap-4">
 
           <button
-            className="px-10 py-4 border rounded-xl bg-blue-700 text-white"
+            className="
+              px-10
+              py-4
+              border
+              rounded-xl
+              bg-blue-700
+              text-white
+            "
             onClick={onClose}
           >
             Cancel
@@ -254,7 +411,12 @@ export default function ProjectForm({ onClose }) {
 
           <button
             onClick={handleAddProject}
-            className="flex-1 bg-blue-700 text-white rounded-xl"
+            className="
+              flex-1
+              bg-blue-700
+              text-white
+              rounded-xl
+            "
           >
             + Add Project
           </button>
@@ -266,4 +428,5 @@ export default function ProjectForm({ onClose }) {
     </div>
 
   );
+
 }

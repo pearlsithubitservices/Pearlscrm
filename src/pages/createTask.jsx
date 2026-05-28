@@ -39,6 +39,8 @@ export default function CreateTask({ onClose }) {
   const [employees, setEmployees] =
     useState([]);
 
+  console.log(employees);
+
   const [task, setTask] =
     useState({
 
@@ -103,6 +105,34 @@ export default function CreateTask({ onClose }) {
 
     };
 
+  //ADD TASKS
+
+  const addtasks = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/tasks', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(task),
+      });
+
+      const data = await response.json();
+      console.log(data);
+
+      if (response.ok) {
+        alert('Task added successfully');
+        navigate('/tasks');
+      } else {
+        alert(data.message || 'Failed to add task');
+      }
+
+    } catch (error) {
+      console.log(error);
+      alert('Failed to add task. Please try again.');
+    }
+  };
+
   // HANDLE CHANGE
 
   const handleChange = (e) => {
@@ -120,34 +150,34 @@ export default function CreateTask({ onClose }) {
 
   // ADD TASK
 
-  const addTask =
-    async () => {
-
-      try {
-
-        await addDoc(
-          collection(db, 'tasks'),
-          {
-
-            ...task,
-
-            createdAt:
-              new Date(),
-
-          }
-        );
-
-        alert('Task Added');
-
-        navigate('/tasks');
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
+  /* const addTask =
+     async () => {
+ 
+       try {
+ 
+         await addDoc(
+           collection(db, 'tasks'),
+           {
+ 
+             ...task,
+ 
+             createdAt:
+               new Date(),
+ 
+           }
+         );
+ 
+         alert('Task Added');
+ 
+         navigate('/tasks');
+ 
+       } catch (error) {
+ 
+         console.log(error);
+ 
+       }
+ 
+     };*/
 
   const priorities = [
 
@@ -200,6 +230,13 @@ export default function CreateTask({ onClose }) {
           onChange={handleChange}
           placeholder="Agent Name"
           Icon={Users}
+          type='select'
+          options={employees.map((emp) => (
+            {
+              label: emp.name,
+              value: emp.id
+            }
+          ))}
         />
 
         <InputField
@@ -209,6 +246,11 @@ export default function CreateTask({ onClose }) {
           onChange={handleChange}
           placeholder="Agent Name"
           Icon={Users}
+          type='select'
+          options={employees.map((emp) => ({
+            label: emp.name,
+            value: emp.id
+          }))}
         />
 
       </div>
@@ -237,6 +279,7 @@ export default function CreateTask({ onClose }) {
           onChange={handleChange}
           placeholder="May15"
           Icon={Calendar}
+          type='date'
         />
 
       </div>
@@ -248,7 +291,7 @@ export default function CreateTask({ onClose }) {
         </button>
 
         <button
-          onClick={addTask}
+          onClick={addtasks}
           className="flex-1 bg-blue-700 text-white rounded-xl hover:bg-blue-600">
 
           + Add Task

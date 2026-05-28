@@ -98,13 +98,13 @@ export default function LeadManagement() {
 
 
   return (
-    <div className="flex min-h-screen bg-[#f3f0eb]">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#f3f0eb] w-full overflow-x-hidden">
 
       {/* MAIN */}
       <div className="flex-1 flex flex-col">
 
         {/* TOPBAR */}
-        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
+        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between w-full">
 
           <div>
             <h1 className="text-2xl font-bold text-[#023167] p-2">
@@ -139,16 +139,16 @@ export default function LeadManagement() {
         </div>
 
         {/* CONTENT */}
-        <div className="p-4 md:p-6 lg:p-8 bg-[#f3f0eb]">
+        <div className="p-4 md:p-6 lg:p-1 bg-[#f3f0eb]">
 
           {/* STATS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ">
 
             {stats.map((s, i) => (
               <motion.div
                 key={i}
                 whileHover={{ scale: 1.03 }}
-                className="bg-white p-6 rounded-xl border"
+                className="bg-white p-2 rounded-xl border w-[200px] h-[120px]"
               >
                 <div className='bg-gray-200  rounded w-8 h-8'>
                   <s.icon className="w-8 h-8 text-black p-2" />
@@ -174,7 +174,7 @@ export default function LeadManagement() {
                   key={index}
                   onClick={() => setActive(index)}
                   className={`px-4  rounded-xl font-medium transition-all
-            ${active === index
+              ${active === index
                       ? "bg-[#2563a9] text-white"
                       : "text-gray-400  hover:bg-[#2563a9] hover:text-white"
                     }`}
@@ -267,11 +267,10 @@ export default function LeadManagement() {
 
         </div>
 
-        <div className="flex gap-2 items-start justify-between   border-black mb-4  ">
+        <div className="flex flex-col lg:flex-row gap-4 items-start justify-between w-full mb-4 overflow-x-hidden">
 
-
-          <div className="flex flex-col items-center  justify-between h-[400px] w-[600px] bg-white  ml-8 rounded-xl">
-            <div className="flex gap-18 items-center   justify-between w-full mb-4 mt-2 p-2">
+          <div className="flex flex-col items-center justify-between h-[400px] w-full max-w-[550px] bg-white ml-4 rounded-xl ">
+            <div className="flex gap-18 items-center    justify-between w-full mb-4 mt-2 p-2">
               <div>
                 <h2 className="text-xl font-bold  text-blue-700 tracking-wide">
                   Monthly revenue overview
@@ -289,7 +288,7 @@ export default function LeadManagement() {
               </div>
             </div>
 
-            <ResponsiveContainer width="100%" height="100%" >
+            <ResponsiveContainer width="100%" height={320} >
 
               <BarChart data={selectedPeriod === "thismonth" ? monthdata : yeardata}>
 
@@ -319,11 +318,10 @@ export default function LeadManagement() {
             </ResponsiveContainer>
           </div>
 
-          <div className="flex flex-col gap-2 items-center justify-between mr-8 h-[400px] bg-white rounded-xl  overflow-y-scroll no-scrollbar">
-            <div className="flex gap-16 items-center justify-between  mt-2 p-2">
-              <h1 className="font-bold tracking-wide text-blue-900">Overdue Alerts</h1>
-              <h3 className="text-blue-700 tracking-wide font-bold">4 INVOICES</h3>
-            </div>
+          <div className="flex flex-col gap-2 items-center justify-between w-full lg:w-1/3 h-[400px] bg-white rounded-xl overflow-y-auto no-scrollbar mr-2">    <div className="flex gap-16 items-center justify-between  mt-2 p-2">
+            <h1 className="font-bold tracking-wide text-blue-900">Overdue Alerts</h1>
+            <h3 className="text-blue-700 tracking-wide font-bold">4 INVOICES</h3>
+          </div>
             {[
               {
                 profile: "Rk",
