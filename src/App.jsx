@@ -58,10 +58,17 @@ import EmployeeTasks from './pages/employee/EmployeeTasks';
 import EmployeeLeads from './pages/employee/EmployeeLeads';
 
 import EmployeeFollowups from './pages/employee/EmployeeFollowups';
+import Attendance from './pages/Attendance';
+import AttendanceManagement from './pages/Admin/AttendanceManagement';
 
 import Reports from './pages/Reports.jsx'
 import LeadDetails from './pages/LeadDetails.jsx';
+import EmployeeDetails from './pages/EmployeeDetails.jsx';
+import TaskComponent from './pages/TaskComponents.jsx'
+import ProjectDetails from './pages/ProjectDetails.jsx'
+import ClientDetails from './pages/ClientDetails.jsx'
 
+import FollowupDetails from './pages/FollowupDetails.jsx';
 // PLACEHOLDER
 
 function PlaceholderPage({
@@ -129,6 +136,28 @@ export default function App() {
               <Route path='/leadDetails/:id'
                 element={<LeadDetails />} />
 
+                <Route path='/employeeDetails/:id'
+                element={<EmployeeDetails/>}/>
+
+                  <Route path='/taskDetails/:id'
+                element={<TaskComponent/>}/>
+
+                <Route path="/projectDetails/:id"
+                element={<ProjectDetails/>}/>
+
+                <Route path="/clientDetails/:id"
+                element={<ClientDetails/>}/> 
+                 <Route path="/followupDetails/:id"
+                element={<FollowupDetails/>}/> 
+
+              <Route
+                path="/attendance"
+                element={<Attendance />}
+              />
+              <Route
+                path="/attendance-management"
+                element={<AttendanceManagement />}
+              />
 
               <Route
                 path="/tasks"
@@ -171,6 +200,7 @@ export default function App() {
                 path="/createTask"
                 element={<CreateTask />}
               />
+              
 
               <Route
                 path="/edit-task/:id"

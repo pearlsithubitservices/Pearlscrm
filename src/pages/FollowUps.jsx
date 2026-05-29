@@ -1,405 +1,386 @@
-import React, {
-  useEffect,
-  useState
-} from 'react';
-
+import React, { useMemo, useState } from "react";
 import {
-  Phone,
-  Calendar,
-  Clock3,
-  User2,
-  TrendingUp,
-  BellRing,
-  MessageSquare,
-} from 'lucide-react';
+  Search,
+  Filter,
+  Bell,
+  Plus,
+  Users2,
+  Clock2,
+  CheckCheck,
+  PhoneMissed,
+} from "lucide-react";
+
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+
+import Pagination from "../components/Pagination";
+import AnimateModals from "../components/Dashboard/AnimateModals";
+import LoadingPage from "../components/Dashboard/Loading";
+import CreateFollowups from "./CreateFollowups";
 
 export default function FollowUps() {
 
-  const [followUps,
-    setFollowUps] = useState([]);
+  const navigate = useNavigate();
 
-  useEffect(() => {
+  const [search, setSearch] = useState("");
+  const [active, setActive] = useState(0);
+  const [loading] = useState(false);
+  const [openFollowup, setOpenfollowup] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-    fetchFollowups();
+  const buttons = ["All", "Missed", "Pending", "Completed", "Scheduled"];
 
-  }, []);
+  const tableData = [
+    {
+      _id: 1,
+      lead: "Sarah Chen",
+      company: "Nexigen Corp",
+      type: "Call",
+      assigned: "Rohan M",
+      time: "Today",
+      status: "Completed",
+    },
+    {
+      _id: 2,
+      lead: "Vishnu",
+      company: "TechFlow Solutions",
+      type: "Meeting",
+      assigned: "Priya V",
+      time: "Tomorrow",
+      status: "Pending",
+    },
+    {
+      _id: 3,
+      lead: "Dhoni",
+      company: "GreenPath Inc.",
+      type: "Demo",
+      assigned: "Leo",
+      time: "Feb 14, 2025",
+      status: "Scheduled",
+    },
+    {
+      _id: 4,
+      lead: "Ragavi",
+      company: "Baltic Ventures",
+      type: "Email",
+      assigned: "Nina",
+      time: "Feb 14, 2025",
+      status: "Scheduled",
+    },
+    {
+      _id: 5,
+      lead: "Rock",
+      company: "Luminary Studio",
+      type: "Call",
+      assigned: "Priya",
+      time: "Mar 29, 2025",
+      status: "Completed",
+    },
+    {
+      _id: 6,
+      lead: "Virat",
+      company: "Gulf Dynamics",
+      type: "Call",
+      assigned: "Leo",
+      time: "Apr 5, 2025",
+      status: "Missed",
+    },
+  ];
 
-  const fetchFollowups =
-    async () => {
+  const stats = [
+    { icon: Users2, title: "Total FollowUps", value: "10" },
+    { icon: PhoneMissed, title: "Missed Today", value: "2" },
+    { icon: Clock2, title: "Pending Meetings", value: "4" },
+    { icon: CheckCheck, title: "Completed", value: "4" },
+  ];
 
-      try {
+  /* FILTER */
 
-        const response =
-          await fetch(
-            "https://pearlscrm.onrender.com/api/followups"
-          );
+  const filteredData = useMemo(() => {
 
-        const data =
-          await response.json();
+    return tableData.filter((item) => {
 
-        setFollowUps(data);
+      const matchesSearch =
+        item.lead.toLowerCase().includes(search.toLowerCase()) ||
+        item.company.toLowerCase().includes(search.toLowerCase());
 
-      } catch (error) {
+      const matchesStatus =
+        active === 0 ||
+        item.status.toLowerCase() === buttons[active].toLowerCase();
 
-        console.log(error);
+      return matchesSearch && matchesStatus;
+    });
 
-      }
+  }, [search, active]);
 
-    };
+  /* PAGINATION */
+
+  const filesPerPage = 5;
+
+  const lastIndex = currentPage * filesPerPage;
+  const firstIndex = lastIndex - filesPerPage;
+
+  const currentFiles = filteredData.slice(firstIndex, lastIndex);
+
+  const totalPages = Math.ceil(filteredData.length / filesPerPage);
 
   return (
+    <div className="flex min-h-screen bg-[#f3f0eb] overflow-x-hidden">
 
-    <div className="min-h-screen bg-[#0b0b14] text-white p-8">
+      <div className="flex-1 flex flex-col">
 
-      {/* HEADER */}
+        {/* TOPBAR */}
 
-      <div className="flex items-center justify-between mb-10">
+        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
 
-        <div>
+          <div>
 
-          <h1 className="text-4xl font-bold mb-2">
-            Follow-Up Dashboard
-          </h1>
+            <h1 className="text-2xl font-bold text-[#023167]">
+              FOLLOWUPS
+            </h1>
 
-          <p className="text-gray-400">
-            Track client follow-ups and conversions
-          </p>
-
-        </div>
-
-        <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
-
-          <Calendar className="w-5 h-5 text-purple-400" />
-
-          <span className="font-medium">
-            Today
-          </span>
-
-        </div>
-
-      </div>
-
-      {/* TOP STATS */}
-
-      <div className="grid grid-cols-4 gap-6 mb-10">
-
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
-
-          <p className="text-gray-400 mb-2">
-            Total Follow-ups
-          </p>
-
-          <h2 className="text-4xl font-bold">
-            {followUps.length}
-          </h2>
-
-        </div>
-
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
-
-          <p className="text-gray-400 mb-2">
-            Missed Today
-          </p>
-
-          <h2 className="text-4xl font-bold text-red-400">
-
-            {
-              followUps.filter(
-                item =>
-                  item.status === "Missed"
-              ).length
-            }
-
-          </h2>
-
-        </div>
-
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
-
-          <p className="text-gray-400 mb-2">
-            Completed
-          </p>
-
-          <h2 className="text-4xl font-bold text-green-400">
-
-            {
-              followUps.filter(
-                item =>
-                  item.status === "Completed"
-              ).length
-            }
-
-          </h2>
-
-        </div>
-
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
-
-          <p className="text-gray-400 mb-2">
-            Pending Meetings
-          </p>
-
-          <h2 className="text-4xl font-bold text-purple-400">
-
-            {
-              followUps.filter(
-                item =>
-                  item.status === "Pending"
-              ).length
-            }
-
-          </h2>
-
-        </div>
-
-      </div>
-
-      {/* MAIN SECTION */}
-
-      <div className="grid grid-cols-3 gap-8 mb-10">
-
-        {/* LEFT SECTION */}
-
-        <div className="col-span-2 space-y-6">
-
-          {followUps.slice(0, 3).map((item) => (
-
-            <div
-              key={item._id}
-              className="bg-white/5 border border-white/10 rounded-3xl p-6 flex items-center justify-between"
-            >
-
-              <div className="flex items-center gap-5">
-
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-                  item.status === 'Missed'
-                    ? 'bg-red-500/20'
-                    : 'bg-purple-500/20'
-                }`}>
-
-                  {item.followupType === 'Call' && (
-                    <Phone className="w-7 h-7 text-purple-400" />
-                  )}
-
-                  {item.followupType === 'Meeting' && (
-                    <Calendar className="w-7 h-7 text-green-400" />
-                  )}
-
-                  {item.followupType === 'WhatsApp' && (
-                    <MessageSquare className="w-7 h-7 text-green-400" />
-                  )}
-
-                </div>
-
-                <div>
-
-                  <h2 className="text-2xl font-bold mb-1">
-                    {item.company}
-                  </h2>
-
-                  <div className="flex items-center gap-5 text-gray-400">
-
-                    <span className="flex items-center gap-2">
-
-                      <User2 className="w-4 h-4" />
-
-                      {item.leadName}
-
-                    </span>
-
-                    <span className="flex items-center gap-2">
-
-                      <Clock3 className="w-4 h-4" />
-
-                      {item.time}
-
-                    </span>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-              <div className="flex items-center gap-4">
-
-                <span className={`px-4 py-2 rounded-xl text-sm font-semibold ${
-                  item.status === 'Missed'
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-green-500/20 text-green-400'
-                }`}>
-
-                  {item.status}
-
-                </span>
-
-                <button className="px-5 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl font-semibold">
-
-                  Complete
-
-                </button>
-
-              </div>
-
-            </div>
-
-          ))}
-
-        </div>
-
-        {/* RIGHT PANEL */}
-
-        <div className="space-y-6">
-
-          {/* PERFORMANCE */}
-
-          {/* <div className="bg-white/5 border border-white/10 rounded-3xl p-7">
-
-            <div className="flex items-center gap-3 mb-6">
-
-              <TrendingUp className="w-6 h-6 text-green-400" />
-
-              <h2 className="text-2xl font-bold">
-                Performance
-              </h2>
-
-            </div>
-
-            <div className="mb-6">
-
-              <div className="flex justify-between mb-2">
-
-                <span className="text-gray-400">
-                  Conversion Rate
-                </span>
-
-                <span className="font-bold">
-                  88%
-                </span>
-
-              </div>
-
-              <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-
-                <div className="h-full w-[88%] bg-gradient-to-r from-green-400 to-emerald-500 rounded-full" />
-
-              </div>
-
-            </div>
-
-            <div className="bg-[#151521] rounded-2xl p-5">
-
-              <p className="text-gray-400 mb-2">
-                Today's Follow-ups
-              </p>
-
-              <h2 className="text-5xl font-bold text-green-400">
-                {followUps.length}
-              </h2>
-
-            </div>
-
-          </div> */}
-
-          {/* REMINDER */}
-
-          {/* <div className="bg-white/5 border border-white/10 rounded-3xl p-7">
-
-            <div className="flex items-center gap-3 mb-4">
-
-              <BellRing className="w-5 h-5 text-yellow-400" />
-
-              <h3 className="text-xl font-bold">
-                Reminder
-              </h3>
-
-            </div>
-
-            <p className="text-gray-400 leading-7">
-
-              Quick follow-ups increase conversion chances.
-              Contact new leads within 5 minutes for better results.
-
+            <p className="text-sm text-gray-500">
+              Track client FollowUps and Conversion
             </p>
-
-          </div> */}
-
-        </div>
-
-      </div>
-
-      {/* FOLLOWUP TABLE */}
-
-      <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
-
-        {/* TABLE HEADER */}
-
-        <div className="grid grid-cols-7 gap-4 px-6 py-5 border-b border-white/10 text-gray-400 font-semibold">
-
-          <p>Lead</p>
-          <p>Company</p>
-          <p>Type</p>
-          <p>Assigned</p>
-          <p>Time</p>
-          <p>Status</p>
-          <p>Action</p>
-
-        </div>
-
-        {/* TABLE BODY */}
-
-        {followUps.map((item) => (
-
-          <div
-            key={item._id}
-            className="grid grid-cols-7 gap-4 px-6 py-5 border-b border-white/5 items-center hover:bg-white/5 transition-all"
-          >
-
-            <p className="font-semibold">
-              {item.leadName}
-            </p>
-
-            <p className="text-gray-300">
-              {item.company}
-            </p>
-
-            <p className="text-purple-300">
-              {item.followupType}
-            </p>
-
-            <p className="text-gray-300">
-              {item.assignedTo}
-            </p>
-
-            <p className="text-gray-300">
-              {item.time}
-            </p>
-
-            <span className={`px-3 py-1 rounded-xl text-sm w-fit ${
-              item.status === "Completed"
-                ? "bg-green-500/20 text-green-400"
-                : item.status === "Missed"
-                ? "bg-red-500/20 text-red-400"
-                : "bg-yellow-500/20 text-yellow-300"
-            }`}>
-
-              {item.status}
-
-            </span>
-
-            <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-sm font-semibold w-fit">
-
-              View
-
-            </button>
 
           </div>
 
-        ))}
+          <div className="flex items-center gap-3 mr-4">
+
+            <button
+              onClick={() => setOpenfollowup(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded-lg hover:scale-105 transition"
+            >
+              <Plus size={16} />
+              Add Followups
+            </button>
+
+            {[Filter, Bell].map((Icon, i) => (
+
+              <button
+                key={i}
+                className="p-2 rounded-lg bg-[#2563a9] hover:scale-110 transition"
+              >
+                <Icon size={18} className="text-white" />
+              </button>
+
+            ))}
+
+          </div>
+
+        </div>
+
+        {/* CONTENT */}
+
+        <div className="p-4 md:p-6 lg:p-8">
+
+          {/* STATS */}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {stats.map((s, i) => (
+
+              <motion.div
+                key={i}
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-6 rounded-xl border"
+              >
+
+                <div className="bg-gray-200 rounded w-8 h-8 mb-3">
+                  <s.icon className="w-8 h-8 p-2" />
+                </div>
+
+                <p className="text-sm text-gray-500">
+                  {s.title}
+                </p>
+
+                <h2 className="text-2xl font-bold text-[#0b2b57]">
+                  {s.value}
+                </h2>
+
+              </motion.div>
+
+            ))}
+
+          </div>
+
+          {/* FILTER BAR */}
+
+          <div className="mt-6 bg-white p-4 rounded-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+
+            <h1 className="font-bold text-xl text-[#0b2b57]">
+              FOLLOW-UP SCHEDULE
+            </h1>
+
+            <div className="flex flex-wrap gap-2  w-[500px]">
+
+              {buttons.map((btn, index) => (
+
+                <button
+                  key={index}
+                  onClick={() => {
+                    setActive(index);
+                    setCurrentPage(1);
+                  }}
+                  className={`
+                  px-4 py-2 tracking-tight rounded-xl text-sm transition
+                  ${
+                    active === index
+                      ? "bg-[#2563a9] text-white"
+                      : "text-gray-500 hover:bg-[#2563a9] hover:text-white"
+                  }
+                  `}
+                >
+                  {btn}
+                </button>
+
+              ))}
+
+            </div>
+
+            {/* SEARCH */}
+
+            <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 w-full lg:w-80">
+
+              <Search size={16} />
+
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search Lead.."
+                className="ml-2 bg-transparent outline-none w-full text-sm"
+              />
+
+            </div>
+
+          </div>
+
+          {/* TABLE */}
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 bg-white rounded-xl overflow-x-auto border"
+          >
+
+            <table className="min-w-[900px] w-full text-sm">
+
+              <thead className="bg-gray-50 text-gray-600">
+
+                <tr>
+
+                  {[
+                    "LEAD",
+                    "TYPE",
+                    "ASSIGNED",
+                    "TIME",
+                    "STATUS",
+                    "ACTION",
+                  ].map((head, i) => (
+
+                    <th key={i} className="p-4 text-left">
+                      {head}
+                    </th>
+
+                  ))}
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                {loading ? (
+
+                  <tr>
+                    <td colSpan="6" className="py-10">
+                      <LoadingPage />
+                    </td>
+                  </tr>
+
+                ) : (
+
+                  currentFiles.map((item) => (
+
+                    <tr
+                      key={item._id}
+                      onClick={() => navigate(`/followupDetails/${item._id}`)}
+                      className="border-t hover:bg-gray-50 cursor-pointer transition"
+                      
+                    >
+
+                      <td className="p-4">
+
+                        <p className="font-medium">
+                          {item.lead}
+                        </p>
+
+                        <p className="text-xs text-gray-400">
+                          {item.company}
+                        </p>
+
+                      </td>
+
+                      <td>
+                        <span className="bg-green-100 text-green-600 px-3 py-1 rounded text-xs">
+                          {item.type}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
+                          {item.assigned}
+                        </span>
+                      </td>
+
+                      <td>{item.time}</td>
+
+                      <td>
+                        <span className="bg-gray-100 px-3 py-1 rounded text-xs">
+                          {item.status}
+                        </span>
+                      </td>
+
+                      <td>Today</td>
+
+                    </tr>
+
+                  ))
+
+                )}
+
+              </tbody>
+
+            </table>
+
+          </motion.div>
+
+          {/* PAGINATION */}
+
+          <Pagination
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            totalPages={totalPages}
+          />
+
+        </div>
 
       </div>
 
-    </div>
+      {/* MODAL */}
 
+      {openFollowup && (
+
+        <AnimateModals>
+
+          <CreateFollowups
+            onClose={() => setOpenfollowup(false)}
+          />
+
+        </AnimateModals>
+
+      )}
+
+    </div>
   );
 }

@@ -112,7 +112,7 @@ export default function Dashboard() {
 
     {
       title: 'Hot Lead',
-      value: dashboardData.completedTasks,
+      value: dashboardData.hotleads||"0",
       icon: Briefcase,
       color: 'from-green-500 to-emerald-500',
     },

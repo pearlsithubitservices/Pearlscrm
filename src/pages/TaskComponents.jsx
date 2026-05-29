@@ -19,36 +19,35 @@ import NextActionTab from "../components/LeadDetails/Leadnextaction";
 import OverviewTab from '../components/LeadDetails/Leadhome';
 import { useNavigate, useParams } from "react-router-dom";
 import useLead from "../Hooks/useLead";
+import TaskOverview from "../components/TaskDetails/TaskOverview";
+import TaskActivity from "../components/TaskDetails/TaskAvctivity";
+import TaskNotes from "../components/TaskDetails/TaskNotes";
+import TaskDocuments from "../components/TaskDetails/TaskDocumentation";
 
 
-export default function LeadDetails() {
+export default function TaskComponents() {
     const [activeTab, setActiveTab] = useState("Overview");
     const [button, setButton] = useState("call");
     const { id } = useParams();
     const navigate = useNavigate();
 
     const { lead, loading } = useLead(id);
+    const[tasks, setTasks]=useState('');
     console.log(lead);
     const tabs = [
         "Overview",
         "Activity",
         "Notes",
         "Documents",
-        "Next Action",
+        
     ];
     const buttons = [
-        {
-            label: "Call",
-            Icon: Phone
-        },
+        
         {
             label: "E-Mail",
             Icon: Mail
         },
-        {
-            label: "whats Up",
-            Icon: MessageSquare
-        },
+       
         {
             label: "Notes",
             Icon: NotebookTabs
@@ -59,21 +58,20 @@ export default function LeadDetails() {
     const renderTab = () => {
         switch (activeTab) {
             case "Overview":
-                return <OverviewTab
-                    lead={lead} />;
+                return <TaskOverview
+                    tasks={tasks} />;
 
             case "Activity":
-                return <ActivityTab
-                    lead={lead} />
+                return <TaskActivity
+                    tasks={tasks} />
 
             case "Notes":
-                return <NotesTab />;
+                return <TaskNotes />;
 
             case "Documents":
-                return <DocumentsTab />;
+                return <TaskDocuments />;
 
-            case "Next Action":
-                return <NextActionTab />;
+          
 
             default:
                 return null;
@@ -100,16 +98,10 @@ export default function LeadDetails() {
 
                         <div className="flex gap-4">
 
-                            <div
-                                className="w-14 h-14 rounded-xl bg-[#dfe5ee] flex items-center
-                                             justify-center text-blue-600 font-bold text-xl border border-black/40 ">
-                                VR
-                            </div>
-
                             <div>
 
                                 <h1 className="font-bold text-xl text-[#082f57]">
-                                    {lead.name}
+                                    {lead.name || "Vishnu"}
                                 </h1>
 
                                 <p className="text-gray-400 tracking-tighter">
@@ -143,13 +135,12 @@ export default function LeadDetails() {
                             <div className="flex gap-3">
 
                                 <span className="bg-green-100 text-green-600 px-4 py-1 rounded-full">
-                                    {lead.status}
+                                    {lead.status||"In Progress"}
                                 </span>
 
                                 <span className="bg-red-100 text-red-500 px-4 py-1 rounded-full">
-                                    {lead.priority}
+                                    {lead.priority||"High"}
                                 </span>
-                               
 
                             </div>
 

@@ -148,7 +148,7 @@ export default function LeadManagement() {
               <motion.div
                 key={i}
                 whileHover={{ scale: 1.03 }}
-                className="bg-white p-2 rounded-xl border w-[200px] h-[120px]"
+                className="bg-white p-6 mt-4 ml-2 rounded-xl border w-[220px] h-[140px]"
               >
                 <div className='bg-gray-200  rounded w-8 h-8'>
                   <s.icon className="w-8 h-8 text-black p-2" />
@@ -318,7 +318,8 @@ export default function LeadManagement() {
             </ResponsiveContainer>
           </div>
 
-          <div className="flex flex-col gap-2 items-center justify-between w-full lg:w-1/3 h-[400px] bg-white rounded-xl overflow-y-auto no-scrollbar mr-2">    <div className="flex gap-16 items-center justify-between  mt-2 p-2">
+          <div className="flex flex-col gap-2 items-center justify-between  w-full lg:w-1/3 h-[400px] bg-white rounded-xl overflow-y-auto no-scrollbar mr-2"> 
+             <div className="flex gap-16 items-center justify-between  mt-2 p-2">
             <h1 className="font-bold tracking-wide text-blue-900">Overdue Alerts</h1>
             <h3 className="text-blue-700 tracking-wide font-bold">4 INVOICES</h3>
           </div>
@@ -375,7 +376,7 @@ export default function LeadManagement() {
             ].map((ev, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between gap-10 mb-4">
+                className="flex items-center justify-between gap-10 mb-4 no-scrollbar">
                 <div className="rounded-full w-10 h-10 bg-rose-200 items-center p-2 font-bold text-xl"> {ev.profile}</div>
                 <div>
                   <h1 className="text-black font-bold tracking-wide">{ev.clientname}</h1>

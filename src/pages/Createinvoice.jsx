@@ -38,7 +38,7 @@ export default function Createinvoice({ onClose }) {
     const [employees, setEmployees] =
         useState([]);
 
-    const [task, setTask] =
+    const [invoice, setInvoice] =
         useState({
 
             company: '',
@@ -65,42 +65,7 @@ export default function Createinvoice({ onClose }) {
 
     // FETCH EMPLOYEES
 
-    const fetchEmployees =
-        async () => {
 
-            try {
-
-                const snapshot =
-                    await getDocs(
-                        collection(
-                            db,
-                            'employees'
-                        )
-                    );
-
-                const employeeList = [];
-
-                snapshot.forEach((doc) => {
-
-                    employeeList.push({
-
-                        id: doc.id,
-
-                        ...doc.data(),
-
-                    });
-
-                });
-
-                setEmployees(employeeList);
-
-            } catch (error) {
-
-                console.log(error);
-
-            }
-
-        };
 
     // HANDLE CHANGE
 
@@ -211,6 +176,18 @@ export default function Createinvoice({ onClose }) {
                     label="Status"
                     placeholder="paid"
                     Icon={Calendar}
+                    name="status"
+                    value={invoice.status }
+                    type='select'
+                    options={
+                        [
+                            "Paid",
+                            "Pending",
+                            "Overdue",
+                            "partial",
+                            "Cancelled"
+                        ]
+                    }
                 />
 
             </div>

@@ -44,6 +44,8 @@ import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
 import LoadingPage from '../components/Dashboard/Loading.jsx';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import useProjectFilter from '../Hooks/useProjectfilter.js';
+import Pagination from '../components/Pagination.jsx';
 
 
 export default function ProjectManagement() {
@@ -108,11 +110,24 @@ export default function ProjectManagement() {
   const [project, setProject] = useState([]);
   console.log(project);
   const [employees, setEmployees] = useState([]);
-  console.log(employees);
-
+  const [search, setSearch] = useState("");
   const [active, setActive] = useState(0);
+  const navigate= useNavigate();
 
   const buttons = ["All", "on Track", "At Risk"];
+
+  const projectfilter = useProjectFilter(project, search, buttons[active]);
+
+  //PAGINATION
+  const [currentPage, setCurrentPage] = useState(1);
+  const filesPerPage = 5;
+  const lastIndex = currentPage * filesPerPage;
+  const firstIndex = lastIndex - filesPerPage;
+  const currentFiles = projectfilter?.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(projectfilter?.length / filesPerPage);
+
+
+
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -127,14 +142,14 @@ export default function ProjectManagement() {
     },
     {
       title: "onTrack",
-      value: project.filter((p) => p.status.toLowerCase() === "inprogress").length,
+      value: project.filter((p) => new Date(p.dueDate) > new Date()).length,
       icon: TrendingUp,
       color: "text-green-600",
       bg: "bg-green-50"
     },
     {
       title: "At Risk",
-      value: project.filter((p) => p.dueDate < new Date()).length,
+      value: project.filter((p) => new Date(p.dueDate) <= new Date()).length,
       icon: AlertTriangle,
       color: "text-red-600",
       bg: "bg-red-50"
@@ -144,7 +159,7 @@ export default function ProjectManagement() {
       value:
         (
           project.filter(
-            (p) => p.status.toLowerCase() === "completed"
+            (p) => p.status?.toLowerCase() === "completed"
           ).length / project.length
         ) * 100, icon: LoaderCircle,
       color: "text-purple-600",
@@ -279,6 +294,7 @@ export default function ProjectManagement() {
             <Search size={16} className="text-black" />
 
             <input
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search project..."
               className="w-full outline-none text-sm bg-gray-200"
             />
@@ -295,13 +311,14 @@ export default function ProjectManagement() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4">
 
-          {project.map((p) => {
+          {currentFiles.length > 0 ? (currentFiles.map((p) => {
 
 
             return (
               <div
                 key={p.id}
                 className="bg-white border border-black/10 p-5 rounded"
+                onClick={()=>navigate(`/projectDetails/${p._id}`)}
               >
 
                 {/* HEADER */}
@@ -318,12 +335,12 @@ export default function ProjectManagement() {
 
                   <div className='flex flex-col items-center'>
                     <div className="flex gap-2">
-                      <span className={`bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded ${p.status.toLowerCase() === "pending" ? "bg-yellow-100 text-yellow-600" : p.status.toLowerCase() === "in progress" ? "bg-blue-100 text-blue-600" : p.status.toLowerCase() === "completed" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600"}`} >
+                      <span className={`bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded ${p.status?.toLowerCase() === "pending" ? "bg-yellow-100 text-yellow-600" : p.status?.toLowerCase() === "in progress" ? "bg-blue-100 text-blue-600" : p.status?.toLowerCase() === "completed" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600"}`} >
                         {p.status}
                       </span>
 
-                      <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
-                        {p.dueDate ? p.dueDate < new Date() ? "At Risk" : "On Track" : "No"}
+                      <span className={` ${new Date(p.dueDate) <= new Date() ? "text-red-600  bg-red-100" : "text-green-600 bg-green-100"}  text-xs px-3 py-1 rounded`}>
+                        {p.dueDate ? new Date(p.dueDate) <= new Date() ? "At Risk" : "On Track" : "No"}
                       </span>
                     </div>
                     <div className='text-sm text-gray-400 '><p>Assigned by: Ragavi</p></div>
@@ -377,24 +394,34 @@ export default function ProjectManagement() {
                     <div className="flex -space-x-3">
 
                       {p.members?.map((item, index) => {
-                         const member=employees.find((emp)=>(emp.id === item));
+
+                        const member =
+                          employees.find((emp) => emp.id === item);
 
                         return (
 
                           <div
                             key={item}
-                            className={`w-14 h-14 rounded-full flex items-center justify-center text-[12px] text-white font-bold border-4 border-white ${index === 0
-                              ? "bg-purple-800"
-                              : index === 1
-                                ? "bg-green-500"
-                                : "bg-purple-600"
-                              }
-                          `}
-                          >
-                            {member?.name? member.name.charAt(0).toUpperCase():item.charAt(0).toUpperCase()}
+                            className={` relative  group w-14  h-14 rounded-full  flex items-center justify-center text-[12px] text-white          font-bold border-4          border-white cursor-pointer ${index === 0 ? "bg-purple-800"
+                                : index === 1 ? "bg-green-500" : "bg-purple-600"}`}>
+                          
+                            {/* FIRST LETTER */}
+                            {member?.name
+                              ? member.name.charAt(0).toUpperCase()
+                              : item.charAt(0).toUpperCase()
+                            }
+
+                            {/* TOOLTIP */}
+                            <div
+                              className="absolute -top-10 left-1/2  -translate-x-1/2 bg-black text-white   text-xs px-3 py-1 rounded-md  opacity-0            group-hover:opacity-100
+            transition-all  duration-300 whitespace-nowrap  pointer-events-none z-50  shadow-lg ">                              {member?.name || "Unknown Member"}
+
+                            </div>
+
                           </div>
 
-                        )
+                        );
+
                       })}
 
                     </div>
@@ -403,7 +430,7 @@ export default function ProjectManagement() {
 
                   <h1 className="text-md lg:text-lg">
 
-                    <div className='flex items-center font-bold text-[#2563a9]'><Calendar size={18} className='text-[#0b2b57]' /><p>{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "NO DueDate"}</p></div>
+                    <div className={`flex items-center font-bold ${new Date(p.dueDate) > new Date() ? "text-[#2563a9]" : "text-red-600"} `}><Calendar size={18} className='text-[#0b2b57]' /><p>{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "NO DueDate"}</p></div>
 
                   </h1>
 
@@ -411,9 +438,19 @@ export default function ProjectManagement() {
 
               </div>
             )
-          })}
+          })) : (<div className="bg-white p-10 rounded text-center text-gray-500">
+            No Projects Found
+          </div>)}
 
         </motion.div>}
+        {/**PAGINATION */}
+        {loading ? " " :
+          <Pagination
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            totalPages={totalPages}
+          />
+        }
 
       </div>
       {/**ADD PROJECTS */}

@@ -2,7 +2,7 @@
 import React, {
   useState,
   useEffect,
-  use
+  
 } from 'react';
 
 import {
@@ -57,6 +57,7 @@ export default function ClientManagement() {
   const [active, setActive] = useState(0);
   const buttons = ["All", "Sales", "Engineering", "Design"];
   const [employees, setEmployees] = useState([]);
+  const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -67,7 +68,7 @@ export default function ClientManagement() {
   const lastIndex = currentPage * filesPerPage;
   const firstIndex = lastIndex - filesPerPage;
   const currentFiles = employees?.slice(firstIndex, lastIndex) || [];
-  const totalPages = Math.ceil(employees?.length || 0 / filesPerPage);
+  const totalPages = Math.ceil((employees?.length || 0) / filesPerPage);
 
   const stats = [
     {
@@ -159,23 +160,7 @@ export default function ClientManagement() {
 
     fetchEmployees();
 
-    /*const fetchEmployees = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/employees");
-        const data = await response.json();
-        setEmployees(data);
-        console.log(data);
-
-      }
-      catch (error) {
-        console.log(error);
-      }
-      finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEmployees();*/
+    
   }, []);
 
   return (
@@ -310,7 +295,7 @@ export default function ClientManagement() {
             {currentFiles.map((p) => (
               <div
                 key={p.id}
-                className="bg-white border border-black/10 p-5 rounded"
+                className="bg-white border border-black/10 p-5 rounded " onClick={()=>navigate(`/EmployeeDetails/${p._id}`)}
               >
 
                 {/* HEADER */}

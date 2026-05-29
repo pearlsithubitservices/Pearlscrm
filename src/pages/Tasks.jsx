@@ -203,6 +203,21 @@ export default function Tasks() {
     setActive(activeindex);
   }
 
+
+
+  const filteredTasks =
+  tasks.filter((task) =>
+
+    task.company
+      ?.toLowerCase()
+      .includes(search.toLowerCase()) ||
+
+    task.assignedEmployee
+      ?.toLowerCase()
+      .includes(search.toLowerCase())
+
+  );
+
   return (
     <div className="flex min-h-screen bg-gray-100">
 
@@ -317,9 +332,8 @@ export default function Tasks() {
                     border
                     border-gray-200
                     rounded-2xl
-                    p-5 md:p-7
-                  "
-                  >
+                    p-5 md:p-7"
+                  onClick={() => navigate(`/taskDetails/${task.id}`)}>
 
                     {/* TOP */}
 
@@ -472,4 +486,4 @@ export default function Tasks() {
     </div>
   );
 
-}
+};

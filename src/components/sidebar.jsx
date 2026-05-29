@@ -14,10 +14,14 @@ import {
   GraduationCap,
   BookOpen,
   CircleUser,
+  MessageSquare,
+  Bell,
+  Mail,
   FolderOpen,
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
+import { Clock3 } from 'lucide-react';
 import { useIndustry } from '../context/IndustryContext';
 import { motion } from 'framer-motion';
 
@@ -57,8 +61,34 @@ export default function Sidebar() {
     icon: FolderOpen,
     path: '/projects',
   },
+{
+  name: 'Attendance Management',
+  icon: Clock3,
+  path: '/attendance-management',
+},
+{
+  name: 'Meetings',
+  icon: CalendarDays,
+  path: '/meetings',
+},
 
-  
+{
+  name: 'Internal Chat',
+  icon: MessageSquare,
+  path: '/chat',
+},
+
+{
+  name: 'Files & Documents',
+  icon: FolderOpen,
+  path: '/files',
+},
+
+{
+  name: 'Analytics',
+  icon: BarChart3,
+  path: '/analytics',
+},
 ];
 
 const manageItems = [
@@ -90,6 +120,29 @@ const manageItems = [
     icon: FileText,
     path: '/reports',
   },
+  {
+  name: 'HR Management',
+  icon: UserCircle,
+  path: '/hr-management',
+},
+
+{
+  name: 'Role Management',
+  icon: Briefcase,
+  path: '/roles',
+},
+
+{
+  name: 'Notifications',
+  icon: Bell,
+  path: '/notifications',
+},
+
+{
+  name: 'Email Center',
+  icon: Mail,
+  path: '/email-center',
+},
 ];
 
   return (

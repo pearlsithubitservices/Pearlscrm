@@ -9,7 +9,7 @@ import {
 
 import toast from "react-hot-toast";
 
-export default function LeadDocuments() {
+export default function TaskDocuments() {
 
   const [selectedFile, setSelectedFile] = useState(null);
 
