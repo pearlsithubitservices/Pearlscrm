@@ -4,6 +4,8 @@ const router = express.Router();
 
 const Task = require("../models/Task");
 
+//create Task
+
 router.post("/", async (req, res) => {
   try {
     const task = await Task.create(req.body);
@@ -14,6 +16,7 @@ router.post("/", async (req, res) => {
   }
 });
 
+//Get Task
 router.get("/", async (req, res) => {
   try {
     const tasks = await Task.find().sort({ createdAt: -1 }).populate("assignedTo");
@@ -24,6 +27,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+//Get Task by ID
 router.get('/:id', async (req, res) => {
 
   try {
@@ -40,6 +44,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+//Update Task
 router.put('/:id', async (req, res) => {
 
   try {

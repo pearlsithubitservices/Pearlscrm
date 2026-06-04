@@ -1,0 +1,57 @@
+import React from 'react'
+import { motion } from "framer-motion";
+import { ShieldCheck, CalendarDays } from 'lucide-react';
+
+const Verification = () => {
+  return (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="bg-white rounded-3xl border shadow-sm p-6"
+       >
+        <h2 className="text-2xl font-bold text-[#0b2b57]">
+          Verification & Security
+        </h2>
+
+        <p className="text-gray-500 mt-1">
+          Bank account verification status and security settings
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+
+          <div className="border rounded-3xl p-6 shadow-sm">
+            <h4 className="font-bold text-[#0b2b57] text-xl uppercase">
+              Account Status
+            </h4>
+
+            <div className="flex items-center gap-2 mt-4 text-green-600 font-semibold">
+              <ShieldCheck size={18} />
+              Verified
+            </div>
+
+            <p className="text-gray-500 text-sm mt-2">
+              Verified on Jun 1, 2024
+            </p>
+          </div>
+
+          <div className="border rounded-3xl p-6 shadow-sm">
+            <h4 className="font-bold text-[#0b2b57] text-xl uppercase">
+              Last Updated
+            </h4>
+
+            <div className="flex items-center gap-2 mt-4 text-[#0b2b57] font-semibold">
+              <CalendarDays size={18} />
+              Jun 1, 2024
+            </div>
+
+            <p className="text-gray-500 text-sm mt-2">
+              Verified on Jun 1, 2024
+            </p>
+          </div>
+
+        </div>
+      </motion.div>
+  )
+}
+
+export default Verification

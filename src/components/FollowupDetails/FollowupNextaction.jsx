@@ -116,7 +116,7 @@ export default function NextActionPage() {
                 <Clock3 size={18} className="text-[#b8b8b8]" />
 
                 <input
-                  type="text"
+                  type="datetime-local"
                   placeholder="09:30:00 AM"
                   className="w-full bg-transparent outline-none text-[#999]"
                 />

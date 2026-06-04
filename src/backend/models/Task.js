@@ -6,13 +6,13 @@ const taskSchema = new mongoose.Schema(
     notes: String,
 
     assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "Employee",
       required: true
     },
 
     assignedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "User",
       required:true
     },

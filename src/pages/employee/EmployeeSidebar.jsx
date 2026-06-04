@@ -1,155 +1,252 @@
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import logo from '../../assets/logo.png';
 import {
-  LayoutDashboard,
-  ClipboardList,
+  BarChart3,
   Users,
-  PhoneCall,
-  LogOut
+  CheckSquare,
+  Briefcase,
+  UserCircle,
+  CreditCard,
+  FileText,
+  LogOut,
+  CalendarDays,
+  GraduationCap,
+  BookOpen,
+  CircleUser,
+  MessageSquare,
+  Bell,
+  Mail,
+  FolderOpen,
+  Phone,
+  CreditCardIcon,
+  UserX,
 } from 'lucide-react';
 
-import {
-  useNavigate
-} from 'react-router-dom';
-
-import {
-  signOut
-} from 'firebase/auth';
-
-import {
-  auth
-} from '../../lib/firebase';
+import { useAuth } from '../../context/AuthContext';
 import { Clock3 } from 'lucide-react';
+import { useIndustry } from '../../context/IndustryContext';
+import { motion } from 'framer-motion';
 
-export default function EmployeeSidebar({
-  currentUser
-}) {
 
-  const navigate =
-    useNavigate();
+export default function Sidebar() {
 
-  const logout = async () => {
+  const { user, logout } = useAuth();
+  const { config } = useIndustry();
+  const navigate = useNavigate();
 
-    await signOut(auth);
+ 
 
-    navigate('/login');
+  const mainItems = [
+  {
+    name: 'Dashboard',
+    icon: BarChart3,
+    path: '/employee-dashboard',
+  },
 
-  };
+  {
+    name: "Tasks & Activities",
+    icon: CheckSquare,
+    path: '/employee/tasks',
+  },
+
+  {
+    name: 'Leave Management',
+    icon: UserX,
+    path: '/employee/leave',
+  },
+
+  {
+    name: 'Attendance Management',
+    icon: CalendarDays,
+    path: '/employee/attendance',
+  },
+   {
+    name: 'Communication',
+    icon: Phone,
+    path: '/',
+  },
+{
+  name: 'Payroll & Benefits',
+  icon: CreditCardIcon,
+  path: '/employee/payroll',
+},
+];
+
+const manageItems = [
+ 
+
+  {
+    name: 'Performance ',
+    icon: CircleUser,
+    path: '/',
+  },
+  {
+    name: 'Reports & Statements',
+    path: '/',
+    icon: Users,
+  },
+
+  {
+    name: 'Essential Modules',
+    icon: CreditCard,
+    path: '/',
+  },
+
+  {
+    name: 'Key Benefits',
+    icon: FileText,
+    path: '/',
+  },
+];
 
   return (
 
-    <div className="w-[280px] bg-[#0f1725] border-r border-white/10 p-6 hidden sm:flex  flex-col justify-between  ">
+    <aside className="w-[250px] max-h-screen bg-[#0b2b57] text-white flex flex-col justify-between px-6 py-8  overflow-y-auto no-scrollbar">
 
+      {/* TOP */}
       <div>
 
-        <h1 className="text-3xl font-black mb-10 bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+        {/* LOGO */}
+        <div className="flex items-center gap-3 mb-8">
 
-          Pearls CRM
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
 
-        </h1>
+           <img src={logo} alt='logo' className='w-full h-full rounded-full'/>
 
-        <div className="space-y-4">
+          </div>
 
-          <button
-            onClick={() =>
-              navigate('/employee-dashboard')
-            }
-            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/5 hover:bg-purple-600 transition-all"
-          >
-
-            <LayoutDashboard className="w-5 h-5" />
-
-            Dashboard
-
-          </button>
-
-          <button
-            onClick={() =>
-              navigate('/employee/tasks')
-            }
-            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/5 hover:bg-purple-600 transition-all"
-          >
-
-            <ClipboardList className="w-5 h-5" />
-
-            Tasks
-
-          </button>
-          <button
-  onClick={() =>
-    navigate('/attendance')
-  }
-  className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/5 hover:bg-purple-600 transition-all"
->
-
-  <Clock3 className="w-5 h-5" />
-
-  Attendance
-
-</button>
-
-          <button
-            onClick={() =>
-              navigate('/employee/leads')
-            }
-            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/5 hover:bg-purple-600 transition-all"
-          >
-
-            <Users className="w-5 h-5" />
-
-            Leads
-
-          </button>
-
-          <button
-            onClick={() =>
-              navigate('/employee/followups')
-            }
-            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-white/5 hover:bg-purple-600 transition-all"
-          >
-
-            <PhoneCall className="w-5 h-5" />
-
-            Followups
-
-          </button>
+          <h1 className="font-bold text-l tracking-wide">
+            PEARLS IT HUB
+          </h1>
 
         </div>
 
-      </div>
+        {/* MAIN */}
+        <div className="mb-10 " >
 
-      <div>
-
-        <div className="bg-white/5 rounded-2xl p-4 mb-4">
-
-          <p className="text-sm text-gray-400">
-
-            Logged in as
-
+          <p className="text-gray-500 text-xs uppercase tracking-[0.2em] mb-5">
+            My WorkSpace
           </p>
 
-          <h2 className="font-bold mt-1">
+          <div className="space-y-3">
 
-            {currentUser?.name ||
-              'Employee'}
+            {mainItems.map((item) => (
 
-          </h2>
+              <NavLink
+                key={item.name}
+                to={item.path}
+                className={({ isActive }) =>
+                  `
+                  flex items-center gap-3 px-1 py-3 rounded-xl text-[14px] transition-all duration-300
+                  ${
+                    isActive
+                      ? 'bg-[#2563a9] text-white font-semibold'
+                      : 'text-white hover:bg-white/5 hover:text-white'
+                  }
+                  `
+                }
+              >
+
+                <item.icon className="w-4 h-4" />
+
+                {item.name}
+
+              </NavLink>
+
+            ))}
+
+          </div>
 
         </div>
 
+        {/* MANAGE */}
+        <div>
+
+          <p className="text-gray-500 text-xs uppercase tracking-[0.2em] mb-5">
+            Manage
+          </p>
+
+          <div className="space-y-3">
+
+            {manageItems.map((item) => (
+
+              <NavLink
+                key={item.name}
+                to={item.path}
+                className={({ isActive }) =>
+                  `
+                  flex items-center gap-3 px-1 py-3 rounded-xl text-[15px] transition-all duration-300
+                  ${
+                    isActive
+                      ? 'bg-[#2563a9] text-white '
+                      : 'text-white hover:bg-white/5 '
+                  }
+                  `
+                }
+              >
+
+                <item.icon className="w-4 h-4" />
+
+                {item.name}
+
+              </NavLink>
+
+            ))}
+
+            {/* LOGOUT */}
         <button
-          onClick={logout}
-          className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+          onClick={() => logout()}
+          className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
         >
 
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-4 h-4 mb-4" />
 
-          Logout
+          <span className="text-sm mb-4 ">
+            Log out
+          </span>
 
         </button>
 
+          </div>
+
+        </div>
+
       </div>
 
-    </div>
+      {/* BOTTOM */}
+      <div>
 
+        {/* PROFILE CARD */}
+        <div className="bg-[#2563a9]  cursor-pointer rounded px-3 py-3 flex items-center h-12 w-50 gap-3 mb-5">
+
+          <img
+            src={
+              user?.photoURL ||
+              'https://i.pravatar.cc/100'
+            }
+            alt=""
+            className="w-10 h-10 rounded-full object-cover"
+          />
+
+          <div className="min-w-0" onClick={()=>navigate('/employee/myprofile')}>
+
+            <h3 className="font-semibold text-sm truncate">
+              {user?.displayName || 'Ragavi M'}
+            </h3>
+
+            <p className="text-xs text-white/80 truncate">
+              Admin - Education
+            </p>
+
+          </div>
+
+        </div>
+
+        
+
+      </div>
+
+    </aside>
   );
-
 }

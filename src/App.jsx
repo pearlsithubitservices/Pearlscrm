@@ -53,13 +53,14 @@ import EmployeeLayout from './layouts/EmployeeLayout';
 
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 
-import EmployeeTasks from './pages/employee/EmployeeTasks';
+
 
 import EmployeeLeads from './pages/employee/EmployeeLeads';
 
 import EmployeeFollowups from './pages/employee/EmployeeFollowups';
-import Attendance from './pages/Attendance';
+
 import AttendanceManagement from './pages/Admin/AttendanceManagement';
+import Attendance from './pages/Attendance.jsx';
 
 import Reports from './pages/Reports.jsx'
 import LeadDetails from './pages/LeadDetails.jsx';
@@ -67,6 +68,22 @@ import EmployeeDetails from './pages/EmployeeDetails.jsx';
 import TaskComponent from './pages/TaskComponents.jsx'
 import ProjectDetails from './pages/ProjectDetails.jsx'
 import ClientDetails from './pages/ClientDetails.jsx'
+import ETaskDetails from './EmployeePages/Task/TaskDetails/ETaskDetails.jsx';
+
+// EMPLOYEE PAGES
+import EmpMyprofile from './EmployeePages/Profile/Myprofile.jsx';
+import EmpLeave from './EmployeePages/LeaveManagement/Leave.jsx';
+import EmpTask from './EmployeePages/Task/Task.jsx';
+import EmpPayroll from './EmployeePages/Payroll/Payroll.jsx';
+import EmpCommunication from './EmployeePages/Communication/communication.jsx';
+import EmpPerformance from './EmployeePages/Performance/Performance.jsx';
+import EmpReports from './EmployeePages/Report/Report.jsx';
+import EmpAttendance from './EmployeePages/AttendanceManagement/Attendance.jsx';
+import EmpDocument from './EmployeePages/Document/Document.jsx';
+import EmpSettings from './EmployeePages/Settings/settings.jsx';
+import EmpDashboard from './EmployeePages/Dashboard/Dashboard.jsx';
+
+
 
 import FollowupDetails from './pages/FollowupDetails.jsx';
 // PLACEHOLDER
@@ -136,19 +153,19 @@ export default function App() {
               <Route path='/leadDetails/:id'
                 element={<LeadDetails />} />
 
-                <Route path='/employeeDetails/:id'
-                element={<EmployeeDetails/>}/>
+              <Route path='/employeeDetails/:id'
+                element={<EmployeeDetails />} />
 
-                  <Route path='/taskDetails/:id'
-                element={<TaskComponent/>}/>
+              <Route path='/taskDetails/:id'
+                element={<TaskComponent />} />
 
-                <Route path="/projectDetails/:id"
-                element={<ProjectDetails/>}/>
+              <Route path="/projectDetails/:id"
+                element={<ProjectDetails />} />
 
-                <Route path="/clientDetails/:id"
-                element={<ClientDetails/>}/> 
-                 <Route path="/followupDetails/:id"
-                element={<FollowupDetails/>}/> 
+              <Route path="/clientDetails/:id"
+                element={<ClientDetails />} />
+              <Route path="/followupDetails/:id"
+                element={<FollowupDetails />} />
 
               <Route
                 path="/attendance"
@@ -200,7 +217,7 @@ export default function App() {
                 path="/createTask"
                 element={<CreateTask />}
               />
-              
+
 
               <Route
                 path="/edit-task/:id"
@@ -227,49 +244,64 @@ export default function App() {
 
             {/* EMPLOYEE ROUTES */}
 
-            <Route
-              path="/employee-dashboard"
-              element={
-                <EmployeeLayout>
+            <Route element={<EmployeeLayout />}>
 
+              <Route
+                path="/employee-dashboard"
+                element={
                   <EmployeeDashboard />
+                }
+              />
 
-                </EmployeeLayout>
-              }
-            />
+              <Route
+                path="/employee/tasks"
+                element={
+                  <EmpTask />
+                }
+              />
+              <Route
+                path="/employee/taskDetails/:id"
+                element={
+                  <ETaskDetails />
+                }
+              />
 
-            <Route
-              path="/employee/tasks"
-              element={
-                <EmployeeLayout>
-
-                  <EmployeeTasks />
-
-                </EmployeeLayout>
-              }
-            />
-
-            <Route
-              path="/employee/leads"
-              element={
-                <EmployeeLayout>
-
+              <Route
+                path="/employee/leads"
+                element={
                   <EmployeeLeads />
+                }
+              />
 
-                </EmployeeLayout>
-              }
-            />
-
-            <Route
-              path="/employee/followups"
-              element={
-                <EmployeeLayout>
-
+              <Route
+                path="/employee/followups"
+                element={
                   <EmployeeFollowups />
+                }
+              />
+              <Route
+                path="/employee/myprofile"
+                element={
+                  <EmpMyprofile />
+                }
+              />
+              <Route path="/employee/attendance" element={<EmpAttendance />} />
+              <Route path="/employee/communication" element={<EmpCommunication />} />
+              <Route path="/employee/reports" element={<EmpReports />} />
+              <Route path="/employee/leave" element={<EmpLeave />} />
+              <Route path="/employee/payroll" element={<EmpPayroll/>} />
+              <Route path="/employee/performance" element={<EmpPerformance />} />
+              <Route path="/employee/settings" element={<EmpSettings />} />
+              <Route path="/employee/task" element={<EmpTask />} />
+              <Route path="/employee/dashboard" element={<EmpDashboard />} />
 
-                </EmployeeLayout>
-              }
-            />
+              <Route
+                path="/employee/attendance"
+                element={
+                  <Attendance />
+                }
+              />
+            </Route>
 
             {/* FALLBACK */}
 

@@ -52,7 +52,7 @@ const FollowupOverview = () => {
           <div className="mt-10">
 
             <h1 className="text-xs font-bold tracking-wide text-[#999]">
-              FOLLOW- UP REMENDER
+              FOLLOW- UP REMAINDER
             </h1>
 
             <motion.div

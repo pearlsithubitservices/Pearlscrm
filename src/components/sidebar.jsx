@@ -147,7 +147,7 @@ const manageItems = [
 
   return (
 
-    <aside className="w-[250px] min-h-screen bg-[#0b2b57] text-white flex flex-col justify-between px-6 py-8 ">
+    <aside className="w-[250px] max-h-screen overflow-y-auto no-scrollbar bg-[#0b2b57] text-white flex flex-col justify-between px-6 py-8 ">
 
       {/* TOP */}
       <div>

@@ -50,7 +50,7 @@ export default function CreateTask({ onClose }) {
 
       assignedTo: '',
 
-      assignedEmployee: '',
+      assignedBy: '',
 
       priority: 'Medium',
 
@@ -225,8 +225,8 @@ export default function CreateTask({ onClose }) {
 
         <InputField
           label="Assigned From"
-          name="assignedEmployee"
-          value={task.assignedEmployee}
+          name="assignedBy"
+          value={task.assignedBy}
           onChange={handleChange}
           placeholder="Agent Name"
           Icon={Users}

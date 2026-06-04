@@ -10,6 +10,8 @@ export default function InputField({
   className = "",
   type = "text",
   options = [], // 👈 for select
+  disabled = false,
+  onIconClick, // 👈 for icon click
 }) {
   return (
     <div className={className}>
@@ -21,7 +23,7 @@ export default function InputField({
       <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 px-4 py-4">
 
         {Icon && (
-          <Icon size={18} className="text-gray-400" />
+          <Icon size={18} className="text-gray-400" onClick={onIconClick} />
         )}
 
         {/* 🔥 IF TYPE IS SELECT */}
@@ -31,6 +33,8 @@ export default function InputField({
             value={value}
             onChange={onChange}
             className="w-full outline-none bg-transparent text-gray-500"
+            disabled={disabled}
+            required
           >
             <option value="">{placeholder}</option>
 
@@ -49,6 +53,7 @@ export default function InputField({
             value={value}
             onChange={onChange}
             className="w-full outline-none bg-transparent text-gray-500"
+            disabled={disabled}
             required
           />
         )}

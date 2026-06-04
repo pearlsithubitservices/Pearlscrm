@@ -195,11 +195,7 @@ export default function EmployeeDashboard() {
 
     <div className="min-h-screen bg-[#070b14] text-white flex">
 
-      {/* SIDEBAR */}
-
-      <EmployeeSidebar
-        currentUser={currentUser}
-      />
+      
 
       {/* MAIN */}
 
