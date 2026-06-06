@@ -21,6 +21,7 @@ import {
   Phone,
   CreditCardIcon,
   UserX,
+  Calendar,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -41,13 +42,18 @@ export default function Sidebar() {
   {
     name: 'Dashboard',
     icon: BarChart3,
-    path: '/employee-dashboard',
+    path: '/employee/dashboard',
   },
 
   {
     name: "Tasks & Activities",
     icon: CheckSquare,
     path: '/employee/tasks',
+  },
+   {
+    name: "FollowUps",
+    icon: Calendar,
+    path: '/employee/follow-ups',
   },
 
   {
@@ -64,7 +70,7 @@ export default function Sidebar() {
    {
     name: 'Communication',
     icon: Phone,
-    path: '/',
+    path: '/employee/communication',
   },
 {
   name: 'Payroll & Benefits',

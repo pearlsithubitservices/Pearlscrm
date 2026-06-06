@@ -2,12 +2,13 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Download } from "lucide-react";
 import PaySummary from "./PaySummary";
+import { exportPayslipPDF } from "./PayslipExport";
 
 const sampleRow = {
   month: "JUL-2026",
-  gross: "₹10,200",
-  deductions: "₹1,750",
-  net: "₹8,450",
+  gross: "10200",
+  deductions: "1750",
+  net: "8450",
   date: "MON-25-MAY",
   status: "Pending",
 };
@@ -29,6 +30,7 @@ const data = Array.from({ length: 7 }).map((_, i) => {
     status: statuses[i % statuses.length],
   };
 });
+
 
 const StatusBadge = ({ status }) => {
   const isPending = status === "Pending";
@@ -84,15 +86,15 @@ const Payslip = () => {
                   </td>
 
                   <td className="py-5 px-4">
-                    {row.gross}
+                    ₹{Number(row.gross).toLocaleString('en-IN')}
                   </td>
 
                   <td className="py-5 px-4 text-red-500">
-                    {row.deductions}
+                    ₹{Number(row.deductions).toLocaleString('en-IN')}
                   </td>
 
                   <td className="py-5 px-4 text-blue-600">
-                    {row.net}
+                    ₹{Number(row.net).toLocaleString('en-IN')}
                   </td>
 
                   <td className="py-5 px-4 font-medium text-sm">
@@ -104,7 +106,9 @@ const Payslip = () => {
                   </td>
 
                   <td className="py-5 px-4">
-                    <button className="flex items-center gap-2 text-gray-500 hover:text-[#2563eb] transition">
+                    <button className="flex items-center gap-2 text-gray-500 hover:text-[#2563eb] transition"
+                    onClick={() => exportPayslipPDF(row)}
+                    >
                       <Download size={16} />
                       PDF
                     </button>

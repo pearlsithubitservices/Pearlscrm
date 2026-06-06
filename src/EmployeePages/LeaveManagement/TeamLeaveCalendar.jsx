@@ -1,8 +1,35 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Users } from "lucide-react";
+import useLeave from "../../Hooks/useLeave";
+import { useAuth } from "../../context/AuthContext";
 
 const TeamLeaveCalendar = () => {
+
+  const { user } = useAuth();
+
+  const { getLeaves, leaves } = useLeave();
+
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const teamLeavesToday = leaves.filter((item) => {
+    const leaveFrom = new Date(item.leaveFrom);
+    const leaveTo = new Date(item.leaveTo);
+
+    leaveFrom.setHours(0, 0, 0, 0);
+    leaveTo.setHours(0, 0, 0, 0);
+
+    return (
+      item.employeeId !== user.uid &&
+      item.status?.toLowerCase() === "approved" &&
+      today >= leaveFrom &&
+      today <= leaveTo
+    );
+  });
+
+  console.log(teamLeavesToday);
   const teamLeaves = [
     {
       id: 1,
@@ -50,7 +77,7 @@ const TeamLeaveCalendar = () => {
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-3xl border border-black/10 p-6"
+      className="relative bg-white rounded-3xl border border-black/10 h-[570px] overflow-y-auto no-scrollbar p-6"
     >
       {/* Header */}
 
@@ -74,32 +101,35 @@ const TeamLeaveCalendar = () => {
       {/* Team Leave List */}
 
       <div className="space-y-4">
-        {teamLeaves.map((employee, index) => (
+        {teamLeavesToday.length > 0 ? teamLeavesToday.map((employee, index) => (
           <motion.div
-            key={employee.id}
+            key={employee.employeeId}
             initial={{ opacity: 0, x: -15 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
             whileHover={{ y: -2 }}
-            className="border border-gray-100 rounded-2xl p-4 hover:shadow-md transition-all"
+            className=" border border-gray-100 rounded-2xl p-4 hover:shadow-md transition-all"
           >
             <div className="flex items-center justify-between">
               {/* Left */}
 
               <div className="flex items-center gap-4">
-                <img
-                  src={employee.avatar}
-                  alt={employee.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
+                <div className="w-12 h-12 rounded-full bg-[#2F6CC5] text-white flex items-center justify-center font-bold">
+                  {employee.employeeName
+                    ?.split(" ")
+                    .map((name) => name[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase()}
+                </div>
 
                 <div>
                   <h3 className="font-semibold text-[#0B2B57]">
-                    {employee.name}
+                    {employee.employeeName}
                   </h3>
 
                   <p className="text-sm text-gray-500">
-                    {employee.role}
+                    {employee.department}
                   </p>
                 </div>
               </div>
@@ -108,25 +138,27 @@ const TeamLeaveCalendar = () => {
 
               <div className="text-right">
                 <p className="text-sm text-gray-500">
-                  {employee.from} - {employee.to}, {employee.year}
+                  {new Date(employee.leaveFrom).toLocaleDateString("en-IN")} - {new Date(employee.leaveTo).toLocaleDateString("en-IN")},
                 </p>
 
                 <p className="text-[#2F6CC5] font-semibold mt-1">
-                  {employee.days}
+                  {employee.leaveDays}
                 </p>
               </div>
             </div>
           </motion.div>
-        ))}
+        )) :
+          <p className="flex items-center justify-center mt-40 font-medium text-2xl  text-black">No One Leave Today</p>
+        }
       </div>
 
       {/* Footer */}
 
-      <div className="mt-6 pt-4 border-t flex items-center justify-between">
+      <div className=" absolute bottom-2 mt-6 ml-12 pt-4 border-t flex gap-80 items-center justify-between">
         <div className="flex items-center gap-2 text-gray-500">
           <Users size={18} />
           <span className="text-sm">
-            {teamLeaves.length} Employees Scheduled
+            {teamLeavesToday.length} Employees
           </span>
         </div>
 

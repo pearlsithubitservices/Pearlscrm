@@ -20,7 +20,7 @@ const AttendanceDashboard = ({
     const [onBreak, setOnBreak] = useState(false);
 
     const [seconds, setSeconds] = useState(0);
-    const [breakSeconds, setBreakSeconds] = useState(0);
+    const [breakTick, setBreakTick] = useState(0);
 
     // store timestamps for calculation (IMPORTANT FIX)
     const [clockInStamp, setClockInStamp] = useState(null);
@@ -48,7 +48,6 @@ const AttendanceDashboard = ({
         if (savedCompletedBreakSeconds) {
             const num = Number(savedCompletedBreakSeconds) || 0;
             setCompletedBreakSeconds(num);
-            setBreakSeconds(num);
         }
 
         if (savedBreakStartStamp) {
@@ -66,8 +65,7 @@ const AttendanceDashboard = ({
             }
 
             if (document.visibilityState === "visible" && onBreak && breakStartStamp) {
-                const elapsedBreak = Math.floor((Date.now() - breakStartStamp) / 1000) + completedBreakSeconds;
-                setBreakSeconds(elapsedBreak);
+                setBreakTick((prev) => prev + 1);
             }
         };
 
@@ -96,19 +94,13 @@ const AttendanceDashboard = ({
         let interval;
 
         if (onBreak && breakStartStamp) {
-            const update = () => {
-                const elapsed = Math.floor((Date.now() - breakStartStamp) / 1000);
-                setBreakSeconds(completedBreakSeconds + elapsed);
-            };
-
-            update();
-            interval = setInterval(update, 1000);
-        } else {
-            setBreakSeconds(completedBreakSeconds);
+            interval = setInterval(() => {
+                setBreakTick((prev) => prev + 1);
+            }, 1000);
         }
 
         return () => clearInterval(interval);
-    }, [onBreak, breakStartStamp, completedBreakSeconds]);
+    }, [onBreak, breakStartStamp]);
 
     // Persist completed break seconds
     useEffect(() => {
@@ -131,6 +123,19 @@ const AttendanceDashboard = ({
         const secs = String(totalSeconds % 60).padStart(2, "0");
 
         return `${hrs}:${mins}:${secs}`;
+    };
+
+    //helper function
+
+    const getCurrentBreakSeconds = () => {
+        if (!breakStartStamp) {
+            return completedBreakSeconds;
+        }
+
+        return (
+            completedBreakSeconds +
+            Math.floor((Date.now() - breakStartStamp) / 1000)
+        );
     };
 
     // SAFE calculation using timestamps
@@ -202,7 +207,7 @@ const AttendanceDashboard = ({
                 setCompletedBreakSeconds(updated);
                 setBreakStartStamp(null);
                 setOnBreak(false);
-                setBreakSeconds(updated);
+                setBreakTick((prev) => prev + 1);
             } else {
                 setOnBreak(false);
             }
@@ -219,7 +224,7 @@ const AttendanceDashboard = ({
 
         setWorking(false);
         setOnBreak(false);
-        setBreakSeconds(0);
+        setBreakTick(0);
         setCompletedBreakSeconds(0);
         setBreakStartStamp(null);
 
@@ -273,7 +278,7 @@ const AttendanceDashboard = ({
             clockIn: clockInTime,
             clockOut: new Date(now),
             workSeconds: seconds,
-            breakSeconds: totalBreakSeconds,
+            breakSeconds: getCurrentBreakSeconds(),
             totalhours,
             breakHours,
             totalWorkingHours,
@@ -316,7 +321,8 @@ const AttendanceDashboard = ({
                 <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
                     <h3 className="font-bold text-yellow-600">Tea Break Running</h3>
 
-                    <p className="text-2xl mt-2">{formatTime(breakSeconds)}</p>
+                    <p className="text-2xl mt-2">{formatTime(getCurrentBreakSeconds())}
+                    </p>
                 </div>
             )}
 

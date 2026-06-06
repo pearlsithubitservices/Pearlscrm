@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, FilePenLine } from "lucide-react";
 import LeaveForm from "./LeaveForm";
+import HolidayForm from "./HolidayForm";
 
 const LeaveOverview = ({ onApplyLeave, setFormDetails, setEditingRequest, editingRequest }) => {
     const today = new Date().toLocaleDateString("en-US", {
@@ -76,6 +77,7 @@ const LeaveOverview = ({ onApplyLeave, setFormDetails, setEditingRequest, editin
                         <FilePenLine size={18} />
                         Apply for Leave
                     </motion.button>
+                    
                 </motion.div>
             </div>
             {/**Leave Form */}
@@ -90,9 +92,7 @@ const LeaveOverview = ({ onApplyLeave, setFormDetails, setEditingRequest, editin
                     />
                 </div>
                 )}
-            
-
-        </div>
+               </div>
     );
 };
 

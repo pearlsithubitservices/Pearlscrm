@@ -132,7 +132,7 @@ const PaySummary = () => {
                                 </span>
 
                                 <span className="text-xl text-[#163b63]">
-                                    ₹{item.amount.toLocaleString("en-IN")}
+                                    ₹{item.amount}
                                 </span>
                             </div>
 

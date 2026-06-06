@@ -1,9 +1,16 @@
 import React from "react";
 import { motion } from "framer-motion";
+import useLeave from "../../Hooks/useLeave";
+import { useAuth } from "../../context/AuthContext";
 
 const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
-    const latestRequest = Array.isArray(formDetails) && formDetails.length > 0
-        ? formDetails[0]
+    const { getLeaves, leaves } = useLeave();
+    const { user } = useAuth();
+    const currentUser = leaves.filter((item) => (item.employeeId == user.uid));
+    console.log(currentUser)
+    const approvedleaves = currentUser?.filter((item) => (item.status?.toLowerCase() == "pending"));
+    const latestRequest = Array.isArray(leaves) && leaves.length > 0
+        ? leaves[0]
         : {
             id: 1,
             leaveTitle: "Family Wedding",
@@ -12,10 +19,12 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
             status: "Pending",
         };
 
-    const pendingCount = formDetails.length > 0 ? formDetails.length : '1';
+    const pendingCount = leaves.length > 0 ? leaves.length : '1';
+
 
     const handleEdit = () => {
         onEdit(latestRequest);
+        
     };
 
     const handleCancel = () => {
@@ -25,16 +34,16 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
     };
 
     const calculateLeaveDays = (startDate, endDate) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
 
-  const diffTime = end - start;
+        const diffTime = end - start;
 
-  const diffDays =
-    Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        const diffDays =
+            Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-  return diffDays;
-};
+        return diffDays;
+    };
     return (
         <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -71,14 +80,17 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
                                 <h3 className="font-bold text-lg text-[#0B2B57]">
                                     {latestRequest.leaveTitle}
                                 </h3>
-                                
+
                             </div>
 
                             <p className="text-gray-500 text-sm mt-1">
-                                {latestRequest.leaveFrom} - {latestRequest.leaveTo} ({calculateLeaveDays(
+                                {new Date(latestRequest.leaveFrom).toLocaleDateString("en-GB")} -{" "}
+                                {new Date(latestRequest.leaveTo).toLocaleDateString("en-GB")} (
+                                {calculateLeaveDays(
                                     latestRequest.leaveFrom,
                                     latestRequest.leaveTo
-                                )} days)
+                                )}{" "}
+                                days)
                             </p>
 
                             {/* Actions */}

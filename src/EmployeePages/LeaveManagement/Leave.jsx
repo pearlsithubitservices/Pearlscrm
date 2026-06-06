@@ -8,7 +8,7 @@ import LeaveRequest from "./LeaveRequest";
 import AvailabilityCalendar from "./AvailabilityCalendar";
 import TeamLeaveCalendar from "./TeamLeaveCalendar";
 import CompanyHolidays from "./companyHolidays";
-
+import useLeave from '../../Hooks/useLeave';
 const Leave = () => {
   const handleApplyLeave = () => {
     console.log("Apply Leave Clicked");
@@ -16,7 +16,8 @@ const Leave = () => {
 
   const [formDetails, setFormDetails] = useState([]);
   const [editingRequest, setEditingRequest] = useState(null);
-  console.log(formDetails);
+ 
+const {getLeaves,leaves}=useLeave();
 
   const handleDeleteRequest = (id) => {
     setFormDetails((prev) => prev.filter((req) => req.id !== id));

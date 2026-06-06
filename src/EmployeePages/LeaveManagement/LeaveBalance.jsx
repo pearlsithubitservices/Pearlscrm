@@ -2,22 +2,33 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import LeaveHistory from "./LeaveHistory";
+import useLeave from "../../Hooks/useLeave";
+import { useAuth } from "../../context/AuthContext";
 
 const LeaveBalance = () => {
+
+  const { user }=useAuth();
+
+  const {leaves}=useLeave();
+ const leave = leaves.filter(
+  (item) => item.employeeId === user.uid
+);
+console.log(leave);
+ 
   const balances = [
     {
       title: "Annual Leave",
-      used: 14,
+      used: leave.filter((item)=>(item.leaveType?.toLowerCase() == "annual")).length||0,
       total: 24,
     },
     {
       title: "Sick Leave",
-      used: 8,
+      used: leave.filter((item)=>(item.leaveType?.toLowerCase() == "sick")).length||0,
       total: 10,
     },
     {
       title: "Personal Leave",
-      used: 3,
+      used: leave.filter((item)=>(item.leaveType?.toLowerCase() == "personal")).length||0,
       total: 5,
     },
   ];

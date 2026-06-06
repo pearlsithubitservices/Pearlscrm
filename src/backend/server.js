@@ -16,6 +16,8 @@ const ProjectsRoutes = require("./routes/ProjectsRoutes");
 const ClientRoutes = require("./routes/ClientRoutes");
 const EmployeeRoutes = require('./routes/EmployeeRoutes');
 const PaymentRoutes = require('./routes/PaymentRoutes');
+const LeaveRoute = require('./routes/LeaveRoute');
+const HolidayRoute = require('./routes/HolidayRoute');
 
 
 
@@ -51,6 +53,9 @@ app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
+app.use("/api/leave",LeaveRoute);
+app.use("/api/holidays",HolidayRoute);
+
 
 
 

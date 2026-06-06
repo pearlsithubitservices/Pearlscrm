@@ -82,6 +82,7 @@ import EmpAttendance from './EmployeePages/AttendanceManagement/Attendance.jsx';
 import EmpDocument from './EmployeePages/Document/Document.jsx';
 import EmpSettings from './EmployeePages/Settings/settings.jsx';
 import EmpDashboard from './EmployeePages/Dashboard/Dashboard.jsx';
+import EmpFollowUps from './EmployeePages/FollowUps/FollowUps.jsx'
 
 
 
@@ -294,6 +295,7 @@ export default function App() {
               <Route path="/employee/settings" element={<EmpSettings />} />
               <Route path="/employee/task" element={<EmpTask />} />
               <Route path="/employee/dashboard" element={<EmpDashboard />} />
+              <Route path="/employee/follow-ups" element={<EmpFollowUps />} />
 
               <Route
                 path="/employee/attendance"
