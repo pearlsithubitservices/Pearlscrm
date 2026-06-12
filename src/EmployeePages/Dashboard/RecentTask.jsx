@@ -1,7 +1,30 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from "framer-motion";
 
 const RecentTask = () => {
+
+    const [recentTask, setRecentTask] = useState([]);
+    console.log(recentTask);
+    useEffect(() => {
+        getrecentTask()
+    }, []);
+
+    const getrecentTask = async () => {
+        try {
+            const result = await fetch("http://localhost:5000/api/tasks/recent");
+            if (!result.ok) {
+                alert('No Recent Task')
+            }
+            const data = await result.json();
+            setRecentTask(data);
+        }
+        catch (error) {
+            console.error(error);
+            
+        }
+    }
+
+   
     const tasks = [
         {
             assignedBy: "Ragavi",

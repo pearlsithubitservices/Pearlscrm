@@ -14,8 +14,11 @@ import {
 } from "lucide-react";
 
 import InputField from "../components/InputField";
+import useFollowups from "../Hooks/useFollowups";
 
-export default function CreateFollowups({ onClose }) {
+export default function CreateFollowups({ onClose ,fetchdata}) {
+  const {createFollowup}=useFollowups();
+  const [loading, setLoading]=useState();
 
   const [formData, setFormData] = useState({
     clientName: "",
@@ -118,6 +121,36 @@ export default function CreateFollowups({ onClose }) {
       <div className="w-full h-[1px] bg-[#a8a29e]" />
     </div>
   );
+  const handleSubmit = async () => {
+  try {
+    const res = await createFollowup({
+      ...formData,
+      followupCount: Number(formData.followupCount),
+    });
+
+    console.log(res);
+
+    alert("Follow-up added successfully");
+
+    setFormData({
+      clientName: "",
+      companyName: "",
+      phone: "",
+      email: "",
+      status: "",
+      leadSchedule: "",
+      type: "",
+      assignedTo: "",
+      followupCount: "",
+      followupTime: "",
+    });
+fetchdata();
+    onClose();
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+};
 
   return (
     <motion.div
@@ -127,7 +160,7 @@ export default function CreateFollowups({ onClose }) {
       className=" relative w-full max-w-6xl bg-[#f3f0ea] rounded-[40px] p-10 shadow-sm"
     >
       <X size={18} className=" absolute top-4 right-7 w-6 h-6 bg-red-500 text-white hover:bg-white hover:text-red-700 hover:scale-110
-      transition-transform duration-200" onClick={()=>onClose()}/>
+      transition-transform duration-200" onClick={() => onClose()} />
 
       {/* CONTACT INFO */}
 
@@ -190,11 +223,12 @@ export default function CreateFollowups({ onClose }) {
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
           className="flex-1 h-[62px] rounded-2xl bg-[#165da8] text-white text-[22px] font-semibold flex items-center justify-center gap-4"
+        onClick={handleSubmit}
         >
 
           <Plus size={24} />
 
-          Add Follow-Ups
+          {loading ? "Saving..." : "Add Follow-Ups"}
 
         </motion.button>
 

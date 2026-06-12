@@ -15,31 +15,76 @@ import {
     LogOut,
     Menu,
 } from "lucide-react";
+import usePayslip from "../../../Hooks/usePayslip";
+import { getFinancialYear } from '../../../Utils/formatNumber'
 
 const SalaryBreakup = () => {
+    const { payslips = [] } = usePayslip();
+    const payslip = payslips[0];
+    const financialYear = getFinancialYear();
+    console.log(financialYear);
 
+
+    const annualSummary = payslips.reduce(
+        (totals, slip) => {
+            totals.basicSalary += Number(slip.basicSalary || 0);
+            totals.medical += Number(slip.medical || 0);
+            totals.performanceBonus += Number(slip.performanceBonus || 0);
+            totals.conveyance += Number(slip.conveyance || 0);
+            totals.medical += Number(slip.medical || 0);
+            totals.performanceBonus += Number(slip.performanceBonus || 0);
+
+            totals.pf += Number(slip.pf || 0);
+            totals.esi += Number(slip.esi || 0);
+            totals.tds += Number(slip.tds || 0);
+            totals.professionalTax += Number(slip.professionalTax || 0);
+
+            totals.gross += Number(slip.gross || 0);
+            totals.net += Number(slip.net || 0);
+
+            return totals;
+        },
+        {
+            basicSalary: 0,
+            medical: 0,
+            performanceBonus: 0,
+            conveyance: 0,
+            medical: 0,
+            performanceBonus: 0,
+
+            pf: 0,
+            esi: 0,
+            tds: 0,
+            professionalTax: 0,
+
+            gross: 0,
+            net: 0,
+        }
+    );
+
+    console.log(annualSummary);
+    console.log(payslips);
+   
 
     const salaryData = [
-        ["Basic salary", "42500", "510000"],
-        ["House Rent Allowance (HRA)", "20000", "204000"],
-        ["Special allowance", "20000", "150000"],
-        ["Conveyance allowance", "20000", "36000"],
-        ["Medical allowance", "20000", "60000"],
-        ["Performance bonus (variable)", "15000", "15000"],
+        ["Basic salary", payslip?.basicSalary, annualSummary.basicSalary],
+        ["Conveyance allowance", payslip?.conveyance, annualSummary.conveyance],
+        ["Medical allowance", payslip?.medical, annualSummary.medical],
+        ["Performance bonus (variable)", payslip?.performanceBonus, annualSummary.performanceBonus],
     ];
 
     const deductionData = [
-        ["Provident Fund (PF)", "1800", "21600"],
-        ["ESIC", "131", "1572"],
-        ["Income Tax (TDS)", "4500", "1788"],
-        ["Professional Tax", "149", "15000"],
+        ["Provident Fund (PF)", payslip?.pf, annualSummary.pf],
+        ["ESIC", payslip?.esi, annualSummary?.esi],
+        ["Income Tax (TDS)", payslip?.tds, annualSummary.tds],
+        ["Professional Tax", payslip?.professionalTax, annualSummary.professionalTax],
     ];
 
     const totalSalaryMonth = salaryData.reduce((sum, item) => sum + Number(item[1]), 0);
     const totalSalaryyear = salaryData.reduce((sum, item) => sum + Number(item[2]), 0);
     const totaldeductionMonth = deductionData.reduce((sum, item) => sum + Number(item[1]), 0);
     const totaldeductionyear = deductionData.reduce((sum, item) => sum + Number(item[2]), 0);
-    
+
 
     return (
         <div className="min-h-screen  flex">
@@ -52,7 +97,7 @@ const SalaryBreakup = () => {
                             </h2>
 
                             <span className="font-semibold text-gray-500">
-                                FY 2025-26
+                                {financialYear}
                             </span>
                         </div>
 
@@ -115,7 +160,7 @@ const SalaryBreakup = () => {
                             </h2>
 
                             <span className="font-semibold text-gray-500">
-                                FY 2025-26
+                                {financialYear}
                             </span>
                         </div>
 

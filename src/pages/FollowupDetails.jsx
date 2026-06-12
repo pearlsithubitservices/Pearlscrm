@@ -6,15 +6,18 @@ import {
   Mail,
   MessageCircle,
   StickyNote,
+  X,
 } from "lucide-react";
 
 import FollowupOverview from "../components/FollowupDetails/FollowupOverview";
 import FollowupNotes from "../components/FollowupDetails/FollowupNotes";
 import FollowupNextAction from "../components/FollowupDetails/FollowupNextaction";
+import { useNavigate } from "react-router-dom";
 
 export default function FollowupDetails() {
 
   const [activeTab, setActivetab] = useState("Overview");
+  const navigate=useNavigate();
 
   const buttons = [
     "Overview",
@@ -63,13 +66,16 @@ export default function FollowupDetails() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f3ee] flex items-center justify-center p-4">
+    <div className="max-h-screen overflow-hidden no-scrollbar   bg-[#f5f3ee] flex items-center justify-center p-4">
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-5xl bg-[#f5f3ee] rounded-[26px] border border-[#e6e0d8] overflow-hidden"
-      >
+        className="w-full max-h-screen overflow-y-auto no-scrollbar bg-[#f5f3ee] rounded-[26px]  "
+       >
+         <X size={16} className=" absolute bg-red-600 top-3 right-2 text-white rounded hover:scale-105 transition-transform duration-150"
+         onClick={()=>navigate(-1)}
+         />
 
         {/* HEADER */}
 
@@ -79,7 +85,8 @@ export default function FollowupDetails() {
 
             {/* LEFT */}
 
-            <div className="flex gap-4">
+            <div className="relative flex gap-4">
+             
 
               <div className="w-10 h-10 rounded-md bg-[#e7edf8] flex items-center justify-center text-[#3167dc] font-bold text-sm">
                 SC

@@ -8,15 +8,19 @@ import CompanyAnnouncements from "./Announcements/CompanyAnnouncements";
 import Notification from "./Announcements/Notification"
 import HelpDesk from './HelpDesk/HelpDesk.jsx'
 import RaiseTicket from "./RaiseTicket.jsx";
+import CompanyDirectory from "./Directory/CompanyDirectory.jsx";
+import FeedbackPage from "./Feedback/Feedback.jsx";
+import useAnnouncement from "../../Hooks/useAnnouncement.js";
 
 
 const Communication = () => {
   const [activeTab, setActiveTab] = useState("Announcements");
   const [form, setForm] = useState(false);
+  const{announcements}=useAnnouncement();
 
 
   const stats = [
-    { icon: Megaphone, label: "Announcments", value: "10" },
+    { icon: Megaphone, label: "Announcments", value: announcements.length },
     { icon: MessageCircleMore, label: "Open Tickets", value: "7" },
     { icon: Users, label: "Employees", value: "₹ 84" },
     { icon: MessageSquareMore, label: "Avg Feedback", value: "80%" },
@@ -25,7 +29,7 @@ const Communication = () => {
   const tabs = [
     "Announcements",
     "HelpDesk",
-    "Company directory",
+    "Company Directory",
     "Feedback",
 
   ];
@@ -67,9 +71,9 @@ const Communication = () => {
             key="tax"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className=" rounded-xl p-6 "
+            className=" rounded-xl p-2 "
           >
-            <p>TaxDocument</p>
+            <CompanyDirectory/>
           </motion.div>
         );
 
@@ -81,8 +85,8 @@ const Communication = () => {
             animate={{ opacity: 1, y: 0 }}
             className=" rounded-xl "
           >
-            <div>
-              <p>Reimbursement </p>
+            <div className="">
+              <FeedbackPage/>
             </div>
           </motion.div>
         );

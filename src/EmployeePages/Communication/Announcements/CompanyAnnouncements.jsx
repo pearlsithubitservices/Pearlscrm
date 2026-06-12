@@ -1,48 +1,59 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Pin } from "lucide-react";
+import { DeleteIcon, Pin, Search } from "lucide-react";
 import FullAnnouncements from "./FullAnnouncements";
+import AnnouncementForm from "./AnnouncementForm";
+import useAnnouncement from "../../../Hooks/useAnnouncement";
+
 
 const CompanyAnnouncements = () => {
-    const [showForm, setShowForm]=useState(false);
-  const announcements = [
-    {
-      id: 1,
-      priority: "High",
-      title: "Town Hall — Q2 2026 All-Hands Meeting",
-      description:
-        "The open enrollment for healthcare benefits will begin next Monday. Please review the updated documentation in the portal.",
-      author: "Sarah Jenkins",
-      role: "HR Director",
-      date: "Oct 24, 02:30 PM",
-      badgeColor: "bg-red-100 text-red-600",
-      borderColor: "border-l-red-500",
-    },
-    {
-      id: 2,
-      priority: "Med",
-      title: "Leave Policy Update — Effective July 2026",
-      description:
-        "The open enrollment for healthcare benefits will begin next Monday. Please review the updated documentation in the portal.",
-      author: "Sarah Jenkins",
-      role: "HR Director",
-      date: "Oct 24, 02:30 PM",
-      badgeColor: "bg-yellow-100 text-yellow-700",
-      borderColor: "border-l-yellow-500",
-    },
-    {
-      id: 3,
-      priority: "Low",
-      title: "Annual Benefits Enrollment Period Opening Soon",
-      description:
-        "The open enrollment for healthcare benefits will begin next Monday. Please review the updated documentation in the portal.",
-      author: "Sarah Jenkins",
-      role: "HR Director",
-      date: "Oct 24, 02:30 PM",
-      badgeColor: "bg-purple-100 text-purple-600",
-      borderColor: "border-l-purple-500",
-    },
-  ];
+  const [showForm, setShowForm] = useState(false);
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+  const { createAnnouncement, fetchAnnouncements, announcements, updateRead, togglePin, deleteAnnouncement } = useAnnouncement();
+
+  const [selectedAnnouncements, setSelectedAnnouncements] = useState([]);
+  const [data, setData] = useState([]);
+  const [search, setSearch] = useState();
+
+  const handleRead = async (item) => {
+    setShowForm(true)
+    setSelectedAnnouncements(item);
+
+    if (!item.isRead) {
+      await updateRead(item._id);
+      await fetchAnnouncements();
+    }
+  }
+
+  function handleChange(e) {
+    setSearch(e.target.value);
+  }
+
+  const deleteannouncement = async (id) => {
+    await deleteAnnouncement(id);
+    await fetchAnnouncements();
+  }
+
+  const filteredAnnouncements = announcements.filter((item) => {
+    if (!search) return true;
+    const searchLower = search.toLowerCase();
+    return (
+      item.title?.toLowerCase().includes(searchLower) ||
+      item.description?.toLowerCase().includes(searchLower) ||
+      item.author?.toLowerCase().includes(searchLower) ||
+      item.date?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  //pin function
+
+  const sortedAnnouncements = [...filteredAnnouncements].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+
+    // Same pin status → newest first
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
 
   return (
     <div className="w-full space-y-5">
@@ -52,36 +63,62 @@ const CompanyAnnouncements = () => {
         <h2 className="text-2xl font-bold text-[#0B2B57]">
           Company Announcements
         </h2>
+        <button onClick={() => setShowAnnouncementForm(true)}>Announcement</button>
+        <span>
+          <div className="relative flex gap-8">
 
+            <input
+              type="text"
+              placeholder="search by Date, Title..."
+              value={search}
+              onChange={handleChange}
+              className=" p-2 border rounded-xl w-full" />
+            <Search size={20} className="absolute text-gray-500 right-3 top-3  " />
+          </div>
+        </span>
         <span className="px-4 py-2 bg-gray-100 rounded-full text-sm font-medium text-gray-500">
-          02 Unread
+          {announcements.filter((item) => (item.isRead == false)).length} unread
         </span>
       </div>
 
       {/* Announcements */}
 
       <div className=" rounded-2xl   p-4  space-y-4">
-        {announcements.map((item, index) => (
+
+        {sortedAnnouncements.slice(0, 5).map((item) => (
+
           <motion.div
-            key={item.id}
+            key={item._id}
+
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 2 * 0.1 }}
             whileHover={{ y: -2 }}
-            className={`border border-gray-100 border-l-4 ${item.borderColor} cursor-pointer bg-white rounded-2xl p-5 hover:shadow-md transition-all`}
-            onClick={() => setShowForm(true)}
+            className={`border border-gray-100 border-l-4 ${item.priority?.toLowerCase() == "high" ? "border-l border-red-500" : item.priority?.toLowerCase() == "med" ? "border-yellow-300" : "border-green-600"} cursor-pointer bg-white rounded-2xl p-5 hover:shadow-md transition-all`}
+            onClick={() => handleRead(item)}
           >
             <div className="flex justify-between items-start">
               <span
-                className={`px-4 py-1 rounded-full text-xs font-semibold ${item.badgeColor}`}
+                className={`px-4 py-1 rounded-full text-xs font-semibold ${item.priority?.toLowerCase() == "high" ? " bg-red-300 text-red-700" : item.priority?.toLowerCase() == "med" ? "bg-yellow-200 text-yellow-700" : "bg-green-300 text-green-700"}`}
               >
                 {item.priority}
               </span>
-
-              <Pin
-                size={16}
-                className="text-gray-500 cursor-pointer"
-              />
+              <span className="flex gap-4">
+                <Pin
+                  size={16}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent opening FullAnnouncements
+                    togglePin(item._id);
+                  }}
+                  className={`cursor-pointer transition-colors ${item.pinned
+                    ? "fill-yellow-500 text-yellow-500"
+                    : "text-gray-500"
+                    }`}
+                />
+                <DeleteIcon size={16}  className="" onClick={(e) => 
+                  {
+                    e.stopPropagation();
+                    deleteannouncement(item._id)}} /></span>
             </div>
 
             <h3 className="mt-4 text-xl font-bold text-[#0B2B57]">
@@ -89,18 +126,18 @@ const CompanyAnnouncements = () => {
             </h3>
 
             <p className="text-gray-500 mt-3 leading-relaxed">
-              {item.description}
+              {item.description?.length > 100 ? `${item.description.slice(0, 100)}...` : item.description}
             </p>
 
             <div className="flex items-center justify-between mt-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-[#0B2B57] text-white flex items-center justify-center font-semibold">
-                  S
+                  {item.author.charAt().toUpperCase()}
                 </div>
 
                 <div>
                   <p className="font-semibold text-sm">
-                    {item.author}
+                    {item.author.toUpperCase()}
                   </p>
 
                   <p className="text-xs text-gray-500">
@@ -116,12 +153,24 @@ const CompanyAnnouncements = () => {
           </motion.div>
         ))}
       </div>
-      {showForm&&
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <FullAnnouncements
-        onClose={()=>setShowForm(false)}
-        />
-      </div>
+      {showForm &&
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <FullAnnouncements
+            onClose={() => setShowForm(false)}
+            selectedAnnouncements={selectedAnnouncements}
+          />
+        </div>
+
+      }
+      {showAnnouncementForm &&
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <AnnouncementForm
+            onClose={() => setShowAnnouncementForm(false)
+            }
+            fetchAnnouncements={fetchAnnouncements}
+
+          />
+        </div>
 
       }
     </div>

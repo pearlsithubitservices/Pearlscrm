@@ -1,34 +1,51 @@
-// Hooks/useTask.js
-
 import { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { useAuth } from "../context/AuthContext";
 
-const useTask = (id) => {
-  const [task, setTask] = useState({});
+const useTasks = (userId) => {
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const {user}=useAuth();
+  
 
   useEffect(() => {
-    if (!id) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, "tasks"),
+      //where("assignedTo", "==", user.uid)
+    );
 
     const unsub = onSnapshot(
-      doc(db, "tasks", id),
+      q,
       (snapshot) => {
-        if (snapshot.exists()) {
-          setTask({
-            id: snapshot.id,
-            ...snapshot.data(),
-          });
-        }
+        const taskList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
+        setTasks(taskList);
+        setLoading(false);
+      },
+      (error) => {
+        console.error(error);
         setLoading(false);
       }
     );
 
     return () => unsub();
-  }, [id]);
+  }, [user?.uid]);
 
-  return { task, loading };
+  return { tasks, loading };
 };
 
-export default useTask;
+export default useTasks;

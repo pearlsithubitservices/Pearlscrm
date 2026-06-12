@@ -27,6 +27,22 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/recent", async (req, res) => {
+  try {
+    const recentTasks = await Task.find()
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    res.status(200).json(recentTasks);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
 //Get Task by ID
 router.get('/:id', async (req, res) => {
 
@@ -65,5 +81,6 @@ router.put('/:id', async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;

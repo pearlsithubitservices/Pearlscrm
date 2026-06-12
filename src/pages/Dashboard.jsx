@@ -158,7 +158,7 @@ export default function Dashboard() {
 
       {loading ? (<motion.div>
         <Dashboardskeleton />
-      </motion.div>) : (<div className="text-white">
+      </motion.div>) : (<div className="text-white max-h-screen overflow-y-auto no-scrollbar">
 
         {/* TOPBAR */}
 

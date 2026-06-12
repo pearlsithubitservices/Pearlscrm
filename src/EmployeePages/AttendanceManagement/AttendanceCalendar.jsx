@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -7,6 +7,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import AttendanceCorrection from "./AttendanceCorrection";
+import useEmpAttendance from "../../Hooks/useEmpAttendance";
 
 const AttendanceCalendar = ({
   date,
@@ -21,13 +22,32 @@ const AttendanceCalendar = ({
   const [search, setSearch] =
     useState("");
   console.log(attendanceData);
-
+  const [attendance, setAttendance] = useState([]);
+  console.log(attendance);
   const [showForm, setShowform] = useState(false);
+  const { getAttendances } = useEmpAttendance();
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const res = await getAttendances();
+        setAttendance(res.data);
+
+
+
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchAttendance();
+  }, []);
 
   const filteredData = useMemo(() => {
     const now = new Date();
 
     console.log(attendanceData);
+
 
     return attendanceData.filter((item) => {
       const date =
@@ -36,19 +56,17 @@ const AttendanceCalendar = ({
       let matchPeriod = true;
 
       if (filter === "week") {
-        const weekAgo = new Date();
-        weekAgo.setDate(
-          now.getDate() - 7
-        );
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
 
-        matchPeriod =
-          date >= weekAgo;
+        matchPeriod = date >= weekAgo;
       }
 
       if (filter === "month") {
         matchPeriod =
-          date.getMonth() ===
-          now.getMonth();
+          date.getMonth() === now.getMonth() &&
+          date.getFullYear() === now.getFullYear();
       }
 
       if (filter === "year") {
@@ -79,6 +97,16 @@ const AttendanceCalendar = ({
     filter,
     search,
   ]);
+  const formatDuration = (seconds) => {
+    if (!seconds || isNaN(seconds)) {
+      return "0h 0m";
+    }
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    return `${hours}h ${minutes}m`;
+  };
 
   const statusStyle = {
     Present:
@@ -244,34 +272,62 @@ const AttendanceCalendar = ({
                       className="border-b hover:bg-gray-50"
                     >
                       <td className="text-center py-6 font-bold">
-                        {row.date}
+                        {new Date(row.date).toLocaleDateString()}
                       </td>
 
-                      <td className="text-center">
-                        {row.clockIn || "--:--"}
-                      </td>
+                      {(() => {
+                        const clockInDate = row.clockIn ? new Date(row.clockIn) : null;
+                        const clockOutDate = row.clockOut ? new Date(row.clockOut) : null;
+                        const totalBreakSeconds = row.breaks?.reduce(
+                          (sum, breakItem) => sum + (breakItem?.duration || 0),
+                          0
+                        );
+                        const totalDurationSeconds =
+                          clockInDate && clockOutDate
+                            ? Math.max(0, (clockOutDate - clockInDate) / 1000)
+                            : 0;
+                        const workingSeconds =
+                          typeof row.workingHours === "number"
+                            ? row.workingHours
+                            : Math.max(0, totalDurationSeconds - totalBreakSeconds);
+                        const displayHours = formatDuration(totalDurationSeconds);
+                        const displayBreakHours = formatDuration(totalBreakSeconds);
+                        const displayWorkingHours = formatDuration(workingSeconds);
 
-                      <td className="text-center">
-                        {row.clockOut || "--:--"}
-                      </td>
+                        return (
+                          <>
+                            <td className="text-center">
+                              {clockInDate
+                                ? clockInDate.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                                : "--:--"}
+                            </td>
 
-                      <td className="text-center text-black">
-                        {typeof row.hours === "number"
-                          ? `${Math.floor(row.hours)}h ${Math.round((row.hours % 1) * 60)}m`
-                          : "0h 0m"}
-                      </td>
+                            <td className="text-center">
+                              {clockOutDate
+                                ? clockOutDate.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                                : "--:--"}
+                            </td>
 
-                      <td className="text-center text-black">
-                        {typeof row.breakHours === "number"
-                          ? `${Math.floor(row.breakHours)}h ${Math.round((row.breakHours % 1) * 60)}m`
-                          : "0h 0m"}
-                      </td>
+                            <td className="text-center text-black">
+                              {displayHours}
+                            </td>
 
-                      <td className="text-center text-black ">
-                        {typeof row.totalWorkingHours === "number"
-                          ? `${Math.floor(row.totalWorkingHours)}h ${Math.round((row.totalWorkingHours % 1) * 60)}m`
-                          : "0h 0m"}
-                      </td>
+                            <td className="text-center text-black">
+                              {displayBreakHours}
+                            </td>
+
+                            <td className="text-center text-black ">
+                              {displayWorkingHours}
+                            </td>
+                          </>
+                        );
+                      })()}
 
                       <td className="text-center">
                         <div className="flex justify-center items-center gap-2">

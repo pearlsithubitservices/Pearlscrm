@@ -1,67 +1,47 @@
-import React, {
-  useState,
-  useEffect
-} from 'react';
-
+import React, { useState } from "react";
 
 import {
-  Plus,
   Search,
-  Phone,
-  Calendar,
-  CheckCircle2,
   User2,
   Bell,
-  Filter,
-  TrendingUp,
   CheckCheck,
   CalendarArrowDown,
   Calendar1,
   MessageSquareText,
   Paperclip,
-  ArrowRightCircleIcon,
-  ArrowLeftCircleIcon,
   Clock2,
   X,
-} from 'lucide-react';
-import {
-  collection,
-  onSnapshot,
-  getDocs,
-  query,
-  where,
-} from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
-import { db } from '../../lib/firebase.js';
-import Pagination from '../../components/Pagination.jsx';
-import LoadingPage from '../../components/Dashboard/Loading';
+} from "lucide-react";
 
-import { AnimatePresence, motion } from "framer-motion";
-import AnimateModals from '../../components/Dashboard/AnimateModals.jsx';
-import useTaskfilter from '../../Hooks/useTaskfilter.js'
-import { useAuth } from '../../context/AuthContext.jsx';
-import TaskContribution from './TaskContribution.jsx'
-import TaskActivity from './TaskActivity.jsx'
+import { useNavigate } from "react-router-dom";
+import Pagination from "../../components/Pagination.jsx";
+import LoadingPage from "../../components/Dashboard/Loading";
+import { motion } from "framer-motion";
+import AnimateModals from "../../components/Dashboard/AnimateModals.jsx";
+
+import useTaskfilter from "../../Hooks/useTaskfilter.js";
+import useTasks from "../../Hooks/useTaskid.js";
+import useEmployees from "../../Hooks/useEmployees.js";
+
+import { useAuth } from "../../context/AuthContext.jsx";
+
+import TaskContribution from "./TaskContribution.jsx";
+import TaskActivity from "./TaskActivity.jsx";
 
 export default function Tasks() {
-  const [tasks, setTasks] =
-    useState([]);
 
+  const { user } = useAuth();
+  const userId="LNcFHaGpEjOFFyav5qLQ42qZWyf2"
+  const { tasks } = useTasks(userId);
+  const { employees } = useEmployees();
+  console.log(employees);
   const [search, setSearch] =
     useState('');
 
   const [active, setActive] = useState("All");
 
   const buttons = ["All", "Hot", "Warm", "Cold"];
-  const q = search.toLowerCase();
-  const selectedactive = buttons[active];
-
   const filterdata = useTaskfilter(tasks, search, active);
-  const { user } = useAuth();
-  console.log(user);
-
-
-
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 3;
@@ -69,121 +49,13 @@ export default function Tasks() {
   const firstIndex = lastIndex - filesPerPage;
   const currentFiles = filterdata?.slice(firstIndex, lastIndex);
   const totalPages = Math.ceil(filterdata?.length / filesPerPage);
-
-
   const today = new Date();
-
-
-
-
-
   const navigate = useNavigate();
-
   const [open, setOpen] = useState(false);
 
 
   console.log(tasks);
-
-  const [employees, setEmployees] =
-    useState([]);
   console.log(employees);
-
-  useEffect(() => {
-
-    // TASKS REALTIME
-    /*  if (!user?.uid) return;
- 
-   const q = query(
-     collection(db, "tasks"),
-     where("assignedTo", "==", user.uid)
-   );
- 
-   const unsubscribe = onSnapshot(q, (snapshot) => {
-     const taskList = [];
- 
-     snapshot.forEach((doc) => {
-       taskList.push({
-         id: doc.id,
-         ...doc.data(),
-       });
-     });
- 
-     setTasks(taskList);
-   });
- 
-   return () => unsubscribe();*/
-
-    const unsubscribe =
-      onSnapshot(
-
-        collection(db, 'tasks'),
-
-        (snapshot) => {
-
-          const taskList = [];
-
-          snapshot.forEach((doc) => {
-
-            taskList.push({
-              id: doc.id,
-              ...doc.data(),
-            });
-
-          });
-
-          setTasks(taskList);
-
-        }
-
-      );
-
-
-
-    // EMPLOYEES
-
-    const fetchEmployees =
-      async () => {
-
-        try {
-
-          const snapshot =
-            await getDocs(
-              collection(db, 'employees')
-            );
-
-          const employeeList = [];
-
-          snapshot.forEach((doc) => {
-
-            employeeList.push({
-              id: doc.id,
-              ...doc.data(),
-            });
-
-          });
-
-          setEmployees(employeeList);
-
-        } catch (error) {
-
-          console.log(error);
-
-        }
-        finally {
-          setLoading(false);             //SetLoading false stop loading
-        }
-
-      };
-
-    fetchEmployees();
-
-    return () => unsubscribe();
-
-  }, [user]);
-
-  //SEARCH FILTER
-
-
 
   //STATS
 
@@ -212,20 +84,6 @@ export default function Tasks() {
     setActive(activeindex);
   }
 
-
-
-  const filteredTasks =
-    tasks.filter((task) =>
-
-      task.company
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
-
-      task.assignedEmployee
-        ?.toLowerCase()
-        .includes(search.toLowerCase())
-
-    );
 
   return (
     <div className="flex max-h-screen bg-gray-100 overflow-y-auto no-scrollbar">
@@ -336,7 +194,7 @@ export default function Tasks() {
                     border-gray-200
                     rounded-2xl
                     p-5 md:p-7"
-                      onClick={() => navigate(`/employee/taskDetails/:id`)}>
+                      onClick={() => navigate(`/employee/taskDetails/${task.uid}`)}>
 
                       {/* TOP */}
 

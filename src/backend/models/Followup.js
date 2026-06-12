@@ -1,16 +1,81 @@
 const mongoose = require("mongoose");
 
-const followupSchema = new mongoose.Schema(
+const FollowupSchema = new mongoose.Schema(
   {
-    leadName: String,
-    company: String,
-    followupType: String,
-    date: String,
-    time: String,
-    status: String,
-    remarks: String,
+    clientName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    companyName: {
+      type: String,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+
+    status: {
+      type: String,
+      enum: ["New", "Pending", "Completed"],
+      default: "New",
+    },
+
+    leadSchedule: {
+      type: String,
+      trim: true,
+    },
+
+    type: {
+      type: String,
+      enum: ["Call", "Email", "Website", "Meeting"],
+      required: true,
+    },
+
+    assignedTo: {
+      type: String,
+      trim: true,
+    },
+
+    followupCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    followupTime: {
+      type: String, // Example: "17:30"
+    },
+
+    nextFollowupDate: {
+      type: Date,
+    },
+
+    notes: {
+      type: String,
+      trim: true,
+    },
+
+    isCompleted: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-module.exports = mongoose.model("Followup", followupSchema);
+module.exports =
+  mongoose.models.Followup ||
+  mongoose.model("Followup", FollowupSchema);

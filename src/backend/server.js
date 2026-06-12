@@ -19,6 +19,13 @@ const PaymentRoutes = require('./routes/PaymentRoutes');
 const LeaveRoute = require('./routes/LeaveRoute');
 const HolidayRoute = require('./routes/HolidayRoute');
 
+const EmpAttendanceRoutes = require('./routes/EmpAttendanceRoutes');
+const AnnouncementSchema = require('./routes/Announcements');
+const NotificationRoutes = require('./routes/NotificationRoutes');
+const TicketRoutes = require('./routes/TicketRoutes');
+const path = require("path");
+const FeedbackRoutes= require('./routes/FeedbackRoutes');
+const PayslipRoutes= require('./routes/PayslipRoutes');
 
 
 connectDB();
@@ -34,8 +41,10 @@ app.use(
       'GET',
       'POST',
       'PUT',
-      'DELETE'
+      'DELETE',
+      'PATCH',
     ],
+     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
@@ -45,18 +54,22 @@ app.use("/api/leads", leadRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/followups", followupRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-app.use(
-  "/api/attendance",
-  attendanceRoutes
-);
+app.use("/api/attendance", attendanceRoutes);
 app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
-app.use("/api/leave",LeaveRoute);
-app.use("/api/holidays",HolidayRoute);
+app.use("/api/leave", LeaveRoute);
+app.use("/api/holidays", HolidayRoute);
 
 
+app.use("/api/empattendancenew", EmpAttendanceRoutes)
+app.use("/api/announcement", AnnouncementSchema);
+app.use("/api/notification", NotificationRoutes);
+app.use("/api/ticket", TicketRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/feedback",FeedbackRoutes);
+app.use("/api/payslip",PayslipRoutes);
 
 
 app.listen(process.env.PORT, () => {

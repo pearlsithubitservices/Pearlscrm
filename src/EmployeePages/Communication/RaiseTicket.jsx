@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { UploadCloud, CalendarDays, IndianRupee, X } from "lucide-react";
 import InputField from "../../components/InputField";
+import useTicket from "../../Hooks/useTicket";
 
-export default function RaiseTicke({ onClose }) {
+export default function RaiseTicket({ onClose }) {
+    const {fetchTickets} = useTicket();
     const [formData, setFormData] = useState({
         issuedcategory: "",
         priority: "",
@@ -11,6 +13,7 @@ export default function RaiseTicke({ onClose }) {
         description: "",
         file: null,
     });
+    const { createTicket } = useTicket();
 
     const handleChange = (e) => {
         setFormData((prev) => ({
@@ -26,9 +29,11 @@ export default function RaiseTicke({ onClose }) {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-
+        await createTicket(formData);
+        await fetchTickets();
+        onClose();
         console.log(formData);
     };
 
@@ -44,7 +49,7 @@ export default function RaiseTicke({ onClose }) {
 
             <div className="flex items-center gap-3 mb-8">
                 <h3 className="uppercase text-sm tracking-[3px] text-gray-500 whitespace-nowrap">
-                    Reimbursement Claim
+                    Raise Ticket
                 </h3>
 
                 <div className="h-px flex-1 bg-gray-400" />
@@ -66,6 +71,15 @@ export default function RaiseTicke({ onClose }) {
                     value={formData.issuedcategory}
                     onChange={handleChange}
                     placeholder="IT hardware"
+                    type="select"
+                   options={[
+                    {value:"It/hardware",label:"IT/Hardware"},
+                    {value:"It/software",label:"IT/Software"},
+                    {value:"hr/payroll",label:"HR/Payroll"},
+                    {value:"finance",label:"Finance"},
+                    {value:"admin/facilities",label:"Admin/Facilities"},
+                    {value:"other",label:"Other"},
+                   ]}
                 />
 
                 <InputField

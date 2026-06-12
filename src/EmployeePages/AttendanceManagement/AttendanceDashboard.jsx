@@ -1,10 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Play, Coffee, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
-import { getAttendanceStatus } from "./AttendanceStatus";
-import { X, Clock, MapPin, CalendarDays } from "lucide-react";
 import AttendanceClockin from "./AttendanceClockin";
 
+import { useAuth } from "../../context/AuthContext";
+import useEmpAttendance from "../../Hooks/useEmpAttendance";
+
+const getLocalDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+};
 
 const AttendanceDashboard = ({
     photoSubmitted,
@@ -16,8 +25,13 @@ const AttendanceDashboard = ({
     setAttendanceRecords,
     attendanceRecords,
 }) => {
+
+    
+    const{clockIn,clockOut,startBreak, endBreak}=useEmpAttendance();
     const [working, setWorking] = useState(false);
     const [onBreak, setOnBreak] = useState(false);
+    const { user } = useAuth();
+
 
     const [seconds, setSeconds] = useState(0);
     const [breakTick, setBreakTick] = useState(0);
@@ -40,9 +54,17 @@ const AttendanceDashboard = ({
         const savedCompletedBreakSeconds = localStorage.getItem("completedBreakSeconds");
 
         if (savedClockInStamp) {
+            const stamp = Number(savedClockInStamp);
+
             setWorking(true);
-            setClockInStamp(Number(savedClockInStamp));
+            setClockInStamp(stamp);
             setClockInTime(savedClockInTime || "");
+
+            const elapsed = Math.floor(
+                (Date.now() - stamp) / 1000
+            );
+
+            setSeconds(elapsed);
         }
 
         if (savedCompletedBreakSeconds) {
@@ -165,125 +187,176 @@ const AttendanceDashboard = ({
     };
 
     // CLOCK IN
-    const handleClockIn = () => {
+    const handleClockIn = async () => {
         if (!photoSubmitted) {
             alert("Please capture and submit photo first");
             return;
         }
 
-        const now = Date.now();
+        try {
+            const now = Date.now();
 
-        const formattedTime =
-            new Date(now).toLocaleTimeString([], {
+            const formattedTime = new Date(now).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
             });
 
-        setWorking(true);
-        setClockInStamp(now);
-        setShowClockInToast(false);
+            // Update UI
+            setWorking(true);
+            setClockInStamp(now);
+            setShowClockInToast(false);
+            setClockInTime(formattedTime);
 
-        setClockInTime(formattedTime);
+            // Save to localStorage
+            localStorage.setItem("clockInStamp", now);
+            localStorage.setItem("clockInTime", formattedTime);
 
-        localStorage.setItem("clockInStamp", now);
+            // Call API
+            const res = await clockIn({
+                employee_uid: user.uid,
+                employee_name: user.displayName || "Deepan",
+                department: "Developer",
+                date: getLocalDateString(),
+            });
 
-        localStorage.setItem("clockInTime", formattedTime);
+            console.log("Clock In Success:", res);
+
+        } catch (err) {
+            console.error("Clock In Failed:", err);
+            alert(err.message);
+
+            // Rollback UI changes if API fails
+            setWorking(false);
+            setClockInStamp(null);
+            setClockInTime("");
+
+            localStorage.removeItem("clockInStamp");
+            localStorage.removeItem("clockInTime");
+        }
     };
 
     // Toggle Break (start/resume)
-    const handleToggleBreak = () => {
-        if (!onBreak) {
-            // start break
-            const now = Date.now();
-            setBreakStartStamp(now);
-            setOnBreak(true);
-            // breakStartStamp will be persisted by effect
-        } else {
-            // resume work
-            if (breakStartStamp) {
+    const handleToggleBreak = async () => {
+        const today = getLocalDateString();
+
+        try {
+            if (!onBreak) {
+                // Start Break
                 const now = Date.now();
-                const duration = Math.floor((now - breakStartStamp) / 1000);
-                const updated = completedBreakSeconds + duration;
-                setCompletedBreakSeconds(updated);
-                setBreakStartStamp(null);
-                setOnBreak(false);
-                setBreakTick((prev) => prev + 1);
+
+                await startBreak({
+                    employee_uid: user.uid,
+                    date: today,
+                });
+
+                setBreakStartStamp(now);
+                setOnBreak(true);
+
             } else {
-                setOnBreak(false);
+                // Resume Work
+                if (breakStartStamp) {
+                    const now = Date.now();
+
+                    const duration = Math.floor(
+                        (now - breakStartStamp) / 1000
+                    );
+
+                    await endBreak({
+                        employee_uid: user.uid,
+                        date: today,
+                    });
+
+                    setCompletedBreakSeconds(
+                        prev => prev + duration
+                    );
+
+                    setBreakStartStamp(null);
+                    setOnBreak(false);
+                } else {
+                    setOnBreak(false);
+                }
             }
+        } catch (err) {
+            console.error(err);
+            alert(err.message);
         }
     };
 
     // CLOCK OUT
-    const handleClockOut = () => {
-        const now = Date.now();
+    const handleClockOut = async () => {
+        try {
+            const now = Date.now();
 
-        // compute total break seconds: accumulated + any running break
-        const runningBreak = breakStartStamp ? Math.floor((now - breakStartStamp) / 1000) : 0;
-        const totalBreakSeconds = completedBreakSeconds + runningBreak;
+            // If user is on break, end the break first
+            if (onBreak && breakStartStamp) {
+                const duration = Math.floor(
+                    (now - breakStartStamp) / 1000
+                );
 
-        setWorking(false);
-        setOnBreak(false);
-        setBreakTick(0);
-        setCompletedBreakSeconds(0);
-        setBreakStartStamp(null);
+                setCompletedBreakSeconds(prev =>
+                    prev + duration
+                );
 
-        setClockOutStamp(now);
+                await endBreak({
+                    employee_uid: user.uid,
+                    date: getLocalDateString(),
+                });
+            }
 
-        // clear persisted keys
-        localStorage.removeItem("clockInStamp");
-        localStorage.removeItem("clockInTime");
-        localStorage.removeItem("breakStartStamp");
-        localStorage.removeItem("completedBreakSeconds");
-        localStorage.removeItem("breakSeconds");
+            // Call backend clock out
+            const res = await clockOut({
+                employee_uid: user.uid,
+                date: getLocalDateString(),
+            });
 
-        const formattedOut = new Date(now).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
+            console.log("Clock Out Success:", res);
 
-        setClockOutTime(formattedOut);
+            // UI Updates
+            setWorking(false);
+            setOnBreak(false);
+            setBreakTick(0);
+            setCompletedBreakSeconds(0);
+            setBreakStartStamp(null);
 
-        const statusobj = getAttendanceStatus(clockInStamp, now);
+            setClockOutStamp(now);
 
-        const totalhours = calculateHours(clockInStamp, now);
+            const formattedOut = new Date(now).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
 
-        const breakHours = Number((totalBreakSeconds / 3600).toFixed(2));
+            setClockOutTime(formattedOut);
 
-        const totalWorkingHours = Math.max(0, Number((totalhours - breakHours).toFixed(2)));
+            // Clear local storage
+            localStorage.removeItem("clockInStamp");
+            localStorage.removeItem("clockInTime");
+            localStorage.removeItem("breakStartStamp");
+            localStorage.removeItem("completedBreakSeconds");
+            localStorage.removeItem("breakSeconds");
 
-        console.log(totalhours);
-        setHours(totalhours);
-        setSeconds(0);
+            // Optional: update UI records using backend response
+            setAttendanceRecords?.((prev) => [
+                ...prev,
+                {
+                    clockIn: res.data.clockIn,
+                    clockOut:res.data.clockOut,
+                    date: res.data.date,
+                    hours: Number((res.data.workingHours / 3600).toFixed(2)),
+                    breaks: res.data.breaks,
+                    status: res.data.status,
+                },
+            ]);
 
-        // save record (optional but correct structure)
-        setAttendanceRecords?.((prev) => [
-            ...prev,
-            {
-                clockIn: new Date(clockInStamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                }),
-                clockOut: formattedOut,
-                date: new Date().toLocaleDateString(),
-                hours: totalhours,
-                breakHours: breakHours,
-                totalWorkingHours: totalWorkingHours,
-                color: statusobj.color,
-                status: statusobj.status,
-            },
-        ]);
+            setSeconds(0);
 
-        console.log({
-            clockIn: clockInTime,
-            clockOut: new Date(now),
-            workSeconds: seconds,
-            breakSeconds: getCurrentBreakSeconds(),
-            totalhours,
-            breakHours,
-            totalWorkingHours,
-        });
+            console.log("Clocked out");
+
+        } catch (err) {
+            console.error("Clock Out Failed:", err);
+            alert(err.message);
+        }
     };
+
 
     return (
         <motion.div

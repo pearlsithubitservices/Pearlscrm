@@ -1,31 +1,64 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { IndianRupee } from "lucide-react";
+import usePayslip from "../../../Hooks/usePayslip";
 
 const PaySummary = () => {
-    const earnings = [
-        { title: "Basic salary", amount: "42500" },
-        { title: "HRA", amount: "20000" },
-        { title: "Special allowance", amount: "20000" },
-        { title: "Conveyance", amount: "15000" },
-    ];
+    const { payslips = [] } = usePayslip();
 
-    const deductions = [
-        { title: "PF (Employee)", amount: "1800" },
-        { title: "ESI", amount: "131" },
-        { title: "TDS (Income Tax)", amount: "4500" },
-        { title: "Professional Tax", amount: "15000" },
-    ];
+    // Latest payslip
+    const payslip = payslips?.[0];
+    console.log(payslip);
 
-    const monthyear = new Date().toLocaleDateString("en-us", {
+    const monthyear = new Date().toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
     });
-  const Grossearnings=earnings.reduce((sum, item)=> sum + Number(item.amount),0)
-  const totaldeductions=deductions.reduce((sum, item)=> sum + Number(item.amount),0);
 
-  const netearnings=Grossearnings-totaldeductions;
-    
+    if (!payslip) {
+        return (
+            <div className="bg-white rounded-2xl p-6 text-center">
+                No payslip data found
+            </div>
+        );
+    }
+
+    const earnings = [
+        {
+            title: "Basic Salary",
+            amount: payslip.basicSalary || 0,
+        },
+        {
+            title: "Medical Allowance",
+            amount: payslip.medical || 0,
+        },
+        {
+            title: "Performance Bonus",
+            amount: payslip.performanceBonus || 0,
+        },
+        {
+            title: "Conveyance",
+            amount: payslip.convayance || 0,
+        },
+    ];
+
+    const deductions = [
+        {
+            title: "PF (Employee)",
+            amount: payslip.pf || 0,
+        },
+        {
+            title: "ESI",
+            amount: payslip.esi || 0,
+        },
+        {
+            title: "TDS",
+            amount: payslip.tds || 0,
+        },
+        {
+            title: "Professional Tax",
+            amount: payslip.professionalTax || 0,
+        },
+    ];
 
     return (
         <motion.div
@@ -33,78 +66,82 @@ const PaySummary = () => {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
         >
-            {/* Summary Card */}
+            {/* Summary */}
             <motion.div
                 whileHover={{ y: -2 }}
-                className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm"
+                className="bg-white border rounded-2xl p-5 shadow-sm"
             >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex flex-col md:flex-row md:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-[#0b2b57]">
-                            Pay summary · {monthyear}
+                            Pay Summary · {monthyear}
                         </h1>
 
-                        <p className="text-gray-500 mt-1 text-sm md:text-base">
+                        <p className="text-gray-500 mt-1">
                             Monthly Earnings and Deductions Summary
                         </p>
                     </div>
 
                     <div className="text-left md:text-right">
                         <p className="text-gray-500 text-lg">
-                            Net take-home
+                            Net Take Home
                         </p>
 
                         <h2 className="text-4xl font-bold text-[#147a43]">
-                            ₹{netearnings.toLocaleString("en-IN")}
+                            ₹{Number(
+                                payslip.net || 0
+                            ).toLocaleString("en-IN")}
                         </h2>
                     </div>
                 </div>
             </motion.div>
 
-            {/* Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
                 {/* Earnings */}
                 <motion.div
                     whileHover={{ y: -2 }}
-                    className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm"
+                    className="bg-white border rounded-2xl p-5 shadow-sm"
                 >
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex justify-between mb-4">
                         <h2 className="text-2xl font-bold text-[#0b2b57]">
                             Earnings
                         </h2>
 
-                        <span className="text-2xl text-[#2563eb] font-medium">
+                        <span className="text-2xl text-[#2563eb]">
                             Amount
                         </span>
                     </div>
 
                     {earnings.map((item, index) => (
                         <div key={index}>
-                            <div className="flex items-center justify-between py-4">
-                                <span className="text-xl text-black">
+                            <div className="flex justify-between py-4">
+                                <span className="text-xl">
                                     {item.title}
                                 </span>
 
                                 <span className="text-xl text-[#163b63]">
-                                    ₹{item.amount}
+                                    ₹{Number(item.amount).toLocaleString("en-IN")}
                                 </span>
                             </div>
 
                             {index !== earnings.length - 1 && (
-                                <div className="border-b border-gray-200" />
+                                <div className="border-b" />
                             )}
                         </div>
                     ))}
 
-                    <div className="border-b border-gray-200 my-2" />
+                    <div className="border-b my-2" />
 
-                    <div className="flex items-center justify-between pt-3">
+                    <div className="flex justify-between pt-3">
                         <h3 className="text-2xl font-bold text-[#0b2b57]">
-                            Gross earnings
+                            Gross Earnings
                         </h3>
 
                         <span className="text-4xl font-bold text-[#147a43]">
-                            ₹{Grossearnings.toLocaleString("en-IN")}
+                            ₹{Number(
+                                payslip.gross || 0
+                            ).toLocaleString("en-IN")}
                         </span>
                     </div>
                 </motion.div>
@@ -112,45 +149,47 @@ const PaySummary = () => {
                 {/* Deductions */}
                 <motion.div
                     whileHover={{ y: -2 }}
-                    className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm"
+                    className="bg-white border rounded-2xl p-5 shadow-sm"
                 >
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex justify-between mb-4">
                         <h2 className="text-2xl font-bold text-[#0b2b57]">
                             Deductions
                         </h2>
 
-                        <span className="text-2xl text-[#2563eb] font-medium">
+                        <span className="text-2xl text-[#2563eb]">
                             Amount
                         </span>
                     </div>
 
                     {deductions.map((item, index) => (
                         <div key={index}>
-                            <div className="flex items-center justify-between py-4">
-                                <span className="text-xl text-black">
+                            <div className="flex justify-between py-4">
+                                <span className="text-xl">
                                     {item.title}
                                 </span>
 
                                 <span className="text-xl text-[#163b63]">
-                                    ₹{item.amount}
+                                    ₹{Number(item.amount).toLocaleString("en-IN")}
                                 </span>
                             </div>
 
                             {index !== deductions.length - 1 && (
-                                <div className="border-b border-gray-200" />
+                                <div className="border-b" />
                             )}
                         </div>
                     ))}
 
-                    <div className="border-b border-gray-200 my-2" />
+                    <div className="border-b my-2" />
 
-                    <div className="flex items-center justify-between pt-3">
+                    <div className="flex justify-between pt-3">
                         <h3 className="text-2xl font-bold text-[#0b2b57]">
-                            Total deductions
+                            Total Deductions
                         </h3>
 
                         <span className="text-4xl font-bold text-[#f04b23]">
-                            ₹{totaldeductions.toLocaleString("en-IN")}
+                            ₹{Number(
+                                payslip.totalDeductions || 0
+                            ).toLocaleString("en-IN")}
                         </span>
                     </div>
                 </motion.div>

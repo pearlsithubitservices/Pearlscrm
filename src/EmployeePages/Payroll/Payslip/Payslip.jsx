@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Download } from "lucide-react";
 import PaySummary from "./PaySummary";
 import { exportPayslipPDF } from "./PayslipExport";
+import usePayslip from "../../../Hooks/usePayslip";
+import PayslipForm from "./PayslipForm";
 
 const sampleRow = {
   month: "JUL-2026",
@@ -53,6 +55,11 @@ const StatusBadge = ({ status }) => {
 };
 
 const Payslip = () => {
+  const {payslips}=usePayslip();
+  console.log(payslips);
+  
+
+  const[showForm, setShowForm]=useState(false);
   return (
     <>
       <motion.div
@@ -61,6 +68,7 @@ const Payslip = () => {
         className="bg-white border rounded-xl p-4 h-[300px] overflow-auto no-scrollbar"
       >
         <div className=" ">
+          <button onClick={()=>setShowForm(true)}>Form</button>
           <table className="w-full min-w-[900px] ">
             <thead className="sticky top-0 z-20 bg-white ">
               <tr className=" border-b text-[#0b2b57] font-semibold ">
@@ -75,7 +83,8 @@ const Payslip = () => {
             </thead>
 
             <tbody>
-              {data.map((row, idx) => (
+              {payslips?.map((row, idx) => (
+               
                 <motion.tr
                   key={idx}
                   whileHover={{ scale: 1.01 }}
@@ -90,7 +99,7 @@ const Payslip = () => {
                   </td>
 
                   <td className="py-5 px-4 text-red-500">
-                    ₹{Number(row.deductions).toLocaleString('en-IN')}
+                    ₹{Number(row?.totalDeductions).toLocaleString('en-IN')}
                   </td>
 
                   <td className="py-5 px-4 text-blue-600">
@@ -118,6 +127,13 @@ const Payslip = () => {
             </tbody>
           </table>
         </div>
+        {showForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <PayslipForm
+            onClose={()=>setShowForm(false)}
+            />
+          </div>
+        )}
 
       </motion.div>
       

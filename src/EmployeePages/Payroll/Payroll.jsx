@@ -9,6 +9,7 @@ import Reimbursement from "./Reimbursement/Reimbursement";
 import { div } from "framer-motion/client";
 import TaxDocument from "./TaxDocument.jsx/TaxDocument";
 import Benefits from "./Benefits/Benefits";
+import usePayslip from "../../Hooks/usePayslip";
 
 
 
@@ -16,9 +17,11 @@ import Benefits from "./Benefits/Benefits";
 const Payroll = () => {
   const [activeTab, setActiveTab] = useState("Payslip");
   const [form, setForm] = useState(false);
+  const{ payslips}=usePayslip();
+
 
   const stats = [
-    { icon: CreditCard, label: "Groce Salary", value: "₹ 10,200" },
+    { icon: CreditCard, label: "Groce Salary", value: "₹ 10,700" },
     { icon: UserMinus2, label: "Deductions", value: "₹ 1,700" },
     { icon: IndianRupee, label: "Net Salary", value: "₹ 8,450" },
     { icon: Clock2, label: "Pending Claims", value: "₹ 4,800" },
