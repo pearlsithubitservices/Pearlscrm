@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const EmpAttendanceModel = require("../models/EmpAttendanceModel");
+const { calculateAttendanceStatus } = require("../../Utils/formatNumber");
 
 const parseDateOnly = (dateString) => {
   if (!dateString) return null;
@@ -109,7 +110,7 @@ router.post("/clock-out", async (req, res) => {
     const { employee_uid, date } = req.body;
     console.log(req.body);
 
-      const attendance = await findAttendanceForDate(employee_uid, date);
+    const attendance = await findAttendanceForDate(employee_uid, date);
 
     if (!attendance) {
       return res.status(404).json({
@@ -126,7 +127,7 @@ router.post("/clock-out", async (req, res) => {
     }
 
     attendance.clockOut = new Date();
-    attendance.status = "present";
+
     attendance.isOnline = false;
 
 
@@ -142,6 +143,7 @@ router.post("/clock-out", async (req, res) => {
         (attendance.clockOut - attendance.clockIn) / 1000 -
         totalBreakSeconds
       );
+    attendance.status = calculateAttendanceStatus(attendance.clockIn, attendance.clockOut, attendance.workingHours);
 
     await attendance.save();
 
@@ -253,4 +255,161 @@ router.post("/break/end", async (req, res) => {
   }
 });
 
+//UPDATE ATTENDANCE
+
+/* Update Attendance */
+router.put("/:id", async (req, res) => {
+  try {
+    const {
+      clockIn,
+      clockOut,
+      breaks,
+      status,
+      isOnline,
+    } = req.body;
+
+    const attendance = await EmpAttendanceModel.findById(req.params.id);
+
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: "Attendance not found",
+      });
+    }
+
+    attendance.clockIn = clockIn
+      ? new Date(clockIn)
+      : attendance.clockIn;
+
+    attendance.clockOut = clockOut
+      ? new Date(clockOut)
+      : attendance.clockOut;
+
+    attendance.breaks = breaks || attendance.breaks;
+
+
+
+    attendance.isOnline =
+      isOnline !== undefined
+        ? isOnline
+        : attendance.isOnline;
+
+    /* Recalculate break durations */
+    attendance.breaks.forEach((b) => {
+      if (b.start && b.end) {
+        b.duration = Math.max(
+          0,
+          Math.floor(
+            (new Date(b.end) - new Date(b.start)) / 1000
+          )
+        );
+      } else {
+        b.duration = 0;
+      }
+    });
+
+    /* Recalculate working hours */
+    if (attendance.clockIn && attendance.clockOut) {
+      let totalBreakSeconds = 0;
+
+      attendance.breaks.forEach((b) => {
+        totalBreakSeconds += b.duration || 0;
+      });
+
+      attendance.workingHours = Math.max(0,
+        Math.floor(
+          (
+            attendance.clockOut -
+            attendance.clockIn
+          ) / 1000
+        ) - totalBreakSeconds
+      );
+    }
+    if (status) {
+      attendance.status = status;
+    } else {
+      attendance.status = calculateAttendanceStatus(
+        attendance.clockIn,
+        attendance.clockOut,
+        attendance.workingHours
+      );
+    }
+
+    await attendance.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Attendance updated successfully",
+      data: attendance,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+//Absent marker
+
+router.post("/mark-absent", async (req, res) => {
+  try {
+    const { employee_uid } = req.body;
+
+    if (!employee_uid) {
+      return res.status(400).json({
+        success: false,
+        message: "employee_uid is required",
+      });
+    }
+
+    // Today's date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Check if attendance already exists
+    const existingAttendance =
+      await EmpAttendanceModel.findOne({
+        employee_uid,
+        date: {
+          $gte: today,
+          $lt: tomorrow,
+        },
+      });
+
+    if (existingAttendance) {
+      return res.status(200).json({
+        success: true,
+        message: "Attendance already exists",
+        data: existingAttendance,
+      });
+    }
+
+    // Create absent record
+    const attendance =
+      await EmpAttendanceModel.create({
+        employee_uid,
+        date: today,
+        status: "absent",
+        isOnline: false,
+        breaks: [],
+        workingHours: 0,
+      });
+
+    res.status(201).json({
+      success: true,
+      message: "Absent attendance created",
+      data: attendance,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
 module.exports = router;

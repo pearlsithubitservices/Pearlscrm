@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const ticketSchema = require('../models/CommunicationModels.js/HelpDesk');
+const ticketSchema = require('../models/CommunicationModels/HelpDesk');
 const multer = require('multer');
 
 const storage = multer.diskStorage({

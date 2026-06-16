@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Feedback = require("../models/CommunicationModels.js/Feedback");
+const Feedback = require("../models/CommunicationModels/Feedback");
 
 // CREATE FEEDBACK
 router.post("/", async (req, res) => {

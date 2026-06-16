@@ -22,3 +22,51 @@ export const getFinancialYear = () => {
         return `FY ${year - 1}-${String(year).slice(-2)}`;
     }
 };
+
+export const formatDateTimeLocal = (date) => {
+    if (!date) return "";
+
+    const d = new Date(date);
+
+    const timezoneOffset = d.getTimezoneOffset() * 60000;
+
+    return new Date(d - timezoneOffset)
+        .toISOString()
+        .slice(0, 16);
+};
+
+export const calculateAttendanceStatus = (
+    clockIn,
+    clockOut,
+    workingHours = 0
+) => {
+    if (!clockIn && !clockOut) {
+        return "Absent";
+    }
+
+    const inTime = new Date(clockIn);
+    const outTime = new Date(clockOut);
+
+    const officeStartMinutes = 9 * 60 + 30; // 9:30 AM
+    const officeEndMinutes = 18 * 60;       // 6:00 PM
+
+    const inMinutes =
+        inTime.getHours() * 60 + inTime.getMinutes();
+
+    const outMinutes =
+        outTime.getHours() * 60 + outTime.getMinutes();
+
+    if (workingHours > 0 && workingHours < 4 * 3600) {
+        return "Half Day";
+    }
+
+    if (inMinutes > officeStartMinutes) {
+        return "Late Comer";
+    }
+
+    if (outMinutes < officeEndMinutes) {
+        return "Early Logout";
+    }
+
+    return "Present";
+};

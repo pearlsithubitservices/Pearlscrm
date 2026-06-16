@@ -42,12 +42,14 @@ export default function useEmpAttendance() {
     employee_name,
     department,
     date,
+    photoStatus,
   }) => {
     return request("/clock-in", "POST", {
       employee_uid,
       employee_name,
       department,
       date,
+      photoStatus,
     });
   };
 
@@ -96,6 +98,27 @@ export default function useEmpAttendance() {
   const getAttendances = async () => {
     return request("/", "GET");
   };
+  // =========================
+  // UPDATE ATTENDANCE
+  // =========================
+  const updateAttendance = async (
+    attendanceId,
+    {
+      clockIn,
+      clockOut,
+      breaks,
+      status,
+      isOnline,
+    }
+  ) => {
+    return request(`/${attendanceId}`, "PUT", {
+      clockIn,
+      clockOut,
+      breaks,
+      status,
+      isOnline,
+    });
+  };
 
   return {
     loading,
@@ -105,5 +128,6 @@ export default function useEmpAttendance() {
     startBreak,
     endBreak,
     getAttendances,
+    updateAttendance,
   };
 }

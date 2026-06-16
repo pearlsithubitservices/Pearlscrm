@@ -1,6 +1,6 @@
 const express= require('express');
 const router=express.Router();
-const notificationSchema=require('../models/CommunicationModels.js/Notifications');
+const notificationSchema=require('../models/CommunicationModels/Notifications');
 
 //Get Notification
 router.get("/", async (req, res) => {

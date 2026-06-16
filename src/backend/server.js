@@ -18,6 +18,7 @@ const EmployeeRoutes = require('./routes/EmployeeRoutes');
 const PaymentRoutes = require('./routes/PaymentRoutes');
 const LeaveRoute = require('./routes/LeaveRoute');
 const HolidayRoute = require('./routes/HolidayRoute');
+const ReimbursementRoutes= require('./routes/ReimbursementRoutes');
 
 const EmpAttendanceRoutes = require('./routes/EmpAttendanceRoutes');
 const AnnouncementSchema = require('./routes/Announcements');
@@ -26,6 +27,8 @@ const TicketRoutes = require('./routes/TicketRoutes');
 const path = require("path");
 const FeedbackRoutes= require('./routes/FeedbackRoutes');
 const PayslipRoutes= require('./routes/PayslipRoutes');
+const EmpAttendanceCorrectionRoutes= require('./routes/EmpAttendanceCorrectionRoutes');
+const EmpMyGoal =require('./routes/MyGoalRoutes');
 
 
 connectDB();
@@ -61,7 +64,7 @@ app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
-
+app.use("/api/reimbursement",ReimbursementRoutes);
 
 app.use("/api/empattendancenew", EmpAttendanceRoutes)
 app.use("/api/announcement", AnnouncementSchema);
@@ -70,6 +73,8 @@ app.use("/api/ticket", TicketRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/feedback",FeedbackRoutes);
 app.use("/api/payslip",PayslipRoutes);
+app.use("/api/empAttendanceCorrection",EmpAttendanceCorrectionRoutes);
+app.use("/api/mygoal",EmpMyGoal)
 
 
 app.listen(process.env.PORT, () => {

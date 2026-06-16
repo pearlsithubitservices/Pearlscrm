@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import usePayslip from "../../../Hooks/usePayslip";
+import SummarySkeleton from "./SummarySkeleton";
 
 const PaySummary = () => {
     const { payslips = [] } = usePayslip();
@@ -16,9 +17,7 @@ const PaySummary = () => {
 
     if (!payslip) {
         return (
-            <div className="bg-white rounded-2xl p-6 text-center">
-                No payslip data found
-            </div>
+            <SummarySkeleton/>
         );
     }
 

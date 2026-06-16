@@ -17,12 +17,16 @@ import {
 } from "lucide-react";
 import usePayslip from "../../../Hooks/usePayslip";
 import { getFinancialYear } from '../../../Utils/formatNumber'
+import SalaryBreakupSkeleton from "./Skeleton";
 
 const SalaryBreakup = () => {
-    const { payslips = [] } = usePayslip();
+    const { payslips,loading} = usePayslip();
     const payslip = payslips[0];
     const financialYear = getFinancialYear();
     console.log(financialYear);
+    if(loading){
+        return<SalaryBreakupSkeleton/>
+    }
 
 
     const annualSummary = payslips.reduce(

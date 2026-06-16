@@ -2,15 +2,20 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { UploadCloud, CalendarDays, IndianRupee, X } from "lucide-react";
 import InputField from "../../../components/InputField.jsx";
+import useReimbursement from "../../../Hooks/useReimbursement.js";
+import { useAuth } from "../../../context/AuthContext.jsx";
 
-export default function ReimbursementClaimForm({onClose}) {
+export default function ReimbursementClaimForm({ onClose, getclaims }) {
   const [formData, setFormData] = useState({
     claimType: "",
     amount: "",
     expenseDate: "",
     description: "",
-    file: null,
+    receipt: null,
   });
+  const { submitClaim, loading } = useReimbursement();
+  const { user }=useAuth();
+  
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -22,14 +27,22 @@ export default function ReimbursementClaimForm({onClose}) {
   const handleFileChange = (e) => {
     setFormData((prev) => ({
       ...prev,
-      file: e.target.files[0],
+      receipt: e.target.files[0],
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    const data={
+      ...formData,
+      employee_uid:user.uid,
+       employee_name:user.displayname || "Deepan"
+    }
+    await submitClaim( data );
+    await getclaims();
+    onClose();
 
-    console.log(formData);
+    
   };
 
   return (
@@ -49,7 +62,7 @@ export default function ReimbursementClaimForm({onClose}) {
 
         <div className="h-px flex-1 bg-gray-400" />
         <X size={20} className="text-white bg-red-700 hover:scale-105 transition-transform duration-150 rounded"
-        onClick={onClose}
+          onClick={onClose}
         />
       </div>
 
@@ -149,7 +162,7 @@ export default function ReimbursementClaimForm({onClose}) {
 
             {formData.file && (
               <p className="mt-2 text-sm font-medium text-green-600">
-                {formData.file.name}
+                {formData.receipt.name}
               </p>
             )}
           </div>
@@ -162,7 +175,7 @@ export default function ReimbursementClaimForm({onClose}) {
         <button
           type="button"
           className="px-10 py-4 rounded-2xl border border-gray-400 bg-white text-gray-600 font-medium"
-        onClick={onClose}
+          onClick={onClose}
         >
           Cancel
         </button>

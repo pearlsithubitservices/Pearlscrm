@@ -10,9 +10,9 @@ import NotificationForm from "./NotificationForm";
 export default function ImportantNotifications() {
   const { notifications, fetchNotification } = useNotification();
   const [shownotification, setShownotification] = useState(false);
-  console.log(notifications);
+  
   return (
-    <div className="w-full max-w-4xl mx-auto ">
+    <div className="w-full max-w-5xl mx-auto ">
       {/* Header */}
       <div className="flex items-center justify-between bg-white shadow-sm border rounded-xl px-5 py-4">
         <h2 className="text-lg font-semibold">Important notifications</h2>

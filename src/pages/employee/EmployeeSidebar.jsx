@@ -83,9 +83,9 @@ const manageItems = [
  
 
   {
-    name: 'Performance ',
+    name: 'Performance & Growth',
     icon: CircleUser,
-    path: '/',
+    path: '/employee/performance',
   },
   {
     name: 'Reports & Statements',

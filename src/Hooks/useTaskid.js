@@ -12,6 +12,8 @@ const useTasks = (userId) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const {user}=useAuth();
+  console.log(user.uid);
+  console.log(tasks);
   
 
   useEffect(() => {
@@ -22,7 +24,7 @@ const useTasks = (userId) => {
 
     const q = query(
       collection(db, "tasks"),
-      //where("assignedTo", "==", user.uid)
+      where("assignedTo", "==", user.uid)
     );
 
     const unsub = onSnapshot(

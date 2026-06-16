@@ -10,6 +10,7 @@ import { div } from "framer-motion/client";
 import TaxDocument from "./TaxDocument.jsx/TaxDocument";
 import Benefits from "./Benefits/Benefits";
 import usePayslip from "../../Hooks/usePayslip";
+import useReimbursement from "../../Hooks/useReimbursement";
 
 
 
@@ -17,7 +18,9 @@ import usePayslip from "../../Hooks/usePayslip";
 const Payroll = () => {
   const [activeTab, setActiveTab] = useState("Payslip");
   const [form, setForm] = useState(false);
-  const{ payslips}=usePayslip();
+  const { payslips } = usePayslip();
+  const { getClaims } = useReimbursement();
+
 
 
   const stats = [
@@ -74,7 +77,7 @@ const Payroll = () => {
             animate={{ opacity: 1, y: 0 }}
             className=" rounded-xl p-6 "
           >
-            <TaxDocument/>
+            <TaxDocument />
           </motion.div>
         );
 
@@ -87,7 +90,8 @@ const Payroll = () => {
             className=" rounded-xl "
           >
             <div>
-              <Reimbursement />
+              <Reimbursement
+              getclaims={getClaims} />
             </div>
           </motion.div>
         );
@@ -100,7 +104,7 @@ const Payroll = () => {
             animate={{ opacity: 1, y: 0 }}
             className=" rounded-xl "
           >
-           <Benefits/>
+            <Benefits />
           </motion.div>
         );
 
@@ -197,8 +201,10 @@ const Payroll = () => {
             exit={{ scale: 0.9, opacity: 0 }}
             className="w-full max-w-3xl max-h-[90vh] overflow-y-auto no-scrollbar"
           >
-            <ReimbursementClaimForm 
-            onClose={()=>setForm(false)}/>
+            <ReimbursementClaimForm
+              onClose={() => setForm(false)}
+              getclaims={getClaims}
+            />
           </motion.div>
         </motion.div>
       )}

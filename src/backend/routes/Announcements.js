@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const announcementSchema = require('../models/CommunicationModels.js/Announcements');
+const announcementSchema = require('../models/CommunicationModels/Announcements');
 
 //Get Announcements
 router.get("/", async (req, res) => {

@@ -83,6 +83,8 @@ import EmpDocument from './EmployeePages/Document/Document.jsx';
 import EmpSettings from './EmployeePages/Settings/settings.jsx';
 import EmpDashboard from './EmployeePages/Dashboard/Dashboard.jsx';
 import EmpFollowUps from './EmployeePages/FollowUps/FollowUps.jsx'
+import EGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.jsx'
+
 
 
 
@@ -296,6 +298,8 @@ export default function App() {
               <Route path="/employee/task" element={<EmpTask />} />
               <Route path="/employee/dashboard" element={<EmpDashboard />} />
               <Route path="/employee/follow-ups" element={<EmpFollowUps />} />
+              <Route path="/employee/performance" element={<EmpPerformance />} />
+              <Route path="/employee/performance/:id" element={<EGoalDetails />} />
 
               <Route
                 path="/employee/attendance"

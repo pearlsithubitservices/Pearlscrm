@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Wallet,
@@ -8,29 +8,30 @@ import {
   Bell,
   FileEdit,
 } from "lucide-react";
+import { getFinancialYear } from "../../../Utils/formatNumber";
+import useReimbursement from "../../../Hooks/useReimbursement";
 
-export default function Reimbursement() {
- 
-    const claims = [
-    {
-      title: "Travel — Client visit Chennai",
-      date: "Aug 12, 2024",
-      amount: "₹2,400",
-      status: "Pending",
-    },
-    {
-      title: "Equipment — USB hub & keyboard",
-      date: "Jul 04, 2024",
-      amount: "₹2,400",
-      status: "Paid",
-    },
-    {
-      title: "Training — Udemy course",
-      date: "Jul 04, 2024",
-      amount: "₹2,400",
-      status: "Paid",
-    },
-  ];
+export default function Reimbursement({ getclaims }) {
+  const financialyear = getFinancialYear();
+  
+  const [claims, setClaims] = useState([]);
+  console.log(claims);
+  useEffect(() => {
+    const fetchClaims = async () => {
+      try {
+        const res = await getclaims();
+
+        console.log(res.data); // API response
+        setClaims(res.data); // if you have state
+      } catch (error) {
+        console.error("Failed to fetch claims:", error);
+      }
+    };
+
+    fetchClaims();
+  }, []);
+
+
 
   const policies = [
     {
@@ -75,24 +76,24 @@ export default function Reimbursement() {
           <div className="mt-8 space-y-7">
             {claims.map((claim) => (
               <div
-                key={claim.title}
+                key={claim._id}
                 className="flex items-center justify-between"
               >
                 <div>
                   <h3 className="font-bold text-xl text-[#0f2f58]">
-                    {claim.title}
+                    {claim.claimType} - {claim.description}
                   </h3>
 
-                  <p className="text-gray-400 mt-1">{claim.date}</p>
+                  <p className="text-gray-400 mt-1">{new Date(claim.createdAt).toLocaleDateString()}</p>
                 </div>
 
                 <div className="text-right">
-                  <p className="font-bold">{claim.amount}</p>
+                  <p className="font-bold mr-4">{claim.amount}</p>
 
                   <span
                     className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-semibold ${claim.status === "Paid"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-orange-100 text-orange-500"
+                      ? "bg-green-100 text-green-600"
+                      : "bg-orange-100 text-orange-500"
                       }`}
                   >
                     {claim.status}
@@ -112,7 +113,7 @@ export default function Reimbursement() {
             </h2>
 
             <span className="text-2xl font-semibold text-gray-500">
-              2025–26
+              {financialyear}
             </span>
           </div>
 

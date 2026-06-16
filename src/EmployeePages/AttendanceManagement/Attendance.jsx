@@ -74,7 +74,7 @@ const Attendance = () => {
                             <div>
                                 <p className="text-xs text-gray-500">Today</p>
                                 <p className="font-semibold">
-                                    {new Date().toLocaleDateString()}
+                                    {new Date().toLocaleDateString("en-GB")}
                                 </p>
                             </div>
                         </div>

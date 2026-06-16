@@ -40,8 +40,8 @@ const EmpattendanceSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['present','absent','half day','late comer','early logout'],
-      default: 'present',
+      enum: ['present','absent','half day','late comer','early logout','leave'],
+      
     },
 
     workingHours: {

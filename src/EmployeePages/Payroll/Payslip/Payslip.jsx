@@ -5,33 +5,11 @@ import PaySummary from "./PaySummary";
 import { exportPayslipPDF } from "./PayslipExport";
 import usePayslip from "../../../Hooks/usePayslip";
 import PayslipForm from "./PayslipForm";
+import Skeleton from "./Skeleton";
 
-const sampleRow = {
-  month: "JUL-2026",
-  gross: "10200",
-  deductions: "1750",
-  net: "8450",
-  date: "MON-25-MAY",
-  status: "Pending",
-};
 
-const data = Array.from({ length: 7 }).map((_, i) => {
-  const statuses = ["Pending", "Paid", "Present"];
 
-  return {
-    ...sampleRow,
-    month: [
-      "JUL-2026",
-      "JUN-2026",
-      "MAY-2026",
-      "APR-2026",
-      "MAR-2026",
-      "FEB-2026",
-      "JAN-2026",
-    ][i],
-    status: statuses[i % statuses.length],
-  };
-});
+
 
 
 const StatusBadge = ({ status }) => {
@@ -55,11 +33,14 @@ const StatusBadge = ({ status }) => {
 };
 
 const Payslip = () => {
-  const {payslips}=usePayslip();
+  const {payslips,loading}=usePayslip();
   console.log(payslips);
   
 
   const[showForm, setShowForm]=useState(false);
+  if(loading){
+    return <Skeleton/>
+  }
   return (
     <>
       <motion.div

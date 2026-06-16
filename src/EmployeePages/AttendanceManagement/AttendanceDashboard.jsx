@@ -5,6 +5,7 @@ import AttendanceClockin from "./AttendanceClockin";
 
 import { useAuth } from "../../context/AuthContext";
 import useEmpAttendance from "../../Hooks/useEmpAttendance";
+import { calculateAttendanceStatus } from "../../Utils/formatNumber";
 
 const getLocalDateString = () => {
     const now = new Date();
@@ -217,6 +218,8 @@ const AttendanceDashboard = ({
                 employee_name: user.displayName || "Deepan",
                 department: "Developer",
                 date: getLocalDateString(),
+                photophotoStatus:"submitted",
+            
             });
 
             console.log("Clock In Success:", res);
