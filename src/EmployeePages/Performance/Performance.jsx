@@ -7,35 +7,43 @@ import {
   Users,
   BadgeCheck,
   Target,
+  CheckCircle,
+  Disc,
+  MessageSquareHeartIcon,
+  Disc2Icon,
+  BadgeCent,
+  BadgeTurkishLiraIcon,
 } from "lucide-react";
 
 import MyGoals from "./MyGoals/MyGoals";
 import AddGoalForm from "./MyGoals/AddGoal";
  import TrainingLearning from "./Training&Learning/Dashboard";
-// import PerformanceReviews from "./PerformanceReviews";
+ import PerformanceReviews from "./Reviews/Review";
+import Certifications from "./Skills&certifications/SkillsCertifications";
+import SkillsCertifications from "./Skills&certifications/SkillsCertifications";
 // import SkillsCertifications from "./SkillsCertifications";
 
 const stats = [
   {
-    icon: Flag,
+    icon: Disc2Icon,
     title: "Goals on track",
     value: "05",
     badge: "3 Active",
   },
   {
-    icon: MessageCircleMore,
+    icon: MessageSquareHeartIcon,
     title: "Last Review Score",
     value: "4.2 / 5",
     badge: "4.2 ⭐",
   },
   {
-    icon: Users,
+    icon: CheckCircle,
     title: "Courses Completed",
     value: "02",
     badge: "2 in progress",
   },
   {
-    icon: BadgeCheck,
+    icon: BadgeTurkishLiraIcon,
     title: "Certifications",
     value: "05",
     badge: "2 in progress",
@@ -89,7 +97,7 @@ export default function PerformanceGrowth() {
       </motion.div>
 
       {/* Stats */}
-      <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-6 mb-8 px-4">
+      <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-6 mb-4 px-4">
         {stats.map((item, index) => {
           const Icon = item.icon;
 
@@ -99,7 +107,7 @@ export default function PerformanceGrowth() {
               initial={{ opacity: 0, y: 25 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm"
+              className="bg-white rounded-2xl border border-gray-200 p-2 mx-2 shadow-sm"
             >
               <div className="flex justify-between mb-6">
                 <div className="w-12 h-12 rounded-xl border bg-gray-50 flex items-center justify-center">
@@ -156,7 +164,7 @@ export default function PerformanceGrowth() {
         key={showModel}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className=" pb-2"
+        className=" pb-2 mb-2"
       >
         {showModel === "mygoals" && <MyGoals />}
 
@@ -166,13 +174,13 @@ export default function PerformanceGrowth() {
         )}
 
         {showModel === "reviews" && (
-          <p>Reviews</p>
-          //<PerformanceReviews />
+          
+          <PerformanceReviews />
         )}
 
         {showModel === "skills" && (
-          <p>Skills</p>
-          //<SkillsCertifications />
+          
+          <SkillsCertifications />
         )}
       </motion.div>
       {goalform && (

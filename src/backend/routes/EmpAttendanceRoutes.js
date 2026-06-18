@@ -110,7 +110,11 @@ router.post("/clock-out", async (req, res) => {
     const { employee_uid, date } = req.body;
     console.log(req.body);
 
-    const attendance = await findAttendanceForDate(employee_uid, date);
+    const attendance = await EmpAttendanceModel.findOne({
+      employee_uid,
+      clockIn: { $ne: null },
+      clockOut: null,
+    }).sort({ clockIn: -1 });
 
     if (!attendance) {
       return res.status(404).json({
@@ -126,6 +130,7 @@ router.post("/clock-out", async (req, res) => {
       });
     }
 
+    
     attendance.clockOut = new Date();
 
     attendance.isOnline = false;

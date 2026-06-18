@@ -29,6 +29,10 @@ const FeedbackRoutes= require('./routes/FeedbackRoutes');
 const PayslipRoutes= require('./routes/PayslipRoutes');
 const EmpAttendanceCorrectionRoutes= require('./routes/EmpAttendanceCorrectionRoutes');
 const EmpMyGoal =require('./routes/MyGoalRoutes');
+const EmpReview = require('./routes/ReviewRoutes');
+const EmpEnrollment = require('./routes/EnrollmentRoutes');
+const EmpCourse= require('./routes/EmpCourseRoutes');
+const EmpSkillCertification = require('./routes/SkillCertificationRoutes');
 
 
 connectDB();
@@ -75,6 +79,10 @@ app.use("/api/feedback",FeedbackRoutes);
 app.use("/api/payslip",PayslipRoutes);
 app.use("/api/empAttendanceCorrection",EmpAttendanceCorrectionRoutes);
 app.use("/api/mygoal",EmpMyGoal)
+app.use("/api/review",EmpReview);
+app.use("/api/empenrollment",EmpEnrollment);
+app.use("/api/empCourse",EmpCourse);
+app.use("/api/skillscertification",EmpSkillCertification);
 
 
 app.listen(process.env.PORT, () => {

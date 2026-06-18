@@ -148,32 +148,33 @@ export default function GoalProgress({ goals, setGoals, fetchGoals }) {
               <div className="relative pl-8">
                 <div className="absolute left-3 top-4 bottom-4 w-[2px] bg-[#D2D7E5]" />
 
-                <div className="space-y-14">
-                  {goals.progressLogs.map((item) => (
-                    <div
-                      key={item._id}
-                      className="relative"
-                    >
-                      <div className="absolute -left-7 top-2 w-5 h-5 rounded-full bg-[#3577F5]" />
+                <div className="space-y-14 h-[400px] overflow-y-auto no-scrollbar">
+                  {(goals.progressLogs || [])
+                    .sort((a, b) => new Date(b.date) - new Date(a.date)).map((item) => (
+                      <div
+                        key={item._id}
+                        className="relative"
+                      >
+                        <div className="absolute -left-7 top-2 w-5 h-5 rounded-full bg-[#3577F5]" />
 
-                      <div>
-                        <p className="text-[19px] leading-relaxed text-gray-500">
-                          {item.description}
-                        </p>
-                        <p className="text-[19px] leading-relaxed text-gray-500">
-                          {item.progress}% Completed
-                        </p>
+                        <div>
+                          <p className="text-[19px] leading-relaxed text-gray-500">
+                            {item.description}
+                          </p>
+                          <p className="text-[19px] leading-relaxed text-gray-500">
+                            {item.progress}% Completed
+                          </p>
 
-                        <p className="mt-3 text-gray-400 text-[18px]">
-                          {new Date(item.date).toLocaleDateString('en-GB')}
-                          <span className="mx-2">
-                            •
-                          </span>
-                          by {item.user || 'deepan'}
-                        </p>
+                          <p className="mt-3 text-gray-400 text-[18px]">
+                            {new Date(item.date).toLocaleDateString('en-GB')}
+                            <span className="mx-2">
+                              •
+                            </span>
+                            by {item.user || 'deepan'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </motion.div>

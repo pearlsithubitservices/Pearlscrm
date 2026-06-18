@@ -23,18 +23,18 @@ export default function FollowUps() {
   const [followups, setFollowups] = useState([]);
   const { getFollowups } = useFollowups();
   useEffect(() => {
-    const fetchdata =async ()=> {
-      try{
-        const data=await getFollowups();
+    const fetchdata = async () => {
+      try {
+        const data = await getFollowups();
         setFollowups(data);
         console.log(data);
       }
-      catch(err){
+      catch (err) {
         console.log(err);
       }
     }
     fetchdata();
-}, []);
+  }, []);
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
@@ -45,17 +45,17 @@ export default function FollowUps() {
 
   const buttons = ["All", "Missed", "Pending", "Completed", "Scheduled"];
 
-  const pending= followups.filter((item)=>(
-  item.status.toLowerCase() == "pending"
-));
-const completed= followups.filter((item)=>(
-  item.status.toLowerCase() == "completed"
-));
+  const pending = followups.filter((item) => (
+    item.status.toLowerCase() == "pending"
+  ));
+  const completed = followups.filter((item) => (
+    item.status.toLowerCase() == "completed"
+  ));
 
   const stats = [
     { icon: Users2, title: "Total FollowUps", value: followups.length },
     { icon: PhoneMissed, title: "Missed Today", value: "2" },
-    { icon: Clock2, title: "Pending Meetings", value:pending.length },
+    { icon: Clock2, title: "Pending Meetings", value: pending.length },
     { icon: CheckCheck, title: "Completed", value: completed.length },
   ];
 
@@ -76,7 +76,7 @@ const completed= followups.filter((item)=>(
       return matchesSearch && matchesStatus;
     });
 
-  }, [search, active,followups]);
+  }, [search, active, followups]);
 
   /* PAGINATION */
 
@@ -255,7 +255,7 @@ const completed= followups.filter((item)=>(
 
                     <tr
                       key={item._id}
-                      onClick={() => navigate(`/followupDetails/${item._id}`)}
+                      onClick={() => navigate(`/empfollowupDetails/${item._id}`)}
                       className="border-t hover:bg-gray-50 cursor-pointer transition"
 
                     >
@@ -287,7 +287,7 @@ const completed= followups.filter((item)=>(
                       <td>{item.followupTime}</td>
 
                       <td>
-                        <span className="bg-gray-100 px-3 py-1 rounded text-xs">
+                        <span className={`${item?.status == "Completed" ? "bg-green-300 text-green-600" : item?.status == "Pending" ? "bg-red-300 text-red-600" : "bg-blue-300 text-blue-600"}  px-3 py-1 flex  flex-col items-center w-fit justify-center rounded text-xs`}>
                           {item.status}
                         </span>
                       </td>

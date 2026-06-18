@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Pencil,
@@ -12,12 +12,38 @@ import {
 import FollowupOverview from "../components/FollowupDetails/FollowupOverview";
 import FollowupNotes from "../components/FollowupDetails/FollowupNotes";
 import FollowupNextAction from "../components/FollowupDetails/FollowupNextaction";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import useFollowups from "../Hooks/useFollowups";
 
 export default function FollowupDetails() {
 
+  const { getFollowups } = useFollowups();
+  const [followups, setFollowups] = useState();
+
+  const { id } = useParams();
+  console.log(id);
+  const followupbyId = followups?.find((item) => (
+    item._id == id
+  ))
+  console.log(followupbyId)
+
+  useEffect(() => {
+
+    fetchdata();
+  }, []);
+
+  const fetchdata = async () => {
+    try {
+      const data = await getFollowups();
+      setFollowups(data);
+      console.log(data);
+    }
+    catch (err) {
+      console.log(err);
+    }
+  }
   const [activeTab, setActivetab] = useState("Overview");
-  const navigate=useNavigate();
+  const navigate = useNavigate();
 
   const buttons = [
     "Overview",
@@ -52,7 +78,9 @@ export default function FollowupDetails() {
     switch (activeTab) {
 
       case "Overview":
-        return <FollowupOverview />;
+        return <FollowupOverview
+          followups={followupbyId}
+          fetchfollowups={getFollowups} />;
 
       case "Notes":
         return <FollowupNotes />;
@@ -72,10 +100,10 @@ export default function FollowupDetails() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-h-screen overflow-y-auto no-scrollbar bg-[#f5f3ee] rounded-[26px]  "
-       >
-         <X size={16} className=" absolute bg-red-600 top-3 right-2 text-white rounded hover:scale-105 transition-transform duration-150"
-         onClick={()=>navigate(-1)}
-         />
+      >
+        <X size={16} className=" absolute bg-red-600 top-3 right-2 text-white rounded hover:scale-105 transition-transform duration-150"
+          onClick={() => navigate(-1)}
+        />
 
         {/* HEADER */}
 
@@ -86,20 +114,20 @@ export default function FollowupDetails() {
             {/* LEFT */}
 
             <div className="relative flex gap-4">
-             
 
-              <div className="w-10 h-10 rounded-md bg-[#e7edf8] flex items-center justify-center text-[#3167dc] font-bold text-sm">
-                SC
+
+              <div className="w-10 h-10 rounded-md bg-[#e7edf8] flex items-center justify-center text-[#3167dc] font-bold text-lg">
+                {followupbyId?.clientName?.charAt(0)?.toUpperCase()}
               </div>
 
               <div>
 
                 <h1 className="text-4xl font-bold text-[#0b2d59]">
-                  Sarah Chen
+                  {followupbyId?.clientName || "Deepan"}
                 </h1>
 
                 <p className="text-[#8e8e8e] mt-1">
-                  Techflow Solutions
+                  {followupbyId?.companyName || "Techflow Solutions"}
                 </p>
 
               </div>
@@ -138,11 +166,10 @@ export default function FollowupDetails() {
                     key={i}
                     className={`
                     flex items-center gap-2 px-5 py-2 rounded-md text-sm transition
-                    ${
-                      btn.active
+                    ${btn.active
                         ? "bg-[#3167dc] text-white"
                         : "bg-white border border-[#d8d8d8] text-[#777]"
-                    }
+                      }
                     `}
                   >
 
@@ -182,11 +209,10 @@ export default function FollowupDetails() {
               onClick={() => setActivetab(tab)}
               className={`
               relative py-5 text-sm transition
-              ${
-                activeTab === tab
+              ${activeTab === tab
                   ? "text-[#3167dc] font-medium"
                   : "text-[#999]"
-              }
+                }
               `}
             >
 

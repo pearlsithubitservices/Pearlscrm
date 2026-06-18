@@ -93,7 +93,7 @@ const MyGoals = () => {
                                 </p>
                             </div>
 
-                            <div className="text-right">
+                            <div className="text-right flex h-fit items-center justify-center gap-4">
                                 <span
                                     className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${goal.status === "Completed"
                                         ? "bg-blue-50 text-[#0b2b57]"
@@ -101,18 +101,18 @@ const MyGoals = () => {
                                         }`}
                                 >
                                     <CircleDot size={12} />
-                                    {goal.status?goal.status:"on Track"}
+                                    {"on Track"}
                                 </span>
 
-                                <p className="text-gray-500 mt-6">
-                                    {goal.due}
+                                <p className="text-gray-500 ">
+                                    {new Date(goal.dueDate).toLocaleDateString('en-GB')}
                                 </p>
                             </div>
                         </div>
 
                         {/* Progress */}
-                        <div className="mt-8">
-                            <div className="flex justify-between items-center mb-3">
+                        <div className="mt-2">
+                            <div className="flex justify-between items-center ">
                                 <span className="text-[#d2a44a] text-xl">
                                     Overall progress
                                 </span>

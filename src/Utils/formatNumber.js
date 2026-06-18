@@ -41,7 +41,7 @@ export const calculateAttendanceStatus = (
     workingHours = 0
 ) => {
     if (!clockIn && !clockOut) {
-        return "Absent";
+        return "absent";
     }
 
     const inTime = new Date(clockIn);
@@ -57,16 +57,16 @@ export const calculateAttendanceStatus = (
         outTime.getHours() * 60 + outTime.getMinutes();
 
     if (workingHours > 0 && workingHours < 4 * 3600) {
-        return "Half Day";
+        return "half day";
     }
 
     if (inMinutes > officeStartMinutes) {
-        return "Late Comer";
+        return "late comer";
     }
 
     if (outMinutes < officeEndMinutes) {
-        return "Early Logout";
+        return "early logout";
     }
 
-    return "Present";
+    return "present";
 };

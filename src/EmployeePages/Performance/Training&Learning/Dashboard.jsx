@@ -6,45 +6,52 @@ import aws from '../../../assets/aws.jpeg';
 import Leadership from '../../../assets/Leadership.jpeg';
 import React from '../../../assets/React.jpeg';
 import SystemDesign from '../../../assets/SystemDesign.jpeg';
+import { useEffect, useState } from "react";
+import CourseForm from "./CourseForm";
+import useCourse from "../../../Hooks/useCourse";
 
 
 export default function Dashboard() {
+    const [showform, setShowForm] = useState(false);
+    const [course, setCourse] = useState([]);
+    const { getCourses, deleteAllCourses } = useCourse();
+
+    useEffect(() => {
+        fetchCourse();
+    }, []);
+    console.log(course);
+    const fetchCourse = async () => {
+        const data = await getCourses();
+
+        setCourse(data.data);
+    }
     return (
         <div className="flex-1 p-6 overflow-auto">
             {/* Courses */}
             <div className="flex justify-between items-center bg-white rounded-xl  p-4 mb-8" >
                 <h2 className="font-semibold ">Recommended for you</h2>
-                <button className="font-semibold cursor-pointer hover:underline hover:scale-105 transition-none duration-200 ">Browse All</button>
+                <div className="flex gap-8 items-center"><button className="font-semibold cursor-pointer hover:underline hover:scale-105 transition-none duration-200 ">Browse All</button>
+                    <button className="font-semibold cursor-pointer hover:underline hover:scale-105 transition-none duration-200 " onClick={() => setShowForm(true)}>Form</button>
+                    <button className="font-semibold cursor-pointer hover:underline hover:scale-105 transition-none duration-200 " onClick={async () => { await deleteAllCourses() }}>DeleteAll</button>
+                </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
-                <CourseCard
-                    src={aws}
-                    title="AWS Solutions Architect"
-                    tag="Recommended"
-                    time="32 hrs"
-                    level="Intermediate"
-                />
-                <CourseCard
-                    src={SystemDesign}
-                    title="System Design Masterclass"
-                    tag="New"
-                    time="18 hrs"
-                    level="Advanced"
-                />
-                <CourseCard
-                    src={React}
-                    title="React Performance Optimization"
-                    tag="New"
-                    time="12 hrs"
-                    level="Intermediate"
-                />
-                <CourseCard
-                    src={Leadership}
-                    title="Leadership Essentials"
-                    tag="Mandatory"
-                    time="10 hrs"
-                    level="Beginner"
-                />
+                
+                    {course.map((item) => (
+                        <CourseCard
+                            key={item._id}
+                            src={`http://localhost:5000${item.image}`}
+                            title={item.title}
+                            tag={item.tag}
+                            time={item.duration}
+                            level={item.level}
+                            provider={item.provider}
+                        />
+                    ))}
+               
+
+                
             </div>
 
             {/* History */}
@@ -83,17 +90,26 @@ export default function Dashboard() {
                         className="bg-white p-3 rounded-xl shadow-sm"
                     >
                         <div className="flex gap-8 items-center">
-                            <div className=" flex items-center justify-center w-10 h-10 bg-green-400 rounded-xl"><CheckCircle size={18}   className=" text-black/40 "/></div>
+                            <div className=" flex items-center justify-center w-10 h-10 bg-green-400 rounded-xl"><CheckCircle size={18} className=" text-black/40 " /></div>
                             <div className="flex flex-col gap-1 items-start">
-                               <p className="font-bold text-lg"> {item.title}</p>
-                               <div className="flex gap-2 items-center"> <p>{item.status}.</p>
-                               <p>{item.date}. </p><p>{item.hours}</p>
-                               </div>
+                                <p className="font-bold text-lg"> {item.title}</p>
+                                <div className="flex gap-2 items-center"> <p>{item.status}.</p>
+                                    <p>{item.date}. </p><p>{item.hours}</p>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
                 ))}
             </div>
+            {showform && (
+                <div className="fixed inset-0 z-40  backdrop-blur-sm p-2  overflow-y-auto no-scrollbar">
+                    <CourseForm
+                    fetchCourse={fetchCourse}
+                        onClose={() => setShowForm(false)} />
+                </div>
+            )
+
+            }
         </div>
     );
 }
