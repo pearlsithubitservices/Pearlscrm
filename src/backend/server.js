@@ -5,7 +5,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const connectDB = require("./db");
-
+const MarketingLeadRoutes =require("./routes/marketingLeadRoutes");
 const leadRoutes = require("./routes/leadRoutes");
 const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
@@ -22,6 +22,9 @@ const PaymentRoutes = require('./routes/PaymentRoutes');
 connectDB();
 
 const app = express();
+console.log("EmployeeRoutes =", EmployeeRoutes);
+console.log("PaymentRoutes =", PaymentRoutes);
+console.log("MarketingLeadRoutes =", MarketingLeadRoutes);
 app.use(
   cors({
     origin: [
@@ -51,7 +54,7 @@ app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
-
+app.use("/api/marketing-leads",MarketingLeadRoutes);
 
 
 app.listen(process.env.PORT, () => {

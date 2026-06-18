@@ -65,6 +65,7 @@ import Attendance from './pages/Attendance.jsx';
 import Reports from './pages/Reports.jsx'
 import LeadDetails from './pages/LeadDetails.jsx';
 import EmployeeDetails from './pages/EmployeeDetails.jsx';
+import MarketingActivities from './EmployeePages/MarketingActivities/MarketingActivities.jsx';
 import TaskComponent from './pages/TaskComponents.jsx'
 import ProjectDetails from './pages/ProjectDetails.jsx'
 import ClientDetails from './pages/ClientDetails.jsx'
@@ -72,6 +73,7 @@ import ETaskDetails from './EmployeePages/Task/TaskDetails/ETaskDetails.jsx';
 
 // EMPLOYEE PAGES
 import EmpMyprofile from './EmployeePages/Profile/Myprofile.jsx';
+
 import EmpLeave from './EmployeePages/LeaveManagement/Leave.jsx';
 import EmpTask from './EmployeePages/Task/Task.jsx';
 import EmpPayroll from './EmployeePages/Payroll/Payroll.jsx';
@@ -260,11 +262,16 @@ export default function App() {
                 }
               />
               <Route
+  path="/employee/marketing-activities"
+  element={<MarketingActivities />}
+/>
+              <Route
                 path="/employee/taskDetails/:id"
                 element={
                   <ETaskDetails />
                 }
               />
+              
 
               <Route
                 path="/employee/leads"

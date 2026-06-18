@@ -14,6 +14,7 @@ import {
   GraduationCap,
   BookOpen,
   CircleUser,
+  PhoneCall,
   MessageSquare,
   Bell,
   Mail,
@@ -61,6 +62,11 @@ export default function Sidebar() {
     icon: CalendarDays,
     path: '/employee/attendance',
   },
+  {
+  name: "Marketing Activities",
+  icon: PhoneCall,
+  path: "/employee/marketing-activities",
+},
    {
     name: 'Communication',
     icon: Phone,

@@ -72,6 +72,7 @@ export default function Sidebar() {
   path: '/meetings',
 },
 
+
 {
   name: 'Internal Chat',
   icon: MessageSquare,
