@@ -15,10 +15,12 @@ import {
 
 import InputField from "../components/InputField";
 import useFollowups from "../Hooks/useFollowups";
+import useEmployees from "../Hooks/useEmployees";
 
-export default function CreateFollowups({ onClose ,fetchdata}) {
-  const {createFollowup}=useFollowups();
-  const [loading, setLoading]=useState();
+export default function CreateFollowups({ onClose, fetchdata }) {
+  const { createFollowup } = useFollowups();
+  const [loading, setLoading] = useState();
+  const { employees } = useEmployees();
 
   const [formData, setFormData] = useState({
     clientName: "",
@@ -94,7 +96,12 @@ export default function CreateFollowups({ onClose ,fetchdata}) {
       label: "Assigned To",
       Icon: Users,
       name: "assignedTo",
-      placeholder: "e.g. Agent Name",
+      type: "select",
+      placeholder: "Select Employee",
+      options: employees.map((emp) => ({
+        label: emp.name, // Change to emp.employeeName if your employee object uses a different field
+        value: emp.uid,
+      })),
     },
     {
       label: "Follow-ups Count",
@@ -122,35 +129,35 @@ export default function CreateFollowups({ onClose ,fetchdata}) {
     </div>
   );
   const handleSubmit = async () => {
-  try {
-    const res = await createFollowup({
-      ...formData,
-      followupCount: Number(formData.followupCount),
-    });
+    try {
+      const res = await createFollowup({
+        ...formData,
+        followupCount: Number(formData.followupCount),
+      });
 
-    console.log(res);
+      console.log(res);
 
-    alert("Follow-up added successfully");
+      alert("Follow-up added successfully");
 
-    setFormData({
-      clientName: "",
-      companyName: "",
-      phone: "",
-      email: "",
-      status: "",
-      leadSchedule: "",
-      type: "",
-      assignedTo: "",
-      followupCount: "",
-      followupTime: "",
-    });
-fetchdata();
-    onClose();
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
-};
+      setFormData({
+        clientName: "",
+        companyName: "",
+        phone: "",
+        email: "",
+        status: "",
+        leadSchedule: "",
+        type: "",
+        assignedTo: "",
+        followupCount: "",
+        followupTime: "",
+      });
+      fetchdata();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  };
 
   return (
     <motion.div
@@ -190,17 +197,42 @@ fetchdata();
 
         <div className="grid grid-cols-2 gap-8">
 
-          {leadFields.map((field, i) => (
+          {leadFields.map((field, i) => {
+            if (field.name === "assignedTo") {
+              return (
+                <div key={i} className="flex flex-col">
+                  <label className="mb-2 text-sm font-medium text-gray-700">
+                    {field.label}
+                  </label>
 
-            <InputField
-              key={i}
-              {...field}
-              value={formData[field.name]}
-              onChange={handleChange}
-              className="w-full"
-            />
+                  <select
+                    name="assignedTo"
+                    value={formData.assignedTo}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-blue-500"
+                  >
+                    <option value="">Select Employee</option>
 
-          ))}
+                    {employees.map((employee) => (
+                      <option key={employee.uid} value={employee.uid}>
+                        {employee.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            }
+
+            return (
+              <InputField
+                key={i}
+                {...field}
+                value={formData[field.name]}
+                onChange={handleChange}
+                className="w-full"
+              />
+            );
+          })}
 
         </div>
 
@@ -223,7 +255,7 @@ fetchdata();
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
           className="flex-1 h-[62px] rounded-2xl bg-[#165da8] text-white text-[22px] font-semibold flex items-center justify-center gap-4"
-        onClick={handleSubmit}
+          onClick={handleSubmit}
         >
 
           <Plus size={24} />

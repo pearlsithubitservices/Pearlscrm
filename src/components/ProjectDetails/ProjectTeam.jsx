@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Pencil } from "lucide-react";
 import { motion } from "framer-motion";
+import useEmployees from "../../Hooks/useEmployees";
 
 const teamMembers = [
   {
@@ -26,10 +27,19 @@ const teamMembers = [
   },
 ];
 
-export default function CRMTeamPage() {
+export default function CRMTeamPage({projects}) {
+
+  const { employees } = useEmployees();
+  //GETTING EMPLOYEES NAME
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = employee.name;
+      return map;
+    }, {});
+  }, [employees]);
   return (
     <>
-        <motion.div
+      <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
@@ -51,9 +61,9 @@ export default function CRMTeamPage() {
 
           {/* Team Cards */}
           <div className="space-y-4">
-            {teamMembers.map((member, index) => (
+            {projects[0]?.members?.map((member, index) => (
               <motion.div
-                key={member.name}
+                key={index}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.08 }}
@@ -69,11 +79,11 @@ export default function CRMTeamPage() {
                 {/* Name & Role */}
                 <div className="ml-5 min-w-[180px]">
                   <h4 className="text-[22px] font-bold text-[#062C5B] leading-none">
-                    {member.name}
+                    {member?.name||"no Member"}
                   </h4>
 
                   <p className="mt-2 text-[16px] text-[#8E8E8E]">
-                    {member.role}
+                    {member?.role||"no role"}
                   </p>
                 </div>
 
@@ -89,7 +99,7 @@ export default function CRMTeamPage() {
                   </div>
 
                   <span className="text-[20px] font-bold text-[#062C5B] min-w-[55px] text-right">
-                    {member.progress}%
+                    {member?.progress||"2"}%
                   </span>
                 </div>
               </motion.div>

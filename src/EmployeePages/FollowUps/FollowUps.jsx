@@ -17,10 +17,17 @@ import Pagination from "../../components/Pagination";
 import AnimateModals from "../../components/Dashboard/AnimateModals";
 import LoadingPage from "../../components/Dashboard/Loading";
 import useFollowups from "../../Hooks/useFollowups";
+import { useAuth } from "../../context/AuthContext";
+import useEmployees from "../../Hooks/useEmployees";
 
 
 export default function FollowUps() {
   const [followups, setFollowups] = useState([]);
+  const { user } = useAuth();
+  const { employees } = useEmployees();
+  
+  const userFollowups = followups.filter((item) => item.assignedTo == user?.uid);
+  console.log(userFollowups);
   const { getFollowups } = useFollowups();
   useEffect(() => {
     const fetchdata = async () => {
@@ -45,15 +52,15 @@ export default function FollowUps() {
 
   const buttons = ["All", "Missed", "Pending", "Completed", "Scheduled"];
 
-  const pending = followups.filter((item) => (
+  const pending = userFollowups.filter((item) => (
     item.status.toLowerCase() == "pending"
   ));
-  const completed = followups.filter((item) => (
+  const completed = userFollowups.filter((item) => (
     item.status.toLowerCase() == "completed"
   ));
 
   const stats = [
-    { icon: Users2, title: "Total FollowUps", value: followups.length },
+    { icon: Users2, title: "Total FollowUps", value: useFollowups.length },
     { icon: PhoneMissed, title: "Missed Today", value: "2" },
     { icon: Clock2, title: "Pending Meetings", value: pending.length },
     { icon: CheckCheck, title: "Completed", value: completed.length },
@@ -63,7 +70,7 @@ export default function FollowUps() {
 
   const filteredData = useMemo(() => {
 
-    return followups.filter((item) => {
+    return userFollowups.filter((item) => {
 
       const matchesSearch =
         item.clientName.toLowerCase().includes(search.toLowerCase()) ||
@@ -240,66 +247,63 @@ export default function FollowUps() {
               </thead>
 
               <tbody>
-
                 {loading ? (
-
                   <tr>
                     <td colSpan="6" className="py-10">
                       <LoadingPage />
                     </td>
                   </tr>
-
                 ) : (
+                  currentFiles.map((item) => {
+                    const employee = employees.find(
+                      (emp) => emp.uid === item.assignedTo
+                    );
 
-                  currentFiles.map((item) => (
+                    return (
+                      <tr
+                        key={item._id}
+                        onClick={() => navigate(`/empfollowupDetails/${item._id}`)}
+                        className="border-t hover:bg-gray-50 cursor-pointer transition"
+                      >
+                        <td className="p-4">
+                          <p className="font-medium">{item.clientName}</p>
+                          <p className="text-xs text-gray-400">
+                            {item.companyName}
+                          </p>
+                        </td>
 
-                    <tr
-                      key={item._id}
-                      onClick={() => navigate(`/empfollowupDetails/${item._id}`)}
-                      className="border-t hover:bg-gray-50 cursor-pointer transition"
+                        <td>
+                          <span className="bg-green-100 text-green-600 px-3 py-1 rounded text-xs">
+                            {item.type}
+                          </span>
+                        </td>
 
-                    >
+                        <td>
+                          <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
+                            {employee?.name || employee?.employeeName || item.assignedTo}
+                          </span>
+                        </td>
 
-                      <td className="p-4">
+                        <td>{item.followupTime}</td>
 
-                        <p className="font-medium">
-                          {item.clientName}
-                        </p>
+                        <td>
+                          <span
+                            className={`${item.status === "Completed"
+                              ? "bg-green-300 text-green-600"
+                              : item.status === "Pending"
+                                ? "bg-red-300 text-red-600"
+                                : "bg-blue-300 text-blue-600"
+                              } px-3 py-1 flex flex-col items-center w-fit justify-center rounded text-xs`}
+                          >
+                            {item.status}
+                          </span>
+                        </td>
 
-                        <p className="text-xs text-gray-400">
-                          {item.companyName}
-                        </p>
-
-                      </td>
-
-                      <td>
-                        <span className="bg-green-100 text-green-600 px-3 py-1 rounded text-xs">
-                          {item.type}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
-                          {item.assignedTo}
-                        </span>
-                      </td>
-
-                      <td>{item.followupTime}</td>
-
-                      <td>
-                        <span className={`${item?.status == "Completed" ? "bg-green-300 text-green-600" : item?.status == "Pending" ? "bg-red-300 text-red-600" : "bg-blue-300 text-blue-600"}  px-3 py-1 flex  flex-col items-center w-fit justify-center rounded text-xs`}>
-                          {item.status}
-                        </span>
-                      </td>
-
-                      <td>Today</td>
-
-                    </tr>
-
-                  ))
-
+                        <td>Today</td>
+                      </tr>
+                    );
+                  })
                 )}
-
               </tbody>
 
             </table>

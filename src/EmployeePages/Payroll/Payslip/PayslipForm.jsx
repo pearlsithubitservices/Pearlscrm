@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import usePayslip from "../../../Hooks/usePayslip";
 import { X } from "lucide-react";
+import useEmployees from "../../../Hooks/useEmployees";
 
 export default function PayslipForm({ onClose }) {
   const { createPayslip } = usePayslip();
 
   const [month, setMonth] = useState("");
   const [status, setStatus] = useState("Pending");
+  const [employeeId, setEmployeeId] = useState();
+  const { employees } = useEmployees();
 
   const [earnings, setEarnings] = useState([
     { title: "Basic salary", amount: "" },
@@ -90,10 +93,11 @@ export default function PayslipForm({ onClose }) {
       month,
       date: new Date().toDateString(),
       status,
+      employeeId,
       ...flatEarnings,
       ...flatDeductions,
       gross,
-       totalDeductions: totalDeduction,
+      totalDeductions: totalDeduction,
       net,
     });
 
@@ -102,7 +106,7 @@ export default function PayslipForm({ onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      
+
       <div className="bg-white w-[800px] max-h-[90vh] overflow-auto p-6 rounded-2xl relative">
 
         {/* CLOSE */}
@@ -136,6 +140,16 @@ export default function PayslipForm({ onClose }) {
               <option>Pending</option>
               <option>Paid</option>
               <option>Present</option>
+            </select>
+            <select
+              value={employeeId}
+              onChange={(e) => setEmployeeId(e.target.value)}
+              className="border p-3 rounded-lg"
+            >
+              <option value="">Select a employee</option>
+              {employees.map((item)=>{
+                return <option value={item.uid}>{item.name}</option>
+              })}
             </select>
           </div>
 

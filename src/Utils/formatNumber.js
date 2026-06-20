@@ -70,3 +70,14 @@ export const calculateAttendanceStatus = (
 
     return "present";
 };
+
+export const formatMonthYear = (dateString) => {
+    const date = new Date(dateString);
+
+    const month = date.toLocaleString("en-US", { month: "short" }).toUpperCase();
+    const year = date.getFullYear();
+
+    return `${month}-${year}`;
+};
+
+

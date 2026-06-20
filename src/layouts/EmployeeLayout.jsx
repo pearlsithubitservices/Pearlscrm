@@ -1,27 +1,27 @@
 import React from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-//import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import EmployeeSidebar from "../pages/employee/EmployeeSidebar";
 
 export default function EmployeeLayout() {
-  //const { user, loading } = useAuth();
+  const { user, loading } = useAuth();
 
-  // if (loading) {
-  //   return (
-  //     <div className="h-screen w-full flex items-center justify-center bg-gray-50">
-  //       <motion.div
-  //         animate={{ scale: [1, 1.1, 1] }}
-  //         transition={{ repeat: Infinity, duration: 1 }}
-  //         className="w-12 h-12 bg-black rounded-xl"
-  //       />
-  //     </div>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-gray-50">
+        <motion.div
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ repeat: Infinity, duration: 1 }}
+          className="w-12 h-12 bg-black rounded-xl"
+        />
+      </div>
+    );
+  }
 
-  // if (!user) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="flex min-h-screen bg-[#FBFBFA]">

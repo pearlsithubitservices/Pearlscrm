@@ -8,10 +8,10 @@ import {
 } from 'react-router-dom';
 
 import {
-    collection,
-    getDocs,
-    addDoc,
-} from 'firebase/firestore';
+  collection,
+  addDoc,
+  Timestamp,
+} from "firebase/firestore";
 
 import { db } from '../lib/firebase';
 
@@ -70,75 +70,23 @@ export default function Createemployee({ onClose }) {
         });
 
 
-    // FETCH EMPLOYEES
-
-    /* const fetchEmployees =
-         async () => {
- 
-             try {
- 
-                 const snapshot =
-                     await getDocs(
-                         collection(
-                             db,
-                             'employees'
-                         )
-                     );
- 
-                 const employeeList = [];
- 
-                 snapshot.forEach((doc) => {
- 
-                     employeeList.push({
- 
-                         id: doc.id,
- 
-                         ...doc.data(),
- 
-                     });
- 
-                 });
- 
-                 setEmployees(employeeList);
- 
-             } catch (error) {
- 
-                 console.log(error);
- 
-             }
- 
-         };*/
-
-    //  Add Employees
-
+    
     const addEmployees = async () => {
         try {
-            const response = await fetch(
-                "http://localhost:5000/api/employees",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(employees),
-                }
-            );
+            await addDoc(collection(db, "employees"), {
+                ...employees,
+                createdAt: Timestamp.now(),
+                isOnline: false,
+            });
 
-            const data = await response.json();
+            alert("Employee added successfully");
 
-            console.log(data);
-
-            if (response.ok) {
-                alert("Added successfully");
-                onClose();
-                navigate("/employees");
-            } else {
-                alert(data.message || "Failed to add employee");
-            }
+            onClose();
+            navigate("/employees");
 
         } catch (error) {
-            console.log(error);
-            alert("Failed to upload");
+            console.error(error);
+            alert("Failed to add employee");
         }
     };
     //HANDLE EMPLOYEES 

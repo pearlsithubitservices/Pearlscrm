@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 
 const API = "http://localhost:5000/api/payslip";
 
@@ -12,8 +11,16 @@ export default function usePayslip() {
   const fetchPayslips = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(API);
-      setPayslips(res.data);
+      setError(null);
+
+      const response = await fetch(API);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch payslips");
+      }
+
+      const data = await response.json();
+      setPayslips(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -22,10 +29,34 @@ export default function usePayslip() {
   };
 
   // CREATE
-  const createPayslip = async (data) => {
-    const res = await axios.post(API, data);
-    setPayslips((prev) => [res.data, ...prev]);
-    return res.data;
+  const createPayslip = async (payload) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create payslip");
+      }
+
+      const data = await response.json();
+
+      setPayslips((prev) => [data, ...prev]);
+
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

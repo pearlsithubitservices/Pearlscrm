@@ -1,6 +1,7 @@
 import React, {
   useState,
-  useEffect
+  useEffect,
+  useMemo
 } from 'react';
 
 
@@ -37,23 +38,31 @@ import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
 import useTaskfilter from '../Hooks/useTaskfilter.js'
 
 export default function Tasks() {
+  const [employees, setEmployees] =
+    useState([]);
+ 
+
   const [tasks, setTasks] =
     useState([]);
-
+  
+ 
   const [search, setSearch] =
     useState('');
 
   const [active, setActive] = useState("All");
-  console.log(active);
+
   const buttons = ["All", "Hot", "Warm", "Cold"];
   const q = search.toLowerCase();
   const selectedactive = buttons[active];
-
+  // const[selectedTask, setSelectedTask]=useState();
   const filterdata = useTaskfilter(tasks, search, active);
-
-
-
-
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = employee.name;
+      return map;
+    }, {});
+  }, [employees]);
+ 
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 5;
@@ -61,6 +70,8 @@ export default function Tasks() {
   const firstIndex = lastIndex - filesPerPage;
   const currentFiles = filterdata.slice(firstIndex, lastIndex);
   const totalPages = Math.ceil(filterdata.length / filesPerPage);
+
+
 
 
   const today = new Date();
@@ -74,11 +85,8 @@ export default function Tasks() {
   const [open, setOpen] = useState(false);
 
 
-  console.log(tasks);
 
-  const [employees, setEmployees] =
-    useState([]);
-  console.log(employees);
+
 
   useEffect(() => {
 
@@ -108,27 +116,7 @@ export default function Tasks() {
 
       );
 
-    /* const fetchTasks = async () => {
 
-      try {   
-        const response=await fetch("http://localhost:5000/api/tasks");
-        const data=await response.json();
-        if(response.ok){
-          setTasks(data);
-          console.log(data);
-          
-        }
-        
-      } catch (error) {
-
-        console.log(error); 
-      }
-      finally {
-        setLoading(false);             //SetLoading false stop loading
-      }
-    };
-
-    fetchTasks();*/
 
     // EMPLOYEES
 
@@ -172,6 +160,8 @@ export default function Tasks() {
 
   }, []);
 
+
+
   //SEARCH FILTER
 
 
@@ -206,20 +196,21 @@ export default function Tasks() {
 
 
   const filteredTasks =
-  tasks.filter((task) =>
+    tasks.filter((task) =>
 
-    task.company
-      ?.toLowerCase()
-      .includes(search.toLowerCase()) ||
+      task.company
+        ?.toLowerCase()
+        .includes(search.toLowerCase()) ||
 
-    task.assignedEmployee
-      ?.toLowerCase()
-      .includes(search.toLowerCase())
+      task.assignedEmployee
+        ?.toLowerCase()
+        .includes(search.toLowerCase())
 
-  );
+    );
+
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex max-h-screen overflow-y-auto no-scrollbar bg-gray-100">
 
       {/* MAIN */}
       <div className="flex-1 flex flex-col">
@@ -318,9 +309,13 @@ export default function Tasks() {
               </div> :
               currentFiles?.map((task, index) => {
                 const employeename = employees.find(
-                  (emp) => emp.id === task.assignedTo
+                  (emp) => emp.uid === task.assignedEmployee
                 );
-                console.log(employeename);
+               
+                const employeeByname = employees.find(
+                  (emp) => emp.uid === task.assignedBy
+                );
+
                 return (
                   <motion.div
                     key={index}
@@ -333,7 +328,7 @@ export default function Tasks() {
                     border-gray-200
                     rounded-2xl
                     p-5 md:p-7"
-                  onClick={() => navigate(`/taskDetails/${task.id}`)}>
+                    onClick={() => navigate(`/taskDetails/${task.id}`)}>
 
                     {/* TOP */}
 
@@ -344,7 +339,7 @@ export default function Tasks() {
                       <div>
 
                         <h1 className="text-sm md:text-xl font-bold text-[#082f57]">
-                          {employeename?.name || "Unassigned"}
+                          {employeeMap[task.assignedTo] || "Unassigned"}
                         </h1>
 
                         <p className="mt-1 text-lg md:text-xl">
@@ -390,7 +385,7 @@ export default function Tasks() {
                         </div>
                         <div className='overflow-hidden w-[180px]'>
                           <p className="text-gray-500 text-md mr-2 overflow-hidden ">
-                            Assigned by :{task.assignedEmployee || " Ragavi"}
+                            Assigned by :{employeeMap[task.assignedEmployee] || " Ragavi"}
 
                           </p>
                         </div>

@@ -39,69 +39,69 @@ export default function LeadManagement() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    
+
 
     fetchleads();
     fetchDashboard();
   }, []);
   //FETCH DASHBOARD
-    const fetchDashboard =
-      async () => {
+  const fetchDashboard =
+    async () => {
 
-        try {
+      try {
 
-          const response =
-            await fetch(
-              "https://pearlscrm.onrender.com/api/dashboard"
-            );
+        const response =
+          await fetch(
+            "https://pearlscrm.onrender.com/api/dashboard"
+          );
 
-          const data =
-            await response.json();
+        const data =
+          await response.json();
 
-          setDashboardData(data);
+        setDashboardData(data);
 
-        } catch (error) {
+      } catch (error) {
 
-          console.log(error);
+        console.log(error);
 
-        }
+      }
 
-      };
+    };
 
-    // Fetch Leads
+  // Fetch Leads
 
-    const fetchleads =
-      async () => {
-        setLoading(true);
+  const fetchleads =
+    async () => {
+      setLoading(true);
 
-        try {
+      try {
 
-          const response =
-            await fetch(
-              "https://pearlscrm.onrender.com/api/leads"
-            );
+        const response =
+          await fetch(
+            "https://pearlscrm.onrender.com/api/leads"
+          );
 
-          const data =
-            await response.json();
+        const data =
+          await response.json();
 
 
-          setLeaddetails(data);
+        setLeaddetails(data);
 
-        } catch (error) {
+      } catch (error) {
 
-          console.log(error);
+        console.log(error);
 
-        }
-        finally {
-          setLoading(false);
-        }
+      }
+      finally {
+        setLoading(false);
+      }
 
-      };
+    };
 
   const [active, setActive] = useState(0);
- 
+
   const buttons = ["All", "Hot", "Warm", "Cold"];
-   console.log(buttons[active]);
+  console.log(buttons[active]);
   const filteredLeads = useLeadfilter(leaddetails, search, buttons[active]);
 
 
@@ -121,13 +121,13 @@ export default function LeadManagement() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const convertedLeads=leaddetails.filter((lead)=>(lead.status.toLowerCase() === "converted")).length;
-const convertedPercent=leaddetails.length > 0 ?((convertedLeads/leaddetails.length)*100).toFixed(2):0;
+  const convertedLeads = leaddetails.filter((lead) => (lead.status.toLowerCase() === "converted")).length;
+  const convertedPercent = leaddetails.length > 0 ? ((convertedLeads / leaddetails.length) * 100).toFixed(2) : 0;
 
 
   const stats = [
     { icon: Users2, title: "Total Lead", value: leaddetails.length },
-    { icon: Briefcase, title: "Hot Leads", value: leaddetails.filter((leads)=>(leads.priority?.toLowerCase() === "hot")).length },
+    { icon: Briefcase, title: "Hot Leads", value: leaddetails.filter((leads) => (leads.priority?.toLowerCase() === "hot")).length },
     { icon: ChartNoAxesCombined, title: "Conversion Rate", value: `${convertedPercent}%` },
     { icon: IndianRupee, title: "Pipeline Value", value: "₹4.2M" },
   ];
@@ -135,7 +135,7 @@ const convertedPercent=leaddetails.length > 0 ?((convertedLeads/leaddetails.leng
 
 
   return (
-    <div className="flex min-h-screen bg-[#f3f0eb]">
+    <div className="flex max-h-screen overflow-y-auto no-scrollbar bg-[#f3f0eb]">
 
       {/* MAIN */}
       <div className="flex-1 flex flex-col">
@@ -224,7 +224,7 @@ const convertedPercent=leaddetails.length > 0 ?((convertedLeads/leaddetails.leng
             <div className="flex items-center border bg-gray-200 rounded px-3 py-2 w-full md:w-80">
               <Search size={16} className="text-black" />
               <input
-              onChange={(e)=>setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 className="ml-2 w-full outline-none text-sm bg-gray-200"
                 placeholder="Search Lead.."
               />
@@ -261,7 +261,7 @@ const convertedPercent=leaddetails.length > 0 ?((convertedLeads/leaddetails.leng
                     </td>
                   </tr>
                 ) : (currentFiles.map((l, i) => (
-                  <tr key={i} className="border-t" onClick={()=>navigate(`/leadDetails/${l._id}`)}>
+                  <tr key={i} className="border-t" onClick={() => navigate(`/leadDetails/${l._id}`)}>
 
                     <td className="p-3">
                       <p className="font-medium">{l.name || "John Doe"}</p>
@@ -312,8 +312,8 @@ const convertedPercent=leaddetails.length > 0 ?((convertedLeads/leaddetails.leng
       {/**ADD LEADS */}
       {openlead && (
         <AnimateModals>
-          <CreateLead onClose={() => setOpenlead(false)} 
-            fetchleads={fetchleads}/>
+          <CreateLead onClose={() => setOpenlead(false)}
+            fetchleads={fetchleads} />
         </AnimateModals>
       )}
     </div>

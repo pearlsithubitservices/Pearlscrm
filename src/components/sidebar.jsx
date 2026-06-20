@@ -18,6 +18,7 @@ import {
   Bell,
   Mail,
   FolderOpen,
+  Speaker,
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -67,28 +68,33 @@ export default function Sidebar() {
   path: '/attendance-management',
 },
 {
-  name: 'Meetings',
-  icon: CalendarDays,
-  path: '/meetings',
+  name: 'Communication',
+  icon: Speaker,
+  path: '/communication',
 },
+// {
+//   name: 'Meetings',
+//   icon: CalendarDays,
+//   path: '/meetings',
+// },
 
-{
-  name: 'Internal Chat',
-  icon: MessageSquare,
-  path: '/chat',
-},
+// {
+//   name: 'Internal Chat',
+//   icon: MessageSquare,
+//   path: '/chat',
+// },
 
-{
-  name: 'Files & Documents',
-  icon: FolderOpen,
-  path: '/files',
-},
+// {
+//   name: 'Files & Documents',
+//   icon: FolderOpen,
+//   path: '/files',
+// },
 
-{
-  name: 'Analytics',
-  icon: BarChart3,
-  path: '/analytics',
-},
+// {
+//   name: 'Analytics',
+//   icon: BarChart3,
+//   path: '/analytics',
+// },
 ];
 
 const manageItems = [
@@ -120,29 +126,29 @@ const manageItems = [
     icon: FileText,
     path: '/reports',
   },
-  {
-  name: 'HR Management',
-  icon: UserCircle,
-  path: '/hr-management',
-},
+//   {
+//   name: 'HR Management',
+//   icon: UserCircle,
+//   path: '/hr-management',
+// },
 
-{
-  name: 'Role Management',
-  icon: Briefcase,
-  path: '/roles',
-},
+// {
+//   name: 'Role Management',
+//   icon: Briefcase,
+//   path: '/roles',
+// },
 
-{
-  name: 'Notifications',
-  icon: Bell,
-  path: '/notifications',
-},
+// {
+//   name: 'Notifications',
+//   icon: Bell,
+//   path: '/notifications',
+// },
 
-{
-  name: 'Email Center',
-  icon: Mail,
-  path: '/email-center',
-},
+// {
+//   name: 'Email Center',
+//   icon: Mail,
+//   path: '/email-center',
+// },
 ];
 
   return (

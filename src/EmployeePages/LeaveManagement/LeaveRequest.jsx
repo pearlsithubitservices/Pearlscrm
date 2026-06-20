@@ -1,35 +1,50 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import useLeave from "../../Hooks/useLeave";
 import { useAuth } from "../../context/AuthContext";
 
 const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
-    const { getLeaves, leaves } = useLeave();
+    const { getLeaves, getLeavesByEmployee, leavesbyId, leaves, updateLeaveStatus } = useLeave();
+
     const { user } = useAuth();
+    console.log(user.uid);
+    const handleApprove = async (id) => {
+
+        try {
+            const res = await updateLeaveStatus(id, "Approved");
+            console.log("Leave ID:", id);
+            if (res.success) {
+                console.log("Leave approved");
+
+                // 🔥 refresh data manually
+                getLeaves();
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+
     const currentUser = leaves.filter((item) => (item.employeeId == user.uid));
     console.log(currentUser)
     const approvedleaves = currentUser?.filter((item) => (item.status?.toLowerCase() == "pending"));
-    const latestRequest = Array.isArray(leaves) && leaves.length > 0
-        ? leaves[0]
+    console.log(approvedleaves);
+    const latestRequest = Array.isArray(approvedleaves) && approvedleaves.length > 0
+        ? approvedleaves[0]
         : {
-            id: 1,
-            leaveTitle: "Family Wedding",
-            leaveFrom: "Sep 22",
-            leaveTo: "Sep 25",
-            status: "Pending",
         };
 
-    const pendingCount = leaves.length > 0 ? leaves.length : '1';
+    const pendingCount = approvedleaves.length > 0 ? approvedleaves.length : '1';
 
 
     const handleEdit = () => {
         onEdit(latestRequest);
-        
+
     };
 
     const handleCancel = () => {
-        if (onCancel && latestRequest.id) {
-            onCancel(latestRequest.id);
+        if (onCancel && latestRequest._id) {
+            onCancel(latestRequest._id);
         }
     };
 
@@ -66,7 +81,7 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
 
             <div className="space-y-4">
                 <motion.div
-                    key={latestRequest.id || latestRequest.empId || 0}
+                    key={latestRequest._id || latestRequest.empId || 0}
                     whileHover={{ y: -2 }}
                     className="border border-gray-200 rounded-2xl p-5"
                 >
@@ -78,19 +93,25 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
                         <div className="flex-1">
                             <div className="flex items-center justify-between gap-3">
                                 <h3 className="font-bold text-lg text-[#0B2B57]">
-                                    {latestRequest.leaveTitle}
+                                    {latestRequest.leaveTitle || "No Leave"}
                                 </h3>
 
                             </div>
 
                             <p className="text-gray-500 text-sm mt-1">
-                                {new Date(latestRequest.leaveFrom).toLocaleDateString("en-GB")} -{" "}
-                                {new Date(latestRequest.leaveTo).toLocaleDateString("en-GB")} (
-                                {calculateLeaveDays(
-                                    latestRequest.leaveFrom,
-                                    latestRequest.leaveTo
-                                )}{" "}
-                                days)
+                                {approvedleaves?.length > 0 ? (
+                                    <>
+                                        {new Date(latestRequest.leaveFrom).toLocaleDateString("en-GB")} -{" "}
+                                        {new Date(latestRequest.leaveTo).toLocaleDateString("en-GB")} (
+                                        {calculateLeaveDays(
+                                            latestRequest.leaveFrom,
+                                            latestRequest.leaveTo
+                                        )}{" "}
+                                        days)
+                                    </>
+                                ) : (
+                                    "No approved leaves"
+                                )}
                             </p>
 
                             {/* Actions */}
@@ -99,6 +120,7 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
                                 <button
                                     onClick={handleEdit}
                                     className="bg-[#2F6CC5] hover:bg-[#2458a8] text-white px-5 py-2 rounded-full text-sm font-medium transition"
+                                    disabled={approvedleaves.length === 0}
                                 >
                                     Edit
                                 </button>
@@ -108,6 +130,13 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
                                     className="border border-gray-300 hover:bg-gray-50 px-5 py-2 rounded-full text-sm font-medium text-gray-700 transition"
                                 >
                                     Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleApprove(latestRequest._id)}
+                                    className="bg-green-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-green-700"
+                                    disabled={!latestRequest._id}
+                                >
+                                    Approve
                                 </button>
                             </div>
                         </div>

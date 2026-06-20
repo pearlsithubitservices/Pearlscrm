@@ -12,6 +12,7 @@ import AttendanceCorrection from "./AttendanceCorrection";
 import useEmpAttendance from "../../Hooks/useEmpAttendance";
 import AttendanceEdit from "./AttendanceEdit";
 import { calculateAttendanceStatus } from "../../Utils/formatNumber";
+import { useAuth } from "../../context/AuthContext";
 
 const AttendanceCalendar = () => {
   const [filter, setFilter] =
@@ -25,17 +26,23 @@ const AttendanceCalendar = () => {
   console.log(attendance);
   const [selectedattendance, setSelectedAttendances] = useState();
   const [showForm, setShowform] = useState(false);
-  const { getAttendances } = useEmpAttendance();
+  const { getAttendanceById } = useEmpAttendance();
   const [showEdit, setShowEdit] = useState(false);
+  const { user } = useAuth();
+  console.log(user.uid);
+  
 
   useEffect(() => {
-    fetchAttendances();
+    
+    fetchAttendancebyId();
   }, []);
 
-  const fetchAttendances = async () => {
+ 
+  const fetchAttendancebyId = async () => {
     try {
-      const res = await getAttendances();
-      setAttendances(res.data || []);
+      const res = await getAttendanceById(user.uid);
+       setAttendances(res.data || []);
+      console.log(res);
     } catch (err) {
       console.error("Error fetching attendances:", err.message);
     }
@@ -259,7 +266,7 @@ const AttendanceCalendar = () => {
                   No attendance records found
                 </td>
               </tr>
-                : filteredData.slice(0,7).map(
+                : filteredData.slice(0, 7).map(
                   (row, index) => (
                     <tr
                       key={index}
@@ -337,9 +344,9 @@ const AttendanceCalendar = () => {
                       <td className="text-center">
 
                         <span
-                          className={`px-5 py-2 rounded-full font-sm ${statusStyle[row.status ?row.status : calculateAttendanceStatus(row.clockIn,row.clockOut,row.workingHours)?.toLowerCase()] || "bg-gray-100 text-gray-600"}`}
+                          className={`px-5 py-2 rounded-full font-sm ${statusStyle[row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours)?.toLowerCase()] || "bg-gray-100 text-gray-600"}`}
                         >
-                          ● {row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut,row.workingHours) || "present"}
+                          ● {row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours) || "present"}
                         </span>
 
                       </td>

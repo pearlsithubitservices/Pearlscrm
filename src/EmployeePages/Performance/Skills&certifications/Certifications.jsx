@@ -1,32 +1,36 @@
-import { SquarePen } from 'lucide-react';
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import AddCertification from './AddCertification';
-const certifications = [
-    {
-        title: "AWS Solutions Architect certification",
-        issuer: "Amazon Web Services",
-        issued: "Apr 2026",
-    },
-    {
-        title: "Meta Frontend Developer",
-        issuer: "Meta",
-        issued: "Jun 2024",
-    },
-    {
-        title: "Google IT Support Professional",
-        issuer: "Google",
-        issued: "Jan 2023",
-    },
-    {
-        title: "Certified Scrum Master (CSM)",
-        issuer: "Scrum Alliance",
-        issued: "Mar 2023",
-    },
-];
+import { SquarePen } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import AddCertification from "./AddCertification";
+import useSkillCertification from "../../../Hooks/useSkillCertification";
+import { useAuth } from "../../../context/AuthContext";
 
 const Certifications = () => {
-    const [addForm, setAddForm]=useState(false);
+    const [addForm, setAddForm] = useState(false);
+
+    const { getAll, data, loading, error } = useSkillCertification();
+    const [certifications, setCertifications] = useState([]);
+    const { user } = useAuth();
+    console.log(certifications);
+
+    // ================= FETCH DATA =================
+    useEffect(() => {
+        const fetchCertifications = async () => {
+            const res = await getAll();
+            const userData = res?.data?.filter(
+                (item) => item.employee_uid === user?.uid
+            );
+
+
+            // assuming backend structure: { data: [...] }
+            if (res?.data) {
+                setCertifications(userData[0]?.certifications || []);
+            }
+        };
+
+        fetchCertifications();
+    }, []);
+
     return (
         <>
             <motion.div
@@ -34,23 +38,34 @@ const Certifications = () => {
                 animate={{ opacity: 1 }}
                 className="bg-white mt-8 rounded-2xl border shadow-sm p-5"
             >
+                {/* HEADER */}
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">
-                        Certifications
-                    </h2>
+                    <h2 className="text-2xl font-bold">Certifications</h2>
 
-                    <button className="flex items-center gap-2 bg-slate-100 px-5 py-2 rounded-xl text-gray-700 hover:bg-slate-200 transition"
-                    onClick={()=>setAddForm(true)}>
-                        <SquarePen
-                            size={18} />
+                    <button
+                        className="flex items-center gap-2 bg-slate-100 px-5 py-2 rounded-xl text-gray-700 hover:bg-slate-200 transition"
+                        onClick={() => setAddForm(true)}
+                    >
+                        <SquarePen size={18} />
                         Add Certificate
                     </button>
                 </div>
 
+                {/* LOADING STATE */}
+                {loading && (
+                    <p className="text-gray-500">Loading certifications...</p>
+                )}
+
+                {/* ERROR */}
+                {error && (
+                    <p className="text-red-500">{error}</p>
+                )}
+
+                {/* LIST */}
                 <div className="space-y-5">
                     {certifications.map((cert, index) => (
                         <motion.div
-                            key={index}
+                            key={cert._id || index}
                             whileHover={{ scale: 1.01 }}
                             className="border rounded-xl p-5 shadow-sm"
                         >
@@ -64,14 +79,16 @@ const Certifications = () => {
                         </motion.div>
                     ))}
                 </div>
+
+                {/* MODAL */}
                 {addForm && (
-                    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center ">
-                        <AddCertification
-                            onClose={() => setAddForm(false)} />
+                    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
+                        <AddCertification onClose={() => setAddForm(false)} />
                     </div>
                 )}
-            </motion.div></>
-    )
-}
+            </motion.div>
+        </>
+    );
+};
 
-export default Certifications
+export default Certifications;

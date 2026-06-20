@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const BASE_URL = "http://localhost:5000/api/feedback";
 
@@ -7,13 +7,22 @@ export default function useFeedback() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   // GET ALL FEEDBACK
   const fetchFeedbacks = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(BASE_URL);
-      setFeedbacks(res.data);
+      setError(null);
+
+      const res = await fetch(BASE_URL);
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch feedbacks");
+      }
+
+      const data = await res.json();
+      setFeedbacks(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -22,16 +31,38 @@ export default function useFeedback() {
   };
 
   // CREATE FEEDBACK
-  const createFeedback = async (data) => {
+  const createFeedback = async (payload) => {
     try {
-      const res = await axios.post(BASE_URL, data);
-      setFeedbacks((prev) => [res.data, ...prev]);
-      return res.data;
+      setError(null);
+
+      const requestData = {
+        ...payload,
+        employeeId: user?.uid,
+      };
+
+      const res = await fetch(BASE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to create feedback");
+      }
+
+      const responseData = await res.json();
+
+      setFeedbacks((prev) => [responseData, ...prev]);
+
+      return responseData;
     } catch (err) {
       setError(err.message);
+      throw err;
     }
   };
-
+  
   useEffect(() => {
     fetchFeedbacks();
   }, []);

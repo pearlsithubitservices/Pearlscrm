@@ -63,7 +63,7 @@ const CompanyAnnouncements = () => {
         <h2 className="text-2xl font-bold text-[#0B2B57]">
           Company Announcements
         </h2>
-        <button onClick={() => setShowAnnouncementForm(true)}>Announcement</button>
+        {/* <button onClick={() => setShowAnnouncementForm(true)}>Announcement</button> */}
         <span>
           <div className="relative flex gap-8">
 

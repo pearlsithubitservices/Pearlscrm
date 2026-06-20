@@ -3,8 +3,11 @@ import { motion } from "framer-motion";
 import { ChevronDown, Clock3, FileText } from "lucide-react";
 import useTasks from "../../Hooks/useTaskid";
 import { useAuth } from "../../context/AuthContext";
+import useContribution from "../../Hooks/useContribution";
 
 export default function TaskContribution() {
+  const { createContribution } = useContribution();
+
   const [formData, setFormData] = useState({
     task: "",
     startTime: "",
@@ -23,6 +26,33 @@ export default function TaskContribution() {
     }));
   };
 
+  const handleCreate = async () => {
+    try {
+      const payload = {
+        ...formData,
+
+      };
+      if (!formData.task) {
+        alert("Please select a task");
+        return;
+      }
+      const res = await createContribution(payload);
+
+      if (res.success) {
+        alert("Contribution submitted successfully!");
+
+        // Reset form
+        setFormData({
+          task: "",
+          startTime: "",
+          endTime: "",
+          summary: "",
+        });
+      }
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -38,28 +68,28 @@ export default function TaskContribution() {
 
           {/* Project Selection */}
           <div className="mb-8">
-            <label className="block text-gray-500 font-semibold mb-1">
-              Select project
-            </label>
+            {/* <label className="block text-gray-500 font-semibold mb-1">
+              Select Task
+            </label> */}
 
             <div className="relative">
               <select
                 name="task"
                 value={formData.task}
-                placeholder="select Task"
-                 onChange={handleChange}
-                className="w-full h-10 bg-[#F4F4F4] border border-transparent rounded-2xl px-5  appearance-none outline-none text-gray-700 items-center"
-              >
-                {tasks?.map((item)=>(
-                  <option value={item.title}> {item.title}</option>
-                ))}
+                onChange={handleChange}
+                className="block text-gray-500 font-semibold mb-1 w-full "
                 
+              >
+                <option value="">Select Task</option>
+
+                {tasks.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
               </select>
 
-              <ChevronDown
-                size={18}
-                className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500"
-              />
+              
             </div>
           </div>
 
@@ -137,6 +167,7 @@ export default function TaskContribution() {
         <motion.button
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
+          onClick={handleCreate}
           className="mt-auto w-full h-14 bg-[#0B2B57] text-white font-semibold text-xl rounded-2xl"
         >
           Submit

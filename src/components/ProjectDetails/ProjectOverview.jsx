@@ -1,24 +1,26 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Pencil,
   CheckCircle2,
   Flame,
 } from "lucide-react";
+import useEmployees from "../../Hooks/useEmployees";
 
-export default function ProjectDetailsPage() {
+export default function ProjectDetailsPage({ projects }) {
   const [activeTab, setActiveTab] = useState("Overview");
+  const { employees } = useEmployees();
+  //GETTING EMPLOYEES NAME
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = employee.name;
+      return map;
+    }, {});
+  }, [employees]);
 
-  const tabs = [
-    "Overview",
-    "Milestones",
-    "Notes",
-    "Team",
-    "Activity",
-  ];
 
   return (
-     <>
+    <>
       {/* Main Card */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
@@ -26,12 +28,12 @@ export default function ProjectDetailsPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-6xl bg-[#F4F1EC] rounded-[28px] overflow-hidden "
       >
-        
-    
+
+
 
         {/* Content */}
         <div className="p-8">
-          
+
           {/* Project Description */}
           <div>
             <h2 className="text-gray-400 font-bold text-[10px] md:text-[20px] uppercase">
@@ -40,9 +42,7 @@ export default function ProjectDetailsPage() {
 
             <div className="mt-5 border border-gray-300 rounded-2xl bg-[#F4F1EC] p-8">
               <p className="text-[#0B2D57] text-[10px] md:text-[18px] leading-relaxed font-medium">
-                Full CRM rollout for 200-seat enterprise account.
-                Phase 1: data migration. Phase 2: training.
-                Phase 3: go-live.
+                {projects[0]?.description}
               </p>
             </div>
           </div>
@@ -54,31 +54,31 @@ export default function ProjectDetailsPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              
+
               {[
                 {
                   label: "CLIENT",
-                  value: "TechFlow Solutions",
+                  value: projects[0]?.company,
                 },
                 {
                   label: "STATUS",
-                  value: "On Track",
+                  value: projects[0]?.status,
                 },
                 {
                   label: "ASSIGNED DATE",
-                  value: "May 02",
+                  value: new Date(projects[0]?.assignedDate).toLocaleDateString('en-GB'),
                 },
                 {
                   label: "DUE DATE",
-                  value: "May 12",
+                  value: new Date(projects[0]?.dueDate).toLocaleDateString('en-GB'),
                 },
                 {
                   label: "BUDGET",
-                  value: "₹120,000",
+                  value: projects[0]?.budget,
                 },
                 {
-                  label: "ASSIGNED BY",
-                  value: "Ragavi",
+                  label: "Team Leader",
+                  value: employeeMap[projects[0]?.leader],
                 },
               ].map((item, index) => (
                 <motion.div
@@ -105,7 +105,7 @@ export default function ProjectDetailsPage() {
             </h2>
 
             <div className="mt-5 bg-[#F8F7FB] rounded-2xl p-6">
-              
+
               <div className="flex items-center justify-between mb-6">
                 <p className="text-[#0B2D57] text-[10pxpx] md:text-[18px] font-medium">
                   Project Progress 65% complete
@@ -131,6 +131,6 @@ export default function ProjectDetailsPage() {
 
         </div>
       </motion.div>
-</>
+    </>
   );
 }

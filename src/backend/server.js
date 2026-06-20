@@ -18,21 +18,26 @@ const EmployeeRoutes = require('./routes/EmployeeRoutes');
 const PaymentRoutes = require('./routes/PaymentRoutes');
 const LeaveRoute = require('./routes/LeaveRoute');
 const HolidayRoute = require('./routes/HolidayRoute');
-const ReimbursementRoutes= require('./routes/ReimbursementRoutes');
+const ReimbursementRoutes = require('./routes/ReimbursementRoutes');
 
 const EmpAttendanceRoutes = require('./routes/EmpAttendanceRoutes');
 const AnnouncementSchema = require('./routes/Announcements');
 const NotificationRoutes = require('./routes/NotificationRoutes');
 const TicketRoutes = require('./routes/TicketRoutes');
 const path = require("path");
-const FeedbackRoutes= require('./routes/FeedbackRoutes');
-const PayslipRoutes= require('./routes/PayslipRoutes');
-const EmpAttendanceCorrectionRoutes= require('./routes/EmpAttendanceCorrectionRoutes');
-const EmpMyGoal =require('./routes/MyGoalRoutes');
+const FeedbackRoutes = require('./routes/FeedbackRoutes');
+const PayslipRoutes = require('./routes/PayslipRoutes');
+const EmpAttendanceCorrectionRoutes = require('./routes/EmpAttendanceCorrectionRoutes');
+const EmpMyGoal = require('./routes/MyGoalRoutes');
 const EmpReview = require('./routes/ReviewRoutes');
 const EmpEnrollment = require('./routes/EnrollmentRoutes');
-const EmpCourse= require('./routes/EmpCourseRoutes');
+const EmpCourse = require('./routes/EmpCourseRoutes');
 const EmpSkillCertification = require('./routes/SkillCertificationRoutes');
+const EmpContributionRoutes = require("./routes/ContributionRoutes");
+const EmpActivityRoutes= require("./routes/TaskActivityRoute")
+const EmpTotalLeave=require('./routes/TotalLeaveRoutes');
+
+
 
 
 connectDB();
@@ -51,11 +56,12 @@ app.use(
       'DELETE',
       'PATCH',
     ],
-     allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 app.use(express.json());
+
 
 app.use("/api/leads", leadRoutes);
 app.use("/api/tasks", taskRoutes);
@@ -68,21 +74,24 @@ app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
-app.use("/api/reimbursement",ReimbursementRoutes);
+app.use("/api/reimbursement", ReimbursementRoutes);
 
 app.use("/api/empattendancenew", EmpAttendanceRoutes)
 app.use("/api/announcement", AnnouncementSchema);
 app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/api/feedback",FeedbackRoutes);
-app.use("/api/payslip",PayslipRoutes);
-app.use("/api/empAttendanceCorrection",EmpAttendanceCorrectionRoutes);
-app.use("/api/mygoal",EmpMyGoal)
-app.use("/api/review",EmpReview);
-app.use("/api/empenrollment",EmpEnrollment);
-app.use("/api/empCourse",EmpCourse);
-app.use("/api/skillscertification",EmpSkillCertification);
+app.use("/api/feedback", FeedbackRoutes);
+app.use("/api/payslip", PayslipRoutes);
+app.use("/api/empAttendanceCorrection", EmpAttendanceCorrectionRoutes);
+app.use("/api/mygoal", EmpMyGoal)
+app.use("/api/review", EmpReview);
+app.use("/api/empenrollment", EmpEnrollment);
+app.use("/api/empCourse", EmpCourse);
+app.use("/api/skillscertification", EmpSkillCertification);
+app.use("/api/contribution", EmpContributionRoutes);
+app.use("/api/activity",EmpActivityRoutes);
+app.use('/api/totalLeave', EmpTotalLeave);
 
 
 app.listen(process.env.PORT, () => {

@@ -21,6 +21,7 @@ const useTicket = () => {
             }
 
             const data = await res.json();
+            
 
             setTickets(data);
             setError(null);

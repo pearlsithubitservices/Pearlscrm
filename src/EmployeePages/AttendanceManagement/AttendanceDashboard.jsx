@@ -28,7 +28,7 @@ const AttendanceDashboard = ({
 }) => {
 
     
-    const{clockIn,clockOut,startBreak, endBreak}=useEmpAttendance();
+    const{clockIn,clockOut,startBreak, endBreak,getAttendanceById}=useEmpAttendance();
     const [working, setWorking] = useState(false);
     const [onBreak, setOnBreak] = useState(false);
     const { user } = useAuth();

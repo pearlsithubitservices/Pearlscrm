@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Search,
     Filter,
@@ -16,82 +16,52 @@ import { useNavigate } from "react-router-dom";
 import Pagination from "../../components/Pagination";
 import AnimateModals from "../../components/Dashboard/AnimateModals";
 import LoadingPage from "../../components/Dashboard/Loading";
+import useFollowups from "../../Hooks/useFollowups";
+import { useAuth } from "../../context/AuthContext";
+import useEmployees from "../../Hooks/useEmployees";
 
 
 export default function FollowUps() {
 
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const { employees } = useEmployees();
 
     const [search, setSearch] = useState("");
     const [active, setActive] = useState(0);
     const [loading] = useState(false);
+    const [followups, setFollowups] = useState([]);
+    const { getFollowups } = useFollowups();
+    useEffect(() => {
+        const fetchdata = async () => {
+            try {
+                const data = await getFollowups();
+                const res = data.filter((item) =>
+                    item.assignedTo == user?.uid)
+                setFollowups(res);
+                console.log(res);
+            }
+            catch (err) {
+                console.log(err);
+            }
+        }
+        fetchdata();
+    }, []);
+    const employeeMap = useMemo(() => {
+        return employees.reduce((acc, emp) => {
+            acc[emp.uid] = emp.name; // or emp.employeeName
+            return acc;
+        }, {});
+    }, [employees]);
 
+    const recentFollowups = [...followups]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5);
+
+    console.log(recentFollowups);
     const [currentPage, setCurrentPage] = useState(1);
 
     const buttons = ["All", "Missed", "Pending", "Completed", "Scheduled"];
-
-    const tableData = [
-        {
-            _id: 1,
-            lead: "Sarah Chen",
-            company: "Nexigen Corp",
-            type: "Call",
-            assigned: "Rohan M",
-            time: "Today",
-            status: "Completed",
-        },
-        {
-            _id: 2,
-            lead: "Vishnu",
-            company: "TechFlow Solutions",
-            type: "Meeting",
-            assigned: "Priya V",
-            time: "Tomorrow",
-            status: "Pending",
-        },
-        {
-            _id: 3,
-            lead: "Dhoni",
-            company: "GreenPath Inc.",
-            type: "Demo",
-            assigned: "Leo",
-            time: "Feb 14, 2025",
-            status: "Scheduled",
-        },
-        {
-            _id: 4,
-            lead: "Ragavi",
-            company: "Baltic Ventures",
-            type: "Email",
-            assigned: "Nina",
-            time: "Feb 14, 2025",
-            status: "Scheduled",
-        },
-        {
-            _id: 5,
-            lead: "Rock",
-            company: "Luminary Studio",
-            type: "Call",
-            assigned: "Priya",
-            time: "Mar 29, 2025",
-            status: "Completed",
-        },
-        {
-            _id: 6,
-            lead: "Virat",
-            company: "Gulf Dynamics",
-            type: "Call",
-            assigned: "Leo",
-            time: "Apr 5, 2025",
-            status: "Missed",
-        },
-    ];
-
-
-
-    /* FILTER */
-
-
 
     /* PAGINATION */
 
@@ -100,9 +70,9 @@ export default function FollowUps() {
     const lastIndex = currentPage * filesPerPage;
     const firstIndex = lastIndex - filesPerPage;
 
-    const currentFiles = tableData.slice(firstIndex, lastIndex);
+    const currentFiles = recentFollowups.slice(firstIndex, lastIndex);
 
-    const totalPages = Math.ceil(tableData.length / filesPerPage);
+    const totalPages = Math.ceil(recentFollowups.length / filesPerPage);
 
     return (
         <div className="flex max-h-screen bg-[#f3f0eb] overflow-x-hidden">
@@ -144,66 +114,57 @@ export default function FollowUps() {
                             </thead>
 
                             <tbody>
-
                                 {loading ? (
-
                                     <tr>
                                         <td colSpan="6" className="py-10">
                                             <LoadingPage />
                                         </td>
                                     </tr>
-
                                 ) : (
+                                    currentFiles.map((item) => {
+                                        const assignedEmployee = employees.find(
+                                            (emp) => emp.uid === item.assignedTo
+                                        );
 
-                                    currentFiles.map((item) => (
+                                        return (
+                                            <tr
+                                                key={item._id}
+                                                onClick={() => navigate(`/followupDetails/${item._id}`)}
+                                                className="border-t hover:bg-gray-50 cursor-pointer transition"
+                                            >
+                                                <td className="p-4">
+                                                    <p className="font-medium">{item.clientName}</p>
 
-                                        <tr
-                                            key={item._id}
-                                            onClick={() => navigate(`/followupDetails/${item._id}`)}
-                                            className="border-t hover:bg-gray-50 cursor-pointer transition"
+                                                    <p className="text-xs text-gray-400">
+                                                        {item.companyName}
+                                                    </p>
+                                                </td>
 
-                                        >
+                                                <td>
+                                                    <span className="bg-green-100 text-green-600 px-3 py-1 rounded text-xs">
+                                                        {item.type}
+                                                    </span>
+                                                </td>
 
-                                            <td className="p-4">
+                                                <td>
+                                                    <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
+                                                         {employeeMap[item.assignedTo] || ""}
+                                                    </span>
+                                                </td>
 
-                                                <p className="font-medium">
-                                                    {item.lead}
-                                                </p>
+                                                <td>{item.followupTime}</td>
 
-                                                <p className="text-xs text-gray-400">
-                                                    {item.company}
-                                                </p>
+                                                <td>
+                                                    <span className="bg-gray-100 px-3 py-1 rounded text-xs">
+                                                        {item.status}
+                                                    </span>
+                                                </td>
 
-                                            </td>
-
-                                            <td>
-                                                <span className="bg-green-100 text-green-600 px-3 py-1 rounded text-xs">
-                                                    {item.type}
-                                                </span>
-                                            </td>
-
-                                            <td>
-                                                <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
-                                                    {item.assigned}
-                                                </span>
-                                            </td>
-
-                                            <td>{item.time}</td>
-
-                                            <td>
-                                                <span className="bg-gray-100 px-3 py-1 rounded text-xs">
-                                                    {item.status}
-                                                </span>
-                                            </td>
-
-                                            <td>Today</td>
-
-                                        </tr>
-
-                                    ))
-
+                                                <td>Today</td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
-
                             </tbody>
 
                         </table>

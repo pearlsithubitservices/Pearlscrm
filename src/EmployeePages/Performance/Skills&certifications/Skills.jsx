@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { SquarePen, X } from 'lucide-react'
 import AddSkillForm from './AddSkill';
 import useSkillCertification from '../../../Hooks/useSkillCertification';
+import { useAuth } from '../../../context/AuthContext';
 
 
 const Skills = () => {
@@ -10,6 +11,7 @@ const Skills = () => {
     const { getById, getAll, deleteSkill } = useSkillCertification();
     const [Skills, setSkills] = useState([]);
     console.log(Skills);
+    const { user } = useAuth();
 
     useEffect(() => {
         fetchSkills();
@@ -19,11 +21,19 @@ const Skills = () => {
         try {
             const res = await getAll();
 
-            if (res?.success && res?.data?.length > 0) {
-                setSkills(res.data[0].skills || []);
+            const skillById = res?.data?.filter(
+                (item) => item.employee_uid === user?.uid
+            );
+
+            console.log(res);
+            console.log(skillById);
+
+            if (skillById?.length > 0) {
+                setSkills(skillById[0]?.skills || []);
             } else {
                 setSkills([]);
             }
+
         } catch (error) {
             console.log(error);
         }
@@ -32,10 +42,10 @@ const Skills = () => {
     //DELETE SKILL
     const handleDelete = async (skill_id) => {
         try {
-            const employee_uid = "EMP001"; // replace with dynamic user id later
+            const employee_uid = user?.uid; // replace with dynamic user id later
 
             const res = await deleteSkill(employee_uid, skill_id);
-console.log(skill_id);
+            console.log(skill_id);
             if (res?.success) {
                 fetchSkills(); // refresh list
             }

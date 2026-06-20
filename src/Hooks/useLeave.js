@@ -4,11 +4,12 @@ import { useAuth } from "../context/AuthContext";
 export default function useLeave() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [holidays, setHolidays]=useState([]);
+  const [holidays, setHolidays] = useState([]);
 
   const [leaves, setLeaves] = useState([]);
+
   const { user } = useAuth();
- 
+
 
   // CREATE LEAVE
   const submitLeave = async (formData) => {
@@ -68,10 +69,10 @@ export default function useLeave() {
   // GET ALL LEAVES
 
   useEffect(() => {
-    if (user) {
+    if (user?.uid) {
       getLeaves();
     }
-  }, [leaves.length])
+  }, [user?.uid]);
 
 
   const getLeaves = async () => {
@@ -101,11 +102,11 @@ export default function useLeave() {
       return [];
     } finally {
       setLoading(false);
-     
+
     }
   };
 
-   const getHolidays = async () => {
+  const getHolidays = async () => {
     try {
       setLoading(true);
 
@@ -178,7 +179,57 @@ export default function useLeave() {
     }
   };
 
-  
+
+
+
+  //UPDATE STATUS
+
+  const updateLeaveStatus = async (id, status) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `http://localhost:5000/api/leave/${id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update status");
+      }
+
+      // optional: update local state instantly
+      setLeaves((prev) =>
+        prev.map((leave) =>
+          leave._id === id ? data.leave : leave
+        )
+      );
+
+      return {
+        success: true,
+        data: data.leave,
+      };
+    } catch (err) {
+      setError(err.message);
+
+      return {
+        success: false,
+        error: err.message,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
   return {
     submitLeave,
@@ -189,5 +240,8 @@ export default function useLeave() {
     error,
     getHolidays,
     holidays,
+
+
+    updateLeaveStatus,
   };
 }

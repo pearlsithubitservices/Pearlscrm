@@ -60,6 +60,35 @@ const useNotification = () => {
       return null;
     }
   };
+  
+
+  //DELETE NOTFICATION
+  const deleteNotification = async (id) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      // Update local state
+      setNotifications((prev) =>
+        prev.filter((item) => item._id !== id)
+      );
+
+      return data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     fetchNotification();
@@ -71,6 +100,7 @@ const useNotification = () => {
     error,
     fetchNotification,
     createNotification,
+    deleteNotification,
   };
 };
 

@@ -2,12 +2,17 @@ import React from "react";
 import { motion } from "framer-motion";
 import usePayslip from "../../../Hooks/usePayslip";
 import SummarySkeleton from "./SummarySkeleton";
+import { useAuth } from "../../../context/AuthContext";
 
 const PaySummary = () => {
     const { payslips = [] } = usePayslip();
+    const { user } = useAuth();
+    const payslipById = payslips.filter((item) =>
+        item.employeeId == user?.uid);
+    console.log(payslipById);
 
     // Latest payslip
-    const payslip = payslips?.[0];
+    const payslip = payslipById?.[0];
     console.log(payslip);
 
     const monthyear = new Date().toLocaleDateString("en-US", {
@@ -17,7 +22,7 @@ const PaySummary = () => {
 
     if (!payslip) {
         return (
-            <SummarySkeleton/>
+            <SummarySkeleton />
         );
     }
 

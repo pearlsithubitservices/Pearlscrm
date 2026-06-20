@@ -15,13 +15,13 @@ const EmpattendanceSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    department:{
-        type:String,
-        required:true,
+    department: {
+      type: String,
+      required: true,
     },
-    date:{
-        type:Date,
-        required:true,
+    date: {
+      type: Date,
+      required: true,
     },
 
 
@@ -40,25 +40,39 @@ const EmpattendanceSchema = new mongoose.Schema(
 
     status: {
       type: String,
-     
-      
+      default: 'absent',
+
+    },
+    attendanceState: {
+      type: String,
+      enum: [
+        "clocked_out",
+        "working",
+        "break",
+        "clock_in"
+      ],
+      default: "clocked_out",
+      required: true,
     },
 
     workingHours: {
       type: Number,
       default: 0,//seconds
     },
-    isOnline:{
-        type:Boolean,
-        default:false,
+    isOnline: {
+      type: Boolean,
+      default: false,
     },
-    photoStatus:{
-        type:String,
-        default:null,
+    photoStatus: {
+      type: String,
+      default: null,
     },
 
     // ✅ NEW: multiple breaks support
-    breaks: [breakSchema],
+    breaks: {
+      type: [breakSchema],
+      default: [],
+    },
   },
   {
     timestamps: true,

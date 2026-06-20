@@ -20,7 +20,6 @@ import {
 import { db } from "../lib/firebase.js";
 
 export default function ProjectForm({ onClose }) {
-
   const [project, setProject] = useState({
     company: "",
     companylocation: "",
@@ -30,7 +29,7 @@ export default function ProjectForm({ onClose }) {
     assignedDate: "",
     dueDate: "",
     leader: "",
-    budget: ""
+    budget: "",
   });
 
   const [employees, setEmployees] = useState([]);
@@ -226,21 +225,31 @@ export default function ProjectForm({ onClose }) {
                 if (!selectedId) return;
 
                 // Prevent duplicates
+                const employee = employeeMap[selectedId];
+
+                if (!employee) return;
+
+                // Prevent duplicates
                 if (
-                  project.members.includes(
-                    selectedId
+                  project.members.some(
+                    (member) => member.uid === employee.uid
                   )
                 ) {
                   return;
                 }
 
-                setProject({
-                  ...project,
+                setProject((prev) => ({
+                  ...prev,
                   members: [
-                    ...project.members,
-                    selectedId
-                  ]
-                });
+                    ...prev.members,
+                    {
+                      uid: employee.uid,
+                      name: employee.name,
+                      role: "Developer",
+                      progress: 0,
+                    },
+                  ],
+                }));
 
               }}
               className="
@@ -274,64 +283,53 @@ export default function ProjectForm({ onClose }) {
             {/* SELECTED MEMBERS */}
 
             <div className="flex flex-wrap gap-2 mt-4">
+              {project.members.map((member) => (
+                <div
+                  key={member.uid}
+                  className="flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full"
+                >
+                  <span>{member.name}</span>
 
-              {project.members.map(
-                (memberId) => {
+                  <select
+                    value={member.role}
+                    onChange={(e) => {
+                      setProject((prev) => ({
+                        ...prev,
+                        members: prev.members.map((m) =>
+                          m.uid === member.uid
+                            ? {
+                              ...m,
+                              role: e.target.value,
+                            }
+                            : m
+                        ),
+                      }));
+                    }}
+                    className="border rounded px-2 py-1 text-sm bg-white"
+                  >
+                    <option value="Leader">Leader</option>
+                    <option value="Developer">Developer</option>
+                    <option value="Designer">Designer</option>
+                    <option value="Tester">Tester</option>
+                    <option value="Manager">Manager</option>
+                  </select>
 
-                  const employee =
-                    employeeMap[memberId];
-
-                  return (
-
-                    <div
-                      key={memberId}
-                      className="
-                        flex
-                        items-center
-                        gap-2
-                        bg-blue-100
-                        text-blue-700
-                        px-3
-                        py-1
-                        rounded-full
-                      "
-                    >
-
-                      <span>
-                        {employee?.name ||
-                          "Unknown"}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-
-                          setProject({
-                            ...project,
-                            members:
-                              project.members.filter(
-                                (id) =>
-                                  id !== memberId
-                              ),
-                          });
-
-                        }}
-                        className="
-                          hover:text-red-500
-                        "
-                      >
-
-                        <X size={14} />
-
-                      </button>
-
-                    </div>
-
-                  );
-
-                }
-              )}
-
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setProject((prev) => ({
+                        ...prev,
+                        members: prev.members.filter(
+                          (m) => m.uid !== member.uid
+                        ),
+                      }))
+                    }
+                    className="hover:text-red-500"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
 
           </div>
@@ -373,10 +371,10 @@ export default function ProjectForm({ onClose }) {
             onChange={handleChange}
             placeholder="Leader"
             type="select"
-           options={employees.map((emp) => ({
-            label: emp.name,
-            value: emp.id
-          }))}
+            options={employees.map((emp) => ({
+              label: emp.name,
+              value: emp.uid,
+            }))}
           />
 
           <InputField

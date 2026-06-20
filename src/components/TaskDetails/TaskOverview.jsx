@@ -1,8 +1,19 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
+import useEmployees from "../../Hooks/useEmployees";
 
 const TaskOverview = ({ tasks }) => {
+    
+    const { employees } = useEmployees();
+
+    const employeeMap = useMemo(() => {
+        return employees.reduce((map, employee) => {
+            map[employee.uid] = employee.name;
+            return map;
+        }, {});
+    }, [employees]);
+    console.log(tasks);
     return (
         <motion.div
             whileHover={{ y: -5 }}
@@ -12,14 +23,14 @@ const TaskOverview = ({ tasks }) => {
             <div className="flex flex-col gap-4 ml-4">
                 <h1>TASK DETAILS</h1>
                 <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks.title || "ReDesign the onboarding experiences for enterprise accounts"}</p>
+                    <p>{tasks[0]?.title}</p>
                 </div>
 
             </div>
             <div className="flex flex-col gap-4 ml-4 mt-4">
                 <h1>TASK DESCRIPTION</h1>
                 <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks.notes || " ReDesign the onboarding experiences for enterprise accounts"}</p>
+                    <p>{tasks[0]?.notes || " ReDesign the onboarding experiences for enterprise accounts"}</p>
                 </div>
 
             </div>
@@ -37,7 +48,7 @@ const TaskOverview = ({ tasks }) => {
                         </h3>
 
                         <p className="text-base font-semibold text-gray-800">
-                            {tasks?.dueDate || "26-06-2026"}
+                            {tasks[0]?.dueDate || "26-06-2026"}
                         </p>
                     </div>
 
@@ -48,7 +59,7 @@ const TaskOverview = ({ tasks }) => {
                         </h3>
 
                         <p className="text-base font-semibold text-gray-800">
-                            {tasks?.assignedBy || "Ragavi M"}
+                            {employeeMap[tasks[0]?.assignedBy] || "Ragavi M"}
                         </p>
                     </div>
 

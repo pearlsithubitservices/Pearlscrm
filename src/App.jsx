@@ -46,12 +46,14 @@ import TaskDetails from './pages/TaskDetails';
 import Login from './pages/Login';
 
 import ClientManagement from './pages/ClientManagement';
+import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx'
 
 // EMPLOYEE
 
 import EmployeeLayout from './layouts/EmployeeLayout';
 
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+import EmpReportStatements from './EmployeePages/Report/ReportsStatements.jsx'
 
 
 
@@ -77,7 +79,7 @@ import EmpTask from './EmployeePages/Task/Task.jsx';
 import EmpPayroll from './EmployeePages/Payroll/Payroll.jsx';
 import EmpCommunication from './EmployeePages/Communication/communication.jsx';
 import EmpPerformance from './EmployeePages/Performance/Performance.jsx';
-import EmpReports from './EmployeePages/Report/Report.jsx';
+import EmpReports from './EmployeePages/Report/ReportsStatements.jsx';
 import EmpAttendance from './EmployeePages/AttendanceManagement/Attendance.jsx';
 import EmpDocument from './EmployeePages/Document/Document.jsx';
 import EmpSettings from './EmployeePages/Settings/settings.jsx';
@@ -236,6 +238,12 @@ export default function App() {
                   <Reports />
                 }
               />
+              <Route
+                path="/communication"
+                element={
+                  <AdminCommunication />
+                }
+              />
 
               <Route
                 path="/settings"
@@ -302,6 +310,7 @@ export default function App() {
               <Route path="/employee/dashboard" element={<EmpDashboard />} />
               <Route path="/employee/follow-ups" element={<EmpFollowUps />} />
               <Route path="/employee/performance" element={<EmpPerformance />} />
+              <Route path="/employee/reports" element={<EmpReportStatements />} />
               <Route path="/employee/performance/:id" element={<EmpGoalDetails />} />
 
               <Route

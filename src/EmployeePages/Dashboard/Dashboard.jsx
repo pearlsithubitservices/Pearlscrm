@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Bell,
@@ -9,65 +9,92 @@ import {
 } from "lucide-react";
 import RecentTask from "./RecentTask";
 import RecentFollowups from "./RecentFollowups";
+import useTasks from "../../Hooks/useTaskid";
+import useFollowups from "../../Hooks/useFollowups";
+import { useAuth } from "../../context/AuthContext";
 
 export default function EmployeeDashboard() {
   const [activeTab, setActiveTab] = useState("tasks");
+  const { tasks } = useTasks();
+  const { getFollowups } = useFollowups();
+  const { user } = useAuth();
+  const [followups, setFollowups] = useState([]);
+  const pending = tasks.filter((item) => item?.status.toLowerCase() == "pending");
+  const completed = tasks.filter((item) => item?.status.toLowerCase() == "completed");
+
+  const followupsbyid=followups.filter((item)=>item.assignedTo == user?.uid);
+
+  useEffect(() => {
+    const fetchdata = async () => {
+      try {
+        const data = await getFollowups();
+        const res = data.filter((item) =>
+          item.assignedTo == user?.uid)
+        setFollowups(res);
+        console.log(res);
+      }
+      catch (err) {
+        console.log(err);
+      }
+    }
+    fetchdata();
+  }, []);
 
   const stats = [
     {
       title: "Total Tasks",
-      value: "12",
+      value: tasks.length,
       icon: CheckSquare,
     },
     {
       title: "Pending Tasks",
-      value: "48",
+      value: pending.length,
       icon: Clock3,
     },
     {
       title: "Completed Tasks",
-      value: "24",
+      value: completed.length,
       icon: CheckCheck,
     },
     {
       title: "Follow-ups Today",
-      value: "12",
+      value: followupsbyid.length,
       icon: CalendarDays,
     },
   ];
 
-  
 
-  
+
+
 
   const renderTabContent = () => {
     if (activeTab === "tasks") {
       return (
         <div className="space-y-5 mt-5">
-          
-            <motion.div
-              
-              whileHover={{ y: -3 }}
-              className=" rounded-2xl border border-gray-200 p-6"
-            >
-              <RecentTask/>
-            </motion.div>
-        
+
+          <motion.div
+
+            whileHover={{ y: -3 }}
+            className=" rounded-2xl border border-gray-200 p-6"
+          >
+            <RecentTask />
+          </motion.div>
+
         </div>
       );
     }
 
     return (
       <div className="space-y-5 mt-5">
-       
-          <motion.div
-           
-            whileHover={{ y: -3 }}
-            className=" rounded-2xl p-1"
-          >
-            <RecentFollowups/>
-          </motion.div>
-       
+
+        <motion.div
+
+          whileHover={{ y: -3 }}
+          className=" rounded-2xl p-1"
+        >
+          <RecentFollowups />
+        </motion.div>
+
       </div>
     );
   };
@@ -125,22 +152,20 @@ export default function EmployeeDashboard() {
         <div className="mt-8 bg-white border rounded-2xl  flex">
           <button
             onClick={() => setActiveTab("tasks")}
-            className={`flex-1 py-4 rounded-xl text-xl font-semibold transition-all ${
-              activeTab === "tasks"
-                ? "bg-[#2563eb] text-white"
-                : "text-black"
-            }`}
+            className={`flex-1 py-4 rounded-xl text-xl font-semibold transition-all ${activeTab === "tasks"
+              ? "bg-[#2563eb] text-white"
+              : "text-black"
+              }`}
           >
             Recent Tasks
           </button>
 
           <button
             onClick={() => setActiveTab("followups")}
-            className={`flex-1  rounded-xl text-xl font-semibold transition-all ${
-              activeTab === "followups"
-                ? "bg-[#2563eb] text-white"
-                : "text-black"
-            }`}
+            className={`flex-1  rounded-xl text-xl font-semibold transition-all ${activeTab === "followups"
+              ? "bg-[#2563eb] text-white"
+              : "text-black"
+              }`}
           >
             Recent Followups
           </button>

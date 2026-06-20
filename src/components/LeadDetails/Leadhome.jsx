@@ -8,9 +8,15 @@ import {
   CalendarDays,
   Briefcase,
 } from "lucide-react";
+import useEmployees from "../../Hooks/useEmployees";
 
 export default function LeadDetails({ lead }) {
+  const { employees } = useEmployees();
+  const leadname = employees.find((item) => {
+   return item.uid == lead.assignedTo
+  });
 
+  
   const contactInfo = [
     {
       title: "EMAIL",
@@ -35,7 +41,7 @@ export default function LeadDetails({ lead }) {
     },
     {
       title: "ASSIGNED TO",
-      value: lead?.assignedTo || "Ragavi M",
+      value: leadname?.name || "Ragavi M",
       icon: User,
       color: "text-orange-500",
       bg: "bg-orange-100",
@@ -66,14 +72,14 @@ export default function LeadDetails({ lead }) {
         opacity: 1,
         y: 0,
       }}
-      className="min-h-screen bg-[#efede8] p-5"
+      className="max-h-screen bg-[#efede8] p-5"
     >
 
       <div className="max-w-7xl mx-auto">
 
         {/* HEADER */}
 
-        
+
 
         {/* DEAL VALUE */}
 

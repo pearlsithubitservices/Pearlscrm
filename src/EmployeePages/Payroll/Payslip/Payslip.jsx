@@ -6,6 +6,7 @@ import { exportPayslipPDF } from "./PayslipExport";
 import usePayslip from "../../../Hooks/usePayslip";
 import PayslipForm from "./PayslipForm";
 import Skeleton from "./Skeleton";
+import { useAuth } from "../../../context/AuthContext";
 
 
 
@@ -33,13 +34,17 @@ const StatusBadge = ({ status }) => {
 };
 
 const Payslip = () => {
-  const {payslips,loading}=usePayslip();
-  console.log(payslips);
-  
+  const { payslips, loading } = usePayslip();
+ 
+  const { user } = useAuth();
+  const payslipById = payslips.filter((item) =>
+    item.employeeId == user?.uid);
+  console.log(payslipById);
 
-  const[showForm, setShowForm]=useState(false);
-  if(loading){
-    return <Skeleton/>
+
+  const [showForm, setShowForm] = useState(false);
+  if (loading) {
+    return <Skeleton />
   }
   return (
     <>
@@ -49,7 +54,7 @@ const Payslip = () => {
         className="bg-white border rounded-xl p-4 h-[300px] overflow-auto no-scrollbar"
       >
         <div className=" ">
-          <button onClick={()=>setShowForm(true)}>Form</button>
+          <button onClick={() => setShowForm(true)}>Form</button>
           <table className="w-full min-w-[900px] ">
             <thead className="sticky top-0 z-20 bg-white ">
               <tr className=" border-b text-[#0b2b57] font-semibold ">
@@ -64,8 +69,8 @@ const Payslip = () => {
             </thead>
 
             <tbody>
-              {payslips?.map((row, idx) => (
-               
+              {payslipById?.map((row, idx) => (
+
                 <motion.tr
                   key={idx}
                   whileHover={{ scale: 1.01 }}
@@ -97,7 +102,7 @@ const Payslip = () => {
 
                   <td className="py-5 px-4">
                     <button className="flex items-center gap-2 text-gray-500 hover:text-[#2563eb] transition"
-                    onClick={() => exportPayslipPDF(row)}
+                      onClick={() => exportPayslipPDF(row)}
                     >
                       <Download size={16} />
                       PDF
@@ -111,13 +116,13 @@ const Payslip = () => {
         {showForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <PayslipForm
-            onClose={()=>setShowForm(false)}
+              onClose={() => setShowForm(false)}
             />
           </div>
         )}
 
       </motion.div>
-      
+
     </>
   );
 };

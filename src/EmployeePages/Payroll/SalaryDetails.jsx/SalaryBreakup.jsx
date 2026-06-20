@@ -18,18 +18,22 @@ import {
 import usePayslip from "../../../Hooks/usePayslip";
 import { getFinancialYear } from '../../../Utils/formatNumber'
 import SalaryBreakupSkeleton from "./Skeleton";
+import { useAuth } from "../../../context/AuthContext";
 
 const SalaryBreakup = () => {
-    const { payslips,loading} = usePayslip();
-    const payslip = payslips[0];
+    const { payslips, loading } = usePayslip();
+    const { user } = useAuth();
+    const payslipById = payslips.filter((item) =>
+        item.employeeId == user?.uid);
+    const payslip = payslipById[0];
     const financialYear = getFinancialYear();
     console.log(financialYear);
-    if(loading){
-        return<SalaryBreakupSkeleton/>
+    if (loading) {
+        return <SalaryBreakupSkeleton />
     }
 
 
-    const annualSummary = payslips.reduce(
+    const annualSummary = payslipById.reduce(
         (totals, slip) => {
             totals.basicSalary += Number(slip.basicSalary || 0);
             totals.medical += Number(slip.medical || 0);
@@ -68,7 +72,7 @@ const SalaryBreakup = () => {
 
     console.log(annualSummary);
     console.log(payslips);
-   
+
 
     const salaryData = [
         ["Basic salary", payslip?.basicSalary, annualSummary.basicSalary],

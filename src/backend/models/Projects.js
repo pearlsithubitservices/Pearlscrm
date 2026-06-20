@@ -1,5 +1,33 @@
 const mongoose = require("mongoose");
 
+const memberSchema = new mongoose.Schema(
+  {
+    uid: {
+      type: String,
+      required: true,
+    },
+
+    name: {
+      type: String,
+      default: "",
+    },
+
+    role: {
+      type: String,
+      enum: ["Leader", "Developer", "Designer", "Tester", "Manager"],
+      default: "Developer",
+    },
+
+    progress: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+  },
+  { _id: false }
+);
+
 const projectSchema = new mongoose.Schema(
   {
     company: {
@@ -7,10 +35,11 @@ const projectSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    companylocation:{
-      type:String,
-      required:true,
-      trim:true,
+
+    companylocation: {
+      type: String,
+      required: true,
+      trim: true,
     },
 
     title: {
@@ -24,11 +53,7 @@ const projectSchema = new mongoose.Schema(
       default: "",
     },
 
-    members: [
-      {
-        type: String,
-      }
-    ],
+    members: [memberSchema],
 
     assignedDate: {
       type: Date,
@@ -54,7 +79,7 @@ const projectSchema = new mongoose.Schema(
         "Pending",
         "In Progress",
         "Completed",
-        "On Hold"
+        "On Hold",
       ],
       default: "Pending",
     },
@@ -64,15 +89,11 @@ const projectSchema = new mongoose.Schema(
       default: 0,
       min: 0,
       max: 100,
-    }
-
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
-module.exports = mongoose.model(
-  "Project",
-  projectSchema
-);
+module.exports = mongoose.model("Project", projectSchema);

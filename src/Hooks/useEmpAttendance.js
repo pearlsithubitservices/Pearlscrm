@@ -99,6 +99,12 @@ export default function useEmpAttendance() {
     return request("/", "GET");
   };
   // =========================
+  // GET ATTENDANCE BY EMPLOYEE UID
+  // =========================
+  const getAttendanceById = async (employee_uid) => {
+    return request(`/employee/${employee_uid}`, "GET");
+  };
+  // =========================
   // UPDATE ATTENDANCE
   // =========================
   const updateAttendance = async (
@@ -129,5 +135,6 @@ export default function useEmpAttendance() {
     endBreak,
     getAttendances,
     updateAttendance,
+    getAttendanceById,
   };
 }

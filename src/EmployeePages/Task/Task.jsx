@@ -31,8 +31,9 @@ import TaskActivity from "./TaskActivity.jsx";
 export default function Tasks() {
 
   const { user } = useAuth();
-  const userId="LNcFHaGpEjOFFyav5qLQ42qZWyf2"
-  const { tasks } = useTasks(userId);
+  // const userId="LNcFHaGpEjOFFyav5qLQ42qZWyf2"
+  const { tasks } = useTasks();
+  console.log(tasks);
   const { employees } = useEmployees();
   console.log(employees);
   const [search, setSearch] =
@@ -60,7 +61,7 @@ export default function Tasks() {
   //STATS
 
   const inprogress = tasks.filter((task) =>
-    task.status.toLowerCase() === "in progress"
+    task.status.toLowerCase() === "pending"
   );
   const completed = tasks.filter((task) =>
     task.status.toLowerCase() === "completed"
@@ -182,6 +183,10 @@ export default function Tasks() {
                     (emp) => emp.id === task.assignedTo
                   );
                   console.log(employeename);
+                  const employeenameBy = employees.find(
+                    (emp) => emp.id === task.assignedBy
+                  );
+                  console.log(employeename);
                   return (
                     <motion.div
                       key={index}
@@ -205,7 +210,7 @@ export default function Tasks() {
                         <div>
 
                           <h1 className="text-sm md:text-xl font-normal text-[#082f57]">
-                            <span className="font-bold tracking-tighter">Project Name: </span>{task.assignedEmployee || " Ragavi"}
+                            <span className="font-bold tracking-tighter">Project Name: </span>{employeenameBy.name || " Ragavi"}
                           </h1>
 
                           <p className="mt-1 text-lg md:text-xl text-[#082f57]">
@@ -261,7 +266,7 @@ export default function Tasks() {
 
                         <div className="flex flex-col md:flex-row md:items-center gap-5">
 
-                          <h1 className="text-xl text-yellow-600 min-w-fit">
+                          <h1 className="text-xl text-yellow-600 min-w-fit ">
                             Overall progress
                           </h1>
 

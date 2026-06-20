@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, X } from "lucide-react";
 import useSkillCertification from "../../../Hooks/useSkillCertification";
+import { useAuth } from "../../../context/AuthContext";
 
-export default function AddSkill({ onClose , fetchskills}) {
+export default function AddSkill({ onClose, fetchskills }) {
     const [skill, setSkill] = useState("");
     const [level, setLevel] = useState("Beginner");
+    const { user } = useAuth();
 
     const levels = ["Beginner", "Intermediate", "Advanced", "Expert"];
 
@@ -16,17 +18,17 @@ export default function AddSkill({ onClose , fetchskills}) {
         if (!skill.trim()) return;
 
         const payload = {
-            employee_uid: "EMP001", // 👉 replace with real user id
+            employee_uid: user?.uid, // 👉 replace with real user id
             name: skill,
             level: level,
             progress:
                 level === "Beginner"
                     ? 25
                     : level === "Intermediate"
-                    ? 50
-                    : level === "Advanced"
-                    ? 75
-                    : 90,
+                        ? 50
+                        : level === "Advanced"
+                            ? 75
+                            : 90,
         };
 
         const res = await addSkill(payload);

@@ -62,7 +62,7 @@ export default function ClientManagement() {
   console.log(employees);
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
   //PAGINATION
@@ -77,7 +77,7 @@ export default function ClientManagement() {
   const stats = [
     {
       title: "Total Employees",
-      value: "50",
+      value: employees.length,
       icon: UserCheck,
       color: "text-blue-600",
       bg: "bg-blue-50"
@@ -124,7 +124,7 @@ export default function ClientManagement() {
 
 
   return (
-    <div className="text-black">
+    <div className="text-black max-h-screen overflow-y-auto no-scrollbar">
 
       {/* TOPBAR */}
       <div className="w-full bg-white border-b border-black/10 px-8 py-6 flex items-center justify-between">

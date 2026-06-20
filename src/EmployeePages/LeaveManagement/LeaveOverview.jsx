@@ -70,9 +70,9 @@ const LeaveOverview = ({ onApplyLeave, setFormDetails, setEditingRequest, editin
                     <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        onClick={()=>setLeaveform(true)}
+                        onClick={() => setLeaveform(true)}
                         className="bg-[#EEF2F7] hover:bg-[#E4EAF3] transition-colors px-6 py-4 rounded-xl flex items-center justify-center gap-3 font-semibold text-[#4B5563]"
-                
+
                     >
                         <FilePenLine size={18} />
                         Apply for Leave
@@ -81,18 +81,18 @@ const LeaveOverview = ({ onApplyLeave, setFormDetails, setEditingRequest, editin
                 </motion.div>
             </div>
             {/**Leave Form */}
-            
-                {showForm && (
-                    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto  no-scrollbar">
+
+            {showForm && (
+                <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto  no-scrollbar">
                     <LeaveForm
-                    onSave={setFormDetails}
-                    editingRequest={editingRequest}
-                    onEdit={setFormDetails}
-                    onClose={handleCloseForm}
+                        onSave={setFormDetails}
+                        editingRequest={editingRequest}
+                        onEdit={setFormDetails}
+                        onClose={handleCloseForm}
                     />
                 </div>
-                )}
-               </div>
+            )}
+        </div>
     );
 };
 

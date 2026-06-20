@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X } from "lucide-react";
 import useSkillCertification from "../../../Hooks/useSkillCertification";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function AddCertification({ onClose }) {
     const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ export default function AddCertification({ onClose }) {
         issueDate: "",
         credentialId: "",
     });
+    const { user } = useAuth();
 
     const [file, setFile] = useState(null);
 
@@ -38,7 +40,7 @@ export default function AddCertification({ onClose }) {
         if (!formData.certificationName) return;
 
         const payload = {
-            employee_uid: "EMP001", // replace with real user id
+            employee_uid: user?.uid, // replace with real user id
             title: formData.certificationName,
             issuer: formData.organization,
             issued: formData.issueDate,

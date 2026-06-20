@@ -36,75 +36,75 @@ export default function Sidebar() {
   const { config } = useIndustry();
   const navigate = useNavigate();
 
- 
+
 
   const mainItems = [
-  {
-    name: 'Dashboard',
-    icon: BarChart3,
-    path: '/employee/dashboard',
-  },
+    {
+      name: 'Dashboard',
+      icon: BarChart3,
+      path: '/employee/dashboard',
+    },
 
-  {
-    name: "Tasks & Activities",
-    icon: CheckSquare,
-    path: '/employee/tasks',
-  },
-   {
-    name: "FollowUps",
-    icon: Calendar,
-    path: '/employee/follow-ups',
-  },
+    {
+      name: "Tasks & Activities",
+      icon: CheckSquare,
+      path: '/employee/tasks',
+    },
+    {
+      name: "FollowUps",
+      icon: Calendar,
+      path: '/employee/follow-ups',
+    },
 
-  {
-    name: 'Leave Management',
-    icon: UserX,
-    path: '/employee/leave',
-  },
+    {
+      name: 'Leave Management',
+      icon: UserX,
+      path: '/employee/leave',
+    },
 
-  {
-    name: 'Attendance Management',
-    icon: CalendarDays,
-    path: '/employee/attendance',
-  },
-   {
-    name: 'Communication',
-    icon: Phone,
-    path: '/employee/communication',
-  },
-{
-  name: 'Payroll & Benefits',
-  icon: CreditCardIcon,
-  path: '/employee/payroll',
-},
-];
+    {
+      name: 'Attendance Management',
+      icon: CalendarDays,
+      path: '/employee/attendance',
+    },
+    {
+      name: 'Communication',
+      icon: Phone,
+      path: '/employee/communication',
+    },
+    {
+      name: 'Payroll & Benefits',
+      icon: CreditCardIcon,
+      path: '/employee/payroll',
+    },
+  ];
 
-const manageItems = [
- 
+  const manageItems = [
 
-  {
-    name: 'Performance & Growth',
-    icon: CircleUser,
-    path: '/employee/performance',
-  },
-  {
-    name: 'Reports & Statements',
-    path: '/',
-    icon: Users,
-  },
 
-  {
-    name: 'Essential Modules',
-    icon: CreditCard,
-    path: '/',
-  },
+    {
+      name: 'Performance & Growth',
+      icon: CircleUser,
+      path: '/employee/performance',
+    },
+    {
+      name: 'Reports & Statements',
+      path: '/employee/reports',
+      icon: Users,
+    },
 
-  {
-    name: 'Key Benefits',
-    icon: FileText,
-    path: '/',
-  },
-];
+    // {
+    //   name: 'Essential Modules',
+    //   icon: CreditCard,
+    //   path: '/',
+    // },
+
+    // {
+    //   name: 'Key Benefits',
+    //   icon: FileText,
+    //   path: '/',
+    // },
+  ];
 
   return (
 
@@ -118,7 +118,7 @@ const manageItems = [
 
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
 
-           <img src={logo} alt='logo' className='w-full h-full rounded-full'/>
+            <img src={logo} alt='logo' className='w-full h-full rounded-full' />
 
           </div>
 
@@ -145,10 +145,9 @@ const manageItems = [
                 className={({ isActive }) =>
                   `
                   flex items-center gap-3 px-1 py-3 rounded-xl text-[14px] transition-all duration-300
-                  ${
-                    isActive
-                      ? 'bg-[#2563a9] text-white font-semibold'
-                      : 'text-white hover:bg-white/5 hover:text-white'
+                  ${isActive
+                    ? 'bg-[#2563a9] text-white font-semibold'
+                    : 'text-white hover:bg-white/5 hover:text-white'
                   }
                   `
                 }
@@ -183,10 +182,9 @@ const manageItems = [
                 className={({ isActive }) =>
                   `
                   flex items-center gap-3 px-1 py-3 rounded-xl text-[15px] transition-all duration-300
-                  ${
-                    isActive
-                      ? 'bg-[#2563a9] text-white '
-                      : 'text-white hover:bg-white/5 '
+                  ${isActive
+                    ? 'bg-[#2563a9] text-white '
+                    : 'text-white hover:bg-white/5 '
                   }
                   `
                 }
@@ -201,18 +199,18 @@ const manageItems = [
             ))}
 
             {/* LOGOUT */}
-        <button
-          onClick={() => logout()}
-          className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
-        >
+            <button
+              onClick={() => logout()}
+              className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
+            >
 
-          <LogOut className="w-4 h-4 mb-4" />
+              <LogOut className="w-4 h-4 mb-4" />
 
-          <span className="text-sm mb-4 ">
-            Log out
-          </span>
+              <span className="text-sm mb-4 ">
+                Log out
+              </span>
 
-        </button>
+            </button>
 
           </div>
 
@@ -235,7 +233,7 @@ const manageItems = [
             className="w-10 h-10 rounded-full object-cover"
           />
 
-          <div className="min-w-0" onClick={()=>navigate('/employee/myprofile')}>
+          <div className="min-w-0" onClick={() => navigate('/employee/myprofile')}>
 
             <h3 className="font-semibold text-sm truncate">
               {user?.displayName || 'Ragavi M'}
@@ -249,7 +247,7 @@ const manageItems = [
 
         </div>
 
-        
+
 
       </div>
 

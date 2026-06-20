@@ -3,6 +3,10 @@ const mongoose = require("mongoose");
 const payslipSchema = new mongoose.Schema(
   {
     // BASIC INFO
+    employeeId:{
+      type:String,
+      required:true,
+    },
     month: {
       type: String,
       required: true,

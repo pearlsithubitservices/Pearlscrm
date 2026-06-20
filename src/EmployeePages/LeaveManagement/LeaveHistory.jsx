@@ -15,18 +15,17 @@ import { useAuth } from "../../context/AuthContext";
 const LeaveHistory = () => {
   const { leaves } = useLeave();
   const { user } = useAuth();
+  console.log(leaves);
 
   const currentUser = leaves.filter(
     (item) => item.employeeId === user.uid
   );
-
+  console.log(currentUser);
   const today = new Date().toDateString()
 
   const approvedLeaves = currentUser.filter((item) => {
     return (
-      item.status?.toLowerCase() === "approved" &&
-     new Date(item.leaveFrom).toDateString() <= today
-    );
+      item.status?.toLowerCase() === "approved" );
   });
 
   console.log(approvedLeaves);

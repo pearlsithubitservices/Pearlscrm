@@ -10,12 +10,16 @@ import {
 } from "lucide-react";
 import { getFinancialYear } from "../../../Utils/formatNumber";
 import useReimbursement from "../../../Hooks/useReimbursement";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function Reimbursement({ getclaims }) {
   const financialyear = getFinancialYear();
-  
+  const { user } = useAuth();
   const [claims, setClaims] = useState([]);
-  console.log(claims);
+
+  const claimsById = claims.filter((item) => item.employee_uid == user?.uid);
+
+
   useEffect(() => {
     const fetchClaims = async () => {
       try {
@@ -74,7 +78,7 @@ export default function Reimbursement({ getclaims }) {
           </div>
 
           <div className="mt-8 space-y-7">
-            {claims.map((claim) => (
+            {claimsById.map((claim) => (
               <div
                 key={claim._id}
                 className="flex items-center justify-between"

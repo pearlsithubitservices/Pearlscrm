@@ -2,10 +2,14 @@ const mongoose = require("mongoose");
 
 const feedbackSchema = new mongoose.Schema(
   {
+    employeeId: {
+      type: String,
+      required: true,
+    },
     feedbackType: {
       type: String,
       required: true,
-     
+
     },
 
     subject: {

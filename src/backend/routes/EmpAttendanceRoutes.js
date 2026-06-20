@@ -82,11 +82,13 @@ router.post("/clock-in", async (req, res) => {
         clockIn: new Date(),
         isOnline: true,
         status: "present",
+        attendanceState:"working"
       });
     } else {
       attendance.clockIn = new Date();
       attendance.isOnline = true;
       attendance.status = "present";
+      attendance.attendanceState = "working";
     }
 
     await attendance.save();
@@ -113,7 +115,7 @@ router.post("/clock-out", async (req, res) => {
     const attendance = await EmpAttendanceModel.findOne({
       employee_uid,
       clockIn: { $ne: null },
-      clockOut: null,
+      /*clockOut: null,*/
     }).sort({ clockIn: -1 });
 
     if (!attendance) {
@@ -130,10 +132,11 @@ router.post("/clock-out", async (req, res) => {
       });
     }
 
-    
+
     attendance.clockOut = new Date();
 
     attendance.isOnline = false;
+    attendance.attendanceState = "clocked_out";
 
 
     let totalBreakSeconds = 0;
@@ -196,6 +199,7 @@ router.post("/break/start", async (req, res) => {
 
     attendance.status = "present";
     attendance.isOnline = false;
+    attendance.attendanceState = "break";
 
     await attendance.save();
 
@@ -244,6 +248,7 @@ router.post("/break/end", async (req, res) => {
 
     attendance.status = "present";
     attendance.isOnline = true;
+    attendance.attendanceState = "working"
 
     await attendance.save();
 
@@ -256,6 +261,29 @@ router.post("/break/end", async (req, res) => {
     res.status(500).json({
       success: false,
       error: err.message,
+    });
+  }
+});
+
+
+// GET Attendance by Employee UID
+router.get("/employee/:employee_uid", async (req, res) => {
+  try {
+    const { employee_uid } = req.params;
+
+    const attendance = await EmpAttendanceModel.find({
+      employee_uid,
+    }).sort({ date: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: attendance.length,
+      data: attendance,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
     });
   }
 });

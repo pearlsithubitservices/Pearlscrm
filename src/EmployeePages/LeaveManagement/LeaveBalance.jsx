@@ -1,35 +1,54 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import LeaveHistory from "./LeaveHistory";
 import useLeave from "../../Hooks/useLeave";
 import { useAuth } from "../../context/AuthContext";
+import useTotalLeave from "../../Hooks/useTotalLeave";
 
 const LeaveBalance = () => {
 
-  const { user }=useAuth();
+  const { user } = useAuth();
+  const { getTotalLeave } = useTotalLeave();
+  const [totalLeave, setTotalLeave] = useState(null);
+  const { leaves } = useLeave();
+  const leave = leaves.filter(
+    (item) => item.employeeId === user.uid
+  );
+  console.log(leave);
+  useEffect(() => {
+    const fetchTotalLeave = async () => {
+      try {
+        const data = await getTotalLeave(user?.uid);
+        setTotalLeave(data);
+      } catch (error) {
+        console.log(error.message);
+        setTotalLeave(null);
+      }
+    };
 
-  const {leaves}=useLeave();
- const leave = leaves.filter(
-  (item) => item.employeeId === user.uid
-);
-console.log(leave);
- 
+    if (user?.uid) {
+      fetchTotalLeave();
+    }
+  }, [user?.uid]);
+  const totalPersonal = totalLeave?.personalLeave ?? 10;
+  const totalSick = totalLeave?.sickLeave ?? 15;
+  const totalAnnual = totalLeave?.annualLeave ?? 12;
   const balances = [
     {
       title: "Annual Leave",
-      used: leave.filter((item)=>(item.leaveType?.toLowerCase() == "annual")).length||0,
-      total: 24,
+      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "annual")).length || 0,
+      total: totalAnnual,
     },
     {
       title: "Sick Leave",
-      used: leave.filter((item)=>(item.leaveType?.toLowerCase() == "sick")).length||0,
-      total: 10,
+      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "sick")).length || 0,
+      total: totalSick,
     },
     {
       title: "Personal Leave",
-      used: leave.filter((item)=>(item.leaveType?.toLowerCase() == "personal")).length||0,
-      total: 5,
+      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "personal")).length || 0,
+      total: totalPersonal,
     },
   ];
 
@@ -102,7 +121,7 @@ console.log(leave);
         ))}
       </div>
       <div className="mt-12  border-t-black w-full">
-      <LeaveHistory/>
+        <LeaveHistory />
       </div>
     </motion.div>
   );

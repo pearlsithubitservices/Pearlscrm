@@ -6,7 +6,7 @@ export default function useAttendance() {
 
 
     const API_URL = "http://localhost:5000/api/empattendancenew";
-   
+
 
 
     // CLOCK IN
@@ -147,7 +147,32 @@ export default function useAttendance() {
             setLoading(false);
         }
     };
-    
+
+    //GET ATTENDANCE BY ID
+    const getAttendanceById = async (employee_uid) => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const response = await fetch(
+                `${API_URL}/employee/${employee_uid}`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            return data.data;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     return {
         loading,
@@ -157,5 +182,6 @@ export default function useAttendance() {
         endBreak,
         clockOut,
         getAttendance,
+        getAttendanceById,  
     };
 }

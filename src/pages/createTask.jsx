@@ -88,7 +88,7 @@ export default function CreateTask({ onClose }) {
           employeeList.push({
 
             id: doc.id,
-            
+
 
             ...doc.data(),
 
@@ -153,34 +153,34 @@ export default function CreateTask({ onClose }) {
 
   // ADD TASK
 
-   const addTask =
-     async () => {
- 
-       try {
- 
-         await addDoc(
-           collection(db, 'tasks'),
-           {
- 
-             ...task,
- 
-             createdAt:
-               new Date(),
- 
-           }
-         );
- 
-         alert('Task Added');
- 
-         navigate('/tasks');
- 
-       } catch (error) {
- 
-         console.log(error);
- 
-       }
- 
-     };
+  const addTask =
+    async () => {
+
+      try {
+
+        await addDoc(
+          collection(db, 'tasks'),
+          {
+
+            ...task,
+
+            createdAt:
+              new Date(),
+
+          }
+        );
+
+        alert('Task Added');
+        onClose();
+        navigate('/tasks');
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
 
   const priorities = [
 
