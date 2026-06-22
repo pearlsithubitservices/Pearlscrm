@@ -80,7 +80,7 @@ export default function TaskDetails() {
 
   return (
 
-    <div className="min-h-screen bg-[#0b0b14] text-white p-8">
+    <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#0b0b14] text-white p-8">
 
       <div className="max-w-3xl mx-auto bg-white/5 border border-white/10 rounded-3xl p-8">
 

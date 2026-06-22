@@ -167,28 +167,13 @@ export default function ProjectManagement() {
     }
   ];
 
-  const projects = [
-    {
-      name: "TechFlow CRM Implementation",
-      company: "TechFlow Solutions",
-      status: "Active",
-      type: "onTrack",
-
-    },
-    {
-      name: "TechFlow CRM Implementation",
-      company: "TechFlow Solutions",
-      status: "Active",
-      type: "AtRisk",
-
-    }
-  ];
+  
 
 
 
 
   return (
-    <div className="text-black">
+    <div className="text-black max-h-screen overflow-y-auto no-scrollbar">
 
       {/* TOPBAR */}
       <div className="w-full bg-white border-b border-black/10 px-8 py-6 flex items-center justify-between">
@@ -230,7 +215,7 @@ export default function ProjectManagement() {
       </div>
 
       {/* BODY */}
-      <div className="p-8 bg-[#f3f0eb] min-h-screen">
+      <div className="p-8 bg-[#f3f0eb] ">
 
         {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -408,7 +393,7 @@ export default function ProjectManagement() {
                             {/* FIRST LETTER */}
                             {member?.name
                               ? member.name.charAt(0).toUpperCase()
-                              : item.charAt(0).toUpperCase()
+                              : item?.name.charAt(0)?.toUpperCase()
                             }
 
                             {/* TOOLTIP */}

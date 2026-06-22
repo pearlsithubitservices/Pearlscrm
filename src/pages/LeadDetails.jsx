@@ -81,7 +81,7 @@ export default function LeadDetails() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f0eb] p-2 md:p-6 relative">
+        <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#f3f0eb] p-2 md:p-6 relative">
             <div className="absolute w-25 h-25 text-red-600 top-2 right-2 hover:bg-red-600 hover:text-white
              hover:scale-100 transition-transform duration-200" onClick={() => navigate(-1)}>
                 <X size={22} />

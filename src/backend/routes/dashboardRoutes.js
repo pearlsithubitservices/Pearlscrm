@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const Lead = require("../models/Leads");
-const Task = require("../models/Task");
+const Task = require("../models/TaskModels/Task");
 const Followup = require("../models/Followup");
 
 router.get("/", async (req, res) => {

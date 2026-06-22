@@ -20,7 +20,7 @@ import { db } from '../lib/firebase';
 
 import InputField from '../components/InputField';
 
-export default function CreateLead({ onClose , fetchleads}) {
+export default function CreateLead({ onClose, fetchleads }) {
 
   const navigate =
     useNavigate();
@@ -50,7 +50,7 @@ export default function CreateLead({ onClose , fetchleads}) {
   useEffect(() => {
 
     fetchEmployees();
-    
+
 
   }, []);
 
@@ -112,7 +112,7 @@ export default function CreateLead({ onClose , fetchleads}) {
   // ADD LEAD
   const addLead = async () => {
     try {
-console.log(lead);
+      console.log(lead);
       const response = await fetch(
         "http://localhost:5000/api/leads",
         {
@@ -122,13 +122,13 @@ console.log(lead);
           },
           body: JSON.stringify({
             ...lead,
-             
+
           })
         }
       );
 
       const data = await response.json();
-      if(response.ok){
+      if (response.ok) {
         fetchleads();
       }
 
@@ -151,10 +151,10 @@ console.log(lead);
   return (
 
     <div className="max-w-5xl mx-auto p-10 rounded-[40px] bg-[#e9e7e2] relative">
-  
-  <div className='absolute top-5 right-5 text-red-600 font-bold w-25 h-25 hover:bg-white rounded'>
-    <X size={22} strokeWidth='3px' onClick={onClose} />
-  </div>
+
+      <div className='absolute top-5 right-5 text-red-600 font-bold w-25 h-25 hover:bg-white rounded'>
+        <X size={22} strokeWidth='3px' onClick={onClose} />
+      </div>
 
       <div className="grid md:grid-cols-2 gap-5">
 
@@ -190,6 +190,14 @@ console.log(lead);
           onChange={handleChange}
           placeholder="Agent"
           Icon={Users}
+          type='select'
+          options={
+            employees.map((employee) => ({
+              label: employee.name,
+              value: employee.uid,
+            }))
+          }
+
         />
 
         <InputField
@@ -275,7 +283,7 @@ console.log(lead);
 
       </div>
 
-    </div>          
+    </div>
 
   )
 

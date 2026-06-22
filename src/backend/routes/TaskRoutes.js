@@ -2,7 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
-const Task = require("../models/Task");
+const Task = require("../models/TaskModels/Task");
 
 //create Task
 
@@ -24,6 +24,26 @@ router.get("/", async (req, res) => {
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/recent/:employee_uid", async (req, res) => {
+  try {
+    const recentTasks = await Task.find({
+      assignedTo: req.params.employee_uid,
+    })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    res.status(200).json({
+      success: true,
+      data: recentTasks,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
@@ -65,5 +85,6 @@ router.put('/:id', async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;

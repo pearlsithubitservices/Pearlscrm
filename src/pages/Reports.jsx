@@ -97,7 +97,7 @@ export default function Reports() {
 
   return (
     <>
-      <div className="text-white">
+      <div className="text-white max-h-screen overflow-y-auto no-scrollbar">
 
         {/* TOPBAR */}
 

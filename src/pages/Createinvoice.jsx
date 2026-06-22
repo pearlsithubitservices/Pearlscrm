@@ -57,11 +57,11 @@ export default function Createinvoice({ onClose }) {
 
         });
 
-    useEffect(() => {
+    // useEffect(() => {
 
-        fetchEmployees();
+    //     fetchEmployees();
 
-    }, []);
+    // }, []);
 
     // FETCH EMPLOYEES
 

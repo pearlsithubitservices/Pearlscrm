@@ -2,7 +2,7 @@
 import React, {
   useState,
   useEffect,
-  
+
 } from 'react';
 
 import {
@@ -50,18 +50,21 @@ import Pagination from '../components/Pagination';
 import LoadingPage from '../components/Dashboard/Loading';
 import Createemployee from './Createemployee';
 import AnimateModals from '../components/Dashboard/AnimateModals';
+import useEmployees from '../Hooks/useEmployees';
 
 
 export default function ClientManagement() {
 
   const [active, setActive] = useState(0);
   const buttons = ["All", "Sales", "Engineering", "Design"];
-  const [employees, setEmployees] = useState([]);
-  const navigate = useNavigate();
-  
-  const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  //const [employees, setEmployees] = useState([]);
+  const { employees } = useEmployees();
   console.log(employees);
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
   //PAGINATION
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 5;
@@ -70,10 +73,11 @@ export default function ClientManagement() {
   const currentFiles = employees?.slice(firstIndex, lastIndex) || [];
   const totalPages = Math.ceil((employees?.length || 0) / filesPerPage);
 
+
   const stats = [
     {
       title: "Total Employees",
-      value: "50",
+      value: employees.length,
       icon: UserCheck,
       color: "text-blue-600",
       bg: "bg-blue-50"
@@ -119,52 +123,8 @@ export default function ClientManagement() {
   ];
 
 
-  // EMPLOYEES
-
-  useEffect(() => {
-    const fetchEmployees =
-      async () => {
-
-        try {
-
-          const snapshot =
-            await getDocs(
-              collection(db, 'employees')
-            );
-
-          const employeeList = [];
-
-          snapshot.forEach((doc) => {
-
-            employeeList.push({
-              id: doc.id,
-              ...doc.data(),
-            });
-
-          });
-
-          setEmployees(employeeList);
-
-        } catch (error) {
-
-          console.log(error);
-
-        }
-
-        finally {
-          setLoading(false);
-        }
-
-
-      };
-
-    fetchEmployees();
-
-    
-  }, []);
-
   return (
-    <div className="text-black">
+    <div className="text-black max-h-screen overflow-y-auto no-scrollbar">
 
       {/* TOPBAR */}
       <div className="w-full bg-white border-b border-black/10 px-8 py-6 flex items-center justify-between">
@@ -295,7 +255,7 @@ export default function ClientManagement() {
             {currentFiles.map((p) => (
               <div
                 key={p.id}
-                className="bg-white border border-black/10 p-5 rounded " onClick={()=>navigate(`/EmployeeDetails/${p._id}`)}
+                className="bg-white border border-black/10 p-5 rounded " onClick={() => navigate(`/EmployeeDetails/${p._id}`)}
               >
 
                 {/* HEADER */}

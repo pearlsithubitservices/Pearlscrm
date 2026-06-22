@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Search,
   Filter,
@@ -17,8 +17,26 @@ import Pagination from "../components/Pagination";
 import AnimateModals from "../components/Dashboard/AnimateModals";
 import LoadingPage from "../components/Dashboard/Loading";
 import CreateFollowups from "./CreateFollowups";
+import useFollowups from "../Hooks/useFollowups";
+
 
 export default function FollowUps() {
+  const{getFollowups}=useFollowups();
+  const [followups, setFollowups]=useState([]);
+  
+  useEffect(()=>{
+   const fetchdata = async () => {
+    try{
+      const data = await getFollowups();
+      setFollowups(data);
+      console.log(data);
+    }
+    catch(err){
+      console.log(err);
+    }
+   }
+    fetchdata();
+  },[]);
 
   const navigate = useNavigate();
 
@@ -30,79 +48,29 @@ export default function FollowUps() {
 
   const buttons = ["All", "Missed", "Pending", "Completed", "Scheduled"];
 
-  const tableData = [
-    {
-      _id: 1,
-      lead: "Sarah Chen",
-      company: "Nexigen Corp",
-      type: "Call",
-      assigned: "Rohan M",
-      time: "Today",
-      status: "Completed",
-    },
-    {
-      _id: 2,
-      lead: "Vishnu",
-      company: "TechFlow Solutions",
-      type: "Meeting",
-      assigned: "Priya V",
-      time: "Tomorrow",
-      status: "Pending",
-    },
-    {
-      _id: 3,
-      lead: "Dhoni",
-      company: "GreenPath Inc.",
-      type: "Demo",
-      assigned: "Leo",
-      time: "Feb 14, 2025",
-      status: "Scheduled",
-    },
-    {
-      _id: 4,
-      lead: "Ragavi",
-      company: "Baltic Ventures",
-      type: "Email",
-      assigned: "Nina",
-      time: "Feb 14, 2025",
-      status: "Scheduled",
-    },
-    {
-      _id: 5,
-      lead: "Rock",
-      company: "Luminary Studio",
-      type: "Call",
-      assigned: "Priya",
-      time: "Mar 29, 2025",
-      status: "Completed",
-    },
-    {
-      _id: 6,
-      lead: "Virat",
-      company: "Gulf Dynamics",
-      type: "Call",
-      assigned: "Leo",
-      time: "Apr 5, 2025",
-      status: "Missed",
-    },
-  ];
-
+  
+const pending= followups.filter((item)=>(
+  item.status.toLowerCase() == "pending"
+));
+const completed= followups.filter((item)=>(
+  item.status.toLowerCase() == "completed"
+));
   const stats = [
-    { icon: Users2, title: "Total FollowUps", value: "10" },
+    { icon: Users2, title: "Total FollowUps", value: followups.length },
     { icon: PhoneMissed, title: "Missed Today", value: "2" },
-    { icon: Clock2, title: "Pending Meetings", value: "4" },
-    { icon: CheckCheck, title: "Completed", value: "4" },
+    { icon: Clock2, title: "Pending Meetings", value: pending.length  },
+    { icon: CheckCheck, title: "Completed", value: completed.length },
   ];
 
   /* FILTER */
 
   const filteredData = useMemo(() => {
 
-    return tableData.filter((item) => {
+    return followups.filter((item) => {
 
       const matchesSearch =
-        item.lead.toLowerCase().includes(search.toLowerCase()) ||
-        item.company.toLowerCase().includes(search.toLowerCase());
+        item.clientName.toLowerCase().includes(search.toLowerCase()) ||
+        item.companyName.toLowerCase().includes(search.toLowerCase());
 
       const matchesStatus =
         active === 0 ||
@@ -111,7 +79,7 @@ export default function FollowUps() {
       return matchesSearch && matchesStatus;
     });
 
-  }, [search, active]);
+  }, [search, active,followups]);
 
   /* PAGINATION */
 
@@ -125,7 +93,7 @@ export default function FollowUps() {
   const totalPages = Math.ceil(filteredData.length / filesPerPage);
 
   return (
-    <div className="flex min-h-screen bg-[#f3f0eb] overflow-x-hidden">
+    <div className="flex max-h-screen bg-[#f3f0eb] overflow-x-hidden overflow-y-auto no-scrollbar">
 
       <div className="flex-1 flex flex-col">
 
@@ -300,7 +268,7 @@ export default function FollowUps() {
 
                 ) : (
 
-                  currentFiles.map((item) => (
+                  currentFiles?.map((item) => (
 
                     <tr
                       key={item._id}
@@ -312,11 +280,11 @@ export default function FollowUps() {
                       <td className="p-4">
 
                         <p className="font-medium">
-                          {item.lead}
+                          {item.clientName}
                         </p>
 
                         <p className="text-xs text-gray-400">
-                          {item.company}
+                          {item.companyName}
                         </p>
 
                       </td>
@@ -329,11 +297,11 @@ export default function FollowUps() {
 
                       <td>
                         <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
-                          {item.assigned}
+                          {item.assignedTo}
                         </span>
                       </td>
 
-                      <td>{item.time}</td>
+                      <td>{item.followupTime}</td>
 
                       <td>
                         <span className="bg-gray-100 px-3 py-1 rounded text-xs">
@@ -375,6 +343,7 @@ export default function FollowUps() {
 
           <CreateFollowups
             onClose={() => setOpenfollowup(false)}
+            fetchdata={()=>getFollowups()}
           />
 
         </AnimateModals>

@@ -25,16 +25,25 @@ import { useNavigate } from 'react-router-dom';
 import Employeecomp from '../components/Dashboard/Employeecomp.jsx';
 import { AnimatePresence, motion, scale } from 'framer-motion';
 import CreateLead from './CreateLead.jsx';
+import useLead from '../Hooks/useLead.js';
+import useEmployees from '../Hooks/useEmployees.js';
 
 
 export default function Dashboard() {
 
   const [loading, setLoading] = useState(!sessionStorage.getItem("loaded"));
+  //const [lead, setLead] = useState([]);
 
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { fetchLead, fulllead } = useLead();
+  const { employees } = useEmployees();
+  const filteredLeads = fulllead.filter((lead) => (lead.priority?.toLowerCase() === "hot"));
 
-
+  const leadCounts = fulllead.reduce((acc, lead) => {
+    acc[lead.assignedTo] = (acc[lead.assignedTo] || 0) + 1;
+    return acc;
+  }, {});
 
   const [dashboardData,
     setDashboardData] = useState({
@@ -45,7 +54,7 @@ export default function Dashboard() {
       recentLeads: [],
       todayTasks: [],
     });
-    
+
 
   console.log(dashboardData);
 
@@ -112,7 +121,7 @@ export default function Dashboard() {
 
     {
       title: 'Hot Lead',
-      value: dashboardData.hotleads||"0",
+      value: filteredLeads.length || "0",
       icon: Briefcase,
       color: 'from-green-500 to-emerald-500',
     },
@@ -158,7 +167,7 @@ export default function Dashboard() {
 
       {loading ? (<motion.div>
         <Dashboardskeleton />
-      </motion.div>) : (<div className="text-white">
+      </motion.div>) : (<div className="text-white max-h-screen overflow-y-auto no-scrollbar">
 
         {/* TOPBAR */}
 
@@ -255,7 +264,8 @@ export default function Dashboard() {
 
         {/**Employee section */}
 
-        <Employeecomp />
+        <Employeecomp 
+        leadcounts={leadCounts}/>
       </div>
       )
       }
@@ -299,6 +309,7 @@ export default function Dashboard() {
           >
 
             <CreateLead
+              fetchleads={fetchLead}
               onClose={() => setOpen(false)}
             />
 

@@ -98,7 +98,7 @@ export default function LeadManagement() {
 
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#f3f0eb] w-full overflow-x-hidden">
+    <div className="flex flex-col lg:flex-row max-h-screen overflow-y-auto no-scrollbar bg-[#f3f0eb] w-full overflow-x-hidden">
 
       {/* MAIN */}
       <div className="flex-1 flex flex-col">

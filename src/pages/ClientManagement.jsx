@@ -83,11 +83,11 @@ export default function ClientManagement() {
 
     return (
 
-        <div className="text-black">
+        <div className="text-black max-h-screen overflow-y-auto no-scrollbar">
 
             {/* TOPBAR */}
 
-            <div className="w-full bg-white border-b border-black/10 px-8 py-6 flex items-center justify-between">
+            <div className=" w-full bg-white border-b border-black/10 px-8 py-6 flex items-center justify-between">
 
                 {/* LEFT */}
 

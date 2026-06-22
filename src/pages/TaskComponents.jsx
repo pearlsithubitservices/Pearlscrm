@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Mail,
@@ -12,10 +12,6 @@ import {
 } from "lucide-react";
 
 
-import ActivityTab from "../components/LeadDetails/LeadActivity";
-import NotesTab from "../components/LeadDetails/Leadnotes";
-import DocumentsTab from "../components/LeadDetails/Leaddocuments";
-import NextActionTab from "../components/LeadDetails/Leadnextaction";
 import OverviewTab from '../components/LeadDetails/Leadhome';
 import { useNavigate, useParams } from "react-router-dom";
 import useLead from "../Hooks/useLead";
@@ -23,31 +19,78 @@ import TaskOverview from "../components/TaskDetails/TaskOverview";
 import TaskActivity from "../components/TaskDetails/TaskAvctivity";
 import TaskNotes from "../components/TaskDetails/TaskNotes";
 import TaskDocuments from "../components/TaskDetails/TaskDocumentation";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "../lib/firebase";
+import useEmployees from "../Hooks/useEmployees";
+
 
 
 export default function TaskComponents() {
     const [activeTab, setActiveTab] = useState("Overview");
     const [button, setButton] = useState("call");
     const { id } = useParams();
+    const { employees } = useEmployees();
     const navigate = useNavigate();
 
-    const { lead, loading } = useLead(id);
-    const[tasks, setTasks]=useState('');
-    console.log(lead);
+    const { lead, loading } = useLead();
+    const [tasks, setTasks] = useState([]);
+    console.log(tasks);
+    const TaskById = tasks.filter((item) =>
+
+        item.id == id
+    );
+    console.log(TaskById);
+    const employeeMap = useMemo(() => {
+        return employees.reduce((map, employee) => {
+            map[employee.uid] = employee.name;
+            return map;
+        }, {});
+    }, [employees]);
+    useEffect(() => {
+
+        // TASKS REALTIME
+
+        const unsubscribe =
+            onSnapshot(
+
+                collection(db, 'tasks'),
+
+                (snapshot) => {
+
+                    const taskList = [];
+
+                    snapshot.forEach((doc) => {
+
+                        taskList.push({
+                            id: doc.id,
+                            ...doc.data(),
+                        });
+
+                    });
+
+                    setTasks(taskList);
+
+                }
+
+            );
+        return () => unsubscribe();
+
+    }, []);
+
     const tabs = [
         "Overview",
         "Activity",
         "Notes",
         "Documents",
-        
+
     ];
     const buttons = [
-        
+
         {
             label: "E-Mail",
             Icon: Mail
         },
-       
+
         {
             label: "Notes",
             Icon: NotebookTabs
@@ -59,7 +102,7 @@ export default function TaskComponents() {
         switch (activeTab) {
             case "Overview":
                 return <TaskOverview
-                    tasks={tasks} />;
+                    tasks={TaskById} />;
 
             case "Activity":
                 return <TaskActivity
@@ -71,7 +114,7 @@ export default function TaskComponents() {
             case "Documents":
                 return <TaskDocuments />;
 
-          
+
 
             default:
                 return null;
@@ -79,7 +122,7 @@ export default function TaskComponents() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f0eb] p-2 md:p-6 relative">
+        <div className="max-h-screen overflow-y-auto bg-[#f3f0eb] p-2 md:p-6 relative">
             <div className="absolute w-25 h-25 text-red-600 top-2 right-2 hover:bg-red-600 hover:text-white
              hover:scale-100 transition-transform duration-200" onClick={() => navigate(-1)}>
                 <X size={22} />
@@ -101,7 +144,7 @@ export default function TaskComponents() {
                             <div>
 
                                 <h1 className="font-bold text-xl text-[#082f57]">
-                                    {lead.name || "Vishnu"}
+                                    {employeeMap[TaskById[0]?.assignedTo] || "Vishnu"}
                                 </h1>
 
                                 <p className="text-gray-400 tracking-tighter">
@@ -135,11 +178,11 @@ export default function TaskComponents() {
                             <div className="flex gap-3">
 
                                 <span className="bg-green-100 text-green-600 px-4 py-1 rounded-full">
-                                    {lead.status||"In Progress"}
+                                    {TaskById[0]?.status || "In Progress"}
                                 </span>
 
                                 <span className="bg-red-100 text-red-500 px-4 py-1 rounded-full">
-                                    {lead.priority||"High"}
+                                    {TaskById[0]?.priority || "Hot"}
                                 </span>
 
                             </div>

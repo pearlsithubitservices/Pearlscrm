@@ -4,6 +4,52 @@ const Hotleads = () => {
     const [leads,
         setLeads] =
         useState([]);
+    const totalLeads = leads.length;
+    console.log(
+        [...new Set(leads.map(lead => lead.status))]
+    );
+
+    const statusCounts = {
+        new: 0,
+        contacted: 0,
+        interested: 0,
+        converted: 0,
+    };
+
+    leads.forEach((lead) => {
+        const status = lead.status?.trim().toLowerCase();
+
+        switch (status) {
+            case "new":
+                statusCounts.new++;
+                break;
+
+            case "contacted":
+                statusCounts.contacted++;
+                break;
+
+            case "interested":
+                statusCounts.interested++;
+                break;
+
+            case "converted":
+                statusCounts.converted++;
+                break;
+
+            default:
+                break;
+        }
+    });
+
+    const statusPercentage = {
+        new: totalLeads ? ((statusCounts.new / totalLeads) * 100).toFixed(1) : 0,
+        contacted: totalLeads ? ((statusCounts.contacted / totalLeads) * 100).toFixed(1) : 0,
+        interested: totalLeads ? ((statusCounts.interested / totalLeads) * 100).toFixed(1) : 0,
+        converted: totalLeads ? ((statusCounts.converted / totalLeads) * 100).toFixed(1) : 0,
+    };
+
+    console.log(statusCounts);
+    console.log(statusPercentage);
 
     const [loading, setLoading] = useState(true);
     useEffect(() => {
@@ -14,11 +60,28 @@ const Hotleads = () => {
     //CIRCLE
 
     const data = [
-        { value: 40, color: "#a855f7", status: "In Progress" },
-        { value: 25, color: "#f97316", status: "Lost" },
-        { value: 20, color: "#eab308", status: "New" },
-        { value: 15, color: "#22c55e", status: "Converted" },
+        {
+            value: Number(statusPercentage.new),
+            color: "#eab308",
+            status: "New",
+        },
+        {
+            value: Number(statusPercentage.contacted),
+            color: "#3b82f6",
+            status: "Contacted",
+        },
+        {
+            value: Number(statusPercentage.interested),
+            color: "#a855f7",
+            status: "Interested",
+        },
+        {
+            value: Number(statusPercentage.converted),
+            color: "#22c55e",
+            status: "Converted",
+        },
     ];
+    console.log(data);
 
 
     const radius = 35;
@@ -59,7 +122,7 @@ const Hotleads = () => {
 
         };
 
-        const filteredLeads=leads.filter((lead)=>(lead.priority?.toLowerCase() === "hot"));
+    const filteredLeads = leads.filter((lead) => (lead.priority?.toLowerCase() === "hot"));
 
 
     return (
@@ -105,15 +168,15 @@ const Hotleads = () => {
                                 Hot leads
                             </h2>
 
-                            <button className="text-[#2563a9] font-semibold">
+                            {/* <button className="text-[#2563a9] font-semibold">
                                 View all
-                            </button>
+                            </button> */}
 
                         </div>
 
-                        <div className="overflow-x-auto rounded bg-white text-black  p-8">
+                        <div className="overflow-x-auto rounded bg-white text-black max-h-[600px] h-[470px] overflow-y-auto no-scrollbar  p-8">
 
-                            <table className="w-full max-h-[400px] border overflow-y-auto ">
+                            <table className="w-full   border overflow-y-auto ">
 
                                 <thead className="bg-gray-50  sticky top-0 z-10">
 
@@ -164,7 +227,7 @@ const Hotleads = () => {
                                                 <td className="p-4 border-r" >
 
                                                     <h2 className="font-bold ml-4">
-                                                        {lead.name|| "john doe"}
+                                                        {lead.name || "john doe"}
                                                     </h2>
 
                                                     <p className="text-gray-400 text-sm ml-4 ">
@@ -210,7 +273,7 @@ const Hotleads = () => {
                 {/* RIGHT PANEL */}
                 <div
                     className="  rounded-2xl p-2 mr-2 "
-                 >
+                >
 
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6 border rounded-xl p-2 bg-white">
@@ -220,7 +283,7 @@ const Hotleads = () => {
                         </h2>
 
                         <button className="text-[#2563a9] font-semibold">
-                            Total $312K
+                            Total 312K
                         </button>
 
                     </div>
@@ -267,7 +330,7 @@ const Hotleads = () => {
                                         </span>
 
                                         <span className="text-black text-md">
-                                            ${item.revenue}
+                                            {item.revenue}
                                         </span>
 
                                     </div>
@@ -327,7 +390,7 @@ const Hotleads = () => {
 
 
                             {/* Center Text */}
-                            <div className="absolute flex flex-col items-center justify-center leading-tight ml-1 mb-2">
+                            <div className="absolute flex flex-col items-center justify-center leading-tight ml-3 mb-1">
 
                                 <h1 className="text-lg font-bold text-black">
                                     100%
@@ -343,9 +406,10 @@ const Hotleads = () => {
                                 {data.map((item) => (
 
                                     <div
-                                        key={item.value}
+                                        key={item.status}
                                         className=" text-sm flex items-center justify-between  gap-4 w-full "
                                     >
+
 
                                         {/* LEFT */}
 

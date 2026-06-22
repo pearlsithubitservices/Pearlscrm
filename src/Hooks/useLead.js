@@ -3,45 +3,75 @@ import { useEffect, useState } from "react";
 export default function useLead(id) {
 
     const [lead, setLead] = useState({});
+    const [fulllead, setFullLead] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (id) {
+            fetchLead();
+        }
+        fetchfullLead()
 
-        const fetchLead = async () => {
+    }, [id]);
+
+    const fetchLead = async () => {
+
+        try {
+
+            setLoading(true);
+
+            const response = await fetch(
+                `http://localhost:5000/api/leads/${id}`
+            );
+
+            const data = await response.json();
+
+            setLead(data);
+
+        } catch (error) {
+
+            console.log(error);
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+    const fetchfullLead =
+        async () => {
 
             try {
 
-                setLoading(true);
+                const response =
+                    await fetch(
+                        'https://pearlscrm.onrender.com/api/leads'
+                    );
 
-                const response = await fetch(
-                    `http://localhost:5000/api/leads/${id}`
-                );
+                const data =
+                    await response.json();
 
-                const data = await response.json();
-
-                setLead(data);
+                setFullLead(data);
 
             } catch (error) {
 
                 console.log(error);
 
-            } finally {
+            }
 
+            finally {
                 setLoading(false);
-
             }
 
         };
 
-        if (id) {
-            fetchLead();
-        }
-
-    }, [id]);
-
     return {
         lead,
-        loading
+        loading,
+        fetchLead,
+        fetchfullLead,
+        fulllead,
     };
 
 }

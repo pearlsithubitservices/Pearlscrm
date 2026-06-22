@@ -1,95 +1,121 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
   MapPin,
   PencilLine,
-  ChevronDown,
+  Edit,
+  Edit2,
+
 } from "lucide-react";
 import AttendanceCorrection from "./AttendanceCorrection";
+import useEmpAttendance from "../../Hooks/useEmpAttendance";
+import AttendanceEdit from "./AttendanceEdit";
+import { calculateAttendanceStatus } from "../../Utils/formatNumber";
+import { useAuth } from "../../context/AuthContext";
 
-const AttendanceCalendar = ({
-  date,
-  clockIn,
-  clockOut,
-  location,
-  attendanceData = [],
-}) => {
+const AttendanceCalendar = () => {
   const [filter, setFilter] =
     useState("week");
 
   const [search, setSearch] =
     useState("");
-  console.log(attendanceData);
 
+
+  const [attendance, setAttendances] = useState([]);
+  console.log(attendance);
+  const [selectedattendance, setSelectedAttendances] = useState();
   const [showForm, setShowform] = useState(false);
+  const { getAttendanceById } = useEmpAttendance();
+  const [showEdit, setShowEdit] = useState(false);
+  const { user } = useAuth();
+  console.log(user.uid);
+  
+
+  useEffect(() => {
+    
+    fetchAttendancebyId();
+  }, []);
+
+ 
+  const fetchAttendancebyId = async () => {
+    try {
+      const res = await getAttendanceById(user.uid);
+       setAttendances(res.data || []);
+      console.log(res);
+    } catch (err) {
+      console.error("Error fetching attendances:", err.message);
+    }
+  };
+
+
 
   const filteredData = useMemo(() => {
     const now = new Date();
 
-    console.log(attendanceData);
+    // Remove time from today's date
+    now.setHours(0, 0, 0, 0);
 
-    return attendanceData.filter((item) => {
-      const date =
-        new Date(item.date);
+    return attendance.filter((item) => {
+      const attendanceDate = new Date(item.date);
+
+      // Remove time portion
+      attendanceDate.setHours(0, 0, 0, 0);
 
       let matchPeriod = true;
 
       if (filter === "week") {
-        const weekAgo = new Date();
-        weekAgo.setDate(
-          now.getDate() - 7
-        );
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 6);
 
         matchPeriod =
-          date >= weekAgo;
+          attendanceDate >= weekAgo &&
+          attendanceDate <= now;
       }
 
       if (filter === "month") {
         matchPeriod =
-          date.getMonth() ===
-          now.getMonth();
+          attendanceDate.getMonth() === now.getMonth() &&
+          attendanceDate.getFullYear() === now.getFullYear();
       }
 
       if (filter === "year") {
         matchPeriod =
-          date.getFullYear() ===
-          now.getFullYear();
+          attendanceDate.getFullYear() === now.getFullYear();
       }
 
-      const matchSearch = (() => {
-        if (!search.trim()) return true;
+      const formattedDate = attendanceDate
+        .toLocaleDateString("en-GB")
+        .replace(/\//g, "-"); // DD-MM-YYYY
 
-        const formattedDate = new Date(
-          item.date
-        ).toLocaleDateString("en-US");
+      const matchSearch =
+        !search.trim() ||
+        formattedDate.includes(search.trim());
 
-        return formattedDate.includes(
-          search.trim()
-        );
-      })();
-
-      return (
-        matchPeriod &&
-        matchSearch
-      );
+      return matchPeriod && matchSearch;
     });
-  }, [
-    attendanceData,
-    filter,
-    search,
-  ]);
+  }, [attendance, filter, search]);
+  const formatDuration = (seconds) => {
+    if (!seconds || isNaN(seconds)) {
+      return "0h 0m";
+    }
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    return `${hours}h ${minutes}m`;
+  };
 
   const statusStyle = {
-    Present:
+    present:
       "bg-green-100 text-green-600",
-    Absent:
+    absent:
       "bg-red-100 text-red-500",
-    "Late Comer":
+    "late comer":
       "bg-yellow-100 text-yellow-600",
-    "Early Logout":
+    "early logout":
       "bg-orange-100 text-orange-600",
-    "Half Day":
+    "half day":
       "bg-purple-100 text-purple-600",
   };
 
@@ -222,6 +248,9 @@ const AttendanceCalendar = ({
                 <th className="py-5 text-[#0b2b57] font-bold text-sm">
                   STATUS
                 </th>
+                <th className="py-5 text-[#0b2b57] font-bold text-sm">
+
+                </th>
 
               </tr>
 
@@ -237,59 +266,95 @@ const AttendanceCalendar = ({
                   No attendance records found
                 </td>
               </tr>
-                : filteredData.map(
+                : filteredData.slice(0, 7).map(
                   (row, index) => (
                     <tr
                       key={index}
                       className="border-b hover:bg-gray-50"
                     >
                       <td className="text-center py-6 font-bold">
-                        {row.date}
+                        {new Date(row.date).toLocaleDateString("en-GB")}
                       </td>
 
-                      <td className="text-center">
-                        {row.clockIn || "--:--"}
-                      </td>
+                      {(() => {
+                        const clockInDate = row.clockIn ? new Date(row.clockIn) : null;
+                        const clockOutDate = row.clockOut ? new Date(row.clockOut) : null;
+                        const totalBreakSeconds = row.breaks?.reduce(
+                          (sum, breakItem) => sum + (breakItem?.duration || 0),
+                          0
+                        );
+                        const totalDurationSeconds =
+                          clockInDate && clockOutDate
+                            ? Math.max(0, (clockOutDate - clockInDate) / 1000)
+                            : 0;
+                        const workingSeconds =
+                          typeof row.workingHours === "number"
+                            ? row.workingHours
+                            : Math.max(0, totalDurationSeconds - totalBreakSeconds);
 
-                      <td className="text-center">
-                        {row.clockOut || "--:--"}
-                      </td>
+                        const displayHours = formatDuration(totalDurationSeconds);
+                        const displayBreakHours = formatDuration(totalBreakSeconds);
+                        const displayWorkingHours = formatDuration(workingSeconds);
 
-                      <td className="text-center text-black">
-                        {typeof row.hours === "number"
-                          ? `${Math.floor(row.hours)}h ${Math.round((row.hours % 1) * 60)}m`
-                          : "0h 0m"}
-                      </td>
+                        return (
+                          <>
+                            <td className="text-center">
+                              {clockInDate
+                                ? clockInDate.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                                : "--:--"}
+                            </td>
 
-                      <td className="text-center text-black">
-                        {typeof row.breakHours === "number"
-                          ? `${Math.floor(row.breakHours)}h ${Math.round((row.breakHours % 1) * 60)}m`
-                          : "0h 0m"}
-                      </td>
+                            <td className="text-center">
+                              {clockOutDate
+                                ? clockOutDate.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                                : "--:--"}
+                            </td>
 
-                      <td className="text-center text-black ">
-                        {typeof row.totalWorkingHours === "number"
-                          ? `${Math.floor(row.totalWorkingHours)}h ${Math.round((row.totalWorkingHours % 1) * 60)}m`
-                          : "0h 0m"}
-                      </td>
+                            <td className="text-center text-black">
+                              {displayHours}
+                            </td>
+
+                            <td className="text-center text-black">
+                              {displayBreakHours || "0"}
+                            </td>
+
+                            <td className="text-center text-black ">
+                              {displayWorkingHours}
+                            </td>
+
+                          </>
+                        );
+                      })()}
 
                       <td className="text-center">
                         <div className="flex justify-center items-center gap-2">
                           <MapPin
                             size={16}
                           />
-                          {row.location || "office"}
+                          {row.location || "WFH"}
                         </div>
                       </td>
 
                       <td className="text-center">
 
                         <span
-                          className={`px-5 py-2 rounded-full font-sm ${row.color}`}
+                          className={`px-5 py-2 rounded-full font-sm ${statusStyle[row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours)?.toLowerCase()] || "bg-gray-100 text-gray-600"}`}
                         >
-                          ● {row.status || "present"}
+                          ● {row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours) || "present"}
                         </span>
 
+                      </td>
+                      <td className="py-5 text-[#0b2b57] font-bold text-sm">
+                        <Edit size={16} className="mr-2" onClick={() => {
+                          setSelectedAttendances(row);
+                          setShowEdit(true);
+                        }} />
                       </td>
                     </tr>
                   )
@@ -317,6 +382,23 @@ const AttendanceCalendar = ({
           </motion.div>
         </div>
       )}
+      {showEdit && (
+        <div className=" fixed ml-0 inset-0 z-50 flex items-center justify-center w-full max-h-screen   no-scrollbar  backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="w-full max-w-6xl max-h-[90vh]  overflow-y-auto overflow-x-hidden no-scrollbar"
+          >
+            <AttendanceEdit
+              attendance={selectedattendance}
+              onSuccess={fetchAttendances}
+              onClose={() => setShowEdit(false)}
+            />
+          </motion.div>
+        </div>
+      )}
+
     </motion.div>
   );
 };

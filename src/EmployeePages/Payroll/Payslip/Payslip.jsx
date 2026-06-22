@@ -1,34 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Download } from "lucide-react";
 import PaySummary from "./PaySummary";
+import { exportPayslipPDF } from "./PayslipExport";
+import usePayslip from "../../../Hooks/usePayslip";
+import PayslipForm from "./PayslipForm";
+import Skeleton from "./Skeleton";
+import { useAuth } from "../../../context/AuthContext";
 
-const sampleRow = {
-  month: "JUL-2026",
-  gross: "₹10,200",
-  deductions: "₹1,750",
-  net: "₹8,450",
-  date: "MON-25-MAY",
-  status: "Pending",
-};
 
-const data = Array.from({ length: 7 }).map((_, i) => {
-  const statuses = ["Pending", "Paid", "Present"];
 
-  return {
-    ...sampleRow,
-    month: [
-      "JUL-2026",
-      "JUN-2026",
-      "MAY-2026",
-      "APR-2026",
-      "MAR-2026",
-      "FEB-2026",
-      "JAN-2026",
-    ][i],
-    status: statuses[i % statuses.length],
-  };
-});
+
+
 
 const StatusBadge = ({ status }) => {
   const isPending = status === "Pending";
@@ -51,6 +34,18 @@ const StatusBadge = ({ status }) => {
 };
 
 const Payslip = () => {
+  const { payslips, loading } = usePayslip();
+ 
+  const { user } = useAuth();
+  const payslipById = payslips.filter((item) =>
+    item.employeeId == user?.uid);
+  console.log(payslipById);
+
+
+  const [showForm, setShowForm] = useState(false);
+  if (loading) {
+    return <Skeleton />
+  }
   return (
     <>
       <motion.div
@@ -59,6 +54,7 @@ const Payslip = () => {
         className="bg-white border rounded-xl p-4 h-[300px] overflow-auto no-scrollbar"
       >
         <div className=" ">
+          <button onClick={() => setShowForm(true)}>Form</button>
           <table className="w-full min-w-[900px] ">
             <thead className="sticky top-0 z-20 bg-white ">
               <tr className=" border-b text-[#0b2b57] font-semibold ">
@@ -73,7 +69,8 @@ const Payslip = () => {
             </thead>
 
             <tbody>
-              {data.map((row, idx) => (
+              {payslipById?.map((row, idx) => (
+
                 <motion.tr
                   key={idx}
                   whileHover={{ scale: 1.01 }}
@@ -84,15 +81,15 @@ const Payslip = () => {
                   </td>
 
                   <td className="py-5 px-4">
-                    {row.gross}
+                    ₹{Number(row.gross).toLocaleString('en-IN')}
                   </td>
 
                   <td className="py-5 px-4 text-red-500">
-                    {row.deductions}
+                    ₹{Number(row?.totalDeductions).toLocaleString('en-IN')}
                   </td>
 
                   <td className="py-5 px-4 text-blue-600">
-                    {row.net}
+                    ₹{Number(row.net).toLocaleString('en-IN')}
                   </td>
 
                   <td className="py-5 px-4 font-medium text-sm">
@@ -104,7 +101,9 @@ const Payslip = () => {
                   </td>
 
                   <td className="py-5 px-4">
-                    <button className="flex items-center gap-2 text-gray-500 hover:text-[#2563eb] transition">
+                    <button className="flex items-center gap-2 text-gray-500 hover:text-[#2563eb] transition"
+                      onClick={() => exportPayslipPDF(row)}
+                    >
                       <Download size={16} />
                       PDF
                     </button>
@@ -114,9 +113,16 @@ const Payslip = () => {
             </tbody>
           </table>
         </div>
+        {showForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <PayslipForm
+              onClose={() => setShowForm(false)}
+            />
+          </div>
+        )}
 
       </motion.div>
-      
+
     </>
   );
 };

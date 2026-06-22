@@ -48,9 +48,9 @@ export default function CreateTask({ onClose }) {
 
       title: '',
 
-      assignedTo: '',
+      assignedTo: ' ',
 
-      assignedBy: '',
+      assignedBy: ' ',
 
       priority: 'Medium',
 
@@ -89,9 +89,12 @@ export default function CreateTask({ onClose }) {
 
             id: doc.id,
 
+
             ...doc.data(),
 
           });
+          console.log("Employee Doc ID:", doc.id);
+          console.log("Employee Data:", doc.data());
 
         });
 
@@ -107,31 +110,31 @@ export default function CreateTask({ onClose }) {
 
   //ADD TASKS
 
-  const addtasks = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/tasks', {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(task),
-      });
+  // const addtasks = async () => {
+  //   try {
+  //     const response = await fetch('http://localhost:5000/api/tasks', {
+  //       method: 'POST',
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(task),
+  //     });
 
-      const data = await response.json();
-      console.log(data);
+  //     const data = await response.json();
+  //     console.log(data);
 
-      if (response.ok) {
-        alert('Task added successfully');
-        navigate('/tasks');
-      } else {
-        alert(data.message || 'Failed to add task');
-      }
+  //     if (response.ok) {
+  //       alert('Task added successfully');
+  //       navigate('/tasks');
+  //     } else {
+  //       alert(data.message || 'Failed to add task');
+  //     }
 
-    } catch (error) {
-      console.log(error);
-      alert('Failed to add task. Please try again.');
-    }
-  };
+  //   } catch (error) {
+  //     console.log(error);
+  //     alert('Failed to add task. Please try again.');
+  //   }
+  // };
 
   // HANDLE CHANGE
 
@@ -150,34 +153,34 @@ export default function CreateTask({ onClose }) {
 
   // ADD TASK
 
-  /* const addTask =
-     async () => {
- 
-       try {
- 
-         await addDoc(
-           collection(db, 'tasks'),
-           {
- 
-             ...task,
- 
-             createdAt:
-               new Date(),
- 
-           }
-         );
- 
-         alert('Task Added');
- 
-         navigate('/tasks');
- 
-       } catch (error) {
- 
-         console.log(error);
- 
-       }
- 
-     };*/
+  const addTask =
+    async () => {
+
+      try {
+
+        await addDoc(
+          collection(db, 'tasks'),
+          {
+
+            ...task,
+
+            createdAt:
+              new Date(),
+
+          }
+        );
+
+        alert('Task Added');
+        onClose();
+        navigate('/tasks');
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
 
   const priorities = [
 
@@ -249,7 +252,7 @@ export default function CreateTask({ onClose }) {
           type='select'
           options={employees.map((emp) => ({
             label: emp.name,
-            value: emp.id
+            value: emp.uid
           }))}
         />
 
@@ -291,7 +294,7 @@ export default function CreateTask({ onClose }) {
         </button>
 
         <button
-          onClick={addtasks}
+          onClick={addTask}
           className="flex-1 bg-blue-700 text-white rounded-xl hover:bg-blue-600">
 
           + Add Task

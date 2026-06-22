@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
     User,
@@ -8,9 +8,12 @@ import {
 } from "lucide-react";
 
 import InputField from "../../components/InputField.jsx";
- 
+import useLeave from '../../Hooks/useLeave.js'
+
 
 const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
+
+
     const leaveOptions = [
         "Casual Leave",
         "Sick Leave",
@@ -18,35 +21,81 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
         "Emergency Leave",
     ];
 
-    const [formdetails, setFormdetails] = useState(editingRequest || {
-        empId: "",
-        fullname: "",
-        department: "",
-        managerId: "",
-        managername: "",
-        leaveTitle: "",
-        leaveFrom: "",
-        leaveTo: "",
-        reason: "",
-    });
+
+    const initialDetails =
+        editingRequest && typeof editingRequest === "object"
+            ? { ...editingRequest }
+            : {
+                  employeeName: "",
+                  department: "",
+                  managerId: "",
+                  managerName: "",
+                  leaveTitle: "",
+                  leaveType: "",
+                  leaveFrom: "",
+                  leaveTo: "",
+                  leaveReason: "",
+              };
+
+    const [formdetails, setFormdetails] = useState(initialDetails);
+
+    useEffect(() => {
+        if (editingRequest && typeof editingRequest === "object") {
+            setFormdetails({ ...editingRequest });
+        } else if (editingRequest === true && onEdit && typeof onEdit === "object") {
+            // view-only mode with provided details via onEdit
+            setFormdetails({ ...onEdit });
+        }
+    }, [editingRequest, onEdit]);
+
+
+    const { submitLeave, updateLeave, loading, error, leaves, getLeaves } = useLeave();
+    const isViewOnly = editingRequest === true;
+    const isEditing = editingRequest && typeof editingRequest === "object" && editingRequest.id;
     const formChange = (name, value) => {
         setFormdetails((prev) => ({
             ...prev,
             [name]: value,
         }));
     };
-    const handleSubmit = () => {
-        console.log(formdetails);
-        alert('submitted Successfully....');
-        if (editingRequest && editingRequest.id) {
-            // Update existing request
-            onSave((prev) => prev.map((req) => req.id === editingRequest.id ? { ...formdetails, id: editingRequest.id } : req));
-        } else {
-            // Add new request
-            onSave((prev) => [{ ...formdetails, id: Date.now() }, ...prev]);
+    const handleSubmit = async () => {
+        try {
+            let result;
+            if (isEditing) {
+                result = await updateLeave(editingRequest.id, formdetails);
+            } else {
+                result = await submitLeave(formdetails);
+            }
+
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+
+            alert("Leave Request Submitted Successfully");
+            getLeaves();
+
+            if (isEditing) {
+                // update local list
+                onSave((prev) =>
+                    prev.map((req) => (req.id === editingRequest.id ? { ...formdetails, id: editingRequest.id } : req))
+                );
+            } else {
+                onSave((prev) => [
+                    {
+                        ...result.data.leave,
+                        id: result.data.leave?._id,
+                    },
+                    ...prev,
+                ]);
+            }
+
+
+            onClose();
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
         }
-        onClose();
-    }
+    };
 
     return (
         <motion.div
@@ -76,18 +125,20 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
 
                     <InputField
                         label="Employee ID"
-                        name="empId"
-                        value={formdetails.empId}
-                        onChange={(e)=>formChange("empId",e.target.value)}
+                        name="employeeId"
+                        value={formdetails.employeeId}
+                        //onChange={(e) => formChange("employeeId", e.target.value)}
+                        disabled={isViewOnly}
                         placeholder="HRMS-7829-X"
                         Icon={BadgeCheck}
                     />
 
                     <InputField
                         label="Full Name"
-                        name="fullname"
-                        value={formdetails.fullname}
-                        onChange={(e)=>formChange('fullname', e.target.value)}
+                        name="employeeName"
+                        value={formdetails.employeeName}
+                        onChange={(e) => formChange('employeeName', e.target.value)}
+                        disabled={isViewOnly}
                         placeholder="Alexander Mitchell"
                         Icon={User}
                     />
@@ -97,7 +148,8 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         name="department"
                         value={formdetails.department}
                         onChange={(e) => formChange("department", e.target.value)}
-                        placeholder="Operations & Logistics"
+                        disabled={isViewOnly}
+                        placeholder="Digital Marketing"
                         Icon={Building2}
                     />
 
@@ -106,28 +158,22 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         name="managerId"
                         value={formdetails.managerId}
                         onChange={(e) => formChange("managerId", e.target.value)}
+                        disabled={isViewOnly}
                         placeholder="HRMS-7829990-X"
                         Icon={BadgeCheck}
                     />
 
                     <InputField
                         label="Manager Name"
-                        name="managername"
-                        value={formdetails.managername}
-                        onChange={(e) => formChange("managername", e.target.value)}
+                        name="managerName"
+                        value={formdetails.managerName}
+                        onChange={(e) => formChange("managerName", e.target.value)}
+                        disabled={isViewOnly}
                         placeholder="Senthil Kumar"
                         Icon={User}
                     />
 
-                    <InputField
-                        label="Leave Title"
-                        name="leaveTitle"
-                        value={formdetails.leaveTitle}
-                        onChange={(e) => formChange("leaveTitle", e.target.value)}
-                        placeholder="Select Leave Type"
-                        type="text"
-                       
-                    />
+                    
 
                 </div>
 
@@ -139,6 +185,35 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                     </h3>
                     <div className="h-px bg-gray-400 flex-1" />
                 </div>
+                <div className="grid md:grid-cols-2 gap-6">
+
+                    <InputField
+                        label="Leave Title"
+                        placeholder="Leave Title"
+                        name="leaveTitle"
+                        value={formdetails.leaveTitle}
+                        onChange={(e) => formChange("leaveTitle", e.target.value)}
+                        disabled={isViewOnly}
+                        type="text"
+                    />
+
+                    <InputField
+                        label="Leave Type"
+                        name="leaveType"
+                        placeholder="Select Leave Type"
+                        value={formdetails.leaveType}
+                        onChange={(e) => formChange("leaveType", e.target.value)}
+                        disabled={isViewOnly}
+                        type="select"
+                        options={[
+                            { value: "annual", label: "Annual Leave" },
+                            { value: "sick", label: "Sick Leave" },
+                            { value: "personal", label: "Personal Leave" },
+                        ]}
+
+                    />
+
+                </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
 
@@ -147,6 +222,7 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         name="leaveFrom"
                         value={formdetails.leaveFrom}
                         onChange={(e) => formChange("leaveFrom", e.target.value)}
+                        disabled={isViewOnly}
                         type="date"
                     />
 
@@ -155,6 +231,7 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         name="leaveTo"
                         value={formdetails.leaveTo}
                         onChange={(e) => formChange("leaveTo", e.target.value)}
+                        disabled={isViewOnly}
                         type="date"
                     />
 
@@ -169,15 +246,17 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         </label>
 
                         <span className="text-xs text-gray-400">
-                            {(formdetails.reason || "").length}/500
+                            {(formdetails.leaveReason || "").length}/500
                         </span>
                     </div>
 
                     <textarea
                         rows={5}
                         maxLength={500}
-                        value={formdetails.reason}
-                        onChange={(e) => formChange("reason", e.target.value)}
+                        name="leaveReason"
+                        value={formdetails.leaveReason}
+                        onChange={(e) => formChange("leaveReason", e.target.value)}
+                        disabled={isViewOnly}
                         placeholder="Please explain the reason for your leave request..."
                         className="w-full bg-white rounded-2xl border border-gray-200 p-5 resize-none outline-none"
                     />
@@ -194,12 +273,14 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         Cancel
                     </button>
 
-                    <button
-                        className="flex-1 h-[56px] bg-[#2568ad] text-white rounded-2xl font-semibold hover:bg-[#1f5a98] transition"
-                        onClick={handleSubmit}
-                    >
-                        Submit Request
-                    </button>
+                    {!isViewOnly && (
+                        <button
+                            className="flex-1 h-[56px] bg-[#2568ad] text-white rounded-2xl font-semibold hover:bg-[#1f5a98] transition"
+                            onClick={handleSubmit}
+                        >
+                            {isEditing ? "Update Request" : "Submit Request"}
+                        </button>
+                    )}
 
                 </div>
 

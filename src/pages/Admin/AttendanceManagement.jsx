@@ -1,5 +1,6 @@
 import React, {
   useEffect,
+  useMemo,
   useState
 } from 'react';
 
@@ -17,77 +18,115 @@ import {
   TimerReset,
   Bell,
 } from 'lucide-react';
+import useAttendance from '../../Hooks/useAttendance';
+import { useAuth } from '../../context/AuthContext';
+import useLeave from '../../Hooks/useLeave';
+import useEmployees from '../../Hooks/useEmployees';
 
 export default function AttendanceManagement() {
 
-  const [employees, setEmployees] =
+  const [employeesdetails, setEmployeesdetails] =
     useState([]);
+  const { employees } = useEmployees();
+
+  //const [employee, setEmployee] = useState([]);
+
+  const { user } = useAuth();
+
+  const { getHolidays, holidays } = useLeave();
+  console.log(holidays);
+  useEffect(() => {
+    getHolidays();
+  }, [])
+
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = employee.name;
+      return map;
+    }, {});
+  }, [employees]);
+
+  const { getAttendance } = useAttendance();
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      const res = await getAttendance();
+      setEmployeesdetails(res);
+      console.log(res)
+    }
+    fetchAttendance();
+  }, []);
 
   // FETCH EMPLOYEES
 
-  const fetchEmployees =
-    async () => {
+  // const fetchEmployees =
+  //   async () => {
 
-      try {
+  //     try {
 
-        const response =
-          await axios.get(
-            'http://localhost:5000/api/attendance/active'
-          );
+  //       const response =
+  //         await axios.get(
+  //           'http://localhost:5000/api/attendance/active'
+  //         );
 
-        setEmployees(
-          response.data
-        );
+  //       setEmployees(
+  //         response.data
+  //       );
 
-      } catch (error) {
+  //     } catch (error) {
 
-        console.log(error);
+  //       console.log(error);
 
-      }
+  //     }
 
-    };
+  //   };
 
-  // AUTO REFRESH
+  // // AUTO REFRESH
 
-  useEffect(() => {
+  // useEffect(() => {
 
-    fetchEmployees();
+  //   fetchEmployees();
 
-    const interval =
-      setInterval(() => {
+  //   const interval =
+  //     setInterval(() => {
 
-        fetchEmployees();
+  //       fetchEmployees();
 
-      }, 3000);
+  //     }, 3000);
 
-    return () =>
-      clearInterval(interval);
+  //   return () =>
+  //     clearInterval(interval);
 
-  }, []);
+  // }, []);
 
   // STATUS COUNTS
 
   const onlineEmployees =
-    employees.filter(
+    employeesdetails.filter(
       (emp) =>
-        emp.status === 'Online'
+        emp.attendanceState.toLowerCase() === "working"
     );
+  // const onlineEmployee =
+  //   employee.filter(
+  //     (emp) =>
+  //       emp.attendanceState.toLowerCase() === "working"
+  //   );
+  console.log(onlineEmployees)
 
   const breakEmployees =
-    employees.filter(
+    employeesdetails.filter(
       (emp) =>
-        emp.status === 'Break'
+        emp.attendanceState.toLowerCase() === "break"
     );
 
   const offlineEmployees =
-    employees.filter(
+    employeesdetails.filter(
       (emp) =>
-        emp.status === 'Offline'
+        emp.attendanceState.toLowerCase() === "clocked_out"
     );
 
   return (
 
-    <div className="min-h-screen bg-[#f1f5f9] p-8">
+    <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#f1f5f9] p-8">
 
       {/* TOP */}
 
@@ -154,7 +193,7 @@ export default function AttendanceManagement() {
 
           <h2 className="text-4xl font-black text-[#0f172a] mt-2">
 
-            {onlineEmployees.length}
+            {onlineEmployees.length || "0"}
 
           </h2>
 
@@ -226,7 +265,7 @@ export default function AttendanceManagement() {
 
           <h2 className="text-4xl font-black text-[#0f172a] mt-2">
 
-            {employees.length}
+            {employeesdetails.length}
 
           </h2>
 
@@ -264,7 +303,7 @@ export default function AttendanceManagement() {
 
         {/* EMPLOYEE TABLE */}
 
-        <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+        <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-sm border border-gray-100 h-[800px] overflow-y-auto no-scrollbar">
 
           <div className="flex items-center justify-between mb-8">
 
@@ -288,9 +327,9 @@ export default function AttendanceManagement() {
 
           {/* TABLE */}
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto ">
 
-            <table className="w-full">
+            <table className="w-full ">
 
               <thead>
 
@@ -332,7 +371,7 @@ export default function AttendanceManagement() {
 
               <tbody>
 
-                {employees.map((employee) => (
+                {employeesdetails.map((employee) => (
 
                   <tr
                     key={employee._id}
@@ -348,7 +387,7 @@ export default function AttendanceManagement() {
                         <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
 
                           {
-                            employee.employee_name?.[0]
+                            employeeMap[employee.employee_uid]?.charAt(0).toUpperCase()
                           }
 
                         </div>
@@ -357,7 +396,7 @@ export default function AttendanceManagement() {
 
                           <h3 className="font-bold text-[#0f172a]">
 
-                            {employee.employee_name}
+                            {employeeMap[employee.employee_uid]}
 
                           </h3>
 
@@ -379,16 +418,15 @@ export default function AttendanceManagement() {
 
                       <span className={`
                         px-4 py-2 rounded-2xl text-sm font-semibold
-                        ${
-                          employee.status === 'Online'
-                            ? 'bg-green-100 text-green-600'
-                            : employee.status === 'Break'
+                        ${employee.attendanceState === 'working'
+                          ? 'bg-green-100 text-green-600'
+                          : employee.status === 'break'
                             ? 'bg-yellow-100 text-yellow-600'
                             : 'bg-red-100 text-red-500'
                         }
                       `}>
 
-                        {employee.status}
+                        {employee.attendanceState.toLowerCase() == "working" ? "online" : employee.attendanceState.toLowerCase() == "break" ? "Break" : "Offline"}
 
                       </span>
 
@@ -400,7 +438,8 @@ export default function AttendanceManagement() {
 
                       {
                         new Date(
-                          employee.login_time
+                          employee.clockIn
+
                         ).toLocaleTimeString()
                       }
 
@@ -414,7 +453,7 @@ export default function AttendanceManagement() {
 
                         <MapPin className="w-4 h-4 text-blue-500" />
 
-                        Coimbatore
+                        Chennai
 
                       </div>
 
@@ -527,9 +566,9 @@ export default function AttendanceManagement() {
 
           {/* HOLIDAYS */}
 
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100  h-[500px] overflow-y-auto no-scrollbar">
 
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 ">
 
               <h2 className="text-2xl font-black text-[#0f172a]">
 
@@ -543,57 +582,36 @@ export default function AttendanceManagement() {
 
             <div className="space-y-5">
 
-              <div className="flex items-center justify-between">
+              {holidays.map((item, i) => (
 
-                <div>
+                <div className="flex items-center justify-between">
 
-                  <h3 className="font-bold text-[#0f172a]">
+                  <div key={i}>
 
-                    Memorial Day
+                    <h3 className="font-bold text-[#0f172a]">
 
-                  </h3>
+                      {item?.holidayName || "leave"}
 
-                  <p className="text-gray-500 text-sm">
+                    </h3>
 
-                    Monday, May 25
+                    <p className="text-gray-500 text-sm">
 
-                  </p>
+                      {new Date(item?.holidayDate).toLocaleDateString('en-GB')}
 
-                </div>
+                    </p>
 
-                <span className="px-4 py-2 rounded-2xl bg-purple-100 text-purple-600 text-sm font-semibold">
+                  </div>
 
-                  Holiday
+                  <span className="px-4 py-2 rounded-2xl bg-purple-100 text-purple-600 text-sm font-semibold">
 
-                </span>
+                    {item?.holidayType}
 
-              </div>
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <h3 className="font-bold text-[#0f172a]">
-
-                    Company Meetup
-
-                  </h3>
-
-                  <p className="text-gray-500 text-sm">
-
-                    June 12
-
-                  </p>
+                  </span>
 
                 </div>
+              ))}
 
-                <span className="px-4 py-2 rounded-2xl bg-blue-100 text-blue-600 text-sm font-semibold">
 
-                  Event
-
-                </span>
-
-              </div>
 
             </div>
 

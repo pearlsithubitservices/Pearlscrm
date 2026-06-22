@@ -1,11 +1,61 @@
 import React, { useState, useEffect } from 'react'
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
-const Employeecomp = () => {
+import useAttendance from '../../Hooks/useAttendance'
+import { LeafyGreen } from 'lucide-react';
+const Employeecomp = ({ leadcounts }) => {
 
     const [employees, setEmployees] = useState([]);
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [attendance, setAttendance] = useState([]);
+    const { getAttendance } = useAttendance();
+    console.log(employees);
+    console.log(attendance);
+    const isToday = (isoDate) => {
+        const today = new Date();
+        const d = new Date(isoDate);
+
+        return (
+            d.getFullYear() === today.getFullYear() &&
+            d.getMonth() === today.getMonth() &&
+            d.getDate() === today.getDate()
+        );
+    };
+
+    // Get today's online employee UIDs
+    const onlineEmployeeIds = attendance
+        .filter(item => isToday(item.date) && item.isOnline === true)
+        .map(item => item.employee_uid);
+
+    // Remove duplicates
+    const uniqueOnlineEmployeeIds = [...new Set(onlineEmployeeIds)];
+
+    // Filter employees collection
+    const onlineEmployees = employees.filter(emp =>
+        uniqueOnlineEmployeeIds.includes(emp.uid)
+    );
+
+    const onlineEmployeesToday = attendance.filter((item) => {
+        return isToday(item.date) && item.isOnline === true;
+    });
+    console.log(onlineEmployeesToday);
+    const OnlineEmployeeLength = onlineEmployeesToday.length;
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const data = await getAttendance();
+                setAttendance(data);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        fetchData();
+    }, []);
+    console.log(attendance);
+
 
     useEffect(() => {
         fetchLeads();
@@ -127,48 +177,57 @@ const Employeecomp = () => {
                         </h2>
 
                         <button className="text-[#2563a9] font-semibold">
-                            5 Online
+                           
+                            {onlineEmployees.length} Online
                         </button>
 
                     </div>
 
-                    <div className="overflow-x-auto rounded bg-white text-black  p-8">
+                    <div className="overflow-auto no-scrollbar rounded bg-white text-black h-[410px] mb-4 p-8">
                         <div >
                             <div className='flex justify-between items-center '>
                                 <p className='text-[#0b2b57] text-xl font-bold'> Employee</p>
                                 <p className='font-semibold'>Leads</p>
                                 <p className='font-semibold'> Progress</p>
                             </div>
-                            {employees ? (employees.slice(0, 5).map((data) => (
+                            {onlineEmployees.length > 0 ? (
+                                onlineEmployees.map((data) => (
+                                    <div
+                                        key={data.uid}
+                                        className="flex justify-between mt-4 gap-2 items-center font-sans"
+                                    >
+                                        <div className="flex gap-2">
+                                            <div className="w-12 h-12 bg-red-300 rounded-full flex items-center justify-center font-bold">
+                                                {(data.name || "")
+                                                    .split(" ")
+                                                    .map(v => v[0])
+                                                    .join("")
+                                                    .toUpperCase()}
+                                            </div>
 
-                                <div key={data._id} className='flex  justify-between mt-4 gap-2 items-center font-sans'>
-                                    <div className='flex  gap-2'>
-                                        <div className="w-12 h-12 bg-red-300 rounded-full flex items-center justify-center font-bold">
-                                            {(data.name || "")
-                                                .split(" ")
-                                                .map(v => v[0])
-                                                .join("")
-                                                .toUpperCase()}
+                                            <div className="w-fit">
+                                                <p className="font-semibold text-black">{data.name}</p>
+                                                <p className="text-sm text-gray-400">{data.role}</p>
+                                            </div>
                                         </div>
-                                        <div className='w-fit '>
-                                            <p className='font-semibold text-black'>{data.name}</p>
-                                            <p className='text-sm text-gray-400 '>{data.role}</p>
 
+                                        <p className="text-sm text-gray-400">
+                                            {leadcounts[data.uid] || 0} Leads
+                                        </p>
+
+                                        <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div
+                                                className="h-full bg-red-500 rounded-full"
+                                                style={{ width: "70%" }}
+                                            />
                                         </div>
                                     </div>
-
-                                    <p className='text-sm text-gray-400  items-center '>42 Leads</p>
-
-                                    <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                        <div
-                                            className="h-full bg-red-500 rounded-full"
-                                            style={{ width: "70%" }}
-                                        />
-                                    </div>
-                                </div>
-                            ))) :
-
-                                (<p className='text-black'>NoData</p>)}
+                                ))
+                            ) : (
+                                <p className="text-center py-5 text-gray-500">
+                                    No Online Employees
+                                </p>
+                            )}
 
                         </div>
 
