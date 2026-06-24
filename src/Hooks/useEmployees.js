@@ -20,6 +20,9 @@ const useEmployees = () => {
                     id: doc.id,
                     ...doc.data(),
                 }));
+                employeeList.sort((a, b) => {
+                    return b.createdAt.seconds - a.createdAt.seconds;
+                });
 
                 setEmployees(employeeList);
             } catch (error) {

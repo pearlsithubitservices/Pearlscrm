@@ -171,7 +171,7 @@ export default function Login() {
         } else {
 
           navigate(
-            '/employee-dashboard'
+            '/employee/dashboard'
           );
 
         }
@@ -250,7 +250,7 @@ export default function Login() {
           } else {
 
             navigate(
-              '/employee-dashboard'
+              '/employee/dashboard'
             );
 
           }
@@ -346,7 +346,7 @@ export default function Login() {
           } else {
 
             navigate(
-              '/employee-dashboard'
+              '/employee/dashboard'
             );
 
           }

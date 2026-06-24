@@ -162,12 +162,12 @@ const Communication = () => {
             ))}
           </div>
 
-          <button className="inline-flex items-center justify-center gap-2 bg-[#2563eb] text-white px-4 py-2 rounded-lg font-medium hover:scale-105 transition"
+          {/* <button className="inline-flex items-center justify-center gap-2 bg-[#2563eb] text-white px-4 py-2 rounded-lg font-medium hover:scale-105 transition"
             onClick={() => setForm((prev) => (!prev))}
           >
             <FileText size={16} />
            Raise Tickets
-          </button>
+          </button> */}
         </div>
       </div>
 

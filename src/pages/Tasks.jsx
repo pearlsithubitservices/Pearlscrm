@@ -27,6 +27,7 @@ import {
   collection,
   onSnapshot,
   getDocs,
+  orderBy,
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
@@ -40,12 +41,12 @@ import useTaskfilter from '../Hooks/useTaskfilter.js'
 export default function Tasks() {
   const [employees, setEmployees] =
     useState([]);
- 
+
 
   const [tasks, setTasks] =
     useState([]);
-  
- 
+
+
   const [search, setSearch] =
     useState('');
 
@@ -62,7 +63,7 @@ export default function Tasks() {
       return map;
     }, {});
   }, [employees]);
- 
+
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 5;
@@ -96,6 +97,7 @@ export default function Tasks() {
       onSnapshot(
 
         collection(db, 'tasks'),
+       // orderBy("createdAt", "desc"),
 
         (snapshot) => {
 
@@ -106,6 +108,10 @@ export default function Tasks() {
             taskList.push({
               id: doc.id,
               ...doc.data(),
+            });
+
+            taskList.sort((a, b) => {
+              return b.createdAt.seconds - a.createdAt.seconds;
             });
 
           });
@@ -311,7 +317,7 @@ export default function Tasks() {
                 const employeename = employees.find(
                   (emp) => emp.uid === task.assignedEmployee
                 );
-               
+
                 const employeeByname = employees.find(
                   (emp) => emp.uid === task.assignedBy
                 );

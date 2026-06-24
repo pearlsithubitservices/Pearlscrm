@@ -10,8 +10,7 @@ const leadRoutes = require("./routes/leadRoutes");
 const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-const attendanceRoutes =
-  require("./routes/AttendanceRoutes");
+const attendanceRoutes = require("./routes/AttendanceRoutes");
 const ProjectsRoutes = require("./routes/ProjectsRoutes");
 const ClientRoutes = require("./routes/ClientRoutes");
 const EmployeeRoutes = require('./routes/EmployeeRoutes');
@@ -34,8 +33,8 @@ const EmpEnrollment = require('./routes/EnrollmentRoutes');
 const EmpCourse = require('./routes/EmpCourseRoutes');
 const EmpSkillCertification = require('./routes/SkillCertificationRoutes');
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
-const EmpActivityRoutes= require("./routes/TaskActivityRoute")
-const EmpTotalLeave=require('./routes/TotalLeaveRoutes');
+const EmpActivityRoutes = require("./routes/TaskActivityRoute")
+const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
 
 
 
@@ -90,7 +89,7 @@ app.use("/api/empenrollment", EmpEnrollment);
 app.use("/api/empCourse", EmpCourse);
 app.use("/api/skillscertification", EmpSkillCertification);
 app.use("/api/contribution", EmpContributionRoutes);
-app.use("/api/activity",EmpActivityRoutes);
+app.use("/api/activity", EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
 
 
