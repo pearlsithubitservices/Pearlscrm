@@ -39,7 +39,7 @@ export default function CreateTask({ onClose }) {
   const [employees, setEmployees] =
     useState([]);
 
-  console.log(employees);
+  
 
   const [task, setTask] =
     useState({

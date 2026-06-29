@@ -72,7 +72,7 @@ export default function Tasks() {
   const currentFiles = filterdata.slice(firstIndex, lastIndex);
   const totalPages = Math.ceil(filterdata.length / filesPerPage);
 
-
+console.log(tasks);
 
 
   const today = new Date();
@@ -349,7 +349,7 @@ export default function Tasks() {
                         </h1>
 
                         <p className="mt-1 text-lg md:text-xl">
-                          {task.title || " Redesign onboarding flow for enterprise clients"}
+                          {task.title || " "}
                         </p>
 
                       </div>
@@ -391,7 +391,7 @@ export default function Tasks() {
                         </div>
                         <div className='overflow-hidden w-[180px]'>
                           <p className="text-gray-500 text-md mr-2 overflow-hidden ">
-                            Assigned by :{employeeMap[task.assignedEmployee] || " Ragavi"}
+                            Assigned by :{employeeMap[task.assignedBy] || " Ragavi"}
 
                           </p>
                         </div>

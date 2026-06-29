@@ -1,54 +1,61 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-const infoCards = [
-  {
-    label: "Company Website",
-    value: "techflow.io",
-    blue: true,
-  },
-  {
-    label: "Headquarter",
-    value: "San Francisco, CA",
-  },
-  {
-    label: "Phone",
-    value: "+91 9876543210",
-  },
-  {
-    label: "Email",
-    value: "sarah.chen@gmail.com",
-    blue: true,
-  },
-  {
-    label: "Founded",
-    value: "2018",
-  },
-  {
-    label: "Employees",
-    value: "320",
-  },
-  {
-    label: "Revenue",
-    value: "₹18M",
-  },
-  {
-    label: "Contract",
-    value: "₹ 1,20,000",
-  },
-  {
-    label: "Start Date",
-    value: "May 02",
-  },
-  {
-    label: "Due Date",
-    value: "May 20",
-  },
-];
 
-export default function CompanyInfoSection() {
+
+export default function CompanyInfoSection({ clients }) {
+  const infoCards = [
+    {
+      label: "Company Website",
+      value: clients[0]?.website,
+      blue: true,
+    },
+    {
+      label: "Headquarter",
+      value: clients[0]?.headquarters,
+    },
+    {
+      label: "Phone",
+      value: clients[0]?.contactNumber,
+    },
+    {
+      label: "Email",
+      value: clients[0]?.email,
+      blue: true,
+    },
+    {
+      label: "Founded",
+      value: clients[0]?.foundeddate
+        ? new Date(clients[0].foundeddate).toLocaleDateString()
+        : "-",
+    },
+    {
+      label: "Employees",
+      value: clients[0]?.employees,
+    },
+    {
+      label: "Revenue",
+      value: clients[0]?.revenue,
+    },
+    {
+      label: "Contract",
+      value: clients[0]?.budget,
+    },
+    {
+      label: "Start Date",
+      value: clients[0]?.foundeddate
+        ? new Date(clients[0].projectstartdate).toLocaleDateString()
+        : "-",
+    },
+    {
+      label: "Due Date",
+      value: clients[0]?.foundeddate
+        ? new Date(clients[0].duedate).toLocaleDateString()
+        : "-",
+    },
+  ];
   return (
-    <section className="w-full min-h-screen bg-[#f3f0eb] flex items-center justify-center p-6">
+    <section className="w-full  bg-[#f3f0eb] flex items-center justify-center p-6">
       <div className="w-full max-w-6xl rounded-[28px] bg-[#F5F3EF] p-8 ">
         {/* Section Header */}
         <div className="mb-6">
@@ -80,11 +87,10 @@ export default function CompanyInfoSection() {
 
               {/* Value */}
               <h3
-                className={`mt-2 text-[22px] font-semibold break-words ${
-                  item.blue
-                    ? "text-[#4A6CF7]"
-                    : "text-[#0D2E57]"
-                }`}
+                className={`mt-2 text-[22px] font-semibold break-words ${item.blue
+                  ? "text-[#4A6CF7]"
+                  : "text-[#0D2E57]"
+                  }`}
               >
                 {item.value}
               </h3>

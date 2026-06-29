@@ -102,7 +102,7 @@ const Hotleads = () => {
 
                 const response =
                     await fetch(
-                        'https://pearlscrm.onrender.com/api/leads'
+                        'http://localhost:5000/api/leads'
                     );
 
                 const data =

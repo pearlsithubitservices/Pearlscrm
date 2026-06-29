@@ -109,10 +109,11 @@ export default function ProjectManagement() {
 
   const [project, setProject] = useState([]);
   console.log(project);
+  console.log(project[0]?.members);
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [active, setActive] = useState(0);
-  const navigate= useNavigate();
+  const navigate = useNavigate();
 
   const buttons = ["All", "on Track", "At Risk"];
 
@@ -167,7 +168,7 @@ export default function ProjectManagement() {
     }
   ];
 
-  
+
 
 
 
@@ -303,7 +304,7 @@ export default function ProjectManagement() {
               <div
                 key={p.id}
                 className="bg-white border border-black/10 p-5 rounded"
-                onClick={()=>navigate(`/projectDetails/${p._id}`)}
+                onClick={() => navigate(`/projectDetails/${p._id}`)}
               >
 
                 {/* HEADER */}
@@ -388,8 +389,8 @@ export default function ProjectManagement() {
                           <div
                             key={item}
                             className={` relative  group w-14  h-14 rounded-full  flex items-center justify-center text-[12px] text-white          font-bold border-4          border-white cursor-pointer ${index === 0 ? "bg-purple-800"
-                                : index === 1 ? "bg-green-500" : "bg-purple-600"}`}>
-                          
+                              : index === 1 ? "bg-green-500" : "bg-purple-600"}`}>
+
                             {/* FIRST LETTER */}
                             {member?.name
                               ? member.name.charAt(0).toUpperCase()
@@ -443,7 +444,8 @@ export default function ProjectManagement() {
 
         <AnimateModals>
 
-          <CreateProjects onClose={() => setOpen(false)} />
+          <CreateProjects onClose={() => setOpen(false)}
+            fetchProjects={fetchProjects} />
         </AnimateModals>
       )}
     </div>

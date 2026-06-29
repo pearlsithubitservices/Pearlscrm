@@ -71,7 +71,7 @@ const Employeecomp = ({ leadcounts }) => {
                 setLoading(true);
                 const response =
                     await fetch(
-                        'https://pearlscrm.onrender.com/api/leads'
+                        'http://localhost:5000/api/leads'
                     );
 
                 const data =
@@ -177,7 +177,7 @@ const Employeecomp = ({ leadcounts }) => {
                         </h2>
 
                         <button className="text-[#2563a9] font-semibold">
-                           
+
                             {onlineEmployees.length} Online
                         </button>
 

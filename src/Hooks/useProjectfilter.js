@@ -1,77 +1,33 @@
-    import { useMemo } from "react";
+import { useMemo } from "react";
 
-export default function useProjectFilter(
-    projects,
-    search,
-    active
-) {
+export default function useProjectFilter(projects, search, active) {
+  return useMemo(() => {
+    const q = (search || "").trim().toLowerCase();
 
-    return useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-        const q = search?.toLowerCase() || "";
+    return projects.filter((project) => {
+      const searched =
+        project.company?.toLowerCase().includes(q) ||
+        project.companylocation?.toLowerCase().includes(q) ||
+        project.status?.toLowerCase().includes(q) ||
+        project.title?.toLowerCase().includes(q);
 
-        return projects.filter((project) => {
+      const dueDate = new Date(project.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
 
-            const searched =
+      let filtered = true;
 
-                project.company
-                    ?.toLowerCase()
-                    .includes(q)
+      if (active === "on Track") {
+        // Today and future projects
+        filtered = dueDate >= today;
+      } else if (active === "At Risk") {
+        // Projects due today or earlier
+        filtered = dueDate <= today;
+      }
 
-                ||
-
-                project.companylocation
-                    ?.toLowerCase()
-                    .includes(q)
-
-                ||
-
-                project.status
-                    ?.toLowerCase()
-                    .includes(q)
-
-                ||
-
-                project.leader
-                    ?.toLowerCase()
-                    .includes(q)
-
-                ||
-
-                project.priority
-                    ?.toLowerCase()
-                    .includes(q)
-
-                ||
-
-                project.title
-                    ?.toLowerCase()
-                    .includes(q)
-
-                ||
-
-                project.members?.some(
-                    (member) =>
-                        member
-                            ?.toLowerCase()
-                            .includes(q)
-                );
-
-            const filtered =
-
-                active === "All"
-
-                    ? true
-
-                    : active === "on Track"
-
-                        ? new Date(project.dueDate) > new Date()
-
-                        : new Date(project.dueDate) <= new Date();
-            return searched && filtered;
-
-        });
-
-    }, [projects, search, active]);
-
+      return searched && filtered;
+    });
+  }, [projects, search, active]);
 }

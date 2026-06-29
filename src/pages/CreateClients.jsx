@@ -19,7 +19,7 @@ import {
 import { Activity, useState } from "react";
 
 
-export default function ClientForm({ onClose }) {
+export default function ClientForm({ onClose, fetchClients }) {
 
     const [client, setClient] = useState({
         companyName: "",
@@ -57,6 +57,7 @@ export default function ClientForm({ onClose }) {
             console.log("Client added:", data);
             if (response.ok) {
                 alert("Client Added Successfully");
+                await fetchClients();
                 onClose();
             }
 
@@ -353,7 +354,7 @@ export default function ClientForm({ onClose }) {
 
                 </div>
 
-               
+
 
                 <div>
 

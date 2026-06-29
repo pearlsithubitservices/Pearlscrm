@@ -28,14 +28,14 @@ import { Navigate, useNavigate } from 'react-router-dom';
 
 export default function ClientManagement() {
 
-    const { clients, loading } = useClients();
+    const { clients, loading, fetchClients } = useClients();
     console.log(clients);
-   
+
 
     const [active, setActive] = useState(0);
     const [search, setSearch] = useState("");
     const [open, setOpen] = useState(false);
-    const navigate=useNavigate();
+    const navigate = useNavigate();
 
     const buttons = ["All", "Low", "Medium", "High"];
 
@@ -265,7 +265,7 @@ export default function ClientManagement() {
                                 <div
                                     key={p._id}
                                     className="bg-white border border-black/10 p-5 rounded"
-                                    onClick={()=>navigate(`/clientDetails/${p._id}`)}
+                                    onClick={() => navigate(`/clientDetails/${p._id}`)}
                                 >
 
                                     {/* HEADER */}
@@ -506,6 +506,7 @@ export default function ClientManagement() {
 
                     <CreateClients
                         onClose={() => setOpen(false)}
+                        fetchClients={fetchClients}
                     />
 
                 </AnimateModals>
