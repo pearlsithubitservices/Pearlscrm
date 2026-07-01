@@ -18,6 +18,7 @@ const PaymentRoutes = require('./routes/PaymentRoutes');
 const LeaveRoute = require('./routes/LeaveRoute');
 const HolidayRoute = require('./routes/HolidayRoute');
 const ReimbursementRoutes = require('./routes/ReimbursementRoutes');
+const EmailRoutes = require('./routes/EmailRoutes');
 
 const EmpAttendanceRoutes = require('./routes/EmpAttendanceRoutes');
 const AnnouncementSchema = require('./routes/Announcements');
@@ -74,6 +75,7 @@ app.use("/api/payment", PaymentRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
+app.use("/api/email", EmailRoutes);
 
 app.use("/api/empattendancenew", EmpAttendanceRoutes)
 app.use("/api/announcement", AnnouncementSchema);

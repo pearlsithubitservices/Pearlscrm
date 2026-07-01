@@ -1,177 +1,141 @@
 import React from "react";
 import { motion } from "framer-motion";
 import {
-    Phone,
-    Mail,
-    MessageCircle,
-    User,
-    CalendarDays,
-    Briefcase,
+  Phone,
+  Mail,
+  User,
+  CalendarDays,
 } from "lucide-react";
 
 export default function LeadDetails({ employees }) {
+  console.log(employees);
 
-    const contactInfo = [
-        {
-            title: "EMAIL",
-            value: employees?.email || "Not Available",
-            icon: Mail,
-            color: "text-blue-500",
-            bg: "bg-blue-100",
-        },
-        {
-            title: "PHONE",
-            value: employees?.phone || "Not Available",
-            icon: Phone,
-            color: "text-green-500",
-            bg: "bg-green-100",
-        },
+  const contactInfo = [
+    {
+      title: "EMAIL",
+      value: employees?.email || "Not Available",
+      icon: Mail,
+      color: "text-blue-500",
+      bg: "bg-blue-100",
+    },
+    {
+      title: "PHONE",
+      value: employees?.phone || employees?.contact || "Not Available",
+      icon: Phone,
+      color: "text-green-500",
+      bg: "bg-green-100",
+    },
+    {
+      title: "LOCATION",
+      value: employees?.location || employees?.assignedTo || "Not Available",
+      icon: User,
+      color: "text-orange-500",
+      bg: "bg-orange-100",
+    },
+    {
+      title: "JOINING DATE",
+      value: employees?.joiningDate || employees?.joinDate || "Not Available",
+      icon: CalendarDays,
+      color: "text-pink-500",
+      bg: "bg-pink-100",
+    },
+  ];
 
-        {
-            title: "LOCATION",
-            value: employees?.assignedTo || "Ragavi M",
-            icon: User,
-            color: "text-orange-500",
-            bg: "bg-orange-100",
-        },
-        {
-            title: "JOINING DATE",
-            value: employees?.followUp || "Today",
-            icon: CalendarDays,
-            color: "text-pink-500",
-            bg: "bg-pink-100",
-        },
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[#efede8] p-5"
+    >
+      <div className="max-w-7xl mx-auto">
 
-    ];
+        {/* Employee Description */}
+        <div className="mt-8">
+          <h3 className="font-bold text-gray-400 mb-4">
+            EMPLOYEE DESCRIPTION
+          </h3>
 
-    return (
-        <motion.div
-            initial={{
-                opacity: 0,
-                y: 30,
-            }}
-            animate={{
-                opacity: 1,
-                y: 0,
-            }}
-            className="min-h-screen bg-[#efede8] p-5"
-        >
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            className="bg-[#efede8] rounded-3xl p-6 shadow-sm border border-black/40"
+          >
+            <div className="min-h-[100px]">
+              <h1 className="text-xl text-[#082f57] leading-relaxed">
+                {employees?.notes || "No description available."}
+              </h1>
+            </div>
+          </motion.div>
+        </div>
 
-            <div className="max-w-7xl mx-auto">
+        {/* Employee Information */}
+        <div className="mt-10">
+          <h3 className="font-bold text-gray-400 mb-5">
+            EMPLOYEE INFORMATION
+          </h3>
 
-                {/* HEADER */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {contactInfo.map((item, index) => {
+              const Icon = item.icon;
 
+              return (
+                <motion.div
+                  key={index}
+                  whileHover={{
+                    y: -5,
+                    transition: { duration: 0.2 },
+                  }}
+                  className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm flex items-center gap-4"
+                >
+                  <div
+                    className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center`}
+                  >
+                    <Icon className={`w-6 h-6 ${item.color}`} />
+                  </div>
 
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase">
+                      {item.title}
+                    </p>
 
-                {/* DEAL VALUE */}
+                    <p className="text-base font-medium text-[#082f57] mt-1 break-all">
+                      {item.value}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
 
-                <div className="mt-8">
+        {/* Performance */}
+        <div className="mt-10">
+          <h3 className="font-semibold text-gray-700">
+            PERFORMANCE
+          </h3>
 
-                    <h3
-                        className="
-            font-bold
-            text-gray-400
-            mb-4
-            "
-                    >
-                        Employee Description
-                    </h3>
+          <div className="bg-white p-5 rounded-xl shadow-sm mt-4">
+            <div className="flex justify-between mb-3">
+              <span className="text-sm text-gray-500">
+                Performance Progress
+              </span>
 
-                    <motion.div
-                        whileHover={{
-                            scale: 1.01,
-                        }}
-                        className="
-            bg-[#efede8]
-            rounded-3xl
-            p-6
-            shadow-sm
-            border border-black/40
-            "
-                    >
-
-                        <div className="w-full h-[100px] ">
-
-                            <div>
-
-                                <h1
-                                    className="
-                  text-xl
-                  
-                  text-[#082f57]
-                  "
-                                >
-                                    {employees?.notes || "oihwehdo"}
-                                </h1>
-                            </div>
-                        </div>
-
-                    </motion.div>
-
-                </div>
-
-                {/* CONTACT INFO */}
-
-                <div className="mt-10">
-
-                    <h3
-                        className="
-            font-bold
-            text-gray-400
-            mb-5
-            "
-                    >
-                        EMPLOYEE INFORMATION
-                    </h3>
-
-
-                    <div className="flex flex-col items-start  justify-between ">
-                        <div className="flex  gap-4 items-start justify-between ">
-                            <div className="flex flex-col gap-2 w-[400px]  p-2  rounded-lg bg-white/80 items-start justify-between">
-                                <h1 className="ml-4">EMAIL</h1>
-                                <p className="ml-6 text-blue-700">abc@gmail.com</p>
-                            </div>
-                            <div className=" flex flex-col gap-2 w-[400px]    p-2  rounded-lg bg-white/80 items-start justify-between">
-                                <h1>PHONE</h1>
-                                <p className="text-blue-700">9345790345</p>
-                            </div>
-                        </div>
-                        <div className="flex  gap-4 items-start justify-between  mt-12">
-                            <div className="flex flex-col gap-2 w-[400px]  p-2  rounded-lg bg-white/80 items-start justify-between">
-                                <h1 className="ml-4">LOCATION</h1>
-                                <p className="ml-6 text-blue-700">Chennai</p>
-                            </div>
-                            <div className=" flex flex-col gap-2 w-[400px]    p-2  rounded-lg bg-white/80 items-start justify-between">
-                                <h1>JOINING DATE</h1>
-                                <p className="text-blue-700">00-00-0000</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="mt-8">
-                        <h1 className="font-semibold">PERFORMANCE</h1>
-
-                        <div className="w-full bg-white p-4 rounded-lg mt-3">
-                            <h5 className="text-sm text-gray-500">
-                                Performance Progress 65%
-                            </h5>
-
-                            {/* BAR BACKGROUND */}
-                            <div className="w-full h-2 mt-4 bg-gray-300 rounded-lg overflow-hidden">
-
-                                {/* FILL */}
-                                <div className="h-full w-[65%] bg-blue-500 rounded-lg" />
-
-                            </div>
-                        </div>
-                    </div>
-
-
-                </div>
-
+              <span className="text-sm font-semibold text-blue-600">
+                65%
+              </span>
             </div>
 
+            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "65%" }}
+                transition={{ duration: 1 }}
+                className="h-full bg-blue-500 rounded-full"
+              />
+            </div>
+          </div>
+        </div>
 
-
-        </motion.div>
-    );
+      </div>
+    </motion.div>
+  );
 }

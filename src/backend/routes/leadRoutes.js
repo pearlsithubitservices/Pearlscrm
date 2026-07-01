@@ -1,4 +1,4 @@
-    const express =
+const express =
   require("express");
 
 const router =
@@ -7,7 +7,7 @@ const router =
 const Lead =
   require("../models/Leads");
 
-  
+
 
 
 
@@ -132,12 +132,12 @@ router.post(
 );
 router.get("/:id", async (req, res) => {
   try {
-    const {id}=req.params;
+    const { id } = req.params;
     const data = await Lead.findById(id);
 
-    if(!data){
+    if (!data) {
       res.status(404).json();
-      
+
     }
 
     return res.status(200).json(data);
@@ -149,5 +149,35 @@ router.get("/:id", async (req, res) => {
     });
   }
 });
+
+// notes
+
+router.post("/:id/notes", async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    const lead = await Lead.findById(req.params.id);
+
+    if (!lead) {
+      return res.status(404).json({
+        message: "Lead not found",
+      });
+    }
+
+    lead.leadnotes.push({
+      title,
+      description,
+    });
+
+    await lead.save();
+
+    res.status(200).json(lead);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
 module.exports =
   router;

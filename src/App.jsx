@@ -71,6 +71,10 @@ import TaskComponent from './pages/TaskComponents.jsx'
 import ProjectDetails from './pages/ProjectDetails.jsx'
 import ClientDetails from './pages/ClientDetails.jsx'
 import ETaskDetails from './EmployeePages/Task/TaskDetails/ETaskDetails.jsx';
+import Leave from './pages/LeaveAdmin/LeaveManagement.jsx'
+import AdminPayroll from './pages/Payroll/PayrollDashboard.jsx'
+import AcceptInvite from './components/AcceptInvite.jsx'
+import PayslipAdmin from './pages/Payroll/PayslipAdmin.jsx';
 
 // EMPLOYEE PAGES
 import EmpMyprofile from './EmployeePages/Profile/Myprofile.jsx';
@@ -86,6 +90,8 @@ import EmpSettings from './EmployeePages/Settings/settings.jsx';
 import EmpDashboard from './EmployeePages/Dashboard/Dashboard.jsx';
 import EmpFollowUps from './EmployeePages/FollowUps/FollowUps.jsx'
 import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.jsx'
+// import EmployeeDetails from './components/EmployeeDetails/Employeehome.jsx'
+import EmpLead from './EmployeePages/Leads/Lead.jsx'
 
 
 
@@ -141,6 +147,10 @@ export default function App() {
             <Route
               path="/login"
               element={<Login />}
+            />
+            <Route
+              path="/accept-invite/:id"
+              element={<AcceptInvite />}
             />
 
             {/* ADMIN ROUTES */}
@@ -244,6 +254,24 @@ export default function App() {
                   <AdminCommunication />
                 }
               />
+              <Route
+                path="/leave"
+                element={
+                  <Leave />
+                }
+              />
+              <Route
+                path="/admin-payroll"
+                element={
+                  <AdminPayroll />
+                }
+              />
+              <Route
+                path="/payslipadmin/:id"
+                element={
+                  <PayslipAdmin />
+                }
+              />
 
               <Route
                 path="/settings"
@@ -253,6 +281,7 @@ export default function App() {
                   />
                 }
               />
+
 
             </Route>
 
@@ -312,6 +341,7 @@ export default function App() {
               <Route path="/employee/performance" element={<EmpPerformance />} />
               <Route path="/employee/reports" element={<EmpReportStatements />} />
               <Route path="/employee/performance/:id" element={<EmpGoalDetails />} />
+              <Route path="/employee/lead" element={<EmpLead />} />
 
               <Route
                 path="/employee/attendance"

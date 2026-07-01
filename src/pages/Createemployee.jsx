@@ -8,9 +8,9 @@ import {
 } from 'react-router-dom';
 
 import {
-  collection,
-  addDoc,
-  Timestamp,
+    collection,
+    addDoc,
+    Timestamp,
 } from "firebase/firestore";
 
 import { db } from '../lib/firebase';
@@ -70,16 +70,29 @@ export default function Createemployee({ onClose }) {
         });
 
 
-    
+
     const addEmployees = async () => {
         try {
-            await addDoc(collection(db, "employees"), {
+            const docRef = await addDoc(collection(db, "employees"), {
                 ...employees,
                 createdAt: Timestamp.now(),
                 isOnline: false,
+                status: "Pending",
+            });
+            await fetch("http://localhost:5000/api/email/invite", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id: docRef.id,
+                    name: employees.employeeName,
+                    email: employees.email,
+                    role: employees.employeeRole,
+                }),
             });
 
-            alert("Employee added successfully");
+            alert("Invitation Sent");
 
             onClose();
             navigate("/employees");

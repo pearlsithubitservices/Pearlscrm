@@ -46,6 +46,11 @@ export default function Sidebar() {
     },
 
     {
+      name: "Lead",
+      icon: CheckSquare,
+      path: '/employee/lead',
+    },
+    {
       name: "Tasks & Activities",
       icon: CheckSquare,
       path: '/employee/tasks',

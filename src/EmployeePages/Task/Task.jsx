@@ -40,9 +40,12 @@ export default function Tasks() {
     useState('');
 
   const [active, setActive] = useState("All");
+  const sortedTasks = [...tasks].sort((a, b) => {
+    return b.createdAt?.toDate() - a.createdAt?.toDate();
+  });
 
   const buttons = ["All", "Hot", "Warm", "Cold"];
-  const filterdata = useTaskfilter(tasks, search, active);
+  const filterdata = useTaskfilter(sortedTasks, search, active);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 3;
@@ -199,7 +202,7 @@ export default function Tasks() {
                     border-gray-200
                     rounded-2xl
                     p-5 md:p-7"
-                      onClick={() => navigate(`/employee/taskDetails/${task.uid}`)}>
+                      onClick={() => navigate(`/employee/taskDetails/${task.id}`)}>
 
                       {/* TOP */}
 

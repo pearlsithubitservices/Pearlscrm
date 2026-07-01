@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Mail,
@@ -20,17 +20,29 @@ import ETaskActivity from "./ETaskActivity";
 import ETasksNotes from "./ETaskNotes";
 import ETaskDocuments from "./ETaskDocument";
 import useTaskid from "../../../Hooks/useTaskid";
+import useEmployees from "../../../Hooks/useEmployees";
 export default function ETaskDetails() {
     const [activeTab, setActiveTab] = useState("Overview");
     const [button, setButton] = useState("call");
     const { id } = useParams();
     const navigate = useNavigate();
+    const { employees } = useEmployees();
+    //GETTING EMPLOYEES NAME
+    const employeeMap = useMemo(() => {
+        return employees.reduce((map, employee) => {
+            map[employee.uid] = employee.name;
+            return map;
+        }, {});
+    }, [employees]);
 
     //const { lead, loading } = useLead(id);
     //const[tasks, setTasks]=useState('');
-    const { task, loading } = useTaskid(id);
+    const { tasks, loading, } = useTaskid();
+    const currentTask = tasks?.find((item) => (
+        item.id == id
+    ));
 
-    console.log(task);
+    console.log(currentTask);
     const tabs = [
         "Overview",
         "Update Progress",
@@ -38,21 +50,21 @@ export default function ETaskDetails() {
         "Documents",
 
     ];
-    
+
 
     const renderTab = () => {
         switch (activeTab) {
             case "Overview":
-                return <ETasksOverview tasks={task} />;
+                return <ETasksOverview tasks={currentTask} employeemap={employeeMap} />;
 
             case "Update Progress":
-                return <ETaskActivity task={task} />;
+                return <ETaskActivity task={currentTask} />;
 
             case "Notes":
-                return <ETasksNotes task={task} />;
+                return <ETasksNotes task={currentTask} />;
 
             case "Documents":
-                return <ETaskDocuments task={task} />;
+                return <ETaskDocuments task={currentTask} />;
 
             default:
                 return null;
@@ -82,14 +94,14 @@ export default function ETaskDetails() {
                             <div>
 
                                 <h1 className="font-bold text-xl text-[#082f57]">
-                                    {task.title || "Vishnu"}
+                                    {employeeMap[currentTask?.assignedby] || "Vishnu"}
                                 </h1>
 
                                 <p className="text-gray-400 tracking-tighter">
                                     Redesign onboarding flow for enterprise clients
                                 </p>
 
-                                
+
 
                             </div>
 
@@ -100,11 +112,11 @@ export default function ETaskDetails() {
                             <div className="flex gap-3">
 
                                 <span className="bg-green-100 text-green-600 px-4 py-1 rounded-full">
-                                    {task.status || "In Progress"}
+                                    {currentTask?.status || "In Progress"}
                                 </span>
 
                                 <span className="bg-red-100 text-red-500 px-4 py-1 rounded-full">
-                                    {task.priority || "High"}
+                                    {currentTask?.priority || "High"}
                                 </span>
 
                             </div>

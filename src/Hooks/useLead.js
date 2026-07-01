@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 export default function useLead(id) {
 
     const [lead, setLead] = useState({});
     const [fulllead, setFullLead] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } =useAuth()
 
     useEffect(() => {
         if (id) {
@@ -66,12 +68,49 @@ export default function useLead(id) {
 
         };
 
+    const addNote = async (leadId, note) => {
+        try {
+            setLoading(true);
+
+            const response = await fetch(
+                `http://localhost:5000/api/leads/${leadId}/notes`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(note),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            // Refresh current lead
+            if (leadId === id) {
+                await fetchLead();
+            }
+
+            return data;
+        } catch (error) {
+            console.log(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
     return {
         lead,
         loading,
         fetchLead,
         fetchfullLead,
         fulllead,
+        addNote,
     };
 
 }

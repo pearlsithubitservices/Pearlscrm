@@ -6,11 +6,18 @@ import Employeehome from "../components/EmployeeDetails/Employeehome";
 import EmployeePerformancePage from "../components/EmployeeDetails/EmployeePerformance";
 import EmployeeWork from "../components/EmployeeDetails/EmployeeWork";
 import EmployeeActivity from "../components/EmployeeDetails/EmployeeActivity";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import useEmployees from "../Hooks/useEmployees";
 
 const EmployeeDetails = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const navigate= useNavigate();
+  const navigate = useNavigate();
+  const { id } = useParams()
+  const { employees } = useEmployees();
+  const currentEmployee = employees?.find((item) => (
+    item.id == id
+  ));
+  console.log(currentEmployee);
 
   const tabs = ["overview", "performance", "assigned work", "activity"];
   const [button, setButton] = useState('');
@@ -26,7 +33,7 @@ const EmployeeDetails = () => {
   }
 
   return (
-    <div className="p-6 bg-[#efede8] min-h-screen">
+    <div className="p-6 bg-[#efede8] max-h-screen overflow-y-auto no-scrollbar">
       {/* HEADER */}
       <div className="flex justify-between items-start gap-6">
 
@@ -34,14 +41,14 @@ const EmployeeDetails = () => {
         <div className="flex items-start gap-4  w-full max-w-[700px] p-4 rounded-md ">
 
           {/* Avatar */}
-          <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-            JD
+          <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl uppercase">
+            {(currentEmployee?.name || currentEmployee?.employeeName || "?")[0]}
           </div>
 
           {/* Info */}
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold">Jamie D.</h1>
-            <p className="text-gray-500">Project Lead</p>
+            <h1 className="text-2xl font-semibold">{currentEmployee?.name || currentEmployee?.employeeName}</h1>
+            <p className="text-gray-500">{currentEmployee?.role || currentEmployee?.employeeRole}</p>
 
             {/* ACTION BUTTONS */}
             <div className="flex gap-2 mt-3 flex-wrap">
@@ -90,8 +97,8 @@ const EmployeeDetails = () => {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`pb-3 text-sm capitalize transition-all ${activeTab === tab
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-500"
+              ? "border-b-2 border-blue-600 text-blue-600"
+              : "text-gray-500"
               }`}
           >
             {tab}
@@ -105,9 +112,11 @@ const EmployeeDetails = () => {
         animate={{ opacity: 1, y: 0 }}
         className="mt-6"
       >
-        {activeTab === "overview" && <Employeehome />}
+        {activeTab === "overview" && <Employeehome
+          employees={currentEmployee} />}
 
-        {activeTab === "performance" && <EmployeePerformancePage />}
+        {activeTab === "performance" && <EmployeePerformancePage
+        />}
 
         {activeTab === "assigned work" && <EmployeeWork />}
 

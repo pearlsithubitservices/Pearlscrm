@@ -58,7 +58,7 @@ export default function ClientManagement() {
   const [active, setActive] = useState(0);
   const buttons = ["All", "Sales", "Engineering", "Design"];
   //const [employees, setEmployees] = useState([]);
-  const { employees } = useEmployees();
+  const { employees, deleteEmployee } = useEmployees();
   console.log(employees);
   const navigate = useNavigate();
 
@@ -255,18 +255,35 @@ export default function ClientManagement() {
             {currentFiles.map((p) => (
               <div
                 key={p.id}
-                className="bg-white border border-black/10 p-5 rounded " onClick={() => navigate(`/EmployeeDetails/${p._id}`)}
+                className="relative bg-white border border-black/10 p-5 rounded " onClick={() => navigate(`/EmployeeDetails/${p.id}`)}
               >
+
+                <div className="absolute top-2 right-2 bg-red-700 rounded">
+                  <X
+                    className="text-white cursor-pointer"
+                    onClick={async (e) => {
+                      e.stopPropagation(); // Prevent navigation
+
+                      const confirmDelete = window.confirm(
+                        "Are you sure you want to delete this employee?"
+                      );
+
+                      if (!confirmDelete) return;
+
+                      await deleteEmployee(p.id);
+                    }}
+                  />
+                </div>
 
                 {/* HEADER */}
                 <div className="flex justify-between items-center">
 
                   <div>
                     <h3 className="text-lg font-bold text-[#0b2b57]">
-                      {p.name || "No Name"}
+                      {p.name || p.employeeName || "No Name"}
                     </h3>
                     <p className="text-gray-500 text-sm">
-                      Role: {p.role || "No Employee"}
+                      Role: {p.role || p.employeeRole || "No Employee"}
                     </p>
                   </div>
 

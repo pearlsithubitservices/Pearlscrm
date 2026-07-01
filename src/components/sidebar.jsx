@@ -19,6 +19,9 @@ import {
   Mail,
   FolderOpen,
   Speaker,
+  Notebook,
+  NotebookPenIcon,
+  Landmark,
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -71,6 +74,16 @@ export default function Sidebar() {
   name: 'Communication',
   icon: Speaker,
   path: '/communication',
+},
+{
+  name: 'LeaveManagement',
+  icon: NotebookPenIcon,
+  path: '/leave',
+},
+{
+  name: 'Payroll & Benefits',
+  icon: Landmark,
+  path: '/admin-payroll',
 },
 // {
 //   name: 'Meetings',
