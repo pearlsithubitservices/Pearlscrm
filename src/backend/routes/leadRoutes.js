@@ -79,13 +79,9 @@ router.put(
     try {
 
       const updatedLead =
-        await Lead.findByIdAndUpdate(
-          req.params.id,
-          req.body,
-          {
-            new: true,
-          }
-        );
+        await Lead.findByIdAndUpdate(req.params.id, req.body, {
+          returnDocument: "after",
+        });
 
       res.json(
         updatedLead
