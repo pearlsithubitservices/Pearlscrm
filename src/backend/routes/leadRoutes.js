@@ -179,5 +179,56 @@ router.post("/:id/notes", async (req, res) => {
   }
 });
 
+// DELETE LEAD
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const deletedLead = await Lead.findByIdAndDelete(req.params.id);
+
+    if (!deletedLead) {
+      return res.status(404).json({
+        message: "Lead not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Lead deleted successfully",
+      lead: deletedLead,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
+// DELETE SINGLE NOTE
+
+router.delete("/:leadId/notes/:noteId", async (req, res) => {
+  try {
+    const { leadId, noteId } = req.params;
+
+    const lead = await Lead.findById(leadId);
+
+    if (!lead) {
+      return res.status(404).json({
+        message: "Lead not found",
+      });
+    }
+
+    lead.leadnotes = lead.leadnotes.filter(
+      (note) => note._id.toString() !== noteId
+    );
+
+    await lead.save();
+
+    return res.status(200).json(lead);
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
 module.exports =
   router;

@@ -211,6 +211,23 @@ export default function CreateLead({ onClose, fetchleads }) {
           onChange={handleChange}
           placeholder="New"
           Icon={Activity}
+          type='select'
+          options={
+            [
+              {
+                label: "New",
+                value: "New",
+              },
+              {
+                label: "Interested",
+                value: "Interested",
+              },
+              {
+                label: "Converted",
+                value: "Converted",
+              }
+            ]
+          }
         />
 
         <InputField

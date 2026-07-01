@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 import useLead from "../../Hooks/useLead";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { X } from "lucide-react";
 
 export default function LeadNotesPage() {
-  const { addNote, fetchLead, lead } = useLead();
+  const { addNote, fetchLead, lead, deleteNote } = useLead();
   const { id } = useParams();
 
   // Existing notes list
@@ -33,7 +34,7 @@ export default function LeadNotesPage() {
 
   const fetchleads =
     async () => {
-      
+
 
       try {
 
@@ -45,7 +46,7 @@ export default function LeadNotesPage() {
         const data =
           await response.json();
 
-console.log(data);
+        console.log(data);
         setNotes(data);
 
       } catch (error) {
@@ -53,7 +54,7 @@ console.log(data);
         console.log(error);
 
       }
-      
+
 
     };
   // Form state
@@ -76,7 +77,7 @@ console.log(data);
   ));
   console.log(currentNotes?.leadnotes);
   // Add note
-  
+
   const handleaddNote = async () => {
     if (!formData.title.trim() || !formData.description.trim()) {
       alert("Fill all fields");
@@ -102,6 +103,17 @@ console.log(data);
     }
   };
 
+  const handleDeleteNote = async (noteId) => {
+    try {
+      const updatedLead = await deleteNote(id, noteId);
+
+      // Update the lead in state
+      await fetchleads();
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <div className="min-h-screen bg-[#f5f2ec] p-8">
 
@@ -181,7 +193,7 @@ console.log(data);
 
             <div className="absolute top-0 left-[10px] h-full w-[2px] bg-gray-300"></div>
 
-            {currentNotes? currentNotes?.leadnotes?.map((item, index) => (
+            {currentNotes?.leadnotes?.length > 0 > 0 ? currentNotes?.leadnotes?.map((item, index) => (
 
               <motion.div
                 key={index}
@@ -204,6 +216,7 @@ console.log(data);
                 "
               >
 
+                <X className="absolute top-2 right-2 text-red-600" onClick={() => handleDeleteNote(item._id)} />
                 {/* Dot */}
 
                 <div className="w-5 h-5 rounded-full bg-blue-600 mt-2 z-10"></div>
@@ -247,9 +260,9 @@ console.log(data);
               </motion.div>
 
             ))
-          :
-          <p>
-            No notes</p>}
+              :
+              <p>
+                No notes</p>}
 
           </div>
 
