@@ -47,6 +47,7 @@ import Login from './pages/Login';
 
 import ClientManagement from './pages/ClientManagement';
 import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx'
+import ProtectedRoutes from './components/ProtectedRoutes.jsx'
 
 // EMPLOYEE
 
@@ -98,6 +99,7 @@ import EmpLead from './EmployeePages/Leads/Lead.jsx'
 
 import FollowupDetails from './pages/FollowupDetails.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx'
+import ProtectedRoute from './components/ProtectedRoutes.jsx';
 // PLACEHOLDER
 
 function PlaceholderPage({
@@ -155,11 +157,21 @@ export default function App() {
 
             {/* ADMIN ROUTES */}
 
-            <Route element={<Layout />}>
+            <Route
+              element={
+                <ProtectedRoute role="admin">
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
 
               <Route
                 path="/"
-                element={<Dashboard />}
+                element={
+                  <ProtectedRoute role="admin">
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
               />
 
               <Route
@@ -287,7 +299,13 @@ export default function App() {
 
             {/* EMPLOYEE ROUTES */}
 
-            <Route element={<EmployeeLayout />}>
+            <Route
+              element={
+                <ProtectedRoute role="employee">
+                  <EmployeeLayout />
+                </ProtectedRoute>
+              }
+            >
 
               <Route
                 path="/employee-dashboard"
@@ -357,7 +375,7 @@ export default function App() {
               path="*"
               element={
                 <Navigate
-                  to="/"
+                  to="/login"
                   replace
                 />
               }

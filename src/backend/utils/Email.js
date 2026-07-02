@@ -19,9 +19,9 @@ const sendEmail = async ({ to, subject, html }) => {
     html,
   });
 
-  console.log("Email sent successfully!");
-  console.log(info.response);
-  console.log(info.messageId);
+//   console.log("Email sent successfully!");
+//   console.log(info.response);
+//   console.log(info.messageId);
 };
 
 module.exports = { sendEmail };

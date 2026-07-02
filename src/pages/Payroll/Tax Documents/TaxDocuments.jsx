@@ -43,7 +43,7 @@ const documents = [
 export default function TaxDocuments() {
 
 
-    const { documents } = useTaxDocuments();
+    const { documents, deleteDocument, fetchDocuments } = useTaxDocuments();
     console.log(documents);
 
     const [openForm, setOpenForm] = useState(false);
@@ -115,7 +115,7 @@ export default function TaxDocuments() {
                     {documents?.map((doc) => {
 
                         const Icon = iconMap[doc.title];
-                        
+
 
                         return (
 
@@ -163,17 +163,14 @@ export default function TaxDocuments() {
                                 <div className="flex items-center gap-5">
 
                                     <motion.a
-                                        href={doc.documentUrl}
+                                        href={`http://localhost:5000${doc.documentUrl}`}
                                         target="_blank"
-                                        rel="noreferrer"
+                                        rel="noopener noreferrer"
                                         whileHover={{ scale: 1.12 }}
-                                        whileTap={{ scale: .9 }}
+                                        whileTap={{ scale: 0.9 }}
                                         className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center"
                                     >
-                                        <Eye
-                                            size={20}
-                                            className="text-gray-600"
-                                        />
+                                        <Eye size={20} className="text-gray-600" />
                                     </motion.a>
 
                                     <motion.button
@@ -212,21 +209,14 @@ export default function TaxDocuments() {
             </div>
             {
                 openForm && (
-                    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-
-                        <div className="bg-white rounded-2xl shadow-xl w-[550px] p-6">
-
-                            <TaxDocumentForm
-                                document={selectedDocument}
-                                onClose={() => {
-                                    setOpenForm(false);
-                                    setSelectedDocument(null);
-                                }}
-                            />
-
-                        </div>
-
-                    </div>
+                    <TaxDocumentForm
+                        onClose={() => {
+                            setOpenForm(false);
+                            setSelectedDocument(null);
+                        }}
+                        editingDocument={selectedDocument}
+                        getDocument={fetchDocuments}
+                    />
                 )
             }
         </motion.div>

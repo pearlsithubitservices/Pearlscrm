@@ -67,6 +67,8 @@ export default function Createemployee({ onClose }) {
 
             dueDate: '',
 
+            employeeDepartment: '',
+
         });
 
 
@@ -182,6 +184,13 @@ export default function Createemployee({ onClose }) {
                 onChange={handleEmployee}
                 placeholder="Enter the Employee name..."
             />
+            <InputField
+                label="Employee Department"
+                name="employeeDepartment"
+                value={employees.employeeDepartment}
+                onChange={handleEmployee}
+                placeholder="Enter the Employee Department..."
+            />
 
             <div className="mt-5">
                 <InputField
@@ -190,6 +199,17 @@ export default function Createemployee({ onClose }) {
                     value={employees.employeeRole}
                     onChange={handleEmployee}
                     placeholder="Enter the Employee role"
+                    type='select'
+                    options={[
+                        {
+                            value: "employee",
+                            label: "Employee"
+                        },
+                        {
+                            value: "admin",
+                            label: "Admin"
+                        },
+                    ]}
                 />
 
 

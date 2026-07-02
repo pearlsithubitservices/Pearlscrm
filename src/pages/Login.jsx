@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  onAuthStateChanged,
 } from 'firebase/auth';
 
 import {
@@ -56,6 +57,26 @@ export default function Login() {
 
   const navigate =
     useNavigate();
+  // useEffect(() => {
+  //   const unsubscribe = onAuthStateChanged(auth, async (user) => {
+  //     if (!user) return;
+
+  //     const userRef = doc(db, "users", user.uid);
+  //     const userSnap = await getDoc(userRef);
+
+  //     if (!userSnap.exists()) return;
+
+  //     const userData = userSnap.data();
+
+  //     if (userData.role === "Admin") {
+  //       navigate("/", { replace: true });
+  //     } else {
+  //       navigate("/employee/dashboard", { replace: true });
+  //     }
+  //   });
+
+  //   return () => unsubscribe();
+  // }, [navigate]);
 
   // GOOGLE LOGIN
 

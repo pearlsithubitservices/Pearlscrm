@@ -6,6 +6,7 @@ const router = express.Router();
 router.post("/login", async (req, res) => {
     try {
         const { email, name, role } = req.body;
+        
 
         await sendEmail({
             to: email,

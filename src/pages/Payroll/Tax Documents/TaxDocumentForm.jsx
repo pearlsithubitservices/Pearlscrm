@@ -8,13 +8,17 @@ import {
 } from "lucide-react";
 
 import useTaxDocument from "../../../Hooks/useTaxDocument";
+import { getFinancialYear } from '../../../Utils/formatNumber'
 
 export default function TaxDocumentForm({
     onClose,
     editingDocument = null,
+    getDocument,
 }) {
 
     const fileRef = useRef(null);
+    const year = getFinancialYear();
+    console.log(year);
 
     const {
         addDocument,
@@ -24,13 +28,14 @@ export default function TaxDocumentForm({
     const [loading, setLoading] =
         useState(false);
 
+
     const [form, setForm] = useState({
 
         title: "",
 
         description: "",
 
-        financialYear: "FY 2025-26",
+        financialYear: year,
 
         documentType: "",
 
@@ -51,7 +56,7 @@ export default function TaxDocumentForm({
 
                 financialYear:
                     editingDocument.financialYear ||
-                    "FY 2025-26",
+                    year,
 
                 documentType:
                     editingDocument.documentType || "",
@@ -112,11 +117,12 @@ export default function TaxDocumentForm({
                     editingDocument._id,
                     form
                 );
+                await getDocument();
 
             } else {
-
+                
                 await addDocument(form);
-
+                  await getDocument();
             }
 
             onClose();
@@ -148,7 +154,7 @@ export default function TaxDocumentForm({
                     opacity: 1,
                     scale: 1,
                 }}
-                className="w-full max-w-5xl rounded-[28px] bg-[#F7F5EF] shadow-xl p-10"
+                className="w-full max-w-3xl h-[500px] overflow-y-auto no-scrollbar rounded-[28px] bg-[#F7F5EF] shadow-xl p-10"
             >
 
                 {/* Header */}
@@ -375,8 +381,8 @@ export default function TaxDocumentForm({
                         {loading
                             ? "Saving..."
                             : editingDocument
-                            ? "Update Document"
-                            : "Add to Tax Documents"}
+                                ? "Update Document"
+                                : "Add to Tax Documents"}
 
                     </motion.button>
 
