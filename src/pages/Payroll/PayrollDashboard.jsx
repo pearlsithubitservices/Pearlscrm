@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
     Bell,
@@ -18,69 +18,50 @@ import usePayslip from "../../Hooks/usePayslip";
 import useEmployees from "../../Hooks/useEmployees";
 import Pagination from "../../components/Pagination";
 import { useNavigate } from "react-router-dom";
+import AddPayslips from './AddPayslips'
 
 
 export default function PayrollDashboard() {
+    const { employees } = useEmployees();
+
+    //GETTING EMPLOYEES NAME
+    const employeeMap = useMemo(() => {
+        return employees.reduce((map, employee) => {
+            map[employee.uid] = {
+                name: employee.name,
+                department: employee.employeeRole || employee.role,
+            };
+            return map;
+        }, {});
+    }, [employees]);
     const [activeTab, setActiveTab] = useState("Payslips");
     const { payslips, fetchPayslips } = usePayslip();
     console.log(payslips);
     const navigate = useNavigate();
-    const employee = [
-        {
-            name: "Valeria Reyes",
-            id: "PIH-1042",
-            dept: "Engineering",
-            gross: "₹85,300",
-            deduction: "₹8,450",
-            net: "₹74,300",
-            status: "Pending",
-        },
-        {
-            name: "Arjun Mehta",
-            id: "PIH-1043",
-            dept: "Design",
-            gross: "₹8,450",
-            deduction: "₹7,450",
-            net: "₹70,300",
-            status: "Paid",
-        },
-        {
-            name: "Priya Nair",
-            id: "PIH-1044",
-            dept: "HR",
-            gross: "₹8,450",
-            deduction: "₹6,450",
-            net: "₹73,300",
-            status: "Pending",
-        },
-        {
-            name: "Daniel Osei",
-            id: "PIH-1045",
-            dept: "Engineering",
-            gross: "₹8,450",
-            deduction: "₹8,450",
-            net: "₹72,300",
-            status: "Pending",
-        },
-        {
-            name: "Carlos Fernandez",
-            id: "PIH-1047",
-            dept: "Finance",
-            gross: "₹8,450",
-            deduction: "₹6,450",
-            net: "₹70,300",
-            status: "Paid",
-        },
-        {
-            name: "Aisha Khan",
-            id: "PIH-1048",
-            dept: "Marketing",
-            gross: "₹8,450",
-            deduction: "₹6,450",
-            net: "₹69,300",
-            status: "Paid",
-        },
-    ];
+    const [search, setSearch] = useState("");
+    const [department, setDepartment] = useState("All");
+    const [addform, setAddForm] = useState(false);
+
+    const filteredPayslips = useMemo(() => {
+        return payslips?.filter((emp) => {
+
+            const name = employeeMap[emp?.employeeId]?.name?.toLowerCase() || "";
+            const empId = emp?.employeeId?.toLowerCase() || "";
+            const dept = employeeMap[emp?.employeeId]?.department?.toLowerCase() || "";
+
+            const searchMatch =
+                name.includes(search.toLowerCase()) ||
+                empId.includes(search.toLowerCase()) ||
+                dept.includes(search.toLowerCase());
+
+            const departmentMatch =
+                department === "All" ||
+                dept === department.toLowerCase();
+
+            return searchMatch && departmentMatch;
+        }) || [];
+    }, [payslips, search, department, employeeMap]);
+
 
     const statusStyle = (status) => {
         switch (status) {
@@ -92,8 +73,7 @@ export default function PayrollDashboard() {
                 return "bg-red-100 text-red-600";
         }
     };
-    const { employees } = useEmployees();
-    console.log(employees);
+
 
     /* PAGINATION */
     const [currentPage, setCurrentPage] = useState(1);
@@ -103,19 +83,13 @@ export default function PayrollDashboard() {
     const lastIndex = currentPage * filesPerPage;
     const firstIndex = lastIndex - filesPerPage;
 
-    const currentFiles = payslips?.slice(firstIndex, lastIndex);
+    const currentFiles = filteredPayslips?.slice(firstIndex, lastIndex);
 
-    const totalPages = Math.ceil(payslips?.length / filesPerPage);
-    //GETTING EMPLOYEES NAME
-    const employeeMap = useMemo(() => {
-        return employees.reduce((map, employee) => {
-            map[employee.uid] = {
-                name: employee.name,
-                department: employee.employeeRole || employee.role,
-            };
-            return map;
-        }, {});
-    }, [employees]);
+    const totalPages = Math.ceil(filteredPayslips?.length / filesPerPage);
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, department]);
+
 
     return (
         <div className="flex max-h-screen overflow-y-auto bg-[#f3f0eb] font-sans">
@@ -197,17 +171,32 @@ export default function PayrollDashboard() {
                                 <input
                                     placeholder="Search Project.."
                                     className="bg-transparent outline-none ml-2 w-full text-sm"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
                                 />
                             </div>
 
                             {/* FILTER */}
                             <div className="flex items-center bg-gray-200 gap-2  px-4 py-2 rounded-lg">
-                                <span className="text-sm">All Departments</span>
-                                <ChevronDown size={16} />
+                                <select
+                                    className="bg-gray-200 px-4 py-2 rounded-lg text-sm"
+                                    value={department}
+                                    onChange={(e) => {
+                                        setDepartment(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                >
+                                    <option value="All">All Departments</option>
+                                    <option value="developer">Developer</option>
+                                    <option value="designer">Designer</option>
+                                    <option value="hr">HR</option>
+                                    <option value="finance">Finance</option>
+                                </select>
                             </div>
 
                             {/* ADD BUTTON */}
-                            <button className="flex items-center gap-2 bg-gray-200 px-4 py-2 rounded-lg">
+                            <button className="flex items-center gap-2 bg-gray-200 px-4 py-2 rounded-lg"
+                                onClick={() => setAddForm(true)}>
                                 <Plus size={16} />
                                 Add New
                             </button>
@@ -277,6 +266,20 @@ export default function PayrollDashboard() {
                 </div>
 
             </div>
+            {addform && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.2 }}
+                        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl max-h-[85vh] overflow-y-auto"
+                    >
+                        <AddPayslips onClose={() => setAddForm(false)}
+                            fetchPayslips={fetchPayslips} />
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 }

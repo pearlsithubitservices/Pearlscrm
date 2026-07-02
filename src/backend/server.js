@@ -19,6 +19,8 @@ const LeaveRoute = require('./routes/LeaveRoute');
 const HolidayRoute = require('./routes/HolidayRoute');
 const ReimbursementRoutes = require('./routes/ReimbursementRoutes');
 const EmailRoutes = require('./routes/EmailRoutes');
+const ReimbursementPolicyRoutes = require('./routes/ReimbursementPolicyroutes');
+const TaxDocumentRoutes = require('./routes/TaxDocumentsRoutes');
 
 const EmpAttendanceRoutes = require('./routes/EmpAttendanceRoutes');
 const AnnouncementSchema = require('./routes/Announcements');
@@ -93,6 +95,8 @@ app.use("/api/skillscertification", EmpSkillCertification);
 app.use("/api/contribution", EmpContributionRoutes);
 app.use("/api/activity", EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
+app.use('/api/reimbursementpolicy', ReimbursementPolicyRoutes);
+app.use('/api/taxdocuments', TaxDocumentRoutes);
 
 
 app.listen(process.env.PORT, () => {

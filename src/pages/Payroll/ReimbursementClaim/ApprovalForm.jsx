@@ -1,10 +1,53 @@
 
 
 import { motion } from 'framer-motion'
+import { FileText } from 'lucide-react';
+import useReimbursement from '../../../Hooks/useReimbursement';
 
 
-export default function ReimbursementApproval({ selectedClaims }) {
+export default function ReimbursementApproval({ selectedClaims, getClaims, onClose }) {
+    const { updateStatus } = useReimbursement()
     if (!selectedClaims) return null;
+    const handleApprove = async () => {
+        try {
+            await updateStatus(
+                selectedClaims._id,
+                "Approved"
+            );
+
+            alert("Claim approved successfully.");
+
+            // optional
+            onClose();
+            await getClaims();
+
+        } catch (err) {
+            console.error(err);
+            alert("Failed to approve claim");
+        }
+    };
+
+    const handleDecline = async () => {
+        // const remarks = prompt("Enter decline reason") || "";
+
+        try {
+            await updateStatus(
+                selectedClaims._id,
+                "Declined",
+              
+            );
+
+            alert("Claim declined successfully.");
+
+            // optional
+            onClose();
+            await getClaims();
+
+        } catch (err) {
+            console.error(err);
+            alert("Failed to decline claim");
+        }
+    };
 
     return (
         <motion.div
@@ -94,9 +137,18 @@ export default function ReimbursementApproval({ selectedClaims }) {
 
                             <FileText className="text-green-700" />
 
-                            <span>
-                                {selectedClaims.fileName || "No File"}
-                            </span>
+                            {selectedClaims?.receipt ? (
+                                <a
+                                    href={selectedClaims?.receipt}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-600 underline"
+                                >
+                                    View File
+                                </a>
+                            ) : (
+                                <span>No File</span>
+                            )}
 
                         </div>
 
@@ -120,11 +172,13 @@ export default function ReimbursementApproval({ selectedClaims }) {
 
                 <div className="grid md:grid-cols-2 gap-6">
 
-                    <button className="h-14 rounded-xl border border-red-500 text-red-500 font-semibold">
+                    <button className="h-14 rounded-xl border border-red-500 text-red-500 font-semibold"
+                        onClick={handleDecline}>
                         Decline
                     </button>
 
-                    <button className="h-14 rounded-xl bg-green-200 text-green-800 font-semibold">
+                    <button className="h-14 rounded-xl bg-green-200 text-green-800 font-semibold"
+                        onClick={handleApprove}>
                         Approve
                     </button>
 

@@ -7,23 +7,19 @@ import { useNavigate } from 'react-router-dom';
 const PayslipAdmin = ({ payslip }) => {
     console.log(payslip);
     const { employees } = useEmployees();
+    console.log(employees);
     //GETTING EMPLOYEES NAME
     const employeeMap = useMemo(() => {
         return employees.reduce((map, employee) => {
-            map[employee.uid] = employee.name;
+            map[employee.uid] = {
+                name: employee.name,
+                role: employee.employeeRole || employee.role,
+            };
             return map;
         }, {});
     }, [employees]);
     return (
         <div >
-
-
-
-            {/* EMPLOYEE CARD */}
-
-
-            {/* TABS */}
-
 
             {/* TABLE */}
             <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -47,10 +43,10 @@ const PayslipAdmin = ({ payslip }) => {
                         {payslip?.map((row, i) => (
                             <tr key={i} className="border-t">
 
-                                <td className="p-3">{employeeMap[row?.employeeId]}</td>
+                                <td className="p-3">{employeeMap[row?.employeeId]?.name}</td>
                                 <td className="p-3">{row?.employeeId?.slice(0, 5)}</td>
-                                <td className="p-3">{row?.month}</td>
-                                <td className="p-3">₹ {row?.basicSalary}</td>
+                                <td className="p-3">{employeeMap[row?.employeeId]?.role || "Employee"}</td>
+                                <td className="p-3">₹ {row?.gross}</td>
                                 <td className="p-3">₹ {row?.totalDeductions}</td>
                                 <td className="p-3">₹ {row?.net}</td>
                                 <td className="p-3">{row?.date}</td>

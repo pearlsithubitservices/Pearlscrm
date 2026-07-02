@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { IndianRupee, ReceiptText } from "lucide-react";
 import ReimbursementApproval from "./ApprovalForm";
 import { useNavigate } from "react-router-dom";
+import useReimbursement from "../../../Hooks/useReimbursement";
 
 
 
@@ -13,13 +14,21 @@ const badgeStyle = {
         "bg-green-100 text-green-700 border border-green-200",
 };
 
-export default function ReimbursementClaim({ claims }) {
+export default function ReimbursementClaim({ claims, currentpayslip , getClaims}) {
+
+    const currentId = currentpayslip[0]?.employeeId;
+    console.log(currentpayslip);
+    console.log(claims);
+    const currentClaims = claims.filter((item) => (
+        item?.employee_uid == currentId
+    ))
+    console.log(currentClaims);
 
     const pendingClaims = claims?.filter((item) => (
         item.status.toLowerCase() == "pending"
     ));
     const [selectedClaim, setSelectedClaim] = useState(null);
-    console.log(selectedClaim);
+
     const [form, setform] = useState(false);
 
     return (
@@ -42,7 +51,7 @@ export default function ReimbursementClaim({ claims }) {
                     </h2>
 
                     <div className="rounded-full bg-slate-100 px-5 py-2 text-sm font-medium text-slate-700">
-                        {pendingClaims.length} pending
+                        {pendingClaims?.length} pending
                     </div>
                 </motion.div>
 
@@ -54,7 +63,7 @@ export default function ReimbursementClaim({ claims }) {
                     transition={{ delay: .2 }}
                     className="mt-2 bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden"
                 >
-                    {claims.map((claim, index) => (
+                    {pendingClaims.length > 0 ? pendingClaims?.map((claim, index) => (
                         <motion.div
                             key={claim.id}
                             whileHover={{
@@ -85,6 +94,7 @@ export default function ReimbursementClaim({ claims }) {
                                             size={22}
                                             className="text-[#123B6B]"
                                         />
+
 
                                         <h3 className="text-xl font-bold text-[#123B6B]">
                                             {claim?.claimType}
@@ -128,7 +138,9 @@ export default function ReimbursementClaim({ claims }) {
 
                             </div>
                         </motion.div>
-                    ))}
+                    )) :
+                        <p className="p-4">No Claims</p>
+                    }
                 </motion.div>
 
             </div>
@@ -150,7 +162,9 @@ export default function ReimbursementClaim({ claims }) {
                         </button>
 
                         <ReimbursementApproval
-                            selectedClaims={selectedClaim} />
+                            selectedClaims={selectedClaim}
+                            getClaims={getClaims}
+                            onClose={()=>setform(false)} />
                     </motion.div>
                 </div>
             )}

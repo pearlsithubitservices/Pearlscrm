@@ -18,10 +18,12 @@ import Payslip from "./Payslip";
 import { useNavigate, useParams } from "react-router-dom";
 import usePayslip from "../../Hooks/usePayslip";
 import useEmployees from "../../Hooks/useEmployees";
-import Feedbackadmin from "./Feedback/feedbackadmin";
+
 import ReimbursementClaim from "./ReimbursementClaim/ReimbursementClaim";
 import ReimbursementPolicies from "./ReimbursementClaim/ReimbursementPolicies";
 import Reimbursement from "./ReimbursementClaim/Reimbursement";
+import SalaryBreakup from "./SalaryBreakup/SalaryBreakup";
+import TaxDocuments from "./Tax Documents/TaxDocuments";
 
 
 export default function PayslipAdmin() {
@@ -38,7 +40,7 @@ export default function PayslipAdmin() {
     const PendingPayslip = currentPayslip
         ?.filter((p) => p?.status?.toLowerCase() === "pending")
         ?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-    console.log(PendingPayslip)
+   
     const { employees } = useEmployees();
     //GETTING EMPLOYEES NAME
     const employeeMap = useMemo(() => {
@@ -59,15 +61,14 @@ export default function PayslipAdmin() {
                     payslip={currentPayslip} />;
 
             case "Salary Details":
-                return <Feedbackadmin />
+                return <SalaryBreakup
+                    currentPayslip={currentPayslip} />
 
             case "Tax Documents":
-                return <div>
-                    <p>hi</p>
-                </div>;
+                return <TaxDocuments />
 
             case "Reimbursements":
-                return <Reimbursement />
+                return <Reimbursement currentPayslip={currentPayslip} />
             case "Benefits":
                 return <div>
                     <p>hi</p>

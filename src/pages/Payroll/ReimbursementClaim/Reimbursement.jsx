@@ -3,9 +3,10 @@ import ReimbursementClaim from './ReimbursementClaim'
 import ReimbursementPolicies from './ReimbursementPolicies'
 import useReimbursement from '../../../Hooks/useReimbursement'
 
-const Reimbursement = () => {
+const Reimbursement = ({ currentPayslip }) => {
     const { getClaims } = useReimbursement();
     const [claims, setClaims] = useState([]);
+    console.log(currentPayslip);
 
     useEffect(() => {
         fetchClaims();
@@ -22,7 +23,9 @@ const Reimbursement = () => {
     return (
         <div>
             <ReimbursementClaim
-                claims={claims} />
+                claims={claims}
+                currentpayslip={currentPayslip}
+                getClaims={getClaims} />
             <ReimbursementPolicies />
         </div>
     )
