@@ -6,7 +6,7 @@ const router = express.Router();
 router.post("/login", async (req, res) => {
     try {
         const { email, name, role } = req.body;
-        
+
 
         await sendEmail({
             to: email,
@@ -45,7 +45,7 @@ router.post("/invite", async (req, res) => {
 
         const { id, name, email, role } = req.body;
 
-        const inviteLink = `http://localhost:5173/accept-invite/${id}`;
+        const inviteLink = `https://pearlscrm.vercel.app/accept-invite/${id}`;
 
         await sendEmail({
             to: email,

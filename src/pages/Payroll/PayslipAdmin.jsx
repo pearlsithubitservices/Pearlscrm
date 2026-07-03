@@ -24,6 +24,8 @@ import ReimbursementPolicies from "./ReimbursementClaim/ReimbursementPolicies";
 import Reimbursement from "./ReimbursementClaim/Reimbursement";
 import SalaryBreakup from "./SalaryBreakup/SalaryBreakup";
 import TaxDocuments from "./Tax Documents/TaxDocuments";
+import EnrolledBenefits from "./Benifits/EnrolledBenefits";
+import EmployeeBenefits from "./Benifits/EmployeeBenefits";
 
 
 export default function PayslipAdmin() {
@@ -40,7 +42,7 @@ export default function PayslipAdmin() {
     const PendingPayslip = currentPayslip
         ?.filter((p) => p?.status?.toLowerCase() === "pending")
         ?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-   
+
     const { employees } = useEmployees();
     //GETTING EMPLOYEES NAME
     const employeeMap = useMemo(() => {
@@ -70,9 +72,12 @@ export default function PayslipAdmin() {
             case "Reimbursements":
                 return <Reimbursement currentPayslip={currentPayslip} />
             case "Benefits":
-                return <div>
-                    <p>hi</p>
-                </div>;
+                return (
+                    <>
+                        <EnrolledBenefits />
+                        <EmployeeBenefits />
+                    </>
+                )
 
             default:
                 return <Payslip />;
@@ -191,7 +196,7 @@ export default function PayslipAdmin() {
 
                 {/* Tabs */}
 
-                <div className="flex gap-12 mt-10  ml-14 text-xl">
+                <div className="flex items-center justify-between  gap-12 mt-10   text-xl bg-white p-2 rounded">
 
                     {[
                         "Payslips",
@@ -204,7 +209,7 @@ export default function PayslipAdmin() {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-4 transition-all font-medium
+                            className={`pb-4 transition-all mx-4 font-medium mt-2
 
               ${activeTab === tab
                                     ? "border-b-4 border-blue-600 text-blue-700"
