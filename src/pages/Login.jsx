@@ -105,6 +105,7 @@ export default function Login() {
             result.user.uid
           );
 
+
         const userSnap =
           await getDoc(userRef);
 
@@ -234,15 +235,15 @@ export default function Login() {
             password
           );
 
-          const userRef =
-            doc(
-              db,
-              'users',
-              auth.currentUser.uid
-            );
+          const currentUser = auth.currentUser;
 
-          const userSnap =
-            await getDoc(userRef);
+          if (!currentUser) {
+            setError("Login failed - no user found");
+            return;
+          }
+
+          const userRef = doc(db, "users", currentUser.uid);
+          const userSnap = await getDoc(userRef);
 
           if (
             !userSnap.exists()

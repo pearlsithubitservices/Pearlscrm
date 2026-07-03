@@ -4,6 +4,14 @@ import React, {
   useEffect,
 
 } from 'react';
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
 import {
   Plus,
@@ -44,13 +52,13 @@ import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 
 import * as XLSX from 'xlsx';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+
 import Pagination from '../components/Pagination';
 import LoadingPage from '../components/Dashboard/Loading';
 import Createemployee from './Createemployee';
 import AnimateModals from '../components/Dashboard/AnimateModals';
 import useEmployees from '../Hooks/useEmployees';
+import { db } from '../lib/firebase';
 
 
 export default function ClientManagement() {
@@ -121,6 +129,36 @@ export default function ClientManagement() {
 
     }
   ];
+  const [users, setUsers] = useState();
+  console.log(users);
+  
+  
+
+  
+  
+  const fetchUsers = async () => {
+    setLoading(true);
+
+    try {
+      const snapshot = await getDocs(collection(db, "users"));
+
+      const usersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setUsers(usersData);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers()
+
+  }, []);
 
 
   return (

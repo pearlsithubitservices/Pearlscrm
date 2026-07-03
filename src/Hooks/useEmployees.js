@@ -9,9 +9,9 @@ const useEmployees = () => {
     const { user } = useAuth();
 
     useEffect(() => {
-        if (!user) return;
+        // if (!user) return;
         fetchEmployees();
-    }, [user]);
+    }, []);
 
     //FETCH EMPLOYEE
 
@@ -53,7 +53,7 @@ const useEmployees = () => {
         }
     };
 
-    return { employees, loading , deleteEmployee};
+    return { employees, loading, deleteEmployee };
 };
 
 export default useEmployees;

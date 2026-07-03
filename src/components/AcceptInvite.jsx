@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 
 import {
     doc,
-    getDoc,
     updateDoc,
     setDoc,
     serverTimestamp,
@@ -32,61 +31,56 @@ export default function AcceptInvite() {
 
 
 
+    
+
     const acceptInvitation = async () => {
         try {
-
             if (password !== confirmPassword) {
                 alert("Passwords do not match");
                 return;
             }
 
+            setLoading(true);
+
+            // 1. Create Firebase Authentication user
+            const userCredential = await createUserWithEmailAndPassword(
+                auth,
+                currentEmployees.email,
+                password
+            );
+
+            const firebaseUser = userCredential.user;
+
+            // 2. Create Firestore user document
+            await setDoc(doc(db, "users", firebaseUser.uid), {
+                uid: firebaseUser.uid,
+                email: currentEmployees.email,
+                displayName: currentEmployees.employeeName,
+                role: currentEmployees.employeeRole,
+                department: currentEmployees.employeeDepartment,
+                createdAt: serverTimestamp(),
+            });
+
+            // 3. Update employee document
             await updateDoc(doc(db, "employees", id), {
-                password,
+                uid: firebaseUser.uid,
                 status: "Active",
                 acceptedAt: serverTimestamp(),
             });
 
+            // 4. Sign out the newly created employee
+            // await signOut(auth);
 
-
-            alert("Invitation accepted successfully");
+            alert("Account created successfully!");
 
             navigate("/login");
-
-        } catch (err) {
-            console.log(err);
-            alert(err.message);
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        } finally {
+            setLoading(false);
         }
     };
-    if (!currentEmployees) {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                Loading...
-            </div>
-        );
-    }
-
-    if (currentEmployees?.status === "Active") {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-100">
-                <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-                    <h1 className="text-2xl font-bold text-red-600">
-                        Account Already Created
-                    </h1>
-
-                    <p className="mt-3 text-gray-600">
-                        This invitation has already been accepted.
-                    </p>
-
-                    <button
-                        onClick={() => navigate("/login")}
-                        className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                        Go to Login
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     if (loading) {
         return (
@@ -163,7 +157,10 @@ export default function AcceptInvite() {
                 </div>
 
                 <button
-                    onClick={acceptInvitation}
+                    onClick={() => {
+                        console.log("Button clicked");
+                        acceptInvitation();
+                    }}
                     className="mt-8 w-full py-3 rounded-xl bg-green-600 text-white hover:bg-green-700"
                 >
                     Accept & Create Employee Account

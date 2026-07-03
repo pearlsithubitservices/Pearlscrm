@@ -11,6 +11,7 @@ export default function ProtectedRoute({
         user,
         loading,
     } = useAuth();
+    console.log(user);
 
     const {
         employees,
@@ -33,7 +34,7 @@ export default function ProtectedRoute({
 
     // Find logged in employee
     const employee = employees.find(
-        (item) => item.id === user.uid
+        (item) => item.uid === user.id
     );
     console.log(employees);
     // Employee document not found
@@ -57,7 +58,7 @@ export default function ProtectedRoute({
         return (
             <Navigate
                 to={
-                    employeeRole.toLowerCase() === "admin" 
+                    employeeRole.toLowerCase() === "admin"
                         ? "/"
                         : "/employee/dashboard"
                 }

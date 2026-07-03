@@ -11,6 +11,8 @@ import {
     collection,
     addDoc,
     Timestamp,
+    setDoc,
+    doc,
 } from "firebase/firestore";
 
 import { db } from '../lib/firebase';
@@ -32,6 +34,7 @@ import {
     Locate,
     X
 } from 'lucide-react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function Createemployee({ onClose }) {
 
@@ -81,6 +84,7 @@ export default function Createemployee({ onClose }) {
                 isOnline: false,
                 status: "Pending",
             });
+
             await fetch("http://localhost:5000/api/email/invite", {
                 method: "POST",
                 headers: {
@@ -101,7 +105,7 @@ export default function Createemployee({ onClose }) {
 
         } catch (error) {
             console.error(error);
-            alert("Failed to add employee");
+            alert(error.message);
         }
     };
     //HANDLE EMPLOYEES 
