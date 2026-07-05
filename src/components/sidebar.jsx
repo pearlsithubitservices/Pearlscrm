@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import {
@@ -19,137 +19,162 @@ import {
   Mail,
   FolderOpen,
   Speaker,
+  Notebook,
+  NotebookPenIcon,
+  Landmark,
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 import { Clock3 } from 'lucide-react';
 import { useIndustry } from '../context/IndustryContext';
 import { motion } from 'framer-motion';
+import useEmployees from '../Hooks/useEmployees';
 
 export default function Sidebar() {
 
   const { user, logout } = useAuth();
   const { config } = useIndustry();
 
- 
+
 
   const mainItems = [
-  {
-    name: 'Dashboard',
-    icon: BarChart3,
-    path: '/',
-  },
+    {
+      name: 'Dashboard',
+      icon: BarChart3,
+      path: '/',
+    },
 
-  {
-    name: config.labels.leads,
-    icon: Users,
-    path: '/leads',
-  },
+    {
+      name: config.labels.leads,
+      icon: Users,
+      path: '/leads',
+    },
 
-  {
-    name: 'Tasks',
-    icon: CheckSquare,
-    path: '/tasks',
-  },
+    {
+      name: 'Tasks',
+      icon: CheckSquare,
+      path: '/tasks',
+    },
 
-  {
-    name: 'Follow - ups',
-    icon: CalendarDays,
-    path: '/follow-ups',
-  },
-   {
-    name: 'Projects',
-    icon: FolderOpen,
-    path: '/projects',
-  },
-{
-  name: 'Attendance Management',
-  icon: Clock3,
-  path: '/attendance-management',
-},
-{
-  name: 'Communication',
-  icon: Speaker,
-  path: '/communication',
-},
-// {
-//   name: 'Meetings',
-//   icon: CalendarDays,
-//   path: '/meetings',
-// },
+    {
+      name: 'Follow - ups',
+      icon: CalendarDays,
+      path: '/follow-ups',
+    },
+    {
+      name: 'Projects',
+      icon: FolderOpen,
+      path: '/projects',
+    },
+    {
+      name: 'Attendance Management',
+      icon: Clock3,
+      path: '/attendance-management',
+    },
+    {
+      name: 'Communication',
+      icon: Speaker,
+      path: '/communication',
+    },
+    {
+      name: 'LeaveManagement',
+      icon: NotebookPenIcon,
+      path: '/leave',
+    },
+    {
+      name: 'Payroll & Benefits',
+      icon: Landmark,
+      path: '/admin-payroll',
+    },
+    // {
+    //   name: 'Meetings',
+    //   icon: CalendarDays,
+    //   path: '/meetings',
+    // },
 
-// {
-//   name: 'Internal Chat',
-//   icon: MessageSquare,
-//   path: '/chat',
-// },
+    // {
+    //   name: 'Internal Chat',
+    //   icon: MessageSquare,
+    //   path: '/chat',
+    // },
 
-// {
-//   name: 'Files & Documents',
-//   icon: FolderOpen,
-//   path: '/files',
-// },
+    // {
+    //   name: 'Files & Documents',
+    //   icon: FolderOpen,
+    //   path: '/files',
+    // },
 
-// {
-//   name: 'Analytics',
-//   icon: BarChart3,
-//   path: '/analytics',
-// },
-];
+    // {
+    //   name: 'Analytics',
+    //   icon: BarChart3,
+    //   path: '/analytics',
+    // },
+  ];
 
-const manageItems = [
-  /*{
-    name: 'Courses',
-    icon: BookOpen,
-    path: '/courses',
-  },*/
+  const manageItems = [
+    /*{
+      name: 'Courses',
+      icon: BookOpen,
+      path: '/courses',
+    },*/
 
-  {
-    name: 'Client Management',
-    icon: CircleUser,
-    path: '/clientmanagement',
-  },
-  {
-    name: 'Employee Management',
-    path: '/employees',
-    icon: Users,
-  },
+    {
+      name: 'Client Management',
+      icon: CircleUser,
+      path: '/clientmanagement',
+    },
+    {
+      name: 'Employee Management',
+      path: '/employees',
+      icon: Users,
+    },
 
-  {
-    name: 'Payments',
-    icon: CreditCard,
-    path: '/payments',
-  },
+    {
+      name: 'Payments',
+      icon: CreditCard,
+      path: '/payments',
+    },
 
-  {
-    name: 'Reports',
-    icon: FileText,
-    path: '/reports',
-  },
-//   {
-//   name: 'HR Management',
-//   icon: UserCircle,
-//   path: '/hr-management',
-// },
+    {
+      name: 'Reports',
+      icon: FileText,
+      path: '/reports',
+    },
+    //   {
+    //   name: 'HR Management',
+    //   icon: UserCircle,
+    //   path: '/hr-management',
+    // },
 
-// {
-//   name: 'Role Management',
-//   icon: Briefcase,
-//   path: '/roles',
-// },
+    // {
+    //   name: 'Role Management',
+    //   icon: Briefcase,
+    //   path: '/roles',
+    // },
 
-// {
-//   name: 'Notifications',
-//   icon: Bell,
-//   path: '/notifications',
-// },
+    // {
+    //   name: 'Notifications',
+    //   icon: Bell,
+    //   path: '/notifications',
+    // },
 
-// {
-//   name: 'Email Center',
-//   icon: Mail,
-//   path: '/email-center',
-// },
-];
+    // {
+    //   name: 'Email Center',
+    //   icon: Mail,
+    //   path: '/email-center',
+    // },
+  ];
+  const { employees } = useEmployees();
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = {
+        name: employee.name,
+        role: employee.role || employee.employeeRole
+      }
+      return map;
+    }, {});
+  }, [employees]);
+
 
   return (
 
@@ -163,7 +188,7 @@ const manageItems = [
 
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
 
-           <img src={logo} alt='logo' className='w-full h-full rounded-full'/>
+            <img src={logo} alt='logo' className='w-full h-full rounded-full' />
 
           </div>
 
@@ -190,10 +215,9 @@ const manageItems = [
                 className={({ isActive }) =>
                   `
                   flex items-center gap-3 px-1 py-3 rounded-xl text-[14px] transition-all duration-300
-                  ${
-                    isActive
-                      ? 'bg-[#2563a9] text-white font-semibold'
-                      : 'text-white hover:bg-white/5 hover:text-white'
+                  ${isActive
+                    ? 'bg-[#2563a9] text-white font-semibold'
+                    : 'text-white hover:bg-white/5 hover:text-white'
                   }
                   `
                 }
@@ -228,10 +252,9 @@ const manageItems = [
                 className={({ isActive }) =>
                   `
                   flex items-center gap-3 px-1 py-3 rounded-xl text-[15px] transition-all duration-300
-                  ${
-                    isActive
-                      ? 'bg-[#2563a9] text-white '
-                      : 'text-white hover:bg-white/5 '
+                  ${isActive
+                    ? 'bg-[#2563a9] text-white '
+                    : 'text-white hover:bg-white/5 '
                   }
                   `
                 }
@@ -246,18 +269,18 @@ const manageItems = [
             ))}
 
             {/* LOGOUT */}
-        <button
-          onClick={() => logout()}
-          className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
-        >
+            <button
+              onClick={() => logout()}
+              className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
+            >
 
-          <LogOut className="w-4 h-4 mb-4" />
+              <LogOut className="w-4 h-4 mb-4" />
 
-          <span className="text-sm mb-4 ">
-            Log out
-          </span>
+              <span className="text-sm mb-4 ">
+                Log out
+              </span>
 
-        </button>
+            </button>
 
           </div>
 
@@ -283,18 +306,18 @@ const manageItems = [
           <div className="min-w-0">
 
             <h3 className="font-semibold text-sm truncate">
-              {user?.displayName || 'Ragavi M'}
+              {employeeMap[user?.uid]?.name || user?.displayName || 'Ragavi M'}
             </h3>
 
             <p className="text-xs text-white/80 truncate">
-              Admin - Education
+              {employeeMap[user?.uid]?.role} - Education
             </p>
 
           </div>
 
         </div>
 
-        
+
 
       </div>
 

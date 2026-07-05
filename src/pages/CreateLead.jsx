@@ -8,7 +8,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
-import { Phone, Users, IndianRupee, Globe, Calendar, RefreshCcwIcon, Repeat, Cross, X } from "lucide-react";
+import { Phone, Users, IndianRupee, Globe, Calendar, RefreshCcwIcon, Repeat, Cross, X, Mail } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   collection,
@@ -19,6 +19,7 @@ import {
 import { db } from '../lib/firebase';
 
 import InputField from '../components/InputField';
+import { useAuth } from '../context/AuthContext';
 
 export default function CreateLead({ onClose, fetchleads }) {
 
@@ -28,6 +29,7 @@ export default function CreateLead({ onClose, fetchleads }) {
   const [employees,
     setEmployees] =
     useState([]);
+  const { user } = useAuth();
 
   const [lead, setLead] = useState({
     name: '',
@@ -45,6 +47,7 @@ export default function CreateLead({ onClose, fetchleads }) {
     priority: 'Warm',
     followUpCount: 0,
     notes: '',
+    email: '',
   });
 
   useEffect(() => {
@@ -121,6 +124,7 @@ export default function CreateLead({ onClose, fetchleads }) {
           headers: {
             "Content-Type": "application/json"
           },
+
           body: JSON.stringify({
             ...lead,
 
@@ -208,6 +212,23 @@ export default function CreateLead({ onClose, fetchleads }) {
           onChange={handleChange}
           placeholder="New"
           Icon={Activity}
+          type='select'
+          options={
+            [
+              {
+                label: "New",
+                value: "New",
+              },
+              {
+                label: "Interested",
+                value: "Interested",
+              },
+              {
+                label: "Converted",
+                value: "Converted",
+              }
+            ]
+          }
         />
 
         <InputField
@@ -257,6 +278,15 @@ export default function CreateLead({ onClose, fetchleads }) {
 
       </div>
       <div className='mt-2'>
+        <InputField
+          label="E-Mail"
+          name="email"
+          value={lead.email}
+          onChange={handleChange}
+          placeholder="abc@gmail.com"
+          Icon={Mail}
+          type='email'
+        />
         <label className="font-bold text-[#0b2b57] mt-2">
           Lead Description
         </label>

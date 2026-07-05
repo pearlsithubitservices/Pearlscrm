@@ -19,7 +19,7 @@ import {
 
 import { db } from "../lib/firebase.js";
 
-export default function ProjectForm({ onClose }) {
+export default function ProjectForm({ onClose, fetchProjects }) {
   const [project, setProject] = useState({
     company: "",
     companylocation: "",
@@ -113,6 +113,7 @@ console.log("name:", employees[0]?.name);
         );
 
         alert("Project Added Successfully");
+        await fetchProjects();
 
         onClose();
 

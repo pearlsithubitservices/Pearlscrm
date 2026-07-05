@@ -1,7 +1,7 @@
 const express = require('express');
 const Holiday = require('../models/LeaveModels/Holidays')
 
-const multer =require('multer');
+const multer = require('multer');
 const XLSX = require('xlsx');
 
 const upload = multer({
@@ -52,6 +52,67 @@ router.get("/", async (req, res) => {
 });
 
 
+//UPDATE HOLIDAY
+router.put("/:id", async (req, res) => {
+  try {
+    const updatedHoliday = await Holiday.findByIdAndUpdate(
+      req.params.id,
+      {
+        holidayName: req.body.holidayName,
+        holidayDate: req.body.holidayDate,
+        holidayType: req.body.holidayType,
+        description: req.body.description,
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedHoliday) {
+      return res.status(404).json({
+        success: false,
+        message: "Holiday not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      holiday: updatedHoliday,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+//DELETE HOLIDAY
+router.delete("/:id", async (req, res) => {
+  try {
+    console.log("DELETE HIT:", req.params.id);
+    const deletedHoliday = await Holiday.findByIdAndDelete(
+      req.params.id
+    );
+
+    if (!deletedHoliday) {
+      return res.status(404).json({
+        success: false,
+        message: "Holiday not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Holiday deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+
 router.post(
   "/bulk-upload",
   upload.single("file"),
@@ -88,4 +149,4 @@ router.post(
   }
 );
 
-module.exports=router;
+module.exports = router;

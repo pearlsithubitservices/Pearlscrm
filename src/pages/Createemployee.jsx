@@ -8,9 +8,11 @@ import {
 } from 'react-router-dom';
 
 import {
-  collection,
-  addDoc,
-  Timestamp,
+    collection,
+    addDoc,
+    Timestamp,
+    setDoc,
+    doc,
 } from "firebase/firestore";
 
 import { db } from '../lib/firebase';
@@ -32,6 +34,7 @@ import {
     Locate,
     X
 } from 'lucide-react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function Createemployee({ onClose }) {
 
@@ -67,26 +70,42 @@ export default function Createemployee({ onClose }) {
 
             dueDate: '',
 
+            employeeDepartment: '',
+
         });
 
 
-    
+
     const addEmployees = async () => {
         try {
-            await addDoc(collection(db, "employees"), {
+            const docRef = await addDoc(collection(db, "employees"), {
                 ...employees,
                 createdAt: Timestamp.now(),
                 isOnline: false,
+                status: "Pending",
             });
 
-            alert("Employee added successfully");
+            await fetch("http://localhost:5000/api/email/invite", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id: docRef.id,
+                    name: employees.employeeName,
+                    email: employees.email,
+                    role: employees.employeeRole,
+                }),
+            });
+
+            alert("Invitation Sent");
 
             onClose();
             navigate("/employees");
 
         } catch (error) {
             console.error(error);
-            alert("Failed to add employee");
+            alert(error.message);
         }
     };
     //HANDLE EMPLOYEES 
@@ -169,6 +188,13 @@ export default function Createemployee({ onClose }) {
                 onChange={handleEmployee}
                 placeholder="Enter the Employee name..."
             />
+            <InputField
+                label="Employee Department"
+                name="employeeDepartment"
+                value={employees.employeeDepartment}
+                onChange={handleEmployee}
+                placeholder="Enter the Employee Department..."
+            />
 
             <div className="mt-5">
                 <InputField
@@ -177,6 +203,17 @@ export default function Createemployee({ onClose }) {
                     value={employees.employeeRole}
                     onChange={handleEmployee}
                     placeholder="Enter the Employee role"
+                    type='select'
+                    options={[
+                        {
+                            value: "employee",
+                            label: "Employee"
+                        },
+                        {
+                            value: "admin",
+                            label: "Admin"
+                        },
+                    ]}
                 />
 
 

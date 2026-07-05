@@ -33,6 +33,7 @@ export default function InputField({
 
   return (
     <div className={className}>
+
       <label className="block text-[#0b2b57] font-bold mb-2">
         {label}
       </label>
@@ -51,11 +52,9 @@ export default function InputField({
             name={name}
             value={value}
             onChange={onChange}
-            className="w-full outline-none bg-transparent text-gray-500"
-            disabled={disabled}
-            required
+            className="border rounded px-3 py-2 w-full"
           >
-            <option value="">{placeholder}</option>
+            <option value="">Select {label}</option>
 
             {Array.isArray(options) &&
               options.map((opt, index) => (

@@ -179,6 +179,112 @@ export default function useLeave() {
     }
   };
 
+  //ADD HOLIDAYS
+  const addHoliday = async (formData) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        "http://localhost:5000/api/holidays",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to add holiday");
+      }
+
+      setHolidays((prev) => [data.holiday, ...prev]);
+
+      return { success: true, data: data.holiday };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //UPDATE HOLIDAYS
+
+  const updateHoliday = async (id, formData) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `http://localhost:5000/api/holidays/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update holiday");
+      }
+
+      setHolidays((prev) =>
+        prev.map((h) =>
+          h._id === id ? data.holiday : h
+        )
+      );
+
+      return { success: true, data: data.holiday };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //DELETE HOLIDAYS
+
+  const deleteHoliday = async (id) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `http://localhost:5000/api/holidays/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete holiday");
+      }
+
+      setHolidays((prev) =>
+        prev.filter((h) => h._id !== id)
+      );
+
+      return { success: true };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
 
 
@@ -240,7 +346,9 @@ export default function useLeave() {
     error,
     getHolidays,
     holidays,
-
+    addHoliday,
+    updateHoliday,
+    deleteHoliday,
 
     updateLeaveStatus,
   };

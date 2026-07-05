@@ -27,6 +27,7 @@ import {
   collection,
   onSnapshot,
   getDocs,
+  orderBy,
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
@@ -40,12 +41,12 @@ import useTaskfilter from '../Hooks/useTaskfilter.js'
 export default function Tasks() {
   const [employees, setEmployees] =
     useState([]);
- 
+
 
   const [tasks, setTasks] =
     useState([]);
-  
- 
+
+
   const [search, setSearch] =
     useState('');
 
@@ -62,7 +63,7 @@ export default function Tasks() {
       return map;
     }, {});
   }, [employees]);
- 
+
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 5;
@@ -71,7 +72,7 @@ export default function Tasks() {
   const currentFiles = filterdata.slice(firstIndex, lastIndex);
   const totalPages = Math.ceil(filterdata.length / filesPerPage);
 
-
+console.log(tasks);
 
 
   const today = new Date();
@@ -96,6 +97,7 @@ export default function Tasks() {
       onSnapshot(
 
         collection(db, 'tasks'),
+       // orderBy("createdAt", "desc"),
 
         (snapshot) => {
 
@@ -106,6 +108,10 @@ export default function Tasks() {
             taskList.push({
               id: doc.id,
               ...doc.data(),
+            });
+
+            taskList.sort((a, b) => {
+              return b.createdAt.seconds - a.createdAt.seconds;
             });
 
           });
@@ -312,7 +318,7 @@ export default function Tasks() {
                 const employeename = employees.find(
                   (emp) => emp.uid === task.assignedEmployee
                 );
-               
+
                 const employeeByname = employees.find(
                   (emp) => emp.uid === task.assignedBy
                 );
@@ -344,7 +350,7 @@ export default function Tasks() {
                         </h1>
 
                         <p className="mt-1 text-lg md:text-xl">
-                          {task.title || " Redesign onboarding flow for enterprise clients"}
+                          {task.title || " "}
                         </p>
 
                       </div>
@@ -386,7 +392,7 @@ export default function Tasks() {
                         </div>
                         <div className='overflow-hidden w-[180px]'>
                           <p className="text-gray-500 text-md mr-2 overflow-hidden ">
-                            Assigned by :{employeeMap[task.assignedEmployee] || " Ragavi"}
+                            Assigned by :{employeeMap[task.assignedBy] || " Ragavi"}
 
                           </p>
                         </div>

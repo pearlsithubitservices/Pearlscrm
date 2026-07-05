@@ -10,8 +10,7 @@ const leadRoutes = require("./routes/leadRoutes");
 const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-const attendanceRoutes =
-  require("./routes/AttendanceRoutes");
+const attendanceRoutes = require("./routes/AttendanceRoutes");
 const ProjectsRoutes = require("./routes/ProjectsRoutes");
 const ClientRoutes = require("./routes/ClientRoutes");
 const EmployeeRoutes = require('./routes/EmployeeRoutes');
@@ -19,6 +18,9 @@ const PaymentRoutes = require('./routes/PaymentRoutes');
 const LeaveRoute = require('./routes/LeaveRoute');
 const HolidayRoute = require('./routes/HolidayRoute');
 const ReimbursementRoutes = require('./routes/ReimbursementRoutes');
+const EmailRoutes = require('./routes/EmailRoutes');
+const ReimbursementPolicyRoutes = require('./routes/ReimbursementPolicyroutes');
+const TaxDocumentRoutes = require('./routes/TaxDocumentsRoutes');
 
 const EmpAttendanceRoutes = require('./routes/EmpAttendanceRoutes');
 const AnnouncementSchema = require('./routes/Announcements');
@@ -34,8 +36,8 @@ const EmpEnrollment = require('./routes/EnrollmentRoutes');
 const EmpCourse = require('./routes/EmpCourseRoutes');
 const EmpSkillCertification = require('./routes/SkillCertificationRoutes');
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
-const EmpActivityRoutes= require("./routes/TaskActivityRoute")
-const EmpTotalLeave=require('./routes/TotalLeaveRoutes');
+const EmpActivityRoutes = require("./routes/TaskActivityRoute")
+const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
 
 
 
@@ -75,6 +77,7 @@ app.use("/api/payment", PaymentRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
+app.use("/api/email", EmailRoutes);
 
 app.use("/api/empattendancenew", EmpAttendanceRoutes)
 app.use("/api/announcement", AnnouncementSchema);
@@ -90,8 +93,10 @@ app.use("/api/empenrollment", EmpEnrollment);
 app.use("/api/empCourse", EmpCourse);
 app.use("/api/skillscertification", EmpSkillCertification);
 app.use("/api/contribution", EmpContributionRoutes);
-app.use("/api/activity",EmpActivityRoutes);
+app.use("/api/activity", EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
+app.use('/api/reimbursementpolicy', ReimbursementPolicyRoutes);
+app.use('/api/taxdocuments', TaxDocumentRoutes);
 
 
 app.listen(process.env.PORT, () => {

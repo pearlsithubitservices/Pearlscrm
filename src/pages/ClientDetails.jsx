@@ -9,11 +9,22 @@ import ClientOverview from "../components/ClientDetails/ClientOverview.jsx";
 import ClientProjects from "../components/ClientDetails/ClientProjects.jsx";
 import ClientPayment from "../components/ClientDetails/ClientPayment.jsx";
 import ClientNotes from "../components/ProjectDetails/ProjectNotes.jsx";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import useClients from "../Hooks/useclients.js";
+import { div } from "framer-motion/client";
 
 export default function CompanyOverview() {
 
     const [activeTab, setActiveTab] = useState("Overview");
+    const { clients } = useClients();
+    console.log(clients);
+    const { id } = useParams();
+    console.log(id);
+
+    const selectedClient = clients.filter((item) => (
+        item._id == id
+    ))
+    console.log(selectedClient)
 
     const buttons = [
         "Overview",
@@ -21,9 +32,9 @@ export default function CompanyOverview() {
         "Payments",
         "Notes",
     ];
-    const [button, setButton] = useState("");
+    const [button, setButton] = useState("Call");
     const head = ["Call", "Email", "Notes"];
-    const navigate=useNavigate();
+    const navigate = useNavigate();
 
     // Render Tabs
     const renderTab = () => {
@@ -31,7 +42,8 @@ export default function CompanyOverview() {
         switch (activeTab) {
 
             case "Overview":
-                return <ClientOverview />;
+                return <ClientOverview
+                    clients={selectedClient} />;
 
             case "Projects":
                 return <ClientProjects />;
@@ -47,8 +59,9 @@ export default function CompanyOverview() {
         }
     };
 
+
     return (
-        <>
+        <div className="max-h-screen overflow-y-auto no-scrollbar">
 
             {/* HEADER */}
 
@@ -66,7 +79,7 @@ export default function CompanyOverview() {
                 }}
                 className=" relative border-b border-[#DDD8D1] bg-[#f3f0eb] "
             >
-               
+
 
                 <div className="px-5 pt-5 pb-4">
 
@@ -109,7 +122,7 @@ export default function CompanyOverview() {
                   text-[#0A2C58]
                   "
                                 >
-                                    TechFlow Solutions
+                                    {selectedClient[0]?.companyName}
                                 </h1>
 
                                 <p
@@ -119,7 +132,7 @@ export default function CompanyOverview() {
                   text-[#8B8B8B]
                   "
                                 >
-                                    San Francisco, CA
+                                    {selectedClient[0]?.headquarters}
                                 </p>
 
                             </div>
@@ -141,7 +154,7 @@ export default function CompanyOverview() {
                 font-medium
                 "
                             >
-                                Active
+                                {selectedClient[0]?.priority}
                             </span>
 
                             <span
@@ -155,10 +168,10 @@ export default function CompanyOverview() {
                 font-medium
                 "
                             >
-                                Enterprise
+                                {selectedClient[0]?.status}
                             </span>
                             <span>
-                                 <X size={20} className="bg-red-500 rounded text-white hover:bg-white hover:text-red-700" onClick={()=>navigate(-1)}/>
+                                <X size={20} className="bg-red-500 rounded text-white hover:bg-white hover:text-red-700" onClick={() => navigate(-1)} />
                             </span>
 
                         </div>
@@ -313,6 +326,6 @@ export default function CompanyOverview() {
 
             </div>
 
-        </>
+        </div>
     );
 }

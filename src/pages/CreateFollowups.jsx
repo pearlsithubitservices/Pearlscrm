@@ -76,7 +76,11 @@ export default function CreateFollowups({ onClose, fetchdata }) {
       name: "status",
       type: "select",
       placeholder: "Select Status",
-      options: ["New", "Pending", "Completed"],
+      options: [
+        { label: "New", value: "New" },
+        { label: "Pending", value: "Pending" },
+        { label: "Completed", value: "Completed" },
+      ],
     },
     {
       label: "Lead Schedule",
@@ -90,7 +94,12 @@ export default function CreateFollowups({ onClose, fetchdata }) {
       name: "type",
       type: "select",
       placeholder: "e.g. call, email, website",
-      options: ["Call", "Email", "Website", "Meeting"],
+      options: [
+        { label: "Call", value: "Call" },
+        { label: "Email", value: "Email" },
+        { label: "Website", value: "Website" },
+        { label: "Meeting", value: "Meeting" },
+      ],
     },
     {
       label: "Assigned To",
@@ -151,7 +160,7 @@ export default function CreateFollowups({ onClose, fetchdata }) {
         followupCount: "",
         followupTime: "",
       });
-      fetchdata();
+      await fetchdata();
       onClose();
     } catch (err) {
       console.error(err);
