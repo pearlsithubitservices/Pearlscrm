@@ -84,6 +84,7 @@ export default function CreateLead({ onClose, fetchleads }) {
         });
 
         setEmployees(employeeList);
+        console.log("employees:", employeeList);
 
       } catch (error) {
 

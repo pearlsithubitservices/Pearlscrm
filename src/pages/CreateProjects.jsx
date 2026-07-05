@@ -33,7 +33,8 @@ export default function ProjectForm({ onClose }) {
   });
 
   const [employees, setEmployees] = useState([]);
-
+console.log("first employee:", employees[0]);
+console.log("name:", employees[0]?.name);
   // FETCH EMPLOYEES
   const fetchEmployees = async () => {
 
@@ -55,6 +56,7 @@ export default function ProjectForm({ onClose }) {
       });
 
       setEmployees(employeeList);
+      console.log("employees:", employeeList);
 
     } catch (error) {
 
@@ -272,7 +274,7 @@ export default function ProjectForm({ onClose }) {
                   value={emp.id}
                 >
 
-                  {emp.name}
+                 {JSON.stringify(emp.name)}
 
                 </option>
 

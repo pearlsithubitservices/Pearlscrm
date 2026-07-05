@@ -99,6 +99,7 @@ export default function CreateTask({ onClose }) {
         });
 
         setEmployees(employeeList);
+        console.log("employees:", employeeList);
 
       } catch (error) {
 
