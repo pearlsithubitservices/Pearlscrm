@@ -22,6 +22,7 @@ import {
   Notebook,
   NotebookPenIcon,
   Landmark,
+  ChartNoAxesColumnIncreasingIcon,
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -85,6 +86,11 @@ export default function Sidebar() {
       name: 'Payroll & Benefits',
       icon: Landmark,
       path: '/admin-payroll',
+    },
+    {
+      name: 'Performance & Growth',
+      icon: ChartNoAxesColumnIncreasingIcon,
+      path: '/admin-performance',
     },
     // {
     //   name: 'Meetings',
@@ -168,12 +174,13 @@ export default function Sidebar() {
   const employeeMap = useMemo(() => {
     return employees.reduce((map, employee) => {
       map[employee.uid] = {
-        name: employee.name,
+        name: employee.name || employee.employeeName,
         role: employee.role || employee.employeeRole
       }
       return map;
     }, {});
   }, [employees]);
+  console.log(user);
 
 
   return (

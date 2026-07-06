@@ -173,7 +173,7 @@ export default function CompanyDirectory() {
                       className="w-16 h-16 rounded-2xl object-cover"
                     /> */}
                     <span className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md">
-                      {emp.name.charAt(0).toUpperCase()}
+                      {emp?.name?.charAt(0)?.toUpperCase() || emp?.employeeName?.charAt(0)?.toUpperCase()}
                     </span>
                     <span
                       className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${emp.status}`}
@@ -181,12 +181,12 @@ export default function CompanyDirectory() {
                   </div>
 
                   <span className="text-slate-500">
-                    ID: {emp.id.slice(0, 5)}
+                    ID: {emp?.id?.slice(0, 5)}
                   </span>
                 </div>
 
                 <h3 className="text-xl font-bold text-[#1f5fa8] mt-4 ">
-                  {emp.name}
+                  {emp?.name || emp.employeeName}
                 </h3>
 
                 <p className="font-bold">{emp.role}</p>

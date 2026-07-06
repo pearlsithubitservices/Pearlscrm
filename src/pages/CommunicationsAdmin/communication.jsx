@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users,  } from "lucide-react";
+import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users, } from "lucide-react";
 
 
 import { div } from "framer-motion/client";
@@ -9,14 +9,16 @@ import Notification from "./Announcements/Notification.jsx"
 import HelpDesk from './HelpDesk/HelpDesk.jsx'
 //import RaiseTicket from "./RaiseTicket.js";
 import CompanyDirectory from "./Directory/CompanyDirectory.jsx";
-import FeedbackPage from "./Feedback/Feedback.jsx";
+
 import useAnnouncement from "../../Hooks/useAnnouncement.js";
+import Feedbackadmin from "./Feedback/Feedbackadmin.jsx";
+import EmployeeFeedback from "./Feedback/EmployeeFeedback.jsx";
 
 
 const Communication = () => {
   const [activeTab, setActiveTab] = useState("Announcements");
   const [form, setForm] = useState(false);
-  const{announcements}=useAnnouncement();
+  const { announcements } = useAnnouncement();
 
 
   const stats = [
@@ -47,8 +49,8 @@ const Communication = () => {
 
 
             {/* <PayslipsTable /> */}
-            <CompanyAnnouncements/>
-            <Notification/>
+            <CompanyAnnouncements />
+            <Notification />
           </motion.div>
         );
 
@@ -61,7 +63,7 @@ const Communication = () => {
             className=" rounded-xl  p-1"
           >
 
-            <HelpDesk/>
+            <HelpDesk />
           </motion.div>
         );
 
@@ -73,7 +75,7 @@ const Communication = () => {
             animate={{ opacity: 1, y: 0 }}
             className=" rounded-xl p-2 "
           >
-            <CompanyDirectory/>
+            <CompanyDirectory />
           </motion.div>
         );
 
@@ -86,7 +88,8 @@ const Communication = () => {
             className=" rounded-xl "
           >
             <div className="">
-              <FeedbackPage/>
+              <Feedbackadmin />
+              <EmployeeFeedback />
             </div>
           </motion.div>
         );

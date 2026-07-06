@@ -76,6 +76,7 @@ import Leave from './pages/LeaveAdmin/LeaveManagement.jsx'
 import AdminPayroll from './pages/Payroll/PayrollDashboard.jsx'
 import AcceptInvite from './components/AcceptInvite.jsx'
 import PayslipAdmin from './pages/Payroll/PayslipAdmin.jsx';
+import Performance from './pages/Performance & Growth/Performance.jsx'
 
 // EMPLOYEE PAGES
 import EmpMyprofile from './EmployeePages/Profile/Myprofile.jsx';
@@ -100,6 +101,7 @@ import EmpLead from './EmployeePages/Leads/Lead.jsx'
 import FollowupDetails from './pages/FollowupDetails.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx'
 import ProtectedRoute from './components/ProtectedRoutes.jsx';
+import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
 // PLACEHOLDER
 
 function PlaceholderPage({
@@ -284,6 +286,18 @@ export default function App() {
                   <PayslipAdmin />
                 }
               />
+              <Route
+                path="/admin-performance"
+                element={
+                  <PerformanceList />
+                }
+              />
+              <Route
+                path="/admin-performance/:id"
+                element={
+                  <Performance />
+                }
+              />
 
               <Route
                 path="/settings"
@@ -293,6 +307,7 @@ export default function App() {
                   />
                 }
               />
+
 
 
             </Route>

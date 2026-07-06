@@ -1,82 +1,89 @@
 import React from "react";
-import {
-  ArrowLeftCircleIcon,
-  ArrowRightCircleIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 const Pagination = ({
   currentPage,
   setCurrentPage,
   totalPages,
 }) => {
+  const getPages = () => {
+    const pages = [];
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1, 2, 3, 4, 5);
+
+      if (totalPages > 6) {
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
   return (
-    <div className="flex items-center justify-center gap-2 mt-10 flex-wrap">
+    <div className="border-t border-gray-200 py-5 flex justify-center">
 
-      {/* PREVIOUS */}
-      <button
-        onClick={() =>
-          setCurrentPage(currentPage - 1)
-        }
-        disabled={currentPage === 1}
-        className="
-          w-10
-          h-10
-          flex
-          items-center
-          justify-center
-          rounded-lg
-          text-blue-700
-          disabled:text-gray-300
-        "
-      >
-        <ArrowLeftCircleIcon size={20} />
-      </button>
+      <div className="flex items-center gap-2">
 
-      {/* PAGE NUMBERS */}
-      {[...Array(totalPages)].map((_, index) => (
+        {/* Previous */}
 
-        <button
-          key={index}
-          onClick={() =>
-            setCurrentPage(index + 1)
-          }
-          className={`
-            w-6
-            h-6
-            rounded-full
-            font-semibold
-            transition-all
-            ${
-              currentPage === index + 1
-                ? "bg-[#2563a9] text-white"
-                : "text-gray-500 hover:bg-gray-200"
-            }
-          `}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(currentPage - 1)}
+          className="text-gray-400 hover:text-[#173D6A] disabled:opacity-40"
         >
-          {index + 1}
-        </button>
+          <ChevronLeft size={20} />
+        </motion.button>
 
-      ))}
+        {/* Page Numbers */}
 
-      {/* NEXT */}
-      <button
-        onClick={() =>
-          setCurrentPage(currentPage + 1)
-        }
-        disabled={currentPage === totalPages}
-        className="
-          w-10
-          h-10
-          flex
-          items-center
-          justify-center
-          rounded-full
-          text-blue-700
-          disabled:text-gray-300
-        "
-      >
-        <ArrowRightCircleIcon size={20} />
-      </button>
+        {getPages().map((page, index) =>
+          page === "..." ? (
+            <span
+              key={index}
+              className="px-2 text-gray-500"
+            >
+              ...
+            </span>
+          ) : (
+            <motion.button
+              key={page}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setCurrentPage(page)}
+              className={`w-8 h-8 rounded-md text-sm font-medium transition
+                ${
+                  currentPage === page
+                    ? "bg-[#E8F0FE] text-[#3B82F6]"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+            >
+              {page}
+            </motion.button>
+          )
+        )}
+
+        {/* Next */}
+
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(currentPage + 1)}
+          className="text-gray-400 hover:text-[#173D6A] disabled:opacity-40"
+        >
+          <ChevronRight size={20} />
+        </motion.button>
+
+      </div>
 
     </div>
   );

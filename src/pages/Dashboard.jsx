@@ -45,7 +45,7 @@ export default function Dashboard() {
   const employeeMap = useMemo(() => {
     return employees.reduce((map, employee) => {
       map[employee.uid] = {
-        name: employee.name,
+        name: employee.name || employee.displayName || employee.employeeName,
         role: employee.role || employee.employeeRole
       }
       return map;

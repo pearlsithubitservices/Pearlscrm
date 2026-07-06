@@ -33,9 +33,15 @@ export default function ProtectedRoute({
     }
 
     // Find logged in employee
-    const employee = employees.find(
-        (item) => item.uid === user.id
-    );
+    console.log("Auth User:", user);
+    console.log("Auth UID:", user.uid);
+    console.log("Employees:", employees);
+
+    const employee = employees.find(item => item.uid === user.uid);
+
+    console.log("Matched Employee:", employee);
+    console.log("Employee Role:", employee?.role);
+    console.log("Required Role:", role);
     console.log(employees);
     // Employee document not found
     if (!employee) {

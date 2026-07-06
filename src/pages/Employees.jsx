@@ -131,10 +131,36 @@ export default function ClientManagement() {
   ];
   const [users, setUsers] = useState();
   console.log(users);
-  
-  
+  const user = users?.find(
+    (user) => user?.email === "vishnuravichandran007@gmail.com"
+  );
+  console.log(user);
 
-  
+  // useEffect(() => {
+  //   const deleteUserByEmail = async () => {
+  //     try {
+  //       const snapshot = await getDocs(collection(db, "users"));
+
+  //       const userDoc = snapshot.docs.find(
+  //         (doc) => doc.data().email === "vishnuravichandran007@gmail.com"
+  //       );
+
+  //       if (!userDoc) {
+  //         console.log("User not found");
+  //         return;
+  //       }
+
+  //       await deleteDoc(doc(db, "users", userDoc.id));
+
+  //       console.log("User deleted successfully");
+  //     } catch (error) {
+  //       console.error("Error deleting user:", error);
+  //     }
+  //   };
+
+  //   deleteUserByEmail();
+  // }, []);
+
   
   const fetchUsers = async () => {
     setLoading(true);

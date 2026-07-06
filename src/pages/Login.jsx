@@ -235,6 +235,7 @@ export default function Login() {
             password
           );
 
+          console.log(auth.currentUser);
           const currentUser = auth.currentUser;
 
           if (!currentUser) {
@@ -243,7 +244,9 @@ export default function Login() {
           }
 
           const userRef = doc(db, "users", currentUser.uid);
+          console.log(userRef);
           const userSnap = await getDoc(userRef);
+          console.log(userSnap);
 
           if (
             !userSnap.exists()
@@ -261,6 +264,7 @@ export default function Login() {
 
           const userData =
             userSnap.data() || {};
+          console.log(userData);
 
           // Send Login Email
           await fetch("http://localhost:5000/api/email/login", {
@@ -385,18 +389,15 @@ export default function Login() {
 
           // NAVIGATE
 
-          if (
-            role === 'Admin'
-          ) {
+          console.log("Role:", userData.role);
+          console.log("Role === Admin ?", userData.role === "Admin");
 
-            navigate('/');
-
+          if (userData.role === "Admin") {
+            console.log("Admin navigation");
+            navigate("/");
           } else {
-
-            navigate(
-              '/employee/dashboard'
-            );
-
+            console.log("Employee navigation");
+            navigate("/employee/dashboard");
           }
 
         }
