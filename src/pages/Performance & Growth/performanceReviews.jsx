@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
     Search,
@@ -8,59 +8,39 @@ import {
     Star,
 } from "lucide-react";
 import useReview from "../../Hooks/useReview";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import AddReviewForm from "./AddReviewForm";
+import EmployeeReviewPage from "./EmployeeReviewPage";
+import { useLocation } from "react-router-dom";
 
-export default function PerformanceReviews() {
-    // Sample Data
-    // const reviews = [
-    //     {
-    //         id: 1,
-    //         employee: "Sandra Blake",
-    //         role: "HR Manager",
-    //         category: "Annual Review",
-    //         title: "Meets Expectations",
-    //         rating: 4.2,
-    //         reviewDate: "Dec 15, 2025",
-    //         avatar:
-    //             "https://randomuser.me/api/portraits/women/44.jpg",
-    //         description:
-    //             "Ravi has shown outstanding growth this year. His technical depth, communication, and initiative on the mobile app project were commendable. Encourage him to take on more cross-team leadership.",
-    //     },
-    //     {
-    //         id: 2,
-    //         employee: "Rahul Nair",
-    //         role: "Sales Manager",
-    //         category: "Mid-Year Review",
-    //         title: "Meets Expectations",
-    //         rating: 3.2,
-    //         reviewDate: "Dec 15, 2025",
-    //         avatar:
-    //             "https://randomuser.me/api/portraits/men/32.jpg",
-    //         description:
-    //             "Ravi has shown outstanding growth this year. His technical depth, communication, and initiative on the mobile app project were commendable. Encourage him to take on more cross-team leadership.",
-    //     },
-    //     {
-    //         id: 3,
-    //         employee: "Sandra Blake",
-    //         role: "Product Manager",
-    //         category: "Annual Review",
-    //         rating: 4.2,
-    //         title: "Meets Expectations",
-    //         reviewDate: "Dec 15, 2025",
-    //         avatar:
-    //             "https://randomuser.me/api/portraits/women/44.jpg",
-    //         description:
-    //             "Ravi has shown outstanding growth this year. His technical depth, communication, and initiative on the mobile app project were commendable. Encourage him to take on more cross-team leadership.",
-    //     },
-    // ];
+export default function PerformanceReviews({ currentUserid }) {
+
 
     const { id } = useParams();
-
-
+    console.log(id);
+    console.log(currentUserid);
+    const [openForm, setOpenForm] = useState(false);
+    const [openReview, setOpenReview] = useState(false);
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All Categories");
+    const [selectedReview, setSelectedReview] = useState("");
     const { review, getReviews } = useReview();
     console.log(review);
+    const location = useLocation();
+    const navigate = useNavigate();
+    useEffect(() => {
+        if (location.state?.isEdit) {
+            console.log("location.state:", location.state);
+            setSelectedReview(location.state.review);
+            setOpenForm(true);
+            setOpenReview(false);
+            navigate(location.pathname, {
+                replace: true,
+                state: {},
+            });
+
+        }
+    }, [location]);
 
     const currentReviews = review.filter((review) => {
         return (
@@ -69,11 +49,12 @@ export default function PerformanceReviews() {
         );
     });
 
+
     console.log(currentReviews);
     const filteredReviews = useMemo(() => {
         return review.filter((review) => {
             const matchesSearch =
-                review?.employee?.toLowerCase()?.includes(search.toLowerCase()) ||
+                review?.employeeName?.toLowerCase()?.includes(search.toLowerCase()) ||
                 review?.title?.toLowerCase()?.includes(search.toLowerCase());
 
             const matchesCategory =
@@ -179,6 +160,7 @@ export default function PerformanceReviews() {
               text-[#314A67]
               font-medium
             "
+                        onClick={() => setOpenForm(true)}
                     >
                         <SquarePen size={18} />
                         Add Review
@@ -213,6 +195,11 @@ export default function PerformanceReviews() {
         shadow-sm
         p-5
       "
+                        onClick={() => {
+                            setOpenReview(true);
+                            setSelectedReview(review)
+                        }
+                        }
                     >
 
                         {/* Top Section */}
@@ -223,7 +210,7 @@ export default function PerformanceReviews() {
 
                             <div className="flex gap-4">
 
-                                <img
+                                {/* <img
                                     src={review.avatar}
                                     alt={review.employee}
                                     className="
@@ -234,16 +221,19 @@ export default function PerformanceReviews() {
               border
               border-gray-200
             "
-                                />
+                                /> */}
+                                <div className=" flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 font-bold text-2xl">
+                                    {review?.employeeName?.charAt(0)?.toUpperCase() || ""}
+                                </div>
 
                                 <div>
 
                                     <h2 className="text-[24px] font-bold text-[#163C67]">
-                                        {review.employee}
+                                        {review?.employeeName || ""}
                                     </h2>
 
                                     <p className="text-[17px] text-gray-600">
-                                        {review.role}
+                                        {review?.employeeDesignation || ""}
                                     </p>
 
                                 </div>
@@ -267,7 +257,7 @@ export default function PerformanceReviews() {
                                                 size={30}
                                                 strokeWidth={2}
                                                 className={
-                                                    star <= Math.floor(review.rating)
+                                                    star <= Math.floor(review?.overallRating || 0)
                                                         ? "text-[#4F8CF8] fill-[#4F8CF8]"
                                                         : "text-[#4F8CF8]"
                                                 }
@@ -276,13 +266,13 @@ export default function PerformanceReviews() {
                                     ))}
 
                                     <span className="ml-3 text-[34px] font-semibold text-[#4F8CF8]">
-                                        {review.rating}
+                                        {review?.overallRating || ""}
                                     </span>
 
                                 </div>
 
                                 <p className="mt-8 text-[17px] text-gray-400">
-                                    {review.reviewDate}
+                                    {new Date(review?.reviewDate).toLocaleDateString()}
                                 </p>
 
                             </div>
@@ -293,28 +283,64 @@ export default function PerformanceReviews() {
 
                         <h3 className="mt-6 text-[20px] font-semibold text-black">
 
-                            {review.title}
+                            {review?.reviewTitle}
 
                             <span className="font-normal">
                                 {" "}
-                                — {review.category}
+                                — {review?.reviewerType || "Normal Review"}
                             </span>
 
                         </h3>
 
                         {/* Description */}
 
-                        <p className="mt-3 text-[18px] leading-7 text-gray-500">
+                        {/* <p className="mt-3 text-[18px] leading-7 text-gray-500">
 
-                            {review.description}
+                            {review?.feedback}
 
-                        </p>
+                        </p> */}
 
                     </motion.div>
 
                 ))}
 
             </div>
+            {openForm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="relative w-full  rounded-2xl  shadow-2xl ">
+                        {/* Close Button */}
+
+
+                        <AddReviewForm
+                            onClose={() => {
+                                setOpenForm(false);
+                                setSelectedReview(null)
+                            }}
+                            getReviews={getReviews}
+                            currentUserid={currentUserid}
+                            review={selectedReview} />
+                    </div>
+                </div>
+            )}
+            {openReview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-2xl bg-white shadow-2xl">
+
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setOpenReview(false)}
+                            className="absolute top-1 right-2 text-gray-500 hover:text-black text-2xl"
+                        >
+                            ✕
+                        </button>
+
+                        <EmployeeReviewPage
+                            onClose={() => setOpenReview(false)}
+                            reviews={selectedReview}
+                            currentUserid={currentUserid} />
+                    </div>
+                </div>
+            )}
 
         </div>
     );

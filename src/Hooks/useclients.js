@@ -14,7 +14,7 @@ export default function useClients() {
 
         try {
             const response = await fetch(
-                "http://localhost:5000/api/clients"
+                "https://pearlscrm.onrender.com/api/clients"
             );
 
             const data = await response.json();

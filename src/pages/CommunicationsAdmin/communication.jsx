@@ -13,18 +13,20 @@ import CompanyDirectory from "./Directory/CompanyDirectory.jsx";
 import useAnnouncement from "../../Hooks/useAnnouncement.js";
 import Feedbackadmin from "./Feedback/Feedbackadmin.jsx";
 import EmployeeFeedback from "./Feedback/EmployeeFeedback.jsx";
+import useEmployees from "../../Hooks/useEmployees.js";
 
 
 const Communication = () => {
   const [activeTab, setActiveTab] = useState("Announcements");
   const [form, setForm] = useState(false);
   const { announcements } = useAnnouncement();
+  const { employees } = useEmployees();
 
 
   const stats = [
     { icon: Megaphone, label: "Announcments", value: announcements.length },
     { icon: MessageCircleMore, label: "Open Tickets", value: "7" },
-    { icon: Users, label: "Employees", value: "₹ 84" },
+    { icon: Users, label: "Employees", value: employees.length },
     { icon: MessageSquareMore, label: "Avg Feedback", value: "80%" },
   ];
 

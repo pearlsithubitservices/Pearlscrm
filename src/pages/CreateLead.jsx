@@ -118,7 +118,8 @@ export default function CreateLead({ onClose, fetchleads }) {
     try {
       console.log(lead);
       const response = await fetch(
-        "http://localhost:5000/api/leads",
+        // "http://localhost:5000/api/leads",
+        "https://pearlscrm.onrender.com/api/leads",
         {
           method: "POST",
           headers: {

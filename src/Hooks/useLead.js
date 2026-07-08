@@ -6,57 +6,47 @@ export default function useLead(id) {
     const [lead, setLead] = useState({});
     const [fulllead, setFullLead] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { user } = useAuth()
+    const { user } = useAuth();
+
+    const BASE_URL = "https://pearlscrm.onrender.com/api/leads";
+    // const BASE_URL = "http://localhost:5000/api/leads"; // For local development
 
     useEffect(() => {
         if (id) {
             fetchLead();
         }
-        fetchfullLead()
-
+        fetchfullLead();
     }, [id]);
 
     const fetchLead = async () => {
-
         try {
-
             setLoading(true);
 
-            const response = await fetch(
-                `http://localhost:5000/api/leads/${id}`
-            );
+            const response = await fetch(`${BASE_URL}/${id}`);
 
             const data = await response.json();
 
             setLead(data);
 
         } catch (error) {
-
             console.log(error);
-
         } finally {
-
             setLoading(false);
-
         }
-
     };
 
-    //UPDATE LEAD
+    // UPDATE LEAD
     const updateLead = async (leadId, updatedData) => {
         try {
             setLoading(true);
 
-            const response = await fetch(
-                `http://localhost:5000/api/leads/${leadId}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(updatedData),
-                }
-            );
+            const response = await fetch(`${BASE_URL}/${leadId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(updatedData),
+            });
 
             const data = await response.json();
 
@@ -64,12 +54,10 @@ export default function useLead(id) {
                 throw new Error(data.message);
             }
 
-            // refresh single lead if editing current
             if (leadId === id) {
                 await fetchLead();
             }
 
-            // refresh full list (optional but good for UI sync)
             await fetchfullLead();
 
             return data;
@@ -81,47 +69,34 @@ export default function useLead(id) {
             setLoading(false);
         }
     };
-    const fetchfullLead =
-        async () => {
 
-            try {
+    const fetchfullLead = async () => {
+        try {
 
-                const response =
-                    await fetch(
-                        'https://pearlscrm.onrender.com/api/leads'
-                    );
+            const response = await fetch(BASE_URL);
 
-                const data =
-                    await response.json();
+            const data = await response.json();
 
-                setFullLead(data);
+            setFullLead(data);
 
-            } catch (error) {
-
-                console.log(error);
-
-            }
-
-            finally {
-                setLoading(false);
-            }
-
-        };
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const addNote = async (leadId, note) => {
         try {
             setLoading(true);
 
-            const response = await fetch(
-                `http://localhost:5000/api/leads/${leadId}/notes`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(note),
-                }
-            );
+            const response = await fetch(`${BASE_URL}/${leadId}/notes`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(note),
+            });
 
             const data = await response.json();
 
@@ -129,12 +104,12 @@ export default function useLead(id) {
                 throw new Error(data.message);
             }
 
-            // Refresh current lead
             if (leadId === id) {
                 await fetchLead();
             }
 
             return data;
+
         } catch (error) {
             console.log(error);
             throw error;
@@ -143,18 +118,14 @@ export default function useLead(id) {
         }
     };
 
-    //DELETE LEAD
-
+    // DELETE LEAD
     const deleteLead = async (leadId) => {
         try {
             setLoading(true);
 
-            const response = await fetch(
-                `http://localhost:5000/api/leads/${leadId}`,
-                {
-                    method: "DELETE",
-                }
-            );
+            const response = await fetch(`${BASE_URL}/${leadId}`, {
+                method: "DELETE",
+            });
 
             const data = await response.json();
 
@@ -162,10 +133,10 @@ export default function useLead(id) {
                 throw new Error(data.message);
             }
 
-            // Refresh all leads after delete
             await fetchfullLead();
 
             return data;
+
         } catch (error) {
             console.log(error);
             throw error;
@@ -174,17 +145,14 @@ export default function useLead(id) {
         }
     };
 
-    //DELETE NOTE
+    // DELETE NOTE
     const deleteNote = async (leadId, noteId) => {
         try {
             setLoading(true);
 
-            const response = await fetch(
-                `http://localhost:5000/api/leads/${leadId}/notes/${noteId}`,
-                {
-                    method: "DELETE",
-                }
-            );
+            const response = await fetch(`${BASE_URL}/${leadId}/notes/${noteId}`, {
+                method: "DELETE",
+            });
 
             const data = await response.json();
 
@@ -193,6 +161,7 @@ export default function useLead(id) {
             }
 
             return data;
+
         } catch (error) {
             console.log(error);
             throw error;
@@ -200,7 +169,6 @@ export default function useLead(id) {
             setLoading(false);
         }
     };
-
 
     return {
         lead,
@@ -213,5 +181,4 @@ export default function useLead(id) {
         deleteNote,
         updateLead,
     };
-
 }

@@ -6,13 +6,19 @@ import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users,
 import { div } from "framer-motion/client";
 import GoalsPage from "./GoalsPage";
 import PerformanceReviews from "./performanceReviews";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import CourseLibrary from "./Training&Learning/CourseLibrary";
+import TrainingHistory from "./Training&Learning/TrainingHistory";
+import Skills from "./Skills&Certifications/Skills";
+import Certifications from "./Skills&Certifications/Certifications";
 
 
 const Performance = () => {
     const [activeTab, setActiveTab] = useState("Goals");
     const [form, setForm] = useState(false);
     const navigate = useNavigate();
+    const { id } = useParams();
+    console.log(id);
 
 
 
@@ -57,7 +63,8 @@ const Performance = () => {
                         className=" rounded-xl  p-1"
                     >
 
-                        <p>Training learning</p>
+                        <CourseLibrary />
+                        <TrainingHistory />
                     </motion.div>
                 );
 
@@ -69,7 +76,8 @@ const Performance = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className=" rounded-xl p-2 "
                     >
-                        <PerformanceReviews />
+                        <PerformanceReviews
+                            currentUserid={id} />
                     </motion.div>
                 );
 
@@ -81,7 +89,8 @@ const Performance = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className=" rounded-xl "
                     >
-                        <p>Skills & Certifications</p>
+                        <Skills />
+                        <Certifications />
                     </motion.div>
                 );
 

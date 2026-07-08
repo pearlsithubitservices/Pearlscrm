@@ -32,7 +32,7 @@ export default function useLeave() {
       };
 
       const response = await fetch(
-        "http://localhost:5000/api/leave",
+        "https://pearlscrm.onrender.com/api/leave",
         {
           method: "POST",
           headers: {
@@ -81,7 +81,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        "http://localhost:5000/api/leave"
+        "https://pearlscrm.onrender.com/api/leave"
       );
 
       const data = await response.json();
@@ -111,7 +111,7 @@ export default function useLeave() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/holidays"
+        "https://pearlscrm.onrender.com/api/holidays"
       );
 
       const data = await response.json();
@@ -147,7 +147,7 @@ export default function useLeave() {
       };
 
       const response = await fetch(
-        `http://localhost:5000/api/leave/${id}`,
+        `https://pearlscrm.onrender.com/api/leave/${id}`,
         {
           method: "PUT",
           headers: {
@@ -186,7 +186,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        "http://localhost:5000/api/holidays",
+        "https://pearlscrm.onrender.com/api/holidays",
         {
           method: "POST",
           headers: {
@@ -221,7 +221,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `http://localhost:5000/api/holidays/${id}`,
+        `https://pearlscrm.onrender.com/api/holidays/${id}`,
         {
           method: "PUT",
           headers: {
@@ -260,7 +260,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `http://localhost:5000/api/holidays/${id}`,
+        `https://pearlscrm.onrender.com/api/holidays/${id}`,
         {
           method: "DELETE",
         }
@@ -296,7 +296,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `http://localhost:5000/api/leave/${id}/status`,
+        `https://pearlscrm.onrender.com/api/leave/${id}/status`,
         {
           method: "PATCH",
           headers: {

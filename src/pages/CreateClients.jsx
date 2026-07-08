@@ -45,7 +45,8 @@ export default function ClientForm({ onClose, fetchClients }) {
     const addClient = async () => {
         try {
             console.log("Adding client:", client);
-            const response = await fetch("http://localhost:5000/api/clients",
+            // const response = await fetch("http://localhost:5000/api/clients",
+            const response = await fetch("https://pearlscrm.onrender.com/api/clients",
                 {
                     method: "POST",
                     headers: {

@@ -214,20 +214,21 @@ export default function GoalsPage() {
 
             <div className="mt-8 space-y-6">
 
-                {filteredGoals.map((goal, index) => (
-                    <motion.div
-                        key={goal._id}
-                        initial={{ opacity: 0, y: 35 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                            duration: 0.45,
-                            delay: index * 0.08,
-                        }}
-                        whileHover={{
-                            y: -3,
-                            scale: 1.01,
-                        }}
-                        className="
+                {filteredGoals.length > 0 ? (
+                    filteredGoals.map((goal, index) => (
+                        <motion.div
+                            key={goal._id}
+                            initial={{ opacity: 0, y: 35 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                                duration: 0.45,
+                                delay: index * 0.08,
+                            }}
+                            whileHover={{
+                                y: -3,
+                                scale: 1.01,
+                            }}
+                            className="
       bg-white
       rounded-2xl
       border
@@ -236,40 +237,40 @@ export default function GoalsPage() {
       px-6
       py-6
     "
-                    >
-                        {/* Top Row */}
+                        >
+                            {/* Top Row */}
 
-                        <div className="flex justify-between items-start">
+                            <div className="flex justify-between items-start">
 
-                            {/* Left */}
+                                {/* Left */}
 
-                            <div>
+                                <div>
 
-                                <h2 className="text-[22px] font-bold text-[#173D6A]">
-                                    {goal?.title || ""}
-                                </h2>
+                                    <h2 className="text-[22px] font-bold text-[#173D6A]">
+                                        {goal?.title || ""}
+                                    </h2>
 
-                                <p className="mt-2 text-[17px]">
+                                    <p className="mt-2 text-[17px]">
 
-                                    <span className="text-black">
-                                        Aligned to :
-                                    </span>
+                                        <span className="text-black">
+                                            Aligned to :
+                                        </span>
 
-                                    <span className="text-[#3A78E0] font-medium">
-                                        {" "}
-                                        {goal.alignedTo}
-                                    </span>
+                                        <span className="text-[#3A78E0] font-medium">
+                                            {" "}
+                                            {goal.alignedTo}
+                                        </span>
 
-                                </p>
+                                    </p>
 
-                            </div>
+                                </div>
 
-                            {/* Right */}
+                                {/* Right */}
 
-                            <div className="flex flex-col items-end gap-5">
+                                <div className="flex flex-col items-end gap-5">
 
-                                <div
-                                    className={`
+                                    <div
+                                        className={`
             flex
             items-center
             gap-2
@@ -280,64 +281,86 @@ export default function GoalsPage() {
             font-medium
 
             ${goal.status === "Completed"
-                                            ? "bg-[#E8EEF7] text-[#163C67]"
-                                            : "bg-[#CFFFD6] text-[#147B3C]"
-                                        }
+                                                ? "bg-[#E8EEF7] text-[#163C67]"
+                                                : "bg-[#CFFFD6] text-[#147B3C]"
+                                            }
           `}
-                                >
-                                    <Circle
-                                        size={10}
-                                        fill="currentColor"
-                                        strokeWidth={0}
-                                    />
+                                    >
+                                        <Circle
+                                            size={10}
+                                            fill="currentColor"
+                                            strokeWidth={0}
+                                        />
 
-                                    {goal.status}
+                                        {goal.status}
+                                    </div>
+
+                                    <p className="text-gray-500 text-lg">
+                                        Due {goal.due}
+                                    </p>
+
                                 </div>
 
-                                <p className="text-gray-500 text-lg">
-                                    Due {goal.due}
+                            </div>
+
+                            {/* Progress */}
+
+                            <div className="mt-8 flex items-center gap-6">
+
+                                <p className="text-[#D79C34] text-[20px] whitespace-nowrap">
+                                    Overall progress
                                 </p>
 
-                            </div>
+                                <div className="flex-1">
 
-                        </div>
+                                    <div className="h-3 rounded-full bg-gray-300 overflow-hidden">
 
-                        {/* Progress */}
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{
+                                                width: `${goal.progress}%`,
+                                            }}
+                                            transition={{
+                                                duration: 1,
+                                                delay: 0.3 + index * 0.15,
+                                            }}
+                                            className="h-full rounded-full bg-[#4B84EA]"
+                                        />
 
-                        <div className="mt-8 flex items-center gap-6">
-
-                            <p className="text-[#D79C34] text-[20px] whitespace-nowrap">
-                                Overall progress
-                            </p>
-
-                            <div className="flex-1">
-
-                                <div className="h-3 rounded-full bg-gray-300 overflow-hidden">
-
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{
-                                            width: `${goal.progress}%`,
-                                        }}
-                                        transition={{
-                                            duration: 1,
-                                            delay: 0.3 + index * 0.15,
-                                        }}
-                                        className="h-full rounded-full bg-[#4B84EA]"
-                                    />
+                                    </div>
 
                                 </div>
 
+                                <span className="text-[#4B84EA] text-[22px] font-semibold">
+                                    {goal.progress}%
+                                </span>
+
                             </div>
 
-                            <span className="text-[#4B84EA] text-[22px] font-semibold">
-                                {goal.progress}%
-                            </span>
-
+                        </motion.div>
+                    ))
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center shadow-sm"
+                    >
+                        <div className="flex justify-center mb-4">
+                            <Search size={56} className="text-gray-300" />
                         </div>
 
+                        <h2 className="text-2xl font-semibold text-gray-700">
+                            No Goals Found
+                        </h2>
+
+                        <p className="mt-2 text-gray-500">
+                            There are no goals matching your current search or filters.
+                        </p>
+
+                       
                     </motion.div>
-                ))}
+
+                )}
 
             </div>
 

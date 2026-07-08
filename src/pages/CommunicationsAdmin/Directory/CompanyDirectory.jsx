@@ -88,7 +88,7 @@ export default function CompanyDirectory() {
     },
   ];
   const { employees } = useEmployees();
-  console.log(employees[0]);
+
   const [activeTab, setACtiveTab] = useState("all");
   const [employeesdata, setEmployeesdata] = useState();
   const [showDetails, setShowDetails] = useState(false);
@@ -109,12 +109,12 @@ export default function CompanyDirectory() {
     setEmployeesdata(filtered);
   };
 
-  const handledetails = (id) => {
-    setShowDetails(true);
+  // const handledetails = (id) => {
+  //   setShowDetails(true);
 
-    const emp = employees.find((e) => e.id === id);
-    setSelectedEmployee(emp);
-  };
+  //   const emp = employees.find((e) => e.id === id);
+  //   setSelectedEmployee(emp);
+  // };
   return (
     <div className="min-h-screen bg-[#efede8] flex">
 
@@ -163,7 +163,7 @@ export default function CompanyDirectory() {
                 key={i}
                 whileHover={{ y: -4 }}
                 className="bg-white border rounded-2xl p-5 shadow-sm cursor-pointer"
-                onClick={() => handledetails(emp.uid)}
+                onClick={() => setSelectedEmployee(emp) || setShowDetails(true)}
               >
                 <div className="flex justify-between">
                   <div className="relative">
@@ -203,7 +203,7 @@ export default function CompanyDirectory() {
 
                   <div className="flex items-center gap-2">
                     <MapPin size={16} />
-                    {emp.location||"Chennai-60001"}
+                    {emp.location || "Chennai-60001"}
                   </div>
                 </div>
 

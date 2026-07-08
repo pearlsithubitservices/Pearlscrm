@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const BASE_URL = "http://localhost:5000/api/projects";
+const BASE_URL = "https://pearlscrm.onrender.com/api/projects";
 
 export default function useProject() {
     const [projects, setProjects] = useState([]);

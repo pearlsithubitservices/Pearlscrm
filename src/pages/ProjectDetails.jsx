@@ -27,7 +27,8 @@ export default function ClientDetails({ tasks }) {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const res = await fetch("http://localhost:5000/api/projects");
+                // const res = await fetch("http://localhost:5000/api/projects");
+                const res = await fetch("https://pearlscrm.onrender.com/api/projects");
 
                 if (!res.ok) {
                     throw new Error("Failed to fetch projects");
@@ -74,8 +75,8 @@ export default function ClientDetails({ tasks }) {
                 return <ClientNotes />;
 
             case "Team":
-                return <ClientTeam 
-                projects={projectById}/>;
+                return <ClientTeam
+                    projects={projectById} />;
             case "Activity":
                 return <ClientActivity />;
 

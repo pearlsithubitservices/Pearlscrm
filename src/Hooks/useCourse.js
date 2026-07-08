@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+// const API = "https://pearlscrm.onrender.com/api/empCourse";
 const API = "http://localhost:5000/api/empCourse";
 
 export default function useCourse() {
@@ -22,8 +23,8 @@ export default function useCourse() {
         try {
             const res = await fetch(API, {
                 method: "POST",
-                
-                body:courseData,
+
+                body: courseData,
             });
 
             return await handleResponse(res);

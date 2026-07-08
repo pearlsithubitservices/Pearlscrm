@@ -61,7 +61,8 @@ export default function ProjectManagement() {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/projects");
+      // const response = await fetch("http://localhost:5000/api/projects");
+      const response = await fetch("https://pearlscrm.onrender.com/api/projects");
       const data = await response.json();
       setProject(data);
     } catch (error) {

@@ -163,7 +163,8 @@ export default function TaxDocuments() {
                                 <div className="flex items-center gap-5">
 
                                     <motion.a
-                                        href={`http://localhost:5000${doc.documentUrl}`}
+                                        // href={`http://localhost:5000${doc.documentUrl}`}
+                                        href={`https://pearlscrm.onrender.com${doc.documentUrl}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         whileHover={{ scale: 1.12 }}

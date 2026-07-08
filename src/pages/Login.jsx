@@ -267,7 +267,8 @@ export default function Login() {
           console.log(userData);
 
           // Send Login Email
-          await fetch("http://localhost:5000/api/email/login", {
+          // await fetch("http://localhost:5000/api/email/login", {
+          await fetch("https://pearlscrm.onrender.com/api/email/login", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -375,7 +376,8 @@ export default function Login() {
           );
 
           //SEND E-MAIL
-          await fetch("http://localhost:5000/api/email/welcome", {
+          // await fetch("http://localhost:5000/api/email/welcome", {
+          await fetch("https://pearlscrm.onrender.com/api/email/welcome", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

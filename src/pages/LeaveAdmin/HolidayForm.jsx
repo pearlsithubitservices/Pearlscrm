@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Upload, Plus, X } from "lucide-react";
 
-const HolidayForm = ({ onClose, getholidays, editData,updateHoliday, addHoliday }) => {
+const HolidayForm = ({ onClose, getholidays, editData, updateHoliday, addHoliday }) => {
     const [holidayData, setHolidayData] = useState({
         holidayName: "",
         holidayDate: "",
@@ -61,7 +61,7 @@ const HolidayForm = ({ onClose, getholidays, editData,updateHoliday, addHoliday 
             formData.append("file", excelFile);
 
             const response = await fetch(
-                "http://localhost:5000/api/holidays/bulk-upload",
+                "https://pearlscrm.onrender.com/api/holidays/bulk-upload",
                 {
                     method: "POST",
                     body: formData,

@@ -5,7 +5,7 @@ export default function usePolicies() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const API = "http://localhost:5000/api/reimbursementpolicy";
+    const API = "https://pearlscrm.onrender.com/api/reimbursementpolicy";
 
     // FETCH
     const fetchPolicies = async () => {

@@ -6,19 +6,12 @@ export default function ProtectedRoute({
     children,
     role,
 }) {
+    const { user, loading } = useAuth();
+    const { employees } = useEmployees();
+    console.log(employees);
 
-    const {
-        user,
-        loading,
-    } = useAuth();
-    console.log(user);
-
-    const {
-        employees,
-
-    } = useEmployees();
-
-    // Wait until auth and employees are loaded
+    // console.log(user.uid);
+    // Wait for auth to complete
     if (loading) {
         return (
             <div className="h-screen flex items-center justify-center">
@@ -32,17 +25,21 @@ export default function ProtectedRoute({
         return <Navigate to="/login" replace />;
     }
 
-    // Find logged in employee
-    console.log("Auth User:", user);
-    console.log("Auth UID:", user.uid);
-    console.log("Employees:", employees);
+    // Wait until employees are loaded
+    if (!employees) {
+        return (
+            <div className="h-screen flex items-center justify-center">
+                Loading employee data...
+            </div>
+        );
+    }
 
-    const employee = employees.find(item => item.uid === user.uid);
+    // Find logged-in employee
+    const employee = employees.find(
+        (item) => item.uid === user.uid
+    );
 
-    console.log("Matched Employee:", employee);
-    console.log("Employee Role:", employee?.role);
-    console.log("Required Role:", role);
-    console.log(employees);
+    console.log(employee);
     // Employee document not found
     if (!employee) {
         return (
@@ -52,25 +49,21 @@ export default function ProtectedRoute({
         );
     }
 
-    // Get role from either field
-    const employeeRole =
-        employee.role || employee.employeeRole;
+    // Get employee role
+    const employeeRole = (
+        employee.role ||
+        employee.employeeRole ||
+        ""
+    ).toLowerCase();
 
-    // Role mismatch
-    if (
-        role &&
-        employeeRole?.toLowerCase() !== role.toLowerCase()
-    ) {
-        return (
-            <Navigate
-                to={
-                    employeeRole.toLowerCase() === "admin"
-                        ? "/"
-                        : "/employee/dashboard"
-                }
-                replace
-            />
-        );
+    // Protect admin-only routes
+    if (role === "admin" && employeeRole !== "admin") {
+        return <Navigate to="/employee/dashboard" replace />;
+    }
+
+    // Protect employee routes (optional)
+    if (role === "employee" && employeeRole === "admin") {
+        return <Navigate to="/" replace />;
     }
 
     return children;

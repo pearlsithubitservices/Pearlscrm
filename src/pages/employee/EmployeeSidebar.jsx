@@ -217,7 +217,10 @@ export default function Sidebar() {
 
             {/* LOGOUT */}
             <button
-              onClick={() => logout()}
+              onClick={async () => {
+                await logout();
+                navigate("/login"); // or your employee login route
+              }}
               className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
             >
 
@@ -257,7 +260,7 @@ export default function Sidebar() {
             </h3>
 
             <p className="text-xs text-white/80 truncate">
-              {employeeMap[user?.uid]?.role } - Education
+              {employeeMap[user?.uid]?.role} - Education
             </p>
 
           </div>
