@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Award, Download, Eye } from "lucide-react";
+import { Award, Download, Eye, EyeClosed, EyeOff } from "lucide-react";
 import { useParams } from "react-router-dom";
 import useSkillCertification from "../../../Hooks/useSkillCertification";
 import { useEffect, useState } from "react";
@@ -10,6 +10,7 @@ export default function Certifications() {
     const { id } = useParams();
     const { getAll, } = useSkillCertification();
     const [skillsAndCertifications, setSkillsAndCertifications] = useState([]);
+    const [selectedCertificate, setSelectedCertificate] = useState(null);
 
 
     const currentskillsAndCertifications = skillsAndCertifications.filter(
@@ -85,17 +86,36 @@ export default function Certifications() {
                                 </div>
                                 <div className="flex items-center justify-end gap-3 mt-6">
                                     <button
-                                        className="flex items-center gap-2 px-1 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-700 font-medium transition-all duration-200 hover:bg-gray-100 hover:border-gray-400"
+                                        disabled={!item.image}
+                                        onClick={() => {
+                                            if (!item.image) return;
+
+                                            const filename = item.image.split("/").pop();
+
+                                            window.open(
+                                                `http://localhost:5000/download/${filename}`,
+                                                "_self"
+                                            );
+                                        }}
+                                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border font-medium transition-all duration-200 ${item.image
+                                            ? "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:border-gray-400"
+                                            : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            }`}
                                     >
                                         <Download size={18} />
-                                        Save
+                                        {item.image ? "Download" : "No Image"}
                                     </button>
 
                                     <button
-                                        className=" flex  items-center  gap-2 mx-2 px-2 py-2.5 rounded-xl bg-[#0E5BA8] text-white font-medium shadow-md transition-all duration-200 hover:bg-[#0B4B8A] hover:shadow-lg active:scale-95"
+                                        onClick={() => item.image && setSelectedCertificate(item)}
+                                        disabled={!item.image}
+                                        className={`flex items-center gap-2 mx-2 px-3 py-2.5 rounded-xl font-medium shadow-md transition-all duration-200 ${item.image
+                                            ? "bg-[#0E5BA8] text-white hover:bg-[#0B4B8A] hover:shadow-lg active:scale-95 cursor-pointer"
+                                            : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
+                                            }`}
                                     >
-                                        <Eye size={20} />
-                                        View
+                                        {item.image ? <Eye size={20} /> : <EyeOff size={20} />}
+                                        {item.image ? "View" : "No Image"}
                                     </button>
                                 </div>
                             </div>
@@ -103,6 +123,47 @@ export default function Certifications() {
                         </motion.div>
                     ))}
                 </div>
+                {selectedCertificate && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+                        onClick={() => setSelectedCertificate(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-5"
+                        >
+                            <button
+                                onClick={() => setSelectedCertificate(null)}
+                                className="absolute top-4 right-4 text-white bg-red-700 w-5 h-5  hover:bg-white  hover:text-red-500 "
+                            >
+                                ✕
+                            </button>
+
+                            <h2 className="text-2xl font-bold mb-4">
+                                {selectedCertificate.title}
+                            </h2>
+
+                            {selectedCertificate.image?.endsWith(".pdf") ? (
+                                <iframe
+                                    src={`http://localhost:5000${selectedCertificate.image}`}
+                                    className="w-full h-[700px] rounded-xl"
+                                    title="Certificate"
+                                />
+                            ) : (
+                                <img
+                                    src={`http://localhost:5000${selectedCertificate.image}`}
+                                    alt={selectedCertificate.title}
+                                    className="w-full max-h-[700px] object-contain rounded-xl"
+                                />
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
             </motion.div>
         </section>
     );

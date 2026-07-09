@@ -29,10 +29,10 @@ const CompanyAnnouncements = () => {
     setSearch(e.target.value);
   }
 
-  const deleteannouncement = async (id) => {
-    await deleteAnnouncement(id);
-    await fetchAnnouncements();
-  }
+  // const deleteannouncement = async (id) => {
+  //   await deleteAnnouncement(id);
+  //   await fetchAnnouncements();
+  // }
 
   const filteredAnnouncements = announcements.filter((item) => {
     if (!search) return true;
@@ -115,10 +115,11 @@ const CompanyAnnouncements = () => {
                     : "text-gray-500"
                     }`}
                 />
-                <DeleteIcon size={16}  className="" onClick={(e) => 
+                {/* <DeleteIcon size={16}  className="" onClick={(e) => 
                   {
                     e.stopPropagation();
-                    deleteannouncement(item._id)}} /></span>
+                    deleteannouncement(item._id)}} />*/}
+              </span>
             </div>
 
             <h3 className="mt-4 text-xl font-bold text-[#0B2B57]">

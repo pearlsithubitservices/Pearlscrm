@@ -10,7 +10,7 @@ export default function ProtectedRoute({
     const { employees } = useEmployees();
     console.log(employees);
 
-    // console.log(user.uid);
+    console.log(user?.uid)
     // Wait for auth to complete
     if (loading) {
         return (
@@ -33,10 +33,10 @@ export default function ProtectedRoute({
             </div>
         );
     }
-
+    console.log(employees);
     // Find logged-in employee
     const employee = employees.find(
-        (item) => item.uid === user.uid
+        (item) => item.uid == user.uid
     );
 
     console.log(employee);
@@ -55,6 +55,9 @@ export default function ProtectedRoute({
         employee.employeeRole ||
         ""
     ).toLowerCase();
+    console.log(employeeRole);
+    console.log(role);
+    
 
     // Protect admin-only routes
     if (role === "admin" && employeeRole !== "admin") {
@@ -68,3 +71,7 @@ export default function ProtectedRoute({
 
     return children;
 }
+
+// export default function ProtectedRoute({ children }) {
+//     return children;
+// }

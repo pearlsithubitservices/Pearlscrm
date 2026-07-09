@@ -333,7 +333,7 @@ export default function CourseLibrary() {
             )}
 
             {openForm && (
-                <div className="fixed inset-0 z-40  backdrop-blur-sm p-2  overflow-y-auto no-scrollbar">
+                <div className="fixed inset-0 z-40  backdrop-blur-sm p-2   overflow-y-auto no-scrollbar">
                     <CourseForm
                         fetchCourse={fetchCourse}
                         onClose={() => setOpenForm(false)} />

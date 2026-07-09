@@ -1,10 +1,10 @@
-const mongoose=require('mongoose');
+const mongoose = require('mongoose');
 
 const announcementSchema = new mongoose.Schema(
   {
     priority: {
       type: String,
-      enum: ["High", "Med", "Low"],
+
       required: true,
     },
 
@@ -34,7 +34,7 @@ const announcementSchema = new mongoose.Schema(
     date: {
       type: String,
       required: true,
-      default:Date.now,
+      default: Date.now,
     },
 
     isRead: {
@@ -52,4 +52,4 @@ const announcementSchema = new mongoose.Schema(
   }
 );
 
-module.exports=mongoose.model("Announcement", announcementSchema)
+module.exports = mongoose.model("Announcement", announcementSchema)

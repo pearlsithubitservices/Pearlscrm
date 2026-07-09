@@ -130,7 +130,16 @@ export default function ClientManagement() {
     }
   ];
   const [users, setUsers] = useState();
-  console.log(users);
+  
+
+  const sortedUsers = [...users].sort((a, b) => {
+    const aTime = a.createdAt?.seconds || 0;
+    const bTime = b.createdAt?.seconds || 0;
+
+    return bTime - aTime; // Newest first
+  });
+
+  console.log(sortedUsers);
   const user = users?.find(
     (user) => user?.email === "vishnuravichandran007@gmail.com"
   );
@@ -161,7 +170,7 @@ export default function ClientManagement() {
   //   deleteUserByEmail();
   // }, []);
 
-  
+
   const fetchUsers = async () => {
     setLoading(true);
 

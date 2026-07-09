@@ -214,209 +214,220 @@ export default function Login() {
 
   // EMAIL LOGIN / REGISTER
 
-  const handleEmailAuth =
-    async (e) => {
+    const handleEmailAuth =
+      async (e) => {
 
-      e.preventDefault();
+        e.preventDefault();
 
-      setLoading(true);
+        setLoading(true);
 
-      setError('');
+        setError('');
 
-      try {
+        try {
+          
 
-        // LOGIN
+          //LOGIN
 
-        if (isLogin) {
+          if (isLogin) {
 
-          await signInWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
-
-          console.log(auth.currentUser);
-          const currentUser = auth.currentUser;
-
-          if (!currentUser) {
-            setError("Login failed - no user found");
-            return;
-          }
-
-          const userRef = doc(db, "users", currentUser.uid);
-          console.log(userRef);
-          const userSnap = await getDoc(userRef);
-          console.log(userSnap);
-
-          if (
-            !userSnap.exists()
-          ) {
-
-            setError(
-              'User profile not found'
-            );
-
-            setLoading(false);
-
-            return;
-
-          }
-
-          const userData =
-            userSnap.data() || {};
-          console.log(userData);
-
-          // Send Login Email
-          // await fetch("http://localhost:5000/api/email/login", {
-          await fetch("https://pearlscrm.onrender.com/api/email/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: userData.email,
-              name: userData.displayName,
-              role: userData.role,
-            }),
-          });
-
-          if (
-            userData?.role ===
-            'Admin'
-          ) {
-
-            navigate('/');
-
-          } else {
-
-            navigate(
-              '/employee/dashboard'
-            );
-
-          }
-
-        }
-
-        // REGISTER
-
-        else {
-
-          const result =
-            await createUserWithEmailAndPassword(
+            await signInWithEmailAndPassword(
               auth,
               email,
               password
             );
 
-          // USERS COLLECTION
+            console.log(auth.currentUser);
+            const currentUser = auth.currentUser;
 
-          await setDoc(
+            if (!currentUser) {
+              setError("Login failed - no user found");
+              return;
+            }
 
-            doc(
-              db,
-              'users',
-              result.user.uid
-            ),
+            const userRef = doc(db, "users", currentUser.uid);
+            console.log(userRef);
+            const userSnap = await getDoc(userRef);
+            console.log(userSnap);
 
-            {
+            if (
+              !userSnap.exists()
+            ) {
 
-              uid:
-                result.user.uid,
+              setError(
+                'User profile not found'
+              );
 
-              email:
-                result.user.email,
+              setLoading(false);
 
-              displayName:
-                name,
-
-              role,
-
-              industry,
-
-              createdAt:
-                new Date(),
+              return;
 
             }
 
-          );
+            const userData =
+              userSnap.data() || {};
+            console.log(userData);
 
-          // EMPLOYEES COLLECTION
+            // Send Login Email
+            // await fetch("http://localhost:5000/api/email/login", {
+            await fetch("https://pearlscrm.onrender.com/api/email/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                email: userData.email,
+                name: userData.displayName,
+                role: userData.role,
+              }),
+            });
 
-          await setDoc(
+            if (
+              userData?.role ===
+              'Admin'
+            ) {
 
-            doc(
-              db,
-              'employees',
-              result.user.uid
-            ),
+              navigate('/');
 
-            {
+            } else {
 
-              uid:
-                result.user.uid,
-
-              name:
-                name,
-
-              email:
-                result.user.email,
-
-              password:
-                password,
-
-              phone: '',
-
-              role,
-
-              createdAt:
-                new Date(),
+              navigate(
+                '/employee/dashboard'
+              );
 
             }
 
-          );
-
-          //SEND E-MAIL
-          // await fetch("http://localhost:5000/api/email/welcome", {
-          await fetch("https://pearlscrm.onrender.com/api/email/welcome", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: result.user.email,
-              name: name,
-              role: role,
-            }),
-          });
-
-          // NAVIGATE
-
-          console.log("Role:", userData.role);
-          console.log("Role === Admin ?", userData.role === "Admin");
-
-          if (userData.role === "Admin") {
-            console.log("Admin navigation");
-            navigate("/");
-          } else {
-            console.log("Employee navigation");
-            navigate("/employee/dashboard");
           }
+
+          // REGISTER
+
+          else {
+
+      const result =
+        await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+      // USERS COLLECTION
+
+      await setDoc(
+
+        doc(
+          db,
+          'users',
+          result.user.uid
+        ),
+
+        {
+
+          uid:
+            result.user.uid,
+
+          email:
+            result.user.email,
+
+          displayName:
+            name,
+
+          role,
+
+          industry,
+
+          createdAt:
+            new Date(),
 
         }
 
-      } catch (err) {
+      );
 
-        console.log(err);
+      // EMPLOYEES COLLECTION
 
-        setError(err.message);
+      await setDoc(
 
-      } finally {
+        doc(
+          db,
+          'employees',
+          result.user.uid
+        ),
 
-        setLoading(false);
+        {
 
+          uid:
+            result.user.uid,
+
+          name:
+            name,
+
+          email:
+            result.user.email,
+
+          password:
+            password,
+
+          phone: '',
+
+          role,
+
+          createdAt:
+            new Date(),
+
+        }
+
+      );
+
+      //SEND E-MAIL
+      // await fetch("http://localhost:5000/api/email/welcome", {
+      await fetch("https://pearlscrm.onrender.com/api/email/welcome", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: result.user.email,
+          name: name,
+          role: role,
+        }),
+      });
+
+      // NAVIGATE
+
+      console.log("Role:", userData.role);
+      console.log("Role === Admin ?", userData.role === "Admin");
+
+      if (userData.role === "Admin") {
+        console.log("Admin navigation");
+        navigate("/");
+      } else {
+        console.log("Employee navigation");
+        navigate("/employee/dashboard");
       }
 
-    };
+    }
+
+  } catch (err) {
+
+    console.log(err);
+
+    setError(err.message);
+
+  } finally {
+
+    setLoading(false);
+
+  }
+
+      };
+  // const handleEmailAuth = async (e) => {
+  //   e.preventDefault();
+
+  //   setLoading(true);
+  //   setError("");
+
+  //   navigate("/");
+
+  //   setLoading(false);
+  // };
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-black text-white overflow-hidden">
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Circle, Star, X } from "lucide-react";
+import { Circle, Search, Star, X } from "lucide-react";
 import useNotification from "../../../Hooks/useNotification";
 import NotificationForm from "./NotificationForm";
 import { useAuth } from "../../../context/AuthContext";
@@ -50,16 +50,16 @@ export default function ImportantNotifications() {
         <h2 className="text-lg font-semibold">Important notifications</h2>
         <div className="flex gap-6">
           <p onClick={() => setShownotification(true)} className=" bg-blue-700  text-white  hover:scale-105  transition-transform duration-200 p-1 rounded-lg cursor-pointer">Notification</p>
-          <span className="text-xs font-medium bg-gray-200 text-gray-600 px-3 py-1 rounded-full">
+          {/* <span className="text-xs font-medium bg-gray-200 text-gray-600 px-3 py-1 rounded-full">
             {todayNotificationCount}
-          </span>
+          </span> */}
         </div>
       </div>
 
       {/* Body */}
       <div className="mt-4 bg-white border max-h-[500px] h-full overflow-y-auto no-scrollbar rounded-xl p-5">
         <div className="relative border-l border-gray-200 pl-6 space-y-6">
-          {empnotification?.slice(0, 8).map((item, index) => (
+          {empnotification.length > 0 ? (empnotification?.slice(0, 8).map((item, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 10 }}
@@ -81,7 +81,7 @@ export default function ImportantNotifications() {
                   </p>
 
                   <p className="text-xs flex items-center gap-2 text-blue-700 mt-1">
-                   <span className="font-bold">SEND TO:</span> {employeeMap[item?.employeeId]?.name} - {item.notificationType || "Leave Type"}
+                    <span className="font-bold">SEND TO:</span> {employeeMap[item?.employeeId]?.name} - {item.notificationType || "Leave Type"}
 
                     {item.isImportant && (
                       <Star
@@ -109,7 +109,26 @@ export default function ImportantNotifications() {
               </div>
 
             </motion.div>
-          ))}
+          ))) : (<motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-whiterounded-2xl py-20 px-8 text-center"
+          >
+            <div className="mx-auto w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-5">
+              <Search size={36} className="text-blue-600" />
+            </div>
+
+            <h3 className="text-2xl font-bold text-[#0B2B57]">
+              No Notifications Found
+            </h3>
+
+            <p className="mt-3 text-gray-500 max-w-md mx-auto">
+              There are currently no notifications available.
+
+            </p>
+
+            {/*  */}
+          </motion.div>)}
         </div>
       </div>
       {

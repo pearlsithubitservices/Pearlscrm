@@ -63,6 +63,25 @@ app.use(
   })
 );
 app.use(express.json());
+ 
+
+app.get("/download/:filename", (req, res) => {
+  const filePath = path.join(
+    __dirname,
+    "uploads",
+    "certificates",
+    req.params.filename
+  );
+
+  res.download(filePath, (err) => {
+    if (err) {
+      res.status(404).json({
+        success: false,
+        message: "File not found",
+      });
+    }
+  });
+});
 
 
 app.use("/api/leads", leadRoutes);

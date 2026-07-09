@@ -1,8 +1,15 @@
-import { Building2, ChevronDown, FileText, Flag, Megaphone, X } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  FileText,
+  Flag,
+  Megaphone,
+  X,
+} from "lucide-react";
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import useAnnouncement from "../../../Hooks/useAnnouncement";
 import { useAuth } from "../../../context/AuthContext";
-import { motion } from "framer-motion";
 
 const AnnouncementForm = ({ onClose, fetchAnnouncements }) => {
   const { createAnnouncement } = useAnnouncement();
@@ -12,50 +19,48 @@ const AnnouncementForm = ({ onClose, fetchAnnouncements }) => {
     priority: "Med",
     title: "",
     description: "",
-    author: user?.uid,
+    author: user?.uid || "",
     role: "",
     date: new Date().toLocaleDateString(),
   });
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      await createAnnouncement(form); // ✅ correct payload
+      await createAnnouncement(form);
       await fetchAnnouncements();
-
-      onClose(); // close modal after success
 
       setForm({
         priority: "Med",
         title: "",
         description: "",
-        author: "",
+        author: user?.uid || "",
         role: "",
-        date: "",
+        date: new Date().toLocaleDateString(),
       });
 
+      onClose();
     } catch (error) {
       console.error("Error creating announcement:", error);
     }
   };
 
   return (
-    <div className="relative max-h-screen overflow-y-auto no-scrollbar w-[700px] rounded-2xl shadow-xl p-6">
-
-      {/* Header */}
-      
-
+    <div className="relative max-h-screen overflow-y-auto no-scrollbar w-[700px] rounded-2xl shadow-xl">
       <form onSubmit={handleSubmit}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 25 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="relative w-full max-w-5xl rounded-[32px] bg-[#F4F1EB] p-10 shadow-2xl no-scrollbar"
+          className="relative rounded-[32px] bg-[#F4F1EB] p-10"
         >
           {/* Close */}
           <button
@@ -66,13 +71,13 @@ const AnnouncementForm = ({ onClose, fetchAnnouncements }) => {
             <X className="text-gray-600" />
           </button>
 
-          {/* Heading */}
+          {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <span className="uppercase text-xs tracking-[3px] text-gray-400 whitespace-nowrap">
+            <span className="uppercase text-xs tracking-[3px] text-gray-400">
               New Announcement
             </span>
 
-            <div className="flex-1 h-px bg-gray-400" />
+            <div className="flex-1 h-px bg-gray-300" />
           </div>
 
           {/* Title */}
@@ -92,18 +97,18 @@ const AnnouncementForm = ({ onClose, fetchAnnouncements }) => {
                 name="title"
                 value={form.title}
                 onChange={handleChange}
-                placeholder="e.g. All Hands Meeting"
                 required
+                placeholder="Enter announcement title"
                 className="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-4 text-lg outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          {/* Department & Priority */}
+          {/* Role & Priority */}
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-[#173A63] font-bold text-xl mb-3">
-                Department
+                Department / Role
               </label>
 
               <div className="relative">
@@ -113,16 +118,18 @@ const AnnouncementForm = ({ onClose, fetchAnnouncements }) => {
                 />
 
                 <select
-                  name="department"
+                  name="role"
                   value={form.role}
                   onChange={handleChange}
+                  required
                   className="appearance-none w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-12 text-lg outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option>All</option>
-                  <option>HR</option>
-                  <option>Sales</option>
-                  <option>Marketing</option>
-                  <option>Development</option>
+                  <option value="">Select Role</option>
+                  <option value="All">All</option>
+                  <option value="HR">HR</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Development">Development</option>
                 </select>
 
                 <ChevronDown
@@ -198,7 +205,7 @@ const AnnouncementForm = ({ onClose, fetchAnnouncements }) => {
             <button
               type="button"
               onClick={onClose}
-              className="w-40 rounded-2xl border border-gray-400 bg-white py-4 text-gray-600 font-medium hover:bg-gray-50 transition"
+              className="w-40 rounded-2xl border border-gray-300 bg-white py-4 text-gray-700 font-medium hover:bg-gray-50 transition"
             >
               Cancel
             </button>

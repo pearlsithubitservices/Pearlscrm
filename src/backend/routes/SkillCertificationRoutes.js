@@ -64,6 +64,8 @@ router.post("/skill", async (req, res) => {
     }
 });
 
+
+
 // Get All
 router.get("/", async (req, res) => {
     try {

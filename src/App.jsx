@@ -316,7 +316,7 @@ export default function App() {
 
             <Route
               element={
-                <ProtectedRoute >
+                <ProtectedRoute role='employee'>
                   <EmployeeLayout />
                 </ProtectedRoute>
               }
