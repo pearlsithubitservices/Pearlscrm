@@ -132,14 +132,14 @@ export default function ClientManagement() {
   const [users, setUsers] = useState();
   
 
-  const sortedUsers = [...users].sort((a, b) => {
-    const aTime = a.createdAt?.seconds || 0;
-    const bTime = b.createdAt?.seconds || 0;
+  // const sortedUsers = [...users]?.sort((a, b) => {
+  //   const aTime = a.createdAt?.seconds || 0;
+  //   const bTime = b.createdAt?.seconds || 0;
 
-    return bTime - aTime; // Newest first
-  });
+  //   return bTime - aTime; // Newest first
+  // });
 
-  console.log(sortedUsers);
+  
   const user = users?.find(
     (user) => user?.email === "vishnuravichandran007@gmail.com"
   );

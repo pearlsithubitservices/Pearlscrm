@@ -8,9 +8,10 @@ export default function ProtectedRoute({
 }) {
     const { user, loading } = useAuth();
     const { employees } = useEmployees();
+
     console.log(employees);
 
-    console.log(user?.uid)
+    console.log(user)
     // Wait for auth to complete
     if (loading) {
         return (
