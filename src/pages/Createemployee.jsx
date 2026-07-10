@@ -73,11 +73,12 @@ export default function Createemployee({ onClose }) {
             employeeDepartment: '',
 
         });
-
+    const [loading, setLoading] = useState(false);
 
 
     const addEmployees = async () => {
         try {
+            setLoading(true);
             const docRef = await addDoc(collection(db, "employees"), {
                 ...employees,
                 createdAt: Timestamp.now(),
@@ -107,6 +108,9 @@ export default function Createemployee({ onClose }) {
         } catch (error) {
             console.error(error);
             alert(error.message);
+        }
+        finally {
+            setLoading(false);
         }
     };
     //HANDLE EMPLOYEES 
@@ -285,9 +289,20 @@ export default function Createemployee({ onClose }) {
 
                 <button
                     onClick={addEmployees}
+                    disabled={loading}
                     className="flex-1 bg-blue-700 text-white rounded-xl hover:bg-blue-600">
 
-                    + Add Employee
+                    {loading ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Sending Invitation...
+                        </>
+                    ) : (
+                        <>
+                            <PlusCircle className="w-5 h-5" />
+                           + Add Employee
+                        </>
+                    )}
 
                 </button>
 
