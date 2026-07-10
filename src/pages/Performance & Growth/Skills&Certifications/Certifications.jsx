@@ -92,8 +92,12 @@ export default function Certifications() {
 
                                             const filename = item.image.split("/").pop();
 
+                                            // window.open(
+                                            //     `http://localhost:5000/download/${filename}`,
+                                            //     "_self"
+                                            // );
                                             window.open(
-                                                `http://localhost:5000/download/${filename}`,
+                                                `https://pearlscrm.onrender.com/download/${filename}`,
                                                 "_self"
                                             );
                                         }}
@@ -150,13 +154,15 @@ export default function Certifications() {
 
                             {selectedCertificate.image?.endsWith(".pdf") ? (
                                 <iframe
-                                    src={`http://localhost:5000${selectedCertificate.image}`}
+                                    // src={`http://localhost:5000${selectedCertificate.image}`}
+                                    src={`http://pearlscrm.onrender.com${selectedCertificate.image}`}
                                     className="w-full h-[700px] rounded-xl"
                                     title="Certificate"
                                 />
                             ) : (
                                 <img
-                                    src={`http://localhost:5000${selectedCertificate.image}`}
+                                    // src={`http://localhost:5000${selectedCertificate.image}`}
+                                    src={`http://pearlscrm.onrender.com${selectedCertificate.image}`}
                                     alt={selectedCertificate.title}
                                     className="w-full max-h-[700px] object-contain rounded-xl"
                                 />

@@ -209,8 +209,8 @@ export default function CourseLibrary() {
 
                         <div className="p-5 pb-0">
                             <img
-                                // src={`https://pearlscrm.onrender.com/${course?.image}`}
-                                src={`http://localhost:5000${course?.image}`}
+                                src={`https://pearlscrm.onrender.com/${course?.image}`}
+                                // src={`http://localhost:5000${course?.image}`}
                                 alt={course?.title}
                                 className="
                   w-full

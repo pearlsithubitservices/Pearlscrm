@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-// const API = "https://pearlscrm.onrender.com/api/empCourse";
-const API = "http://localhost:5000/api/empCourse";
+const API = "https://pearlscrm.onrender.com/api/empCourse";
+// const API = "http://localhost:5000/api/empCourse";
 
 export default function useCourse() {
     const [loading, setLoading] = useState(false);

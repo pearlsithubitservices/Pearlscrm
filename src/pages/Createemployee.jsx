@@ -85,8 +85,8 @@ export default function Createemployee({ onClose }) {
                 status: "Pending",
             });
 
-            await fetch("http://localhost:5000/api/email/invite", {
-            // await fetch("https://pearlscrm.onrender.com/api/email/invite", {
+            // await fetch("http://localhost:5000/api/email/invite", {
+            await fetch("https://pearlscrm.onrender.com/api/email/invite", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
