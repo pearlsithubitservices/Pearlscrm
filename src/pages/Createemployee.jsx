@@ -32,7 +32,8 @@ import {
     Phone,
     Mail,
     Locate,
-    X
+    X,
+    Loader2
 } from 'lucide-react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
@@ -299,8 +300,8 @@ export default function Createemployee({ onClose }) {
                         </>
                     ) : (
                         <>
-                            <PlusCircle className="w-5 h-5" />
-                           + Add Employee
+
+                            <p> + Add Employee</p>
                         </>
                     )}
 
