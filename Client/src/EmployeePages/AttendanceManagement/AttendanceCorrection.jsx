@@ -39,7 +39,7 @@ const AttendanceCorrection = ({ onClose }) => {
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-h-screen w-[600px] p-4 md:p-8"
+      className="max-h-screen w-full max-w-2xl p-4 md:p-8"
     >
       <div className="max-w-6xl mx-auto bg-[#e9e7e2] rounded-[30px] p-6 md:p-10 shadow-sm">
 

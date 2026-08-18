@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../config/api.js";
 
-const API = "http://localhost:5000/api/review";
+const API = apiUrl("/review");
 
 export default function useReview() {
     const [loading, setLoading] = useState(false);

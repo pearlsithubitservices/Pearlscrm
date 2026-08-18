@@ -18,12 +18,6 @@ import { db } from '../lib/firebase';
 import InputField from '../components/InputField';
 
 import {
-    User,
-    Building2,
-    CalendarDays,
-    Flag,
-    ClipboardList,
-    PlusCircle,
     Users,
     Activity,
     Calendar,
@@ -32,189 +26,152 @@ import {
 
 export default function Createinvoice({ onClose }) {
 
-    const navigate =
-        useNavigate();
+    const navigate = useNavigate();
+    const [employees, setEmployees] = useState([]);
 
-    const [employees, setEmployees] =
-        useState([]);
-
-    const [invoice, setInvoice] =
-        useState({
-
-            company: '',
-
-            title: '',
-
-            assignedTo: '',
-
-            assignedEmployee: '',
-
-            priority: 'Medium',
-
-            status: 'Pending',
-
-            dueDate: '',
-
-        });
-
-    // useEffect(() => {
-
-    //     fetchEmployees();
-
-    // }, []);
-
-    // FETCH EMPLOYEES
-
-
-
-    // HANDLE CHANGE
+    const [invoice, setInvoice] = useState({
+        clientName: '',
+        company: '',
+        issuedDate: '',
+        dueDate: '',
+        budget: '',
+        status: 'Pending',
+        description: '',
+    });
 
     const handleChange = (e) => {
-
-        setTask({
-
-            ...task,
-
-            [e.target.name]:
-                e.target.value,
-
+        setInvoice({
+            ...invoice,
+            [e.target.name]: e.target.value,
         });
-
     };
 
-    // ADD TASK
+    const addInvoice = async () => {
+        try {
+            await addDoc(
+                collection(db, 'invoices'),
+                {
+                    ...invoice,
+                    createdAt: new Date(),
+                }
+            );
 
-    const addTask =
-        async () => {
-
-            try {
-
-                await addDoc(
-                    collection(db, 'tasks'),
-                    {
-
-                        ...task,
-
-                        createdAt:
-                            new Date(),
-
-                    }
-                );
-
-                alert('Task Added');
-
-                navigate('/tasks');
-
-            } catch (error) {
-
-                console.log(error);
-
-            }
-
-        };
-
-    const priorities = [
-
-        'Low',
-
-        'Medium',
-
-        'High',
-
-        'Urgent',
-
-    ];
+            alert('Invoice Added Successfully');
+            onClose();
+            navigate('/payments');
+        } catch (error) {
+            console.log(error);
+            alert('Failed to add invoice');
+        }
+    };
 
     return (
+        <div className="w-full max-w-4xl mx-auto bg-[#e9e7e2] rounded-2xl sm:rounded-[30px] p-4 sm:p-6 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto page-scroll">
+            <button
+                onClick={onClose}
+                className='absolute top-4 right-4 text-red-600 font-bold p-1.5 hover:bg-white rounded-full transition-colors'
+                aria-label="Close"
+            >
+                <X size={22} strokeWidth={2.5} />
+            </button>
 
-        <div className="max-w-5xl mx-auto bg-[#e9e7e2] rounded-[40px] p-10 relative">
-            <div className='absolute top-5 right-5 text-red-600 font-bold w-25 h-25 hover:bg-white rounded'>
-                <X size={22} strokeWidth='3px' onClick={onClose} />
-            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-[#0b2b57] mb-6 pr-8">
+                Create New Invoice
+            </h2>
 
-            <InputField
-                label="Client Name"
-                placeholder="Enter the Client name..."
-            />
-
-            <div className="mt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <InputField
-                    label="Company Name"
-                    placeholder="Enter the company name"
+                    label="Client Name"
+                    name="clientName"
+                    value={invoice.clientName}
+                    onChange={handleChange}
+                    placeholder="Enter Client name..."
                 />
 
-
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-5 mt-5">
+                <InputField
+                    label="Company Name"
+                    name="company"
+                    value={invoice.company}
+                    onChange={handleChange}
+                    placeholder="Enter company name..."
+                />
 
                 <InputField
                     label="Issued Date"
-                    placeholder="0000-00-00"
+                    name="issuedDate"
+                    value={invoice.issuedDate}
+                    onChange={handleChange}
+                    placeholder="YYYY-MM-DD"
                     Icon={Users}
                     type='date'
                 />
 
                 <InputField
                     label="Due Date"
-                    placeholder="0000-00-00"
+                    name="dueDate"
+                    value={invoice.dueDate}
+                    onChange={handleChange}
+                    placeholder="YYYY-MM-DD"
                     Icon={Users}
                     type='date'
                 />
 
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-5 mt-5">
-
                 <InputField
                     label="Budget"
-                    placeholder="INR 0.000"
+                    name="budget"
+                    value={invoice.budget}
+                    onChange={handleChange}
+                    placeholder="₹0.00"
                     Icon={Activity}
                 />
 
                 <InputField
                     label="Status"
-                    placeholder="paid"
-                    Icon={Calendar}
                     name="status"
-                    value={invoice.status }
+                    value={invoice.status}
+                    onChange={handleChange}
+                    placeholder="Pending"
+                    Icon={Calendar}
                     type='select'
-                    options={
-                        [
-                            "Paid",
-                            "Pending",
-                            "Overdue",
-                            "partial",
-                            "Cancelled"
-                        ]
-                    }
+                    options={[
+                        "Paid",
+                        "Pending",
+                        "Overdue",
+                        "Partial",
+                        "Cancelled"
+                    ]}
                 />
-
             </div>
-            <label className="font-bold text-[#0b2b57] mt-2">
-                Payment Description
-            </label>
 
-            <textarea
-                className="w-full h-40 p-4 rounded-xl mt-2"
-            />
-            <div className="border-t pt-8 flex gap-4">
+            <div className="mt-4">
+                <label className="font-bold text-[#0b2b57] text-sm sm:text-base block mb-2">
+                    Payment Description
+                </label>
 
-                <button className="px-10 py-4 border rounded-xl bg-blue-700 text-white hover:bg-blue-600"
-                    onClick={onClose}>
+                <textarea
+                    name="description"
+                    value={invoice.description}
+                    onChange={handleChange}
+                    placeholder="Enter invoice details or line items..."
+                    className="w-full h-32 p-4 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+            </div>
+
+            <div className="border-t border-gray-300 pt-6 mt-6 flex flex-col-reverse sm:flex-row gap-3">
+                <button
+                    className="px-6 py-3 border border-gray-300 rounded-xl bg-white text-gray-700 hover:bg-gray-100 font-semibold transition-colors"
+                    onClick={onClose}
+                >
                     Cancel
                 </button>
 
-                <button className="flex-1 bg-blue-700 text-white rounded-xl hover:bg-blue-600">
-
-                    + Add INVOICE
-
+                <button
+                    onClick={addInvoice}
+                    className="flex-1 py-3 px-6 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-colors shadow-sm"
+                >
+                    + Add Invoice
                 </button>
-
             </div>
-
         </div>
-
-    )
-
+    );
 }

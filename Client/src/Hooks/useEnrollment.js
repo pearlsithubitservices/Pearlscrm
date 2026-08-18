@@ -1,6 +1,7 @@
 import { useCallback } from "react";
+import { apiUrl } from "../config/api.js";
 
-const API = "http://localhost:5000/api/empenrollment";
+const API = apiUrl("/empenrollment");
 
 export default function useEnrollment() {
     const handleResponse = async (res) => {

@@ -97,7 +97,7 @@ export default function FollowUps() {
   const totalPages = Math.ceil(filteredData.length / filesPerPage);
 
   return (
-    <div className="flex max-h-screen overflow-y-auto no-scrollbar bg-[#f3f0eb] overflow-x-hidden">
+    <div className="flex max-h-screen overflow-y-auto page-scroll bg-[#f3f0eb] overflow-x-hidden">
 
       <div className="flex-1 flex flex-col">
 
@@ -171,7 +171,7 @@ export default function FollowUps() {
               FOLLOW-UP SCHEDULE
             </h1>
 
-            <div className="flex flex-wrap gap-2  w-[500px]">
+            <div className="flex flex-wrap gap-2 w-full lg:w-auto max-w-xl">
 
               {buttons.map((btn, index) => (
 

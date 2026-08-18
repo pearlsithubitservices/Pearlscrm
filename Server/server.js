@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const http = require("http");
+const { initSocket } = require("./socket");
 
 dotenv.config();
 
@@ -10,8 +12,7 @@ const leadRoutes = require("./routes/leadRoutes");
 const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-const attendanceRoutes =
-  require("./routes/AttendanceRoutes");
+const attendanceRoutes =require("./routes/AttendanceRoutes");
 const ProjectsRoutes = require("./routes/ProjectsRoutes");
 const ClientRoutes = require("./routes/ClientRoutes");
 const EmployeeRoutes = require('./routes/EmployeeRoutes');
@@ -36,16 +37,12 @@ const EmpSkillCertification = require('./routes/SkillCertificationRoutes');
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
 const EmpActivityRoutes= require("./routes/TaskActivityRoute")
 const EmpTotalLeave=require('./routes/TotalLeaveRoutes');
-
-
-
+const ChatRoutes = require('./routes/ChatRoute');
+const MessageRoutes = require('./routes/messageRoute');
 
 connectDB();
 
 const app = express();
-// console.log("EmployeeRoutes =", EmployeeRoutes);
-// console.log("PaymentRoutes =", PaymentRoutes);
-// console.log("MarketingLeadRoutes =", MarketingLeadRoutes);
 app.use(
   cors({
     origin: [
@@ -65,7 +62,6 @@ app.use(
 );
 app.use(express.json());
 
-
 app.use("/api/leads", leadRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/followups", followupRoutes);
@@ -75,7 +71,6 @@ app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
-// app.use("/api/marketing-leads",MarketingLeadRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
@@ -96,11 +91,18 @@ app.use("/api/skillscertification", EmpSkillCertification);
 app.use("/api/contribution", EmpContributionRoutes);
 app.use("/api/activity",EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
+app.use('/api/chats', ChatRoutes);
+app.use('/api/chat', ChatRoutes);
+app.use('/api/messages', MessageRoutes);
 
 
-app.listen(process.env.PORT, () => {
+// Wrap Express in a plain http server so Socket.io can attach to the SAME port
+const server = http.createServer(app);
+
+// All socket logic lives in socket.js — this just "connects" it to our server
+initSocket(server);
+
+server.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
   console.log("Connected to database");
 });
-
-

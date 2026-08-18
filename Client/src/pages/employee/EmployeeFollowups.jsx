@@ -200,7 +200,7 @@ export default function EmployeeFollowups() {
 
   return (
 
-    <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#070b14] text-white p-8">
+    <div className="max-h-screen overflow-y-auto page-scroll bg-[#070b14] text-white p-8">
 
       {/* HEADER */}
 

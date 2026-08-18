@@ -21,7 +21,7 @@ export default function EmployeeDetails({ onClose, empId }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative w-[420px] max-h-[600px] overflow-y-auto no-scrollbar bg-white rounded-3xl border border-slate-200 shadow-xl"
+      className="relative w-full max-w-md mx-4 max-h-[85vh] overflow-y-auto page-scroll bg-white rounded-3xl border border-slate-200 shadow-xl"
     >
       {/* CLOSE */}
       <X

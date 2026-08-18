@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import toast from "react-hot-toast";
+import { appUrl } from "../../config/api.js";
 
 export default function LeadDocuments() {
 
@@ -59,7 +60,7 @@ export default function LeadDocuments() {
 
       /*
       await axios.post(
-        "http://localhost:5000/upload",
+        appUrl("/upload"),
         formData
       );
       */

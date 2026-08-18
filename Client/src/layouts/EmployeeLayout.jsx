@@ -24,17 +24,17 @@ export default function EmployeeLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#FBFBFA]">
+    <div className="flex flex-col lg:flex-row h-screen h-dvh bg-[#FBFBFA] overflow-hidden w-full">
       <EmployeeSidebar />
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-y-auto page-scroll min-h-0 min-w-0 w-full">
         <AnimatePresence mode="wait">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="h-full"
+            className="h-full w-full"
           >
             <Outlet />
           </motion.div>

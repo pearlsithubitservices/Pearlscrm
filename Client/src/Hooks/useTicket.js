@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { apiUrl } from "../config/api.js";
 
-const API_URL = "http://localhost:5000/api/ticket";
+const API_URL = apiUrl("/ticket");
 
 const useTicket = () => {
     const [tickets, setTickets] = useState([]);

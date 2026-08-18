@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { apiUrl } from "../config/api.js";
 
 export default function useLeave() {
   const [loading, setLoading] = useState(false);
@@ -32,7 +33,7 @@ export default function useLeave() {
       };
 
       const response = await fetch(
-        "http://localhost:5000/api/leave",
+        apiUrl("/leave"),
         {
           method: "POST",
           headers: {
@@ -81,7 +82,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        "http://localhost:5000/api/leave"
+        apiUrl("/leave")
       );
 
       const data = await response.json();
@@ -111,7 +112,7 @@ export default function useLeave() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/holidays"
+        apiUrl("/holidays")
       );
 
       const data = await response.json();
@@ -147,7 +148,7 @@ export default function useLeave() {
       };
 
       const response = await fetch(
-        `http://localhost:5000/api/leave/${id}`,
+        apiUrl(`/leave/${id}`),
         {
           method: "PUT",
           headers: {
@@ -190,7 +191,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `http://localhost:5000/api/leave/${id}/status`,
+        apiUrl(`/leave/${id}/status`),
         {
           method: "PATCH",
           headers: {

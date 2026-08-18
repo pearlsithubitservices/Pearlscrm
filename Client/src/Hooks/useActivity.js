@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
 
-const API = "http://localhost:5000/api/activity";
+const API_URL = apiUrl("/activity");
 
 const useActivity = () => {
     const [loading, setLoading] = useState(false);
@@ -35,24 +36,24 @@ const useActivity = () => {
 
     // Create Activity
     const createActivity = async (activityData) => {
-        return request(API, {
+        return request(API_URL, {
             method: "POST",
             body: JSON.stringify(activityData),
         });
     };
     // Get All Activities
     const getAllActivities = async () => {
-        return request(API);
+        return request(API_URL);
     };
 
     // Get Activities
     const getActivities = async (employee_uid) => {
-        return request(`${API}/${employee_uid}`);
+        return request(`${API_URL}/${employee_uid}`);
     };
 
     // Update Activity
     const updateActivity = async (id, activityData) => {
-        return request(`${API}/${id}`, {
+        return request(`${API_URL}/${id}`, {
             method: "PUT",
             body: JSON.stringify(activityData),
         });
@@ -60,7 +61,7 @@ const useActivity = () => {
 
     // Delete Activity
     const deleteActivity = async (id) => {
-        return request(`${API}/${id}`, {
+        return request(`${API_URL}/${id}`, {
             method: "DELETE",
         });
     };

@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
 
-const API = "http://localhost:5000/api/empCourse";
+const API = apiUrl("/empCourse");
 
 export default function useCourse() {
     const [loading, setLoading] = useState(false);

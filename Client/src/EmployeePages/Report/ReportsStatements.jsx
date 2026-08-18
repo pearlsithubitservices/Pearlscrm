@@ -61,7 +61,7 @@ export default function ReportsStatements() {
   };
 
   return (
-    <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#F5F2EC]">
+    <div className="max-h-screen overflow-y-auto page-scroll bg-[#F5F2EC]">
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6 bg-white p-4">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { apiUrl } from "../config/api.js";
 
 export default function useTotalLeave() {
     const { user } = useAuth();
@@ -8,7 +9,7 @@ export default function useTotalLeave() {
     const [error, setError] = useState(null);
     const [totalLeave, setTotalLeave] = useState(null);
 
-    const BASE_URL = "http://localhost:5000/api/totalLeave";
+    const BASE_URL = apiUrl("/totalLeave");
 
     // ================= GET =================
     const getTotalLeave = async () => {

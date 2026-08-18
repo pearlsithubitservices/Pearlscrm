@@ -13,6 +13,7 @@ import ClientTeam from '../components/ProjectDetails/ProjectTeam.jsx'
 import ClientActivity from '../components/ProjectDetails/ProjectActivity.jsx'
 import { useNavigate, useParams } from "react-router-dom";
 import useEmployees from "../Hooks/useEmployees.js";
+import { apiUrl } from "../config/api.js";
 
 export default function ClientDetails({ tasks }) {
     const [activeTab, setActiveTab] = useState("Overview");
@@ -27,7 +28,7 @@ export default function ClientDetails({ tasks }) {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const res = await fetch("http://localhost:5000/api/projects");
+                const res = await fetch(apiUrl("/projects"));
 
                 if (!res.ok) {
                     throw new Error("Failed to fetch projects");
@@ -94,7 +95,7 @@ export default function ClientDetails({ tasks }) {
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="w-full max-w-6xl bg-[#f3f0eb] rounded-[28px] overflow-hidden shadow-2xl max-h-screen overflow-y-auto no-scrollbar"
+                className="w-full max-w-6xl bg-[#f3f0eb] rounded-[28px] overflow-hidden shadow-2xl max-h-screen overflow-y-auto page-scroll"
             >
 
                 {/* Header */}

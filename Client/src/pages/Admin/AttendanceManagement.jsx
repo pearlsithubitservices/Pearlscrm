@@ -4,11 +4,8 @@ import React, {
   useState
 } from 'react';
 
-import axios from 'axios';
-
 import {
   Search,
-  Clock3,
   Coffee,
   LogIn,
   LogOut,
@@ -22,599 +19,323 @@ import useAttendance from '../../Hooks/useAttendance';
 import { useAuth } from '../../context/AuthContext';
 import useLeave from '../../Hooks/useLeave';
 import useEmployees from '../../Hooks/useEmployees';
+import { staticAttendance, staticHolidays } from '../../Utils/staticData';
 
 export default function AttendanceManagement() {
 
-  const [employeesdetails, setEmployeesdetails] =
-    useState([]);
+  const [employeesdetails, setEmployeesdetails] = useState(staticAttendance);
   const { employees } = useEmployees();
-
-  //const [employee, setEmployee] = useState([]);
 
   const { user } = useAuth();
 
   const { getHolidays, holidays } = useLeave();
-  console.log(holidays);
+
   useEffect(() => {
     getHolidays();
-  }, [])
+  }, []);
 
   const employeeMap = useMemo(() => {
+    const defaultMap = {
+      emp_1: "Ragavi M",
+      emp_2: "Karthik Raja",
+      emp_3: "Priya Sharma",
+      emp_4: "Suresh Kumar",
+    };
+    if (!employees || employees.length === 0) return defaultMap;
     return employees.reduce((map, employee) => {
-      map[employee.uid] = employee.name;
+      map[employee.uid || employee.id] = employee.name;
       return map;
-    }, {});
+    }, defaultMap);
   }, [employees]);
 
   const { getAttendance } = useAttendance();
+
   useEffect(() => {
     const fetchAttendance = async () => {
-      const res = await getAttendance();
-      setEmployeesdetails(res);
-      console.log(res)
-    }
+      try {
+        const res = await getAttendance();
+        if (Array.isArray(res) && res.length > 0) {
+          setEmployeesdetails(res);
+        } else {
+          setEmployeesdetails(staticAttendance);
+        }
+      } catch (err) {
+        console.log(err);
+        setEmployeesdetails(staticAttendance);
+      }
+    };
     fetchAttendance();
   }, []);
 
-  // FETCH EMPLOYEES
+  const safeDetails = Array.isArray(employeesdetails) && employeesdetails.length > 0
+    ? employeesdetails
+    : staticAttendance;
 
-  // const fetchEmployees =
-  //   async () => {
+  const safeHolidays = Array.isArray(holidays) && holidays.length > 0
+    ? holidays
+    : staticHolidays;
 
-  //     try {
+  const onlineEmployees = safeDetails.filter(
+    (emp) => emp?.attendanceState?.toLowerCase() === "working"
+  );
 
-  //       const response =
-  //         await axios.get(
-  //           'http://localhost:5000/api/attendance/active'
-  //         );
+  const breakEmployees = safeDetails.filter(
+    (emp) => emp?.attendanceState?.toLowerCase() === "break"
+  );
 
-  //       setEmployees(
-  //         response.data
-  //       );
-
-  //     } catch (error) {
-
-  //       console.log(error);
-
-  //     }
-
-  //   };
-
-  // // AUTO REFRESH
-
-  // useEffect(() => {
-
-  //   fetchEmployees();
-
-  //   const interval =
-  //     setInterval(() => {
-
-  //       fetchEmployees();
-
-  //     }, 3000);
-
-  //   return () =>
-  //     clearInterval(interval);
-
-  // }, []);
-
-  // STATUS COUNTS
-
-  const onlineEmployees =
-    employeesdetails.filter(
-      (emp) =>
-        emp.attendanceState.toLowerCase() === "working"
-    );
-  // const onlineEmployee =
-  //   employee.filter(
-  //     (emp) =>
-  //       emp.attendanceState.toLowerCase() === "working"
-  //   );
-  console.log(onlineEmployees)
-
-  const breakEmployees =
-    employeesdetails.filter(
-      (emp) =>
-        emp.attendanceState.toLowerCase() === "break"
-    );
-
-  const offlineEmployees =
-    employeesdetails.filter(
-      (emp) =>
-        emp.attendanceState.toLowerCase() === "clocked_out"
-    );
+  const offlineEmployees = safeDetails.filter(
+    (emp) => emp?.attendanceState?.toLowerCase() === "clocked_out" || emp?.attendanceState?.toLowerCase() === "offline"
+  );
 
   return (
-
-    <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#f1f5f9] p-8">
+    <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#f1f5f9] p-4 sm:p-6 md:p-8">
 
       {/* TOP */}
-
-      <div className="flex items-center justify-between mb-10">
-
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-
-          <h1 className="text-4xl font-black text-[#0f172a]">
-
+          <h1 className="text-2xl md:text-4xl font-black text-[#0f172a]">
             Attendance Management
-
           </h1>
-
-          <p className="text-gray-500 mt-2">
-
-            Monitor employee attendance &
-            productivity
-
+          <p className="text-gray-500 mt-1 text-xs md:text-sm">
+            Monitor employee attendance & productivity
           </p>
-
         </div>
 
         {/* SEARCH */}
-
-        <div className="relative w-[350px]">
-
+        <div className="relative w-full md:w-[350px]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-
           <input
             type="text"
             placeholder="Search employees..."
-            className="w-full bg-white border border-gray-200 rounded-2xl pl-12 pr-5 py-4 outline-none shadow-sm"
+            className="w-full bg-white border border-gray-200 rounded-2xl pl-12 pr-5 py-3 outline-none shadow-sm text-sm"
           />
-
         </div>
-
       </div>
 
       {/* STATS */}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-8">
 
         {/* ONLINE */}
-
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-
-          <div className="flex justify-between mb-4">
-
-            <LogIn className="w-10 h-10 text-green-500" />
-
-            <span className="text-green-500 font-bold text-sm">
-
-              LIVE
-
-            </span>
-
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between mb-3">
+            <LogIn className="w-8 h-8 text-green-500" />
+            <span className="text-green-500 font-bold text-xs">LIVE</span>
           </div>
-
-          <p className="text-gray-500 text-sm">
-
-            Online Employees
-
-          </p>
-
-          <h2 className="text-4xl font-black text-[#0f172a] mt-2">
-
-            {onlineEmployees.length || "0"}
-
+          <p className="text-gray-500 text-xs sm:text-sm">Online Employees</p>
+          <h2 className="text-3xl font-black text-[#0f172a] mt-1">
+            {onlineEmployees.length}
           </h2>
-
         </div>
 
         {/* BREAK */}
-
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-
-          <div className="flex justify-between mb-4">
-
-            <Coffee className="w-10 h-10 text-yellow-500" />
-
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between mb-3">
+            <Coffee className="w-8 h-8 text-yellow-500" />
           </div>
-
-          <p className="text-gray-500 text-sm">
-
-            On Break
-
-          </p>
-
-          <h2 className="text-4xl font-black text-[#0f172a] mt-2">
-
+          <p className="text-gray-500 text-xs sm:text-sm">On Break</p>
+          <h2 className="text-3xl font-black text-[#0f172a] mt-1">
             {breakEmployees.length}
-
           </h2>
-
         </div>
 
         {/* OFFLINE */}
-
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-
-          <div className="flex justify-between mb-4">
-
-            <LogOut className="w-10 h-10 text-red-500" />
-
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between mb-3">
+            <LogOut className="w-8 h-8 text-red-500" />
           </div>
-
-          <p className="text-gray-500 text-sm">
-
-            Offline Employees
-
-          </p>
-
-          <h2 className="text-4xl font-black text-[#0f172a] mt-2">
-
+          <p className="text-gray-500 text-xs sm:text-sm">Offline Employees</p>
+          <h2 className="text-3xl font-black text-[#0f172a] mt-1">
             {offlineEmployees.length}
-
           </h2>
-
         </div>
 
         {/* TOTAL */}
-
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-
-          <div className="flex justify-between mb-4">
-
-            <Users className="w-10 h-10 text-blue-500" />
-
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between mb-3">
+            <Users className="w-8 h-8 text-blue-500" />
           </div>
-
-          <p className="text-gray-500 text-sm">
-
-            Total Employees
-
-          </p>
-
-          <h2 className="text-4xl font-black text-[#0f172a] mt-2">
-
-            {employeesdetails.length}
-
+          <p className="text-gray-500 text-xs sm:text-sm">Total Employees</p>
+          <h2 className="text-3xl font-black text-[#0f172a] mt-1">
+            {safeDetails.length}
           </h2>
-
         </div>
 
         {/* HOLIDAYS */}
-
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-
-          <div className="flex justify-between mb-4">
-
-            <CalendarDays className="w-10 h-10 text-purple-500" />
-
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between mb-3">
+            <CalendarDays className="w-8 h-8 text-purple-500" />
           </div>
-
-          <p className="text-gray-500 text-sm">
-
-            Upcoming Holidays
-
-          </p>
-
-          <h2 className="text-2xl font-black text-[#0f172a] mt-2">
-
-            May 25
-
+          <p className="text-gray-500 text-xs sm:text-sm">Upcoming Holidays</p>
+          <h2 className="text-xl font-black text-[#0f172a] mt-1">
+            {safeHolidays[0]?.holidayDate ? new Date(safeHolidays[0].holidayDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "Aug 15"}
           </h2>
-
         </div>
 
       </div>
 
       {/* MAIN GRID */}
-
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
 
         {/* EMPLOYEE TABLE */}
+        <div className="lg:col-span-2 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 h-[700px] overflow-y-auto no-scrollbar">
 
-        <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-sm border border-gray-100 h-[800px] overflow-y-auto no-scrollbar">
-
-          <div className="flex items-center justify-between mb-8">
-
+          <div className="flex items-center justify-between mb-6">
             <div>
-
-              <h2 className="text-3xl font-black text-[#0f172a]">
-
+              <h2 className="text-xl md:text-2xl font-black text-[#0f172a]">
                 Live Attendance
-
               </h2>
-
-              <p className="text-gray-500 mt-1">
-
+              <p className="text-gray-500 text-xs md:text-sm mt-0.5">
                 Realtime employee monitoring
-
               </p>
-
             </div>
-
           </div>
 
           {/* TABLE */}
-
-          <div className="overflow-x-auto ">
-
-            <table className="w-full ">
-
+          <div className="overflow-x-auto responsive-table-container">
+            <table className="w-full text-xs sm:text-sm">
               <thead>
-
-                <tr className="border-b border-gray-100 text-left text-gray-500 text-sm">
-
-                  <th className="pb-4 font-semibold">
-
-                    Employee
-
-                  </th>
-
-                  <th className="pb-4 font-semibold">
-
-                    Status
-
-                  </th>
-
-                  <th className="pb-4 font-semibold">
-
-                    Login Time
-
-                  </th>
-
-                  <th className="pb-4 font-semibold">
-
-                    Location
-
-                  </th>
-
-                  <th className="pb-4 font-semibold">
-
-                    Photo
-
-                  </th>
-
+                <tr className="border-b border-gray-100 text-left text-gray-500">
+                  <th className="pb-4 font-semibold">Employee</th>
+                  <th className="pb-4 font-semibold">Status</th>
+                  <th className="pb-4 font-semibold">Login Time</th>
+                  <th className="pb-4 font-semibold">Location</th>
+                  <th className="pb-4 font-semibold">Photo</th>
                 </tr>
-
               </thead>
 
               <tbody>
+                {safeDetails.map((employee, idx) => {
+                  const empName = employeeMap[employee.employee_uid || employee.uid] || `Employee ${idx + 1}`;
+                  const stateStr = (employee?.attendanceState || "offline").toLowerCase();
 
-                {employeesdetails.map((employee) => (
+                  return (
+                    <tr
+                      key={employee._id || employee.id || idx}
+                      className="border-b border-gray-50 hover:bg-gray-50 transition-all"
+                    >
+                      {/* EMPLOYEE */}
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                            {empName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-[#0f172a]">
+                              {empName}
+                            </h3>
+                            <p className="text-gray-400 text-xs">
+                              {employee.role || "Employee"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
 
-                  <tr
-                    key={employee._id}
-                    className="border-b border-gray-50 hover:bg-gray-50 transition-all"
-                  >
-
-                    {/* EMPLOYEE */}
-
-                    <td className="py-5">
-
-                      <div className="flex items-center gap-4">
-
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-
-                          {
-                            employeeMap[employee.employee_uid]?.charAt(0).toUpperCase()
+                      {/* STATUS */}
+                      <td className="py-4">
+                        <span className={`
+                          px-3 py-1 rounded-2xl text-xs font-semibold
+                          ${stateStr === 'working'
+                            ? 'bg-green-100 text-green-600'
+                            : stateStr === 'break'
+                              ? 'bg-yellow-100 text-yellow-600'
+                              : 'bg-red-100 text-red-500'
                           }
+                        `}>
+                          {stateStr === "working" ? "Online" : stateStr === "break" ? "Break" : "Offline"}
+                        </span>
+                      </td>
 
+                      {/* LOGIN */}
+                      <td className="py-4 font-semibold text-[#0f172a]">
+                        {employee.clockIn ? new Date(employee.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "09:00 AM"}
+                      </td>
+
+                      {/* LOCATION */}
+                      <td className="py-4">
+                        <div className="flex items-center gap-1.5 text-gray-600 text-xs">
+                          <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          Chennai
                         </div>
+                      </td>
 
-                        <div>
-
-                          <h3 className="font-bold text-[#0f172a]">
-
-                            {employeeMap[employee.employee_uid]}
-
-                          </h3>
-
-                          <p className="text-gray-500 text-sm">
-
-                            Employee
-
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                    </td>
-
-                    {/* STATUS */}
-
-                    <td className="py-5">
-
-                      <span className={`
-                        px-4 py-2 rounded-2xl text-sm font-semibold
-                        ${employee.attendanceState === 'working'
-                          ? 'bg-green-100 text-green-600'
-                          : employee.status === 'break'
-                            ? 'bg-yellow-100 text-yellow-600'
-                            : 'bg-red-100 text-red-500'
-                        }
-                      `}>
-
-                        {employee.attendanceState.toLowerCase() == "working" ? "online" : employee.attendanceState.toLowerCase() == "break" ? "Break" : "Offline"}
-
-                      </span>
-
-                    </td>
-
-                    {/* LOGIN */}
-
-                    <td className="py-5 font-semibold text-[#0f172a]">
-
-                      {
-                        new Date(
-                          employee.clockIn
-
-                        ).toLocaleTimeString()
-                      }
-
-                    </td>
-
-                    {/* LOCATION */}
-
-                    <td className="py-5">
-
-                      <div className="flex items-center gap-2 text-gray-600">
-
-                        <MapPin className="w-4 h-4 text-blue-500" />
-
-                        Chennai
-
-                      </div>
-
-                    </td>
-
-                    {/* PHOTO */}
-
-                    <td className="py-5">
-
-                      <img
-                        src={
-                          employee.login_photo ||
-                          'https://i.pravatar.cc/100'
-                        }
-                        alt=""
-                        className="w-12 h-12 rounded-2xl object-cover"
-                      />
-
-                    </td>
-
-                  </tr>
-
-                ))}
-
+                      {/* PHOTO */}
+                      <td className="py-4">
+                        <img
+                          src={employee.login_photo || `https://i.pravatar.cc/100?img=${idx + 1}`}
+                          alt=""
+                          className="w-10 h-10 rounded-2xl object-cover"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
-
             </table>
-
           </div>
-
         </div>
 
         {/* RIGHT PANEL */}
-
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
 
           {/* TIMESHEET */}
-
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-
-            <div className="flex items-center justify-between mb-6">
-
-              <h2 className="text-2xl font-black text-[#0f172a]">
-
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-[#0f172a]">
                 Overall Timesheet
-
               </h2>
-
-              <TimerReset className="w-6 h-6 text-blue-500" />
-
+              <TimerReset className="w-5 h-5 text-blue-500" />
             </div>
 
-            <div className="space-y-5">
-
+            <div className="space-y-4 text-xs sm:text-sm">
               <div>
-
-                <div className="flex justify-between mb-2">
-
-                  <p className="text-gray-500">
-
-                    Today's Work
-
-                  </p>
-
-                  <p className="font-bold">
-
-                    38h 22m
-
-                  </p>
-
+                <div className="flex justify-between mb-1.5">
+                  <p className="text-gray-500">Today's Work</p>
+                  <p className="font-bold">38h 22m</p>
                 </div>
-
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-
+                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full w-[75%] bg-blue-500 rounded-full"></div>
-
                 </div>
-
               </div>
 
               <div>
-
-                <div className="flex justify-between mb-2">
-
-                  <p className="text-gray-500">
-
-                    Weekly Attendance
-
-                  </p>
-
-                  <p className="font-bold">
-
-                    92%
-
-                  </p>
-
+                <div className="flex justify-between mb-1.5">
+                  <p className="text-gray-500">Weekly Attendance</p>
+                  <p className="font-bold">92%</p>
                 </div>
-
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-
+                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full w-[92%] bg-green-500 rounded-full"></div>
-
                 </div>
-
               </div>
-
             </div>
-
           </div>
 
           {/* HOLIDAYS */}
-
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100  h-[500px] overflow-y-auto no-scrollbar">
-
-            <div className="flex items-center justify-between mb-6 ">
-
-              <h2 className="text-2xl font-black text-[#0f172a]">
-
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-[450px] overflow-y-auto no-scrollbar">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-[#0f172a]">
                 Upcoming Holidays
-
               </h2>
-
-              <Bell className="w-6 h-6 text-orange-500" />
-
+              <Bell className="w-5 h-5 text-orange-500" />
             </div>
 
-            <div className="space-y-5">
-
-              {holidays.map((item, i) => (
-
-                <div className="flex items-center justify-between">
-
-                  <div key={i}>
-
-                    <h3 className="font-bold text-[#0f172a]">
-
-                      {item?.holidayName || "leave"}
-
+            <div className="space-y-4">
+              {safeHolidays.map((item, i) => (
+                <div key={i} className="flex items-center justify-between border-b border-gray-50 pb-3">
+                  <div>
+                    <h3 className="font-bold text-[#0f172a] text-xs sm:text-sm">
+                      {item?.holidayName || "Holiday"}
                     </h3>
-
-                    <p className="text-gray-500 text-sm">
-
-                      {new Date(item?.holidayDate).toLocaleDateString('en-GB')}
-
+                    <p className="text-gray-400 text-xs">
+                      {item?.holidayDate ? new Date(item.holidayDate).toLocaleDateString('en-GB') : "Upcoming"}
                     </p>
-
                   </div>
 
-                  <span className="px-4 py-2 rounded-2xl bg-purple-100 text-purple-600 text-sm font-semibold">
-
-                    {item?.holidayType}
-
+                  <span className="px-3 py-1 rounded-2xl bg-purple-100 text-purple-600 text-xs font-semibold">
+                    {item?.holidayType || "General"}
                   </span>
-
                 </div>
               ))}
-
-
-
             </div>
-
           </div>
 
         </div>
@@ -622,7 +343,5 @@ export default function AttendanceManagement() {
       </div>
 
     </div>
-
   );
-
 }

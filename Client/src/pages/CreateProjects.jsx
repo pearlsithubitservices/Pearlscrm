@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../lib/firebase.js";
+import { apiUrl } from "../config/api.js";
 
 export default function ProjectForm({ onClose }) {
   const [project, setProject] = useState({
@@ -34,62 +35,38 @@ export default function ProjectForm({ onClose }) {
 
   const [employees, setEmployees] = useState([]);
 
-  // FETCH EMPLOYEES
   const fetchEmployees = async () => {
-
     try {
-
-      const snapshot = await getDocs(
-        collection(db, "employees")
-      );
-
+      const snapshot = await getDocs(collection(db, "employees"));
       const employeeList = [];
-
       snapshot.forEach((doc) => {
-
         employeeList.push({
           id: doc.id,
           ...doc.data(),
         });
-
       });
-
       setEmployees(employeeList);
-
     } catch (error) {
-
       console.log(error);
-
     }
-
   };
 
   useEffect(() => {
     fetchEmployees();
   }, []);
 
-  // EMPLOYEE MAP
   const employeeMap = useMemo(() => {
-
     const map = {};
-
     employees.forEach((emp) => {
       map[emp.id] = emp;
     });
-
     return map;
-
   }, [employees]);
 
-  // ADD PROJECT
   const handleAddProject = async () => {
-
     try {
-
-      console.log("Adding project:", project);
-
       const response = await fetch(
-        "http://localhost:5000/api/projects",
+        apiUrl("/projects"),
         {
           method: "POST",
           headers: {
@@ -100,144 +77,94 @@ export default function ProjectForm({ onClose }) {
       );
 
       const data = await response.json();
-
-      console.log("Response from server:", data);
-
       if (response.ok) {
-
-        console.log(
-          "Project added successfully:",
-          data
-        );
-
         alert("Project Added Successfully");
-
         onClose();
-
       } else {
-
-        console.error(
-          "Error adding project:",
-          data.message
-        );
-
+        console.error("Error adding project:", data.message);
       }
-
     } catch (error) {
-
       console.log(error);
-
-      alert(
-        "Failed to add project. Please try again."
-      );
-
+      alert("Failed to add project. Please try again.");
     }
-
   };
 
   const handleChange = (e) => {
-
     setProject({
       ...project,
       [e.target.name]: e.target.value
     });
-
   };
 
   return (
+    <div className="w-full max-w-4xl mx-auto bg-[#e9e7e2] rounded-2xl sm:rounded-[30px] p-4 sm:p-6 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto page-scroll">
+      <button
+        onClick={onClose}
+        className='absolute top-4 right-4 text-red-600 font-bold p-1.5 hover:bg-white rounded-full transition-colors'
+        aria-label="Close"
+      >
+        <X size={22} strokeWidth={2.5} />
+      </button>
 
-    <div className="max-w-5xl mx-auto bg-[#e9e7e2] p-10 rounded-[40px] relative">
+      <h2 className="text-xl sm:text-2xl font-bold text-[#0b2b57] mb-6 pr-8">
+        Create New Project
+      </h2>
 
-      {/* CLOSE BUTTON */}
+      <div className="space-y-4 sm:space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <InputField
+            label="Company Name"
+            name="company"
+            value={project.company}
+            onChange={handleChange}
+            placeholder="Company Name"
+          />
 
-      <div className="absolute top-5 right-5 text-red-600 hover:bg-white rounded">
-
-        <X
-          size={22}
-          strokeWidth={3}
-          onClick={onClose}
-        />
-
-      </div>
-
-      <div className="space-y-5">
-
-        {/* COMPANY */}
-
-        <InputField
-          label="Company Name"
-          name="company"
-          value={project.company}
-          onChange={handleChange}
-          placeholder="Company"
-        />
-
-        <InputField
-          label="Company Location"
-          name="companylocation"
-          value={project.companylocation}
-          onChange={handleChange}
-          placeholder="Company Location"
-        />
-
-        {/* TITLE */}
+          <InputField
+            label="Company Location"
+            name="companylocation"
+            value={project.companylocation}
+            onChange={handleChange}
+            placeholder="Company Location"
+          />
+        </div>
 
         <InputField
           label="Project Title"
           name="title"
           value={project.title}
           onChange={handleChange}
-          placeholder="Project title"
+          placeholder="Project Title"
         />
-
-        {/* DESCRIPTION */}
-
-        <label className="font-bold text-[#0b2b57]">
-          Project Description
-        </label>
-
-        <textarea
-          name="description"
-          value={project.description}
-          onChange={handleChange}
-          className="w-full h-40 rounded-xl p-4"
-        />
-
-        {/* PROJECT MEMBERS */}
 
         <div>
+          <label className="font-bold text-[#0b2b57] text-sm block mb-2">
+            Project Description
+          </label>
+          <textarea
+            name="description"
+            value={project.description}
+            onChange={handleChange}
+            placeholder="Enter project description..."
+            className="w-full h-32 rounded-xl p-4 border border-gray-300 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          />
+        </div>
 
-          <label className="font-bold text-[#0b2b57]">
+        <div>
+          <label className="font-bold text-[#0b2b57] text-sm block mb-2">
             Add Project Members
           </label>
-
-          <div className="bg-white rounded-xl p-3 border relative">
-
-            {/* SELECT EMPLOYEE */}
-
+          <div className="bg-white rounded-xl p-3 border border-gray-300 space-y-3">
             <select
               value=""
               onChange={(e) => {
-
-                const selectedId =
-                  e.target.value;
-
+                const selectedId = e.target.value;
                 if (!selectedId) return;
-
-                // Prevent duplicates
                 const employee = employeeMap[selectedId];
-
                 if (!employee) return;
-
-                // Prevent duplicates
-                if (
-                  project.members.some(
-                    (member) => member.uid === employee.uid
-                  )
-                ) {
+                if (project.members.some((member) => member.uid === employee.uid)) {
                   return;
                 }
-
                 setProject((prev) => ({
                   ...prev,
                   members: [
@@ -250,46 +177,24 @@ export default function ProjectForm({ onClose }) {
                     },
                   ],
                 }));
-
               }}
-              className="
-                w-full
-                border
-                rounded-lg
-                p-2
-                outline-none
-              "
+              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none bg-white"
             >
-
-              <option value="">
-                Select Employee
-              </option>
-
+              <option value="">Select Employee to Add</option>
               {employees.map((emp) => (
-
-                <option
-                  key={emp.id}
-                  value={emp.id}
-                >
-
+                <option key={emp.id} value={emp.id}>
                   {emp.name}
-
                 </option>
-
               ))}
-
             </select>
 
-            {/* SELECTED MEMBERS */}
-
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 pt-1">
               {project.members.map((member) => (
                 <div
                   key={member.uid}
-                  className="flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full"
+                  className="flex items-center gap-2 bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-full text-xs font-medium"
                 >
                   <span>{member.name}</span>
-
                   <select
                     value={member.role}
                     onChange={(e) => {
@@ -297,15 +202,12 @@ export default function ProjectForm({ onClose }) {
                         ...prev,
                         members: prev.members.map((m) =>
                           m.uid === member.uid
-                            ? {
-                              ...m,
-                              role: e.target.value,
-                            }
+                            ? { ...m, role: e.target.value }
                             : m
                         ),
                       }));
                     }}
-                    className="border rounded px-2 py-1 text-sm bg-white"
+                    className="border border-blue-300 rounded px-1.5 py-0.5 text-xs bg-white text-gray-800"
                   >
                     <option value="Leader">Leader</option>
                     <option value="Developer">Developer</option>
@@ -313,7 +215,6 @@ export default function ProjectForm({ onClose }) {
                     <option value="Tester">Tester</option>
                     <option value="Manager">Manager</option>
                   </select>
-
                   <button
                     type="button"
                     onClick={() =>
@@ -324,22 +225,17 @@ export default function ProjectForm({ onClose }) {
                         ),
                       }))
                     }
-                    className="hover:text-red-500"
+                    className="text-gray-400 hover:text-red-600 transition-colors"
                   >
                     <X size={14} />
                   </button>
                 </div>
               ))}
             </div>
-
           </div>
-
         </div>
 
-        {/* DATES */}
-
-        <div className="grid md:grid-cols-2 gap-5">
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
           <InputField
             label="Assigned Date"
             name="assignedDate"
@@ -357,23 +253,19 @@ export default function ProjectForm({ onClose }) {
             type="date"
             Icon={Calendar}
           />
-
         </div>
 
-        {/* LEADER + BUDGET */}
-
-        <div className="grid md:grid-cols-2 gap-5">
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
           <InputField
             label="Project Leader"
             name="leader"
             value={project.leader}
             onChange={handleChange}
-            placeholder="Leader"
+            placeholder="Select Leader"
             type="select"
             options={employees.map((emp) => ({
               label: emp.name,
-              value: emp.uid,
+              value: emp.uid || emp.name,
             }))}
           />
 
@@ -386,45 +278,26 @@ export default function ProjectForm({ onClose }) {
             Icon={IndianRupee}
             type="number"
           />
-
         </div>
 
-        {/* BUTTONS */}
-
-        <div className="border-t pt-8 flex gap-4">
-
+        <div className="border-t border-gray-300 pt-6 mt-6 flex flex-col-reverse sm:flex-row gap-3">
           <button
-            className="
-              px-10
-              py-4
-              border
-              rounded-xl
-              bg-blue-700
-              text-white
-            "
+            type="button"
+            className="px-6 py-3 border border-gray-300 rounded-xl bg-white text-gray-700 font-semibold hover:bg-gray-100 transition-colors"
             onClick={onClose}
           >
             Cancel
           </button>
 
           <button
+            type="button"
             onClick={handleAddProject}
-            className="
-              flex-1
-              bg-blue-700
-              text-white
-              rounded-xl
-            "
+            className="flex-1 py-3 px-6 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition-colors shadow-sm"
           >
             + Add Project
           </button>
-
         </div>
-
       </div>
-
     </div>
-
   );
-
 }

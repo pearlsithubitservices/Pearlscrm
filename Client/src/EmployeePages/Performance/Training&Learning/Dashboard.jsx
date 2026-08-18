@@ -9,6 +9,7 @@ import SystemDesign from '../../../assets/SystemDesign.jpeg';
 import { useEffect, useState } from "react";
 import CourseForm from "./CourseForm";
 import useCourse from "../../../Hooks/useCourse";
+import { appUrl } from "../../../config/api.js";
 
 
 export default function Dashboard() {
@@ -41,7 +42,7 @@ export default function Dashboard() {
                     {course.map((item) => (
                         <CourseCard
                             key={item._id}
-                            src={`http://localhost:5000${item.image}`}
+                            src={appUrl(item.image)}
                             title={item.title}
                             tag={item.tag}
                             time={item.duration}

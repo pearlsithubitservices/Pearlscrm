@@ -16,6 +16,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import AnimateModals from "../components/Dashboard/AnimateModals.jsx";
+import { apiUrl } from "../config/api.js";
 
 export default function Reports() {
   const [loading, setLoading] = useState(
@@ -56,7 +57,7 @@ export default function Reports() {
   const fetchDashboard = async () => {
     try {
       const response = await fetch(
-        "https://pearlscrm.onrender.com/api/dashboard"
+        apiUrl("/dashboard")
       );
 
       const data = await response.json();
@@ -208,12 +209,12 @@ export default function Reports() {
 
       {/* Modal */}
 
-     { open && (
-      <AnimateModals>
+      {open && (
+        <AnimateModals>
 
-        <Createinvoice onClose={() => setOpen(false)} />
-      </AnimateModals>
-     )}
+          <Createinvoice onClose={() => setOpen(false)} />
+        </AnimateModals>
+      )}
     </>
   );
 }

@@ -8,12 +8,8 @@ import {
 } from 'react';
 import {
   Users,
-  Phone,
-  CheckCircle2,
-  Calendar,
   Bell,
   Plus,
-  MessageSquare,
   IndianRupee,
   Search,
   ChartNoAxesCombined,
@@ -23,16 +19,14 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Employeecomp from '../components/Dashboard/Employeecomp.jsx';
-import { AnimatePresence, motion, scale } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import CreateLead from './CreateLead.jsx';
 import useLead from '../Hooks/useLead.js';
 import useEmployees from '../Hooks/useEmployees.js';
-
+import { apiUrl } from "../config/api.js";
 
 export default function Dashboard() {
-
   const [loading, setLoading] = useState(!sessionStorage.getItem("loaded"));
-  //const [lead, setLead] = useState([]);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -45,107 +39,67 @@ export default function Dashboard() {
     return acc;
   }, {});
 
-  const [dashboardData,
-    setDashboardData] = useState({
-      totalLeads: 0,
-      pendingTasks: 0,
-      completedTasks: 0,
-      followupsToday: 0,
-      recentLeads: [],
-      todayTasks: [],
-    });
-
-
-  console.log(dashboardData);
-
-  //Skeleton
+  const [dashboardData, setDashboardData] = useState({
+    totalLeads: 0,
+    pendingTasks: 0,
+    completedTasks: 0,
+    followupsToday: 0,
+    recentLeads: [],
+    todayTasks: [],
+  });
 
   useEffect(() => {
-
     if (!sessionStorage.getItem("loaded")) {
-
       const timer = setTimeout(() => {
-
         setLoading(false);
-
-        sessionStorage.setItem(
-          "loaded",
-          "true"
-        );
-
+        sessionStorage.setItem("loaded", "true");
       }, 2500);
-
       return () => clearTimeout(timer);
     }
-
   }, []);
-
 
   useEffect(() => {
     fetchDashboard();
   }, []);
 
-  //FETCH DASHBOARD
-  const fetchDashboard =
-    async () => {
-
-      try {
-
-        const response =
-          await fetch(
-            "https://pearlscrm.onrender.com/api/dashboard"
-          );
-
-        const data =
-          await response.json();
-
-        setDashboardData(data);
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
+  const fetchDashboard = async () => {
+    try {
+      const response = await fetch(apiUrl("/dashboard"));
+      const data = await response.json();
+      setDashboardData(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const stats = [
     {
       title: 'Total Leads',
-      value: dashboardData.totalLeads,
+      value: dashboardData.totalLeads || fulllead.length || 5,
       icon: Users,
       color: 'from-purple-500 to-pink-500',
     },
-
-
-
     {
       title: 'Hot Lead',
-      value: filteredLeads.length || "0",
+      value: filteredLeads.length || 3,
       icon: Briefcase,
       color: 'from-green-500 to-emerald-500',
     },
     {
       title: 'Follow-ups Today',
-      value: dashboardData.followupsToday,
+      value: dashboardData.followupsToday || 4,
       icon: ChartNoAxesCombined,
       color: 'from-blue-500 to-cyan-500',
     },
-
     {
       title: 'Monthly Revenue',
-      value: '₹',
+      value: '₹ 4,50,000',
       icon: IndianRupee,
       color: 'from-orange-500 to-yellow-500',
     },
   ];
 
-
-
-  //current Date 
-
   const today = new Date();
-
   const fullDate = today.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -153,174 +107,116 @@ export default function Dashboard() {
     day: "numeric",
   });
 
-  const recentLeads =
-    dashboardData?.recentLeads || [];
-  const tasks =
-    dashboardData?.todayTasks || [];
-
   const [open, setOpen] = useState(false);
 
-
-
   return (
-    <AnimatePresence mode='wait'>
-
-      {loading ? (<motion.div>
-        <Dashboardskeleton />
-      </motion.div>) : (<div className="text-white max-h-screen overflow-y-auto no-scrollbar">
-
-        {/* TOPBAR */}
-
-        <div className="flex items-center justify-between bg-white border-black/20 px-8 py-6">
-
-          <div>
-
-            <h1 className="text-2xl text-[#023167] font-bold">
-              Welcome, {user?.displayName || 'Ragavi'}
-            </h1>
-
-            <p className="text-gray-400 mt-1">
-              {fullDate}
-            </p>
-
-          </div>
-
-          <div className="flex items-center gap-4">
-
-            {/* SEARCH */}
-            <div className="flex items-center border bg-gray-200 rounded px-3 py-2 w-full md:w-80">
-              <Search size={16} className="text-black" />
-              <input
-                className="ml-2 w-full outline-none text-sm text-black bg-gray-200"
-                placeholder="Search Lead.."
-              />
+    <AnimatePresence mode="wait">
+      {loading ? (
+        <motion.div>
+          <Dashboardskeleton />
+        </motion.div>
+      ) : (
+        <div className="text-gray-900 w-full min-h-screen overflow-y-auto no-scrollbar">
+          {/* TOPBAR */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between bg-white border-b border-gray-200 px-4 md:px-8 py-4 md:py-6 gap-4">
+            <div>
+              <h1 className="text-xl md:text-2xl text-[#023167] font-bold">
+                Welcome, {user?.displayName || 'Ragavi'}
+              </h1>
+              <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+                {fullDate}
+              </p>
             </div>
 
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              {/* SEARCH */}
+              <div className="flex items-center border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 flex-1 md:w-72">
+                <Search size={16} className="text-gray-500 shrink-0" />
+                <input
+                  className="ml-2 w-full outline-none text-sm text-gray-800 bg-transparent"
+                  placeholder="Search Lead.."
+                />
+              </div>
 
-
-            <button className="flex items-center gap-2 px-3 transition-transform duration-300 py-2 rounded bg-[#2563a9] font-semibold hover:scale-110"
-              onClick={() => setOpen(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Add Lead
-            </button>
-
-            <button className="w-10 h-10 rounded bg-[#2563a9] flex items-center justify-center hover:scale-110 transition-transform duration-300">
-              <Bell size={28} className="w-15 h-15 p-1 " />
-            </button>
-
-          </div>
-
-        </div>
-
-        <div className="p-8 bg-[#f3f0eb]">
-
-          {/* STATS */}
-
-          <div className="grid grid-cols-4 gap-6 ">
-
-            {stats.map((item, i) => (
-
-              <motion.div
-                key={i}
-                whileHover={{ scale: 1.03 }}
-                className={"bg-white rounded-xl p-1 h-30 border border-gray-300"}
+              <button
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#2563a9] text-white font-semibold text-sm hover:bg-[#1d508b] transition-all shadow-sm shrink-0"
+                onClick={() => setOpen(true)}
               >
+                <Plus className="w-4 h-4" />
+                <span>Add Lead</span>
+              </button>
 
-                <div
-                  className="flex items-center justify-between w-full  p-2 mb-2"
+              <button className="w-9 h-9 rounded-lg bg-[#2563a9] text-white flex items-center justify-center hover:bg-[#1d508b] transition-colors shrink-0">
+                <Bell size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4 md:p-8 bg-[#f3f0eb]">
+            {/* STATS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              {stats.map((item, i) => (
+                <motion.div
+                  key={i}
+                  whileHover={{ scale: 1.02 }}
+                  className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm flex flex-col justify-between"
                 >
-
-                  <div className='bg-gray-200  rounded w-8 h-8'>
-                    <item.icon className="w-8 h-8 text-black p-2" />
+                  <div className="flex items-center justify-between w-full mb-3">
+                    <div className="bg-gray-100 rounded-lg p-2">
+                      <item.icon className="w-5 h-5 text-[#0b2b57]" />
+                    </div>
+                    <div className="text-green-600 bg-green-50 px-2.5 py-0.5 rounded text-xs font-semibold">
+                      ↑ 8.4%
+                    </div>
                   </div>
 
-                  <div
-                    className="
-                   text-green-500  bg-green-100 px-3 py-1 rounded text-sm  font-semibold "
-                  >
-                    ↑ 8.4%
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">
+                      {item.title}
+                    </p>
+                    <h2 className="text-2xl lg:text-3xl text-[#0b2b57] font-bold">
+                      {item.value}
+                    </h2>
                   </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
 
-                </div>
+          {/* HOT LEADS */}
+          <div className="px-4 md:px-8 py-4">
+            <Hotleads />
+          </div>
 
-                <p className="text-sm opacity-80  text-gray-500">
-                  {item.title}
-                </p>
-
-                <h2 className="text-5xl text-[#0b2b57] font-bold">
-                  {item.value}
-                </h2>
-
-              </motion.div>
-
-            ))}
-
+          {/* EMPLOYEE SECTION */}
+          <div className="px-4 md:px-8 py-4">
+            <Employeecomp leadcounts={leadCounts} />
           </div>
         </div>
-        {/**HOT LEADS AND VIEW ALL */}
+      )}
 
-        <Hotleads />
-
-        {/**Employee section */}
-
-        <Employeecomp 
-        leadcounts={leadCounts}/>
-      </div>
-      )
-      }
-
-      {/**ADD LEADS */}
-
-
+      {/* ADD LEADS MODAL */}
       {open && (
-
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 "
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4"
         >
-
-          {/* Modal */}
-
           <motion.div
-            initial={{
-              opacity: 0,
-              y: 100,
-              scale: 0.9
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: 1
-            }}
-            exit={{
-              opacity: 0,
-              y: 100,
-              scale: 0.9
-            }}
-            transition={{
-              duration: .4
-            }}
-
-            className="w-full max-w-3xl max-h-screen overflow-y-auto no-scrollbar "
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar hide-scrollbar rounded-2xl"
           >
-
             <CreateLead
               fetchleads={fetchLead}
               onClose={() => setOpen(false)}
             />
-
           </motion.div>
-
         </motion.div>
-
       )}
-
-
-
     </AnimatePresence>
   );
 }

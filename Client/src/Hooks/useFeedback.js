@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { apiUrl } from "../config/api.js";
 
-const BASE_URL = "http://localhost:5000/api/feedback";
+const BASE_URL = apiUrl("/feedback");
 
 export default function useFeedback() {
   const [feedbacks, setFeedbacks] = useState([]);

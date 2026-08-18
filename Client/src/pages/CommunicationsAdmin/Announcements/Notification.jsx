@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Circle, Star, X } from "lucide-react";
-import useNotification from "../../../Hooks/useNotification";
+import useNotification from "../../../Hooks/useNotification"; 
 import NotificationForm from "./NotificationForm";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -11,7 +11,7 @@ import { useAuth } from "../../../context/AuthContext";
 export default function ImportantNotifications() {
   const { notifications, fetchNotification, deleteNotification } = useNotification();
   const [shownotification, setShownotification] = useState(false);
-  console.log(notifications);
+  console.log(notifications); 
 
   const { user } = useAuth();
   console.log(user.uid);
@@ -45,7 +45,7 @@ export default function ImportantNotifications() {
       </div>
 
       {/* Body */}
-      <div className="mt-4 bg-white border max-h-[500px] h-full overflow-y-auto no-scrollbar rounded-xl p-5">
+      <div className="mt-4 bg-white border max-h-[500px] h-full overflow-y-auto page-scroll rounded-xl p-5">
         <div className="relative border-l border-gray-200 pl-6 space-y-6">
           {empnotification?.slice(0, 8).map((item, index) => (
             <motion.div

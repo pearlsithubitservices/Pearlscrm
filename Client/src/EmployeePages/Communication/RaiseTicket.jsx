@@ -5,7 +5,7 @@ import InputField from "../../components/InputField";
 import useTicket from "../../Hooks/useTicket";
 
 export default function RaiseTicket({ onClose }) {
-    const {fetchTickets} = useTicket();
+    const { fetchTickets, createTicket } = useTicket();
     const [formData, setFormData] = useState({
         issuedcategory: "",
         priority: "",
@@ -13,7 +13,6 @@ export default function RaiseTicket({ onClose }) {
         description: "",
         file: null,
     });
-    const { createTicket } = useTicket();
 
     const handleChange = (e) => {
         setFormData((prev) => ({
@@ -34,7 +33,6 @@ export default function RaiseTicket({ onClose }) {
         await createTicket(formData);
         await fetchTickets();
         onClose();
-        console.log(formData);
     };
 
     return (
@@ -43,27 +41,23 @@ export default function RaiseTicket({ onClose }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             onSubmit={handleSubmit}
-            className="bg-[#efede8] rounded-[28px] p-10 "
+            className="w-full max-w-3xl mx-auto bg-[#efede8] rounded-2xl sm:rounded-[28px] p-4 sm:p-6 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto page-scroll"
         >
             {/* Header */}
-
-            <div className="flex items-center gap-3 mb-8">
-                <h3 className="uppercase text-sm tracking-[3px] text-gray-500 whitespace-nowrap">
+            <div className="flex items-center justify-between gap-3 mb-6 border-b border-gray-300 pb-4">
+                <h3 className="uppercase text-xs sm:text-sm font-bold tracking-[2px] text-[#0b2b57]">
                     Raise Ticket
                 </h3>
-
-                <div className="h-px flex-1 bg-gray-400" />
-                <X size={20} className="text-white bg-red-700 hover:scale-105 transition-transform duration-150 rounded"
+                <button
+                    type="button"
                     onClick={onClose}
-                />
+                    className="p-1 rounded-full text-gray-600 hover:bg-white transition-colors"
+                >
+                    <X size={20} />
+                </button>
             </div>
 
-            {/* Claim Type */}
-
-
-            {/* Amount + Date */}
-
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <InputField
                     label="Issued Category"
                     Icon={IndianRupee}
@@ -72,14 +66,14 @@ export default function RaiseTicket({ onClose }) {
                     onChange={handleChange}
                     placeholder="IT hardware"
                     type="select"
-                   options={[
-                    {value:"It/hardware",label:"IT/Hardware"},
-                    {value:"It/software",label:"IT/Software"},
-                    {value:"hr/payroll",label:"HR/Payroll"},
-                    {value:"finance",label:"Finance"},
-                    {value:"admin/facilities",label:"Admin/Facilities"},
-                    {value:"other",label:"Other"},
-                   ]}
+                    options={[
+                        { value: "It/hardware", label: "IT/Hardware" },
+                        { value: "It/software", label: "IT/Software" },
+                        { value: "hr/payroll", label: "HR/Payroll" },
+                        { value: "finance", label: "Finance" },
+                        { value: "admin/facilities", label: "Admin/Facilities" },
+                        { value: "other", label: "Other" },
+                    ]}
                 />
 
                 <InputField
@@ -97,24 +91,24 @@ export default function RaiseTicket({ onClose }) {
                     ]}
                 />
             </div>
-            <InputField
-                label="Subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleChange}
-                placeholder="Breif title of the issue"
-                type="text"
 
-            />
+            <div className="mt-4">
+                <InputField
+                    label="Subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    placeholder="Brief title of the issue"
+                    type="text"
+                />
+            </div>
 
             {/* Description */}
-
-            <div className="mt-6">
-                <div className="flex justify-between items-center mb-2">
-                    <label className="font-bold text-[#0b2b57]">
+            <div className="mt-4">
+                <div className="flex justify-between items-center mb-1">
+                    <label className="font-bold text-[#0b2b57] text-sm">
                         Description
                     </label>
-
                     <span className="text-xs text-gray-400">
                         {formData.description.length} / 500
                     </span>
@@ -126,15 +120,14 @@ export default function RaiseTicket({ onClose }) {
                     value={formData.description}
                     onChange={handleChange}
                     placeholder="Describe the issue you had..."
-                    className="w-full h-32 rounded-xl border border-gray-200 bg-white p-4 outline-none resize-none"
+                    className="w-full h-28 rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
 
             {/* Upload */}
-
-            <div className="mt-8">
-                <label className="font-bold text-[#0b2b57] block mb-3">
-                    Upload receipts
+            <div className="mt-6">
+                <label className="font-bold text-[#0b2b57] text-sm block mb-2">
+                    Upload Receipts / Files
                 </label>
 
                 <label className="block cursor-pointer">
@@ -145,25 +138,23 @@ export default function RaiseTicket({ onClose }) {
                         onChange={handleFileChange}
                     />
 
-                    <div className="bg-white border-2 border-dashed border-gray-300 rounded-2xl h-44 flex flex-col items-center justify-center">
+                    <div className="bg-white border-2 border-dashed border-gray-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors">
                         <UploadCloud
-                            size={50}
-                            className="text-gray-400 mb-4"
+                            size={36}
+                            className="text-gray-400 mb-2"
                         />
-
-                        <p className="text-lg">
+                        <p className="text-sm font-medium text-gray-700">
                             Drag & Drop or{" "}
-                            <span className="text-green-700 underline font-medium">
+                            <span className="text-blue-700 underline font-semibold">
                                 Choose File
                             </span>
                         </p>
-
-                        <p className="text-xs text-gray-400 mt-3">
+                        <p className="text-xs text-gray-400 mt-1">
                             Supported: JPG, PNG, PDF (Max 5MB)
                         </p>
 
                         {formData.file && (
-                            <p className="mt-2 text-sm font-medium text-green-600">
+                            <p className="mt-2 text-xs font-semibold text-green-600">
                                 {formData.file.name}
                             </p>
                         )}
@@ -172,11 +163,10 @@ export default function RaiseTicket({ onClose }) {
             </div>
 
             {/* Footer Buttons */}
-
-            <div className="flex gap-4 mt-10">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 mt-8 border-t border-gray-300 pt-6">
                 <button
                     type="button"
-                    className="px-10 py-4 rounded-2xl border border-gray-400 bg-white text-gray-600 font-medium"
+                    className="px-6 py-3 rounded-xl border border-gray-400 bg-white text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors"
                     onClick={onClose}
                 >
                     Cancel
@@ -184,7 +174,7 @@ export default function RaiseTicket({ onClose }) {
 
                 <button
                     type="submit"
-                    className="flex-1 py-4 rounded-2xl bg-[#1f66b2] text-white font-semibold text-lg"
+                    className="flex-1 py-3 px-6 rounded-xl bg-[#1f66b2] hover:bg-[#185392] text-white font-semibold text-sm transition-colors shadow-sm"
                 >
                     Submit Ticket
                 </button>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { apiUrl } from "../config/api.js";
+import { staticClients } from "../Utils/staticData.js";
 
 export default function useClients() {
-    const [clients, setClients] = useState([]);
+    const [clients, setClients] = useState(staticClients);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -10,16 +12,19 @@ export default function useClients() {
 
             try {
                 const response = await fetch(
-                    "http://localhost:5000/api/clients"
+                    apiUrl("/clients")
                 );
 
                 const data = await response.json();
 
-                if (response.ok) {
+                if (response.ok && Array.isArray(data) && data.length > 0) {
                     setClients(data);
+                } else {
+                    setClients(staticClients);
                 }
             } catch (error) {
-                console.log(error);
+                console.log("Error fetching clients:", error);
+                setClients(staticClients);
             } finally {
                 setLoading(false);
             }

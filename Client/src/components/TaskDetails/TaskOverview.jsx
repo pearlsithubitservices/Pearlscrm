@@ -71,7 +71,7 @@ const TaskOverview = ({ tasks }) => {
                     <div>
                         <h3>Task progress 65% complete</h3>
                     </div>
-                    <div className="w-[500px] h-2 bg-gray-300 rounded-lg">
+                    <div className="w-full max-w-md h-2 bg-gray-300 rounded-lg">
                         <div
                             className="h-full bg-blue-500 rounded-lg" style={{ width: '65%' }}></div>
                     </div>

@@ -102,7 +102,7 @@ const Communication = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-h-screen overflow-y-auto no-scrollbar  bg-[#f3f0eb] "
+      className="max-h-screen overflow-y-auto page-scroll bg-[#f3f0eb] w-full"
     >
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white rounded-xl px-6 py-6 shadow-sm">

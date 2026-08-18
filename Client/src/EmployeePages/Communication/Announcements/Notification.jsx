@@ -43,7 +43,7 @@ export default function ImportantNotifications() {
       </div>
 
       {/* Body */}
-      <div className="mt-4 bg-white border max-h-[500px] h-full overflow-y-auto no-scrollbar rounded-xl p-5">
+      <div className="mt-4 bg-white border max-h-[500px] h-full overflow-y-auto page-scroll rounded-xl p-5">
         <div className="relative border-l border-gray-200 pl-6 space-y-6">
           {empnotification?.slice(0, 8).map((item, index) => (
             <motion.div

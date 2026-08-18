@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
 
-const API_URL = "http://localhost:5000/api/empattendancenew";
+const API_URL = apiUrl("/empattendancenew");
 
 export default function useEmpAttendance() {
   const [loading, setLoading] = useState(false);

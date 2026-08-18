@@ -5,18 +5,115 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    height: 100%;
+  }
+
   body {
     @apply font-sans antialiased text-gray-900 bg-[#FBFBFA];
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  img, svg, video, canvas {
+    max-width: 100%;
+    height: auto;
   }
 }
 
-/* Hide scrollbar */
+@layer utilities {
+  .app-shell {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
 
+  .app-page-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Table responsive container wrapper */
+  .responsive-table-container {
+    @apply w-full overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Hide native browser/app-shell scrollbars (intentional — inner containers scroll instead) */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar,
+.app-shell::-webkit-scrollbar,
+.app-page-scroll::-webkit-scrollbar,
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
+html,
+body,
+#root,
+.app-shell,
+.app-page-scroll,
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Themed scrollbar — dark sidebar (navy theme) */
+.sidebar-scroll::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+/* Themed scrollbar — light page content area */
+.page-scroll::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+.page-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.page-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(11, 43, 87, 0.18); /* matches sidebar navy #0b2b57, faded */
+  border-radius: 8px;
+}
+.page-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(11, 43, 87, 0.32);
+}
+.page-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(11, 43, 87, 0.18) transparent;
+}
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }

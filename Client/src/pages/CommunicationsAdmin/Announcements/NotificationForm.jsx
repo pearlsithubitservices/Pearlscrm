@@ -46,7 +46,7 @@ export default function NotificationForm({ onClose, fetchNotifications }) {
   };
 
   return (
-    <div className="bg-white w-[500px] rounded-2xl shadow-xl p-6 relative">
+    <div className="bg-white w-full max-w-lg mx-4 rounded-2xl shadow-xl p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto page-scroll">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[#0B2B57]">

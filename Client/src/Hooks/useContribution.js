@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { apiUrl } from "../config/api.js";
 
-const API_URL = "http://localhost:5000/api/contribution";
+const API_URL = apiUrl("/contribution");
 
 export default function useContribution() {
     const { user } = useAuth();

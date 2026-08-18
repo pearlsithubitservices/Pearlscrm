@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
 
-const API = "http://localhost:5000/api/mygoal";
+const API = apiUrl("/mygoal");
 
 export default function useGoals() {
   const [loading, setLoading] = useState(false);

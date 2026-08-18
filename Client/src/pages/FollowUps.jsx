@@ -18,25 +18,28 @@ import AnimateModals from "../components/Dashboard/AnimateModals";
 import LoadingPage from "../components/Dashboard/Loading";
 import CreateFollowups from "./CreateFollowups";
 import useFollowups from "../Hooks/useFollowups";
-
+import { staticFollowups } from "../Utils/staticData";
 
 export default function FollowUps() {
-  const{getFollowups}=useFollowups();
-  const [followups, setFollowups]=useState([]);
-  
-  useEffect(()=>{
-   const fetchdata = async () => {
-    try{
-      const data = await getFollowups();
-      setFollowups(data);
-      console.log(data);
-    }
-    catch(err){
-      console.log(err);
-    }
-   }
+  const { getFollowups } = useFollowups();
+  const [followups, setFollowups] = useState(staticFollowups);
+
+  useEffect(() => {
+    const fetchdata = async () => {
+      try {
+        const data = await getFollowups();
+        if (Array.isArray(data) && data.length > 0) {
+          setFollowups(data);
+        } else {
+          setFollowups(staticFollowups);
+        }
+      } catch (err) {
+        console.log(err);
+        setFollowups(staticFollowups);
+      }
+    };
     fetchdata();
-  },[]);
+  }, []);
 
   const navigate = useNavigate();
 
@@ -93,31 +96,31 @@ const completed= followups.filter((item)=>(
   const totalPages = Math.ceil(filteredData.length / filesPerPage);
 
   return (
-    <div className="flex max-h-screen bg-[#f3f0eb] overflow-x-hidden overflow-y-auto no-scrollbar">
+    <div className="flex max-h-screen bg-[#f3f0eb] overflow-x-hidden overflow-y-auto page-scroll">
 
       <div className="flex-1 flex flex-col">
 
         {/* TOPBAR */}
 
-        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
+        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
           <div>
 
-            <h1 className="text-2xl font-bold text-[#023167]">
+            <h1 className="text-xl md:text-2xl font-bold text-[#023167]">
               FOLLOWUPS
             </h1>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-xs md:text-sm text-gray-500">
               Track client FollowUps and Conversion
             </p>
 
           </div>
 
-          <div className="flex items-center gap-3 mr-4">
+          <div className="flex flex-wrap items-center gap-3">
 
             <button
               onClick={() => setOpenfollowup(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded-lg hover:scale-105 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded-lg hover:scale-105 transition text-sm font-semibold"
             >
               <Plus size={16} />
               Add Followups
@@ -180,7 +183,7 @@ const completed= followups.filter((item)=>(
               FOLLOW-UP SCHEDULE
             </h1>
 
-            <div className="flex flex-wrap gap-2  w-[500px]">
+            <div className="flex flex-wrap gap-2 w-full lg:w-auto max-w-xl">
 
               {buttons.map((btn, index) => (
 

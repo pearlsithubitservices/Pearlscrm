@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
+import { staticFollowups } from "../Utils/staticData.js";
 
-const API_URL = "http://localhost:5000/api/followups";
+const API_URL = apiUrl("/followups");
 
 export default function useFollowups() {
   const [loading, setLoading] = useState(false);
@@ -23,16 +25,22 @@ export default function useFollowups() {
       }
 
       const response = await fetch(`${API_URL}${url}`, options);
-
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || "Something went wrong");
       }
 
+      if (Array.isArray(data) && data.length === 0) {
+        return staticFollowups;
+      }
+
       return data;
     } catch (err) {
       setError(err.message);
+      if (method === "GET") {
+        return staticFollowups;
+      }
       throw err;
     } finally {
       setLoading(false);
@@ -51,7 +59,12 @@ export default function useFollowups() {
 
   // Get Single Followup
   const getFollowupById = async (id) => {
-    return request(`/${id}`, "GET");
+    try {
+      const res = await request(`/${id}`, "GET");
+      return res;
+    } catch (err) {
+      return staticFollowups.find((f) => f._id === id) || staticFollowups[0];
+    }
   };
 
   // Update Followup

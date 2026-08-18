@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
 
-const BASE_URL = "http://localhost:5000/api/projects";
+const BASE_URL = apiUrl("/projects");
 
 export default function useProject() {
     const [projects, setProjects] = useState([]);

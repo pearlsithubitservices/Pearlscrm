@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { apiUrl } from "../config/api.js";
 
-const API = "http://localhost:5000/api/payslip";
+const API = apiUrl("/payslip");
 
 export default function usePayslip() {
   const [payslips, setPayslips] = useState([]);

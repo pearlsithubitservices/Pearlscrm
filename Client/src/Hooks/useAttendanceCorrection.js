@@ -1,5 +1,6 @@
 // hooks/useAttendanceCorrection.js
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
 
 const useAttendanceCorrection = () => {
     const [loading, setLoading] = useState(false);
@@ -13,7 +14,7 @@ const useAttendanceCorrection = () => {
 
         try {
             const res = await fetch(
-                "http://localhost:5000/api/empAttendanceCorrection",
+                apiUrl("/empAttendanceCorrection"),
                 {
                     method: "POST",
                     headers: {
@@ -41,7 +42,7 @@ const useAttendanceCorrection = () => {
     const updateStatus = async (id, status) => {
         try {
             const res = await fetch(
-                `http://localhost:5000/api/empAttendanceCorrection/${id}/status`,
+                apiUrl(`/empAttendanceCorrection/${id}/status`),
                 {
                     method: "PATCH",
                     headers: {

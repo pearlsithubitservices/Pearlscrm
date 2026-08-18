@@ -1,9 +1,10 @@
 // Hooks/useReimbursementClaim.js
 
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
 
 const API_URL =
-    "http://localhost:5000/api/reimbursement";
+    apiUrl("/reimbursement");
 
 export default function useReimbursement() {
     const [loading, setLoading] =

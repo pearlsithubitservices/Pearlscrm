@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Calendar, Upload, Plus, X } from "lucide-react";
+import { apiUrl } from "../../config/api.js";
 
 const HolidayForm = ({onClose}) => {
   const [holidayData, setHolidayData] = useState({
@@ -23,7 +24,7 @@ const HolidayForm = ({onClose}) => {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/holidays",
+        apiUrl("/holidays"),
         {
           method: "POST",
           headers: {
@@ -64,7 +65,7 @@ const HolidayForm = ({onClose}) => {
       formData.append("file", excelFile);
 
       const response = await fetch(
-        "http://localhost:5000/api/holidays/bulk-upload",
+        apiUrl("/holidays/bulk-upload"),
         {
           method: "POST",
           body: formData,

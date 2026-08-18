@@ -20,6 +20,7 @@ import {
 import Layout from './components/Layout';
 
 // ADMIN PAGES
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoutes.jsx';
 
 import Dashboard from './pages/Dashboard';
 
@@ -47,6 +48,7 @@ import Login from './pages/Login';
 
 import ClientManagement from './pages/ClientManagement';
 import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx'
+import Messenger from './pages/Messager.jsx'
 
 // EMPLOYEE
 
@@ -89,11 +91,9 @@ import EmpDashboard from './EmployeePages/Dashboard/Dashboard.jsx';
 import EmpFollowUps from './EmployeePages/FollowUps/FollowUps.jsx'
 import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.jsx'
 
-
-
-
 import FollowupDetails from './pages/FollowupDetails.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx'
+
 // PLACEHOLDER
 
 function PlaceholderPage({
@@ -127,226 +127,265 @@ function PlaceholderPage({
 }
 
 export default function App() {
-
   return (
 
-    <AuthProvider>
+   <AuthProvider>
+  <IndustryProvider>
+    <BrowserRouter>
 
-      <IndustryProvider>
+      <Routes>
 
-        <BrowserRouter>
+        {/* LOGIN */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
-          <Routes>
+        {/* ================= ADMIN ================= */}
 
-            {/* LOGIN */}
+        <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
+
+          <Route element={<Layout />}>
+
+            <Route path="/" element={<Dashboard />} />
+
+            <Route path="/leads" element={<LeadManagement />} />
 
             <Route
-              path="/login"
-              element={<Login />}
+              path="/leadDetails/:id"
+              element={<LeadDetails />}
             />
 
-            {/* ADMIN ROUTES */}
-
-            <Route element={<Layout />}>
-
-              <Route
-                path="/"
-                element={<Dashboard />}
-              />
-
-              <Route
-                path="/leads"
-                element={<LeadManagement />}
-              />
-              <Route path='/leadDetails/:id'
-                element={<LeadDetails />} />
-
-              <Route path='/employeeDetails/:id'
-                element={<EmployeeDetails />} />
-
-              <Route path='/taskDetails/:id'
-                element={<TaskComponent />} />
-
-              <Route path="/projectDetails/:id"
-                element={<ProjectDetails />} />
-
-              <Route path="/clientDetails/:id"
-                element={<ClientDetails />} />
-              <Route path="/followupDetails/:id"
-                element={<FollowupDetails />} />
-              <Route path="/empfollowupDetails/:id"
-                element={<EmpFollowupDetails />} />
-
-              <Route
-                path="/attendance"
-                element={<Attendance />}
-              />
-              <Route
-                path="/attendance-management"
-                element={<AttendanceManagement />}
-              />
-
-              <Route
-                path="/tasks"
-                element={<Tasks />}
-              />
-
-              <Route
-                path="/follow-ups"
-                element={<FollowUps />}
-              />
-
-              <Route
-                path="/projects"
-                element={<Projects />}
-              />
-
-              <Route
-                path="/clients"
-                element={<Clients />}
-              />
-              <Route path="/clientmanagement"
-                element={<ClientManagement />} />
-
-              <Route
-                path="/payments"
-                element={<Payments />}
-              />
-
-              <Route
-                path="/employees"
-                element={<Employees />}
-              />
-
-              <Route
-                path="/create-lead"
-                element={<CreateLead />}
-              />
-
-              <Route
-                path="/createTask"
-                element={<CreateTask />}
-              />
-
-
-              <Route
-                path="/edit-task/:id"
-                element={<TaskDetails />}
-              />
-
-              <Route
-                path="/reports"
-                element={
-                  <Reports />
-                }
-              />
-              <Route
-                path="/communication"
-                element={
-                  <AdminCommunication />
-                }
-              />
-
-              <Route
-                path="/settings"
-                element={
-                  <PlaceholderPage
-                    title="System Settings"
-                  />
-                }
-              />
-
-            </Route>
-
-            {/* EMPLOYEE ROUTES */}
-
-            <Route element={<EmployeeLayout />}>
-
-              <Route
-                path="/employee-dashboard"
-                element={
-                  <EmployeeDashboard />
-                }
-              />
-
-              <Route
-                path="/employee/tasks"
-                element={
-                  <EmpTask />
-                }
-              />
-              <Route
-  path="/employee/marketing-activities"
-  element={<MarketingActivities />}
-/>
-              <Route
-                path="/employee/taskDetails/:id"
-                element={
-                  <ETaskDetails />
-                }
-              />
-              
-
-              <Route
-                path="/employee/leads"
-                element={
-                  <EmployeeLeads />
-                }
-              />
-
-              <Route
-                path="/employee/followups"
-                element={
-                  <EmployeeFollowups />
-                }
-              />
-              <Route
-                path="/employee/myprofile"
-                element={
-                  <EmpMyprofile />
-                }
-              />
-              <Route path="/employee/attendance" element={<EmpAttendance />} />
-              <Route path="/employee/communication" element={<EmpCommunication />} />
-              <Route path="/employee/reports" element={<EmpReports />} />
-              <Route path="/employee/leave" element={<EmpLeave />} />
-              <Route path="/employee/payroll" element={<EmpPayroll />} />
-              <Route path="/employee/performance" element={<EmpPerformance />} />
-              <Route path="/employee/settings" element={<EmpSettings />} />
-              <Route path="/employee/task" element={<EmpTask />} />
-              <Route path="/employee/dashboard" element={<EmpDashboard />} />
-              <Route path="/employee/follow-ups" element={<EmpFollowUps />} />
-              <Route path="/employee/performance" element={<EmpPerformance />} />
-              <Route path="/employee/reports" element={<EmpReportStatements />} />
-              <Route path="/employee/performance/:id" element={<EmpGoalDetails />} />
-
-              <Route
-                path="/employee/attendance"
-                element={
-                  <Attendance />
-                }
-              />
-            </Route>
-
-            {/* FALLBACK */}
+            <Route
+              path="/employeeDetails/:id"
+              element={<EmployeeDetails />}
+            />
 
             <Route
-              path="*"
+              path="/taskDetails/:id"
+              element={<TaskComponent />}
+            />
+
+            <Route
+              path="/projectDetails/:id"
+              element={<ProjectDetails />}
+            />
+
+            <Route
+              path="/clientDetails/:id"
+              element={<ClientDetails />}
+            />
+
+            <Route
+              path="/followupDetails/:id"
+              element={<FollowupDetails />}
+            />
+
+            <Route
+              path="/empfollowupDetails/:id"
+              element={<EmpFollowupDetails />}
+            />
+
+            <Route
+              path="/attendance"
+              element={<Attendance />}
+            />
+
+            <Route
+              path="/attendance-management"
+              element={<AttendanceManagement />}
+            />
+
+            <Route
+              path="/tasks"
+              element={<Tasks />}
+            />
+
+            <Route
+              path="/follow-ups"
+              element={<FollowUps />}
+            />
+
+            <Route
+              path="/projects"
+              element={<Projects />}
+            />
+
+            <Route
+              path="/clients"
+              element={<Clients />}
+            />
+
+            <Route
+              path="/clientmanagement"
+              element={<ClientManagement />}
+            />
+
+            <Route
+              path="/payments"
+              element={<Payments />}
+            />
+
+            <Route
+              path="/employees"
+              element={<Employees />}
+            />
+
+            <Route
+              path="/create-lead"
+              element={<CreateLead />}
+            />
+
+            <Route
+              path="/createTask"
+              element={<CreateTask />}
+            />
+
+            <Route
+              path="/edit-task/:id"
+              element={<TaskDetails />}
+            />
+
+            <Route
+              path="/reports"
+              element={<Reports />}
+            />
+
+            <Route
+              path="/communication"
+              element={<AdminCommunication />}
+            />
+
+            <Route
+              path="/collaboration"
+              element={<Messenger />}
+            />
+
+            <Route
+              path="/settings"
               element={
-                <Navigate
-                  to="/"
-                  replace
-                />
+                <PlaceholderPage title="System Settings" />
               }
             />
 
-          </Routes>
+          </Route>
 
-        </BrowserRouter>
+        </Route>
 
-      </IndustryProvider>
 
-    </AuthProvider>
+        {/* ================= EMPLOYEE ================= */}
+
+        <Route element={<ProtectedRoute allowedRoles={["Employee"]} />}>
+
+          <Route element={<EmployeeLayout />}>
+
+            <Route
+              path="/employee-dashboard"
+              element={<EmployeeDashboard />}
+            />
+
+            <Route
+              path="/employee/tasks"
+              element={<EmpTask />}
+            />
+
+            <Route
+              path="/employee/marketing-activities"
+              element={<MarketingActivities />}
+            />
+
+            <Route
+              path="/employee/taskDetails/:id"
+              element={<ETaskDetails />}
+            />
+
+            <Route
+              path="/employee/leads"
+              element={<EmployeeLeads />}
+            />
+
+            <Route
+              path="/employee/followups"
+              element={<EmployeeFollowups />}
+            />
+
+            <Route
+              path="/employee/myprofile"
+              element={<EmpMyprofile />}
+            />
+
+            <Route
+              path="/employee/attendance"
+              element={<EmpAttendance />}
+            />
+
+            <Route
+              path="/employee/communication"
+              element={<EmpCommunication />}
+            />
+
+            <Route
+              path="/employee/collaboration"
+              element={<Messenger />}
+            />
+
+            <Route
+              path="/employee/reports"
+              element={<EmpReports />}
+            />
+
+            <Route
+              path="/employee/leave"
+              element={<EmpLeave />}
+            />
+
+            <Route
+              path="/employee/payroll"
+              element={<EmpPayroll />}
+            />
+
+            <Route
+              path="/employee/performance"
+              element={<EmpPerformance />}
+            />
+
+            <Route
+              path="/employee/settings"
+              element={<EmpSettings />}
+            />
+
+            <Route
+              path="/employee/dashboard"
+              element={<EmpDashboard />}
+            />
+
+            <Route
+              path="/employee/follow-ups"
+              element={<EmpFollowUps />}
+            />
+
+            <Route
+              path="/employee/performance/:id"
+              element={<EmpGoalDetails />}
+            />
+
+          </Route>
+
+        </Route>
+
+
+        {/* ================= FALLBACK ================= */}
+
+        <Route
+          path="*"
+          element={<Navigate to="/login" replace />}
+        />
+
+      </Routes>
+
+    </BrowserRouter>
+  </IndustryProvider>
+</AuthProvider>
 
   );
 

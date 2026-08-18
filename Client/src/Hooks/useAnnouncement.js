@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../config/api.js";
 
-const API_URL = "http://localhost:5000/api/announcement";
+const API_URL = apiUrl("/announcement");
 // change this to your backend URL       
 
 const useAnnouncement = () => {

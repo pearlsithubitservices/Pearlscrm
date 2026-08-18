@@ -1,8 +1,6 @@
-
 import React, {
   useState,
   useEffect,
-
 } from 'react';
 
 import {
@@ -57,9 +55,7 @@ export default function ClientManagement() {
 
   const [active, setActive] = useState(0);
   const buttons = ["All", "Sales", "Engineering", "Design"];
-  //const [employees, setEmployees] = useState([]);
   const { employees } = useEmployees();
-  console.log(employees);
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
@@ -105,85 +101,65 @@ export default function ClientManagement() {
     }
   ];
 
-  const projects = [
-    {
-      name: "TechFlow CRM Implementation",
-      company: "TechFlow Solutions",
-      status: "Active",
-      type: "onTrack",
-
-    },
-    {
-      name: "TechFlow CRM Implementation",
-      company: "TechFlow Solutions",
-      status: "Active",
-      type: "AtRisk",
-
-    }
-  ];
-
-
   return (
-    <div className="text-black max-h-screen overflow-y-auto no-scrollbar">
+    <div className="text-black max-h-screen overflow-y-auto page-scroll w-full">
 
       {/* TOPBAR */}
-      <div className="w-full bg-white border-b border-black/10 px-8 py-6 flex items-center justify-between">
+      <div className="w-full bg-white border-b border-black/10 px-4 sm:px-6 md:px-8 py-4 md:py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
         {/* LEFT */}
         <div>
-          <h1 className="text-2xl text-[#023167] font-bold">
+          <h1 className="text-xl md:text-2xl text-[#023167] font-bold">
             Employee Management
           </h1>
 
-          <p className="text-gray-400 mt-1 text-sm">
+          <p className="text-gray-400 mt-0.5 text-xs md:text-sm">
             Track and manage your Employee
           </p>
         </div>
 
         {/* RIGHT ACTIONS */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
 
           <button
             onClick={() => setOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
+            className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white text-sm font-semibold rounded-lg hover:bg-[#1d508b] transition-all shadow-sm shrink-0"
           >
             <Plus size={16} />
             Add Employee
           </button>
 
-          <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
+          <button className="p-2 border border-gray-200 rounded-lg bg-[#2563a9] hover:bg-[#1d508b] transition-colors shrink-0">
             <Filter size={18} className='text-white' />
           </button>
 
-          <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
+          <button className="p-2 border border-gray-200 rounded-lg bg-[#2563a9] hover:bg-[#1d508b] transition-colors shrink-0">
             <Bell size={18} className='text-white' />
           </button>
-
-
 
         </div>
 
       </div>
 
       {/* BODY */}
-      <div className="p-8 bg-[#f3f0eb] min-h-screen">
+      <div className="p-4 sm:p-6 md:p-8 bg-[#f3f0eb] min-h-screen">
 
         {/* STATS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
 
           {stats.map((item, i) => (
-            < motion.div
+            <motion.div
               key={i}
-              initial={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: easeOut }}
-              whileHover={{ scale: 1.03 }}
-              className="bg-white border border-black/10 p-4 rounded-xl"
+              transition={{ duration: 0.4, ease: easeOut }}
+              whileHover={{ scale: 1.02 }}
+              className="bg-white border border-black/10 p-4 sm:p-5 rounded-xl shadow-sm"
             >
 
               <div className="flex items-center justify-between mb-3">
 
-                <div className="bg-gray-100 rounded w-10 h-10 flex items-center justify-center">
+                <div className="bg-gray-100 rounded-lg w-10 h-10 flex items-center justify-center">
                   <item.icon className="w-5 h-5 text-[#0b2b57]" />
                 </div>
 
@@ -193,11 +169,11 @@ export default function ClientManagement() {
 
               </div>
 
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-gray-500">
                 {item.title}
               </p>
 
-              <h2 className="text-3xl font-bold text-[#0b2b57]">
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#0b2b57]">
                 {item.value}
               </h2>
 
@@ -206,45 +182,45 @@ export default function ClientManagement() {
 
         </div>
 
-        {/* PROJECT SECTION HEADER */}
-        <div className="flex items-center justify-between mt-8 mb-4 border bg-white p-2 rounded">
+        {/* SUBHEADER & FILTERS */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-6 md:mt-8 mb-4 border border-gray-200 bg-white p-3 sm:p-4 rounded-xl shadow-sm">
           <div>
-            <h2 className="text-lg font-bold text-[#0b2b57]">
+            <h2 className="text-base sm:text-lg font-bold text-[#0b2b57]">
               Employee List
             </h2>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2">
             {buttons.map((btn, index) => (
               <button
                 key={index}
                 onClick={() => setActive(index)}
-                className={`px-4  rounded-xl font-medium transition-all
-                                  ${active === index
+                className={`px-3 py-1.5 text-xs sm:text-sm rounded-xl font-medium transition-all
+                  ${active === index
                     ? "bg-[#2563a9] text-white"
-                    : "text-gray-400  hover:bg-[#2563a9] hover:text-white"
+                    : "text-gray-500 hover:bg-[#2563a9] hover:text-white"
                   }`}
               >
                 {btn}
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 bg-gray-200 border px-3 py-2 rounded w-[300px]">
+          <div className="flex items-center gap-2 bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg w-full md:w-72">
 
-            <Search size={16} className="text-black" />
+            <Search size={16} className="text-gray-500 shrink-0" />
 
             <input
               placeholder="Search project..."
-              className="w-full outline-none text-sm bg-gray-200"
+              className="w-full outline-none text-sm bg-transparent text-gray-800"
             />
 
           </div>
 
         </div>
 
-        {/* PROJECT CARDS */}
+        {/* EMPLOYEE CARDS */}
 
         {loading ?
-          <div className='w-full h-screen items-center'>
+          <div className='w-full min-h-[300px] flex items-center justify-center'>
             <LoadingPage />
           </div> :
           <motion.div
@@ -254,47 +230,45 @@ export default function ClientManagement() {
 
             {currentFiles.map((p) => (
               <div
-                key={p.id}
-                className="bg-white border border-black/10 p-5 rounded " onClick={() => navigate(`/EmployeeDetails/${p._id}`)}
+                key={p.id || p._id}
+                className="bg-white border border-gray-200 p-4 sm:p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate(`/EmployeeDetails/${p._id}`)}
               >
 
                 {/* HEADER */}
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 
                   <div>
-                    <h3 className="text-lg font-bold text-[#0b2b57]">
+                    <h3 className="text-base sm:text-lg font-bold text-[#0b2b57] truncate">
                       {p.name || "No Name"}
                     </h3>
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-gray-500 text-xs sm:text-sm">
                       Role: {p.role || "No Employee"}
                     </p>
                   </div>
 
-                  <div className='flex flex-col items-center'>
-                    <div className="flex gap-2">
-                      <span className="bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded">
-                        {p.status || "Active"}
-                      </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-blue-100 text-blue-600 text-xs px-2.5 py-1 rounded font-medium">
+                      {p.status || "Active"}
+                    </span>
 
-                      <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
-                        {p.type || "AtRisk"}
-                      </span>
-                    </div>
-
+                    <span className="bg-green-100 text-green-600 text-xs px-2.5 py-1 rounded font-medium">
+                      {p.type || "AtRisk"}
+                    </span>
                   </div>
 
                 </div>
 
                 {/* DETAILS */}
-                <div className=" flex  gap-8 mt-4 text-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4 text-sm border-t border-gray-100 pt-3">
 
-                  <div className="flex flex-col md:flex-row md:items-center gap-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-1">
 
-                    <h1 className="text-xl text-yellow-600 min-w-fit">
+                    <h1 className="text-base sm:text-lg text-yellow-600 font-semibold min-w-fit">
                       Performance
                     </h1>
 
-                    <div className="w-[500px] h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-full max-w-md h-2 bg-gray-200 rounded-full overflow-hidden">
 
                       <motion.div
                         initial={{ width: 0 }}
@@ -308,39 +282,35 @@ export default function ClientManagement() {
                     </div>
 
                   </div>
-                  <div className='ml-40 flex items-center gap-4'>
-                    <div className='flex items-center gap-2'>
-                      <MessageSquareText size={18} className='text-gray-400' /><p>2</p>
+
+                  <div className='flex items-center gap-4 text-gray-500 text-xs sm:text-sm shrink-0'>
+                    <div className='flex items-center gap-1.5'>
+                      <MessageSquareText size={16} className='text-gray-400' /><p>2</p>
                     </div>
-                    <div className='flex items-center gap-2'>
-                      <Paperclip size={18} className='text-gray-400' /><p>2</p>
+                    <div className='flex items-center gap-1.5'>
+                      <Paperclip size={16} className='text-gray-400' /><p>2</p>
                     </div>
                   </div>
                 </div>
 
-                {/** Bottom */}
+                {/* BOTTOM */}
+                <div className="flex items-center justify-between gap-4 mt-3 pt-3 border-t border-gray-100 text-xs sm:text-sm">
 
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 ">
+                  <div className="flex items-center gap-2">
 
-                  <div className="flex items-center  flex-wrap gap-3">
-
-                    <h1 className="text-xl font-bold text-black">
+                    <h1 className="font-bold text-gray-800">
                       Task Score:
                     </h1>
 
-                    <div className="font-bold  text-[#2563a9]">
-
+                    <div className="font-bold text-[#2563a9]">
                       13/15
-
                     </div>
 
                   </div>
 
-                  <h1 className="text-md lg:text-lg">
-
-                    <div className='flex items-center font-bold text-black'><Pin size={20} className='rotate-45' /></div>
-
-                  </h1>
+                  <div className="flex items-center text-gray-700 font-bold">
+                    <Pin size={18} className="rotate-45" />
+                  </div>
 
                 </div>
 
@@ -349,18 +319,18 @@ export default function ClientManagement() {
 
           </motion.div>
         }
-        <div>
+
+        <div className="mt-6">
           <Pagination
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
-            totalPages={totalPages
-            }
+            totalPages={totalPages}
           />
         </div>
 
       </div>
 
-      {/**Add Employee Modal */}
+      {/* Add Employee Modal */}
       {open && (
         <AnimateModals>
           <Createemployee onClose={() => setOpen(false)} />
@@ -369,6 +339,4 @@ export default function ClientManagement() {
 
     </div>
   );
-
-
 }

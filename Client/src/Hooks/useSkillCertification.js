@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api.js";
 
-const BASE_URL = "http://localhost:5000/api/skillscertification";
+const BASE_URL = apiUrl("/skillscertification");
 
 export default function useSkillCertification() {
     const [loading, setLoading] = useState(false);

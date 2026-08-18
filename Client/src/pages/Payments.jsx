@@ -42,15 +42,53 @@ export default function LeadManagement() {
 
 
 
-  const leads = Array(6).fill({
-    name: "Sarah Chen",
-    company: "Nexigen Corp",
-    status: "pending",
-    temp: "warm",
-    budget: "$120,000",
-    source: "LinkedIn",
-    follow: "Today"
-  });
+  const leads = [
+    {
+      name: "Alex Morgan",
+      company: "TechFlow Solutions",
+      issued: "2026-08-01",
+      due: "2026-08-30",
+      amount: "₹ 3,00,000",
+      status: "Paid",
+      action: "Download PDF"
+    },
+    {
+      name: "Samantha Wright",
+      company: "Apex Global Logistics",
+      issued: "2026-08-05",
+      due: "2026-09-05",
+      amount: "₹ 8,00,000",
+      status: "Pending",
+      action: "Send Reminder"
+    },
+    {
+      name: "David Chen",
+      company: "Quantum Digital Labs",
+      issued: "2026-07-15",
+      due: "2026-08-15",
+      amount: "₹ 4,50,000",
+      status: "Paid",
+      action: "Download PDF"
+    },
+    {
+      name: "Elena Rostova",
+      company: "Vanguard Financial",
+      issued: "2026-07-01",
+      due: "2026-08-01",
+      amount: "₹ 12,00,000",
+      status: "Overdue",
+      action: "Send Reminder"
+    },
+    {
+      name: "Marcus Sterling",
+      company: "BioHealth Innovations",
+      issued: "2026-08-10",
+      due: "2026-09-10",
+      amount: "₹ 2,00,000",
+      status: "Partial",
+      action: "View Invoice"
+    }
+  ];
 
   // PAGINATION
 
@@ -98,7 +136,7 @@ export default function LeadManagement() {
 
 
   return (
-    <div className="flex flex-col lg:flex-row max-h-screen overflow-y-auto no-scrollbar bg-[#f3f0eb] w-full overflow-x-hidden">
+    <div className="flex flex-col lg:flex-row h-full max-h-screen overflow-y-auto page-scroll bg-[#f3f0eb] w-full overflow-x-hidden">
 
       {/* MAIN */}
       <div className="flex-1 flex flex-col">
@@ -318,7 +356,7 @@ export default function LeadManagement() {
             </ResponsiveContainer>
           </div>
 
-          <div className="flex flex-col gap-2 items-center justify-between  w-full lg:w-1/3 h-[400px] bg-white rounded-xl overflow-y-auto no-scrollbar mr-2"> 
+          <div className="flex flex-col gap-2 items-center justify-between w-full lg:w-1/3 h-[400px] bg-white rounded-xl overflow-y-auto page-scroll mr-2"> 
              <div className="flex gap-16 items-center justify-between  mt-2 p-2">
             <h1 className="font-bold tracking-wide text-blue-900">Overdue Alerts</h1>
             <h3 className="text-blue-700 tracking-wide font-bold">4 INVOICES</h3>
@@ -376,7 +414,7 @@ export default function LeadManagement() {
             ].map((ev, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between gap-10 mb-4 no-scrollbar">
+                className="flex items-center justify-between gap-10 mb-4">
                 <div className="rounded-full w-10 h-10 bg-rose-200 items-center p-2 font-bold text-xl"> {ev.profile}</div>
                 <div>
                   <h1 className="text-black font-bold tracking-wide">{ev.clientname}</h1>

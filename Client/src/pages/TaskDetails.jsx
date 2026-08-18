@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { useParams, useNavigate } from 'react-router-dom';
+import { apiUrl } from "../config/api.js";
 
 export default function TaskDetails() {
 
@@ -28,7 +29,7 @@ export default function TaskDetails() {
     try {
 
       const response = await fetch(
-        `https://pearlscrm.onrender.com/api/tasks/${id}`
+        apiUrl(`/tasks/${id}`)
       );
 
       const data = await response.json();
@@ -55,7 +56,7 @@ export default function TaskDetails() {
     try {
 
       await fetch(
-        `https://pearlscrm.onrender.com/api/tasks/${id}`,
+        apiUrl(`/tasks/${id}`),
         {
           method: 'PUT',
 

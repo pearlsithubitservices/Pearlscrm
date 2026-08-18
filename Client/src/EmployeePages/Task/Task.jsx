@@ -270,7 +270,7 @@ export default function Tasks() {
                             Overall progress
                           </h1>
 
-                          <div className="w-[500px] h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="w-full max-w-md h-2 bg-gray-200 rounded-full overflow-hidden">
 
                             <motion.div
                               initial={{ width: 0 }}
