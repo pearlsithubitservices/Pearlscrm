@@ -39,7 +39,13 @@ const EmpContributionRoutes = require("./routes/ContributionRoutes");
 const EmpActivityRoutes = require("./routes/TaskActivityRoute")
 const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
 
-
+const whatsappCampaignRoutes = require('./routes/WhatsAppCampaign/campaignRoutes');
+const whatsappTemplateRoutes = require('./routes/WhatsAppCampaign/templateRoutes');
+const whatsappBroadcastRoutes = require('./routes/WhatsAppCampaign/broadcastRoutes');
+const whatsappQueueRoutes = require('./routes/WhatsAppCampaign/queueRoutes');
+const whatsappAnalyticsRoutes = require('./routes/WhatsAppCampaign/analyticsRoutes');
+const whatsappConnectionRoutes = require('./routes/WhatsAppCampaign/connectionRoutes');
+const whatsappWebhookRoutes = require('./routes/WhatsAppCampaign/webhookRoutes');
 
 
 connectDB();
@@ -116,6 +122,14 @@ app.use("/api/activity", EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
 app.use('/api/reimbursementpolicy', ReimbursementPolicyRoutes);
 app.use('/api/taxdocuments', TaxDocumentRoutes);
+
+app.use('/api/whatsapp/campaigns', whatsappCampaignRoutes);
+app.use('/api/whatsapp/templates', whatsappTemplateRoutes);
+app.use('/api/whatsapp/broadcasts', whatsappBroadcastRoutes);
+app.use('/api/whatsapp/queue', whatsappQueueRoutes);
+app.use('/api/whatsapp/analytics', whatsappAnalyticsRoutes);
+app.use('/api/whatsapp/connection', whatsappConnectionRoutes);
+app.use('/api/whatsapp/webhook', whatsappWebhookRoutes);
 
 
 app.listen(process.env.PORT, () => {

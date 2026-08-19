@@ -102,6 +102,15 @@ import FollowupDetails from './pages/FollowupDetails.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx'
 import ProtectedRoute from './components/ProtectedRoutes.jsx';
 import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
+
+import WhatsAppLayout from './pages/WhatsApp/WhatsAppLayout.jsx';
+import CampaignBuilder from './pages/WhatsApp/CampaignBuilder.jsx';
+import Templates from './pages/WhatsApp/Templates.jsx';
+import Broadcast from './pages/WhatsApp/Broadcast.jsx';
+import LiveQueue from './pages/WhatsApp/LiveQueue.jsx';
+import CampaignAnalytics from './pages/WhatsApp/CampaignAnalytics.jsx';
+import ApiKeys from './pages/WhatsApp/ApiKeys.jsx';
+
 // PLACEHOLDER
 
 function PlaceholderPage({
@@ -298,6 +307,15 @@ export default function App() {
                   <Performance />
                 }
               />
+
+              <Route path="/whatsapp" element={<WhatsAppLayout />}>
+                <Route path="campaign" element={<CampaignBuilder />} />
+                <Route path="templates" element={<Templates />} />
+                <Route path="broadcast" element={<Broadcast />} />
+                <Route path="queue" element={<LiveQueue />} />
+                <Route path="analytics" element={<CampaignAnalytics />} />
+                <Route path="api-keys" element={<ApiKeys />} />
+              </Route>
 
               <Route
                 path="/settings"
