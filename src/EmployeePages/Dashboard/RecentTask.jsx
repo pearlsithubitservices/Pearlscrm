@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from "framer-motion";
 import useTasks from '../../Hooks/useTaskid';
 import { useAuth } from '../../context/AuthContext';
@@ -10,11 +10,20 @@ const RecentTask = () => {
     const { tasks } = useTasks();
     const { employees } = useEmployees();
     console.log(tasks);
+    console.log(employees);
 
     const { user } = useAuth();
     const recentTasks = [...tasks]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5);
+
+    //GETTING EMPLOYEES NAME
+    const employeeMap = useMemo(() => {
+        return employees.reduce((map, employee) => {
+            map[employee.uid||employee.id] = employee.name;
+            return map;
+        }, {});
+    }, [employees]);
 
     const getPriorityStyle = (priority) => {
         switch (priority) {
@@ -46,7 +55,7 @@ const RecentTask = () => {
                                 <h3 className="text-2xl font-semibold text-[#082d5b]">
                                     Assigned by:{" "}
                                     <span className="font-bold">
-                                        {empName?.name || task.assignedBy}
+                                        {empName?.name || employeeMap[task.assignedBy]}
                                     </span>
                                 </h3>
 

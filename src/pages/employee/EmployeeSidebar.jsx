@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.png';
 import {
@@ -29,6 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Clock3 } from 'lucide-react';
 import { useIndustry } from '../../context/IndustryContext';
 import { motion } from 'framer-motion';
+import useEmployees from '../../Hooks/useEmployees';
 
 
 export default function Sidebar() {
@@ -36,6 +37,17 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const { config } = useIndustry();
   const navigate = useNavigate();
+
+  const { employees } = useEmployees();
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = {
+        name: employee.name || employee.employeeName,
+        role: employee.role || employee.employeeRole
+      }
+      return map;
+    }, {});
+  }, [employees]);
 
 
 
@@ -46,6 +58,11 @@ export default function Sidebar() {
       path: '/employee/dashboard',
     },
 
+    {
+      name: "Lead",
+      icon: CheckSquare,
+      path: '/employee/lead',
+    },
     {
       name: "Tasks & Activities",
       icon: CheckSquare,
@@ -201,7 +218,10 @@ export default function Sidebar() {
 
             {/* LOGOUT */}
             <button
-              onClick={() => logout()}
+              onClick={async () => {
+                await logout();
+                navigate("/login"); // or your employee login route
+              }}
               className="flex items-center gap-3  text-white hover:text-red-400 transition-all  ml-1"
             >
 
@@ -237,11 +257,11 @@ export default function Sidebar() {
           <div className="min-w-0" onClick={() => navigate('/employee/myprofile')}>
 
             <h3 className="font-semibold text-sm truncate">
-              {user?.displayName || 'Ragavi M'}
+              {employeeMap[user?.uid]?.name || user?.displayName || 'Ragavi M'}
             </h3>
 
             <p className="text-xs text-white/80 truncate">
-              Admin - Education
+              {employeeMap[user?.uid]?.role} - Education
             </p>
 
           </div>

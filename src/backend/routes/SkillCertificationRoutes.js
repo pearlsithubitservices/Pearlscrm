@@ -1,5 +1,30 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const uploadPath = path.join(__dirname, "../uploads/certificates");
+
+if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        const uniqueName =
+            Date.now() +
+            "-" +
+            Math.round(Math.random() * 1e9) +
+            path.extname(file.originalname);
+
+        cb(null, uniqueName);
+    },
+});
+
+const upload = multer({ storage });
 
 
 const SkillCertification = require("../models/Performance/SkillCertification");
@@ -39,6 +64,8 @@ router.post("/skill", async (req, res) => {
     }
 });
 
+
+
 // Get All
 router.get("/", async (req, res) => {
     try {
@@ -58,17 +85,25 @@ router.get("/", async (req, res) => {
 
 //CREATE CERTIFICATE
 
-router.post("/certification", async (req, res) => {
-    try {
-        const {
-            employee_uid,
-            title,
-            issuer,
-            issued,
-        } = req.body;
+router.post(
+    "/certification",
+    upload.single("image"),
+    async (req, res) => {
+        console.log("Body:", req.body);
+        console.log("File:", req.file);
+        try {
+            const {
+                employee_uid,
+                title,
+                issuer,
+                issued,
+            } = req.body;
 
-        const data =
-            await SkillCertification.findOneAndUpdate(
+            const image = req.file
+                ? `/uploads/certificates/${req.file.filename}`
+                : "";
+
+            const data = await SkillCertification.findOneAndUpdate(
                 { employee_uid },
                 {
                     $push: {
@@ -76,6 +111,7 @@ router.post("/certification", async (req, res) => {
                             title,
                             issuer,
                             issued,
+                            image,
                         },
                     },
                 },
@@ -85,17 +121,18 @@ router.post("/certification", async (req, res) => {
                 }
             );
 
-        res.json({
-            success: true,
-            data,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+            res.json({
+                success: true,
+                data,
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
     }
-});
+);
 
 // Get By Id
 router.get("/:id", async (req, res) => {
@@ -151,37 +188,50 @@ router.put("/skill/:employee_uid/:skill_id", async (req, res) => {
 
 //UPDATE CERTIFICATIONS
 
-router.put("/certification/:employee_uid/:cert_id", async (req, res) => {
-    try {
-        const { employee_uid, cert_id } = req.params;
-        const { title, issuer, issued } = req.body;
+router.put(
+    "/certification/:employee_uid/:cert_id",
+    upload.single("image"),
+    async (req, res) => {
+        try {
+            const { employee_uid, cert_id } = req.params;
+            const { title, issuer, issued } = req.body;
 
-        const data = await SkillCertification.findOneAndUpdate(
-            {
-                employee_uid,
-                "certifications._id": cert_id,
-            },
-            {
-                $set: {
-                    "certifications.$.title": title,
-                    "certifications.$.issuer": issuer,
-                    "certifications.$.issued": issued,
+            const updateData = {
+                "certifications.$.title": title,
+                "certifications.$.issuer": issuer,
+                "certifications.$.issued": issued,
+            };
+
+            if (req.file) {
+                updateData["certifications.$.image"] =
+                    `/uploads/certificates/${req.file.filename}`;
+            }
+
+            const data = await SkillCertification.findOneAndUpdate(
+                {
+                    employee_uid,
+                    "certifications._id": cert_id,
                 },
-            },
-            { new: true }
-        );
+                {
+                    $set: updateData,
+                },
+                {
+                    new: true,
+                }
+            );
 
-        res.status(200).json({
-            success: true,
-            data,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+            res.json({
+                success: true,
+                data,
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
     }
-});
+);
 
 // Delete skills
 router.delete("/skill/:employee_uid/:skill_id", async (req, res) => {

@@ -8,7 +8,7 @@ export default function useTotalLeave() {
     const [error, setError] = useState(null);
     const [totalLeave, setTotalLeave] = useState(null);
 
-    const BASE_URL = "http://localhost:5000/api/totalLeave";
+    const BASE_URL = "https://pearlscrm.onrender.com/api/totalLeave";
 
     // ================= GET =================
     const getTotalLeave = async () => {

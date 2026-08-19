@@ -1,11 +1,23 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import useNotification from "../../../Hooks/useNotification";
 import useEmployees from "../../../Hooks/useEmployees";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function NotificationForm({ onClose, fetchNotifications }) {
   const { createNotification } = useNotification();
   const { employees } = useEmployees();
+  const { user } = useAuth();
+  //GETTING EMPLOYEES NAME
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = {
+        name: employee.name,
+        role: employee.role || employee.employeeRole
+      }
+      return map;
+    }, {});
+  }, [employees]);
 
   const [form, setForm] = useState({
     title: "",
@@ -13,6 +25,7 @@ export default function NotificationForm({ onClose, fetchNotifications }) {
     notificationType: "General",
     employeeId: "",
     isImportant: true,
+    senderId: user?.uid,
   });
 
   const handleChange = (e) => {

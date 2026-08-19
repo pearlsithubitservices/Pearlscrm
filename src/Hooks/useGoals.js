@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API = "http://localhost:5000/api/mygoal";
+const API = "https://pearlscrm.onrender.com/api/mygoal";
 
 export default function useGoals() {
   const [loading, setLoading] = useState(false);
@@ -45,14 +45,14 @@ export default function useGoals() {
       return handleResponse(res);
     });
 
-    //GET GOALS
+  //GET GOALS
   const getGoals = () =>
     request(async () => {
       const res = await fetch(API);
       return handleResponse(res);
     });
 
-//GET GOALS BY ID
+  //GET GOALS BY ID
   const getGoalById = (id) =>
     request(async () => {
       const res = await fetch(`${API}/${id}`);

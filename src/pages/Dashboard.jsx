@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Dashboardskeleton } from "../components/Dashboard/Skeleton.jsx";
 
 import Hotleads from '../components/Dashboard/Hotleads.jsx'
@@ -35,10 +35,22 @@ export default function Dashboard() {
   //const [lead, setLead] = useState([]);
 
   const { user } = useAuth();
+  console.log(user);
   const navigate = useNavigate();
   const { fetchLead, fulllead } = useLead();
   const { employees } = useEmployees();
   const filteredLeads = fulllead.filter((lead) => (lead.priority?.toLowerCase() === "hot"));
+
+  //GETTING EMPLOYEES NAME
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = {
+        name: employee.name || employee.displayName || employee.employeeName,
+        role: employee.role || employee.employeeRole
+      }
+      return map;
+    }, {});
+  }, [employees]);
 
   const leadCounts = fulllead.reduce((acc, lead) => {
     acc[lead.assignedTo] = (acc[lead.assignedTo] || 0) + 1;
@@ -176,7 +188,7 @@ export default function Dashboard() {
           <div>
 
             <h1 className="text-2xl text-[#023167] font-bold">
-              Welcome, {user?.displayName || 'Ragavi'}
+              Welcome, {employeeMap[user?.uid]?.name || user?.displayName || 'Ragavi'}
             </h1>
 
             <p className="text-gray-400 mt-1">
@@ -264,8 +276,8 @@ export default function Dashboard() {
 
         {/**Employee section */}
 
-        <Employeecomp 
-        leadcounts={leadCounts}/>
+        <Employeecomp
+          leadcounts={leadCounts} />
       </div>
       )
       }

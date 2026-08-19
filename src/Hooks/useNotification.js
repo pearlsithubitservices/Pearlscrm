@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-const API_URL = "http://localhost:5000/api/notification";
+// const API_URL = "https://pearlscrm.onrender.com/api/notification";
+const API_URL = "https://pearlscrm.onrender.com/api/notification";
 
 const useNotification = () => {
   const [notifications, setNotifications] = useState([]);
@@ -60,7 +61,7 @@ const useNotification = () => {
       return null;
     }
   };
-  
+
 
   //DELETE NOTFICATION
   const deleteNotification = async (id) => {

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users,  } from "lucide-react";
+import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users, } from "lucide-react";
 
 
 import { div } from "framer-motion/client";
@@ -9,20 +9,24 @@ import Notification from "./Announcements/Notification.jsx"
 import HelpDesk from './HelpDesk/HelpDesk.jsx'
 //import RaiseTicket from "./RaiseTicket.js";
 import CompanyDirectory from "./Directory/CompanyDirectory.jsx";
-import FeedbackPage from "./Feedback/Feedback.jsx";
+
 import useAnnouncement from "../../Hooks/useAnnouncement.js";
+import Feedbackadmin from "./Feedback/Feedbackadmin.jsx";
+import EmployeeFeedback from "./Feedback/EmployeeFeedback.jsx";
+import useEmployees from "../../Hooks/useEmployees.js";
 
 
 const Communication = () => {
   const [activeTab, setActiveTab] = useState("Announcements");
   const [form, setForm] = useState(false);
-  const{announcements}=useAnnouncement();
+  const { announcements } = useAnnouncement();
+  const { employees } = useEmployees();
 
 
   const stats = [
     { icon: Megaphone, label: "Announcments", value: announcements.length },
     { icon: MessageCircleMore, label: "Open Tickets", value: "7" },
-    { icon: Users, label: "Employees", value: "₹ 84" },
+    { icon: Users, label: "Employees", value: employees.length },
     { icon: MessageSquareMore, label: "Avg Feedback", value: "80%" },
   ];
 
@@ -47,8 +51,8 @@ const Communication = () => {
 
 
             {/* <PayslipsTable /> */}
-            <CompanyAnnouncements/>
-            <Notification/>
+            <CompanyAnnouncements />
+            <Notification />
           </motion.div>
         );
 
@@ -61,7 +65,7 @@ const Communication = () => {
             className=" rounded-xl  p-1"
           >
 
-            <HelpDesk/>
+            <HelpDesk />
           </motion.div>
         );
 
@@ -73,7 +77,7 @@ const Communication = () => {
             animate={{ opacity: 1, y: 0 }}
             className=" rounded-xl p-2 "
           >
-            <CompanyDirectory/>
+            <CompanyDirectory />
           </motion.div>
         );
 
@@ -86,7 +90,8 @@ const Communication = () => {
             className=" rounded-xl "
           >
             <div className="">
-              <FeedbackPage/>
+              <Feedbackadmin />
+              <EmployeeFeedback />
             </div>
           </motion.div>
         );
@@ -162,12 +167,12 @@ const Communication = () => {
             ))}
           </div>
 
-          <button className="inline-flex items-center justify-center gap-2 bg-[#2563eb] text-white px-4 py-2 rounded-lg font-medium hover:scale-105 transition"
+          {/* <button className="inline-flex items-center justify-center gap-2 bg-[#2563eb] text-white px-4 py-2 rounded-lg font-medium hover:scale-105 transition"
             onClick={() => setForm((prev) => (!prev))}
           >
             <FileText size={16} />
            Raise Tickets
-          </button>
+          </button> */}
         </div>
       </div>
 
