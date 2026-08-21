@@ -11,9 +11,6 @@ router.post("/", async (req, res) => {
       success: true,
       data: enrollment,
     });
-    if(enrollment.ok){
-        alert('created successfully...');
-    }
   } catch (error) {
     res.status(500).json({
       success: false,

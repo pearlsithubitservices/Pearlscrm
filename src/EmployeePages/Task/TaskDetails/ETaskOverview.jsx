@@ -1,8 +1,56 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { User } from "lucide-react";
+import useEmployees from "../../../Hooks/useEmployees";
 
 const ETasksOverview = ({ tasks }) => {
+    const { employees } = useEmployees();
+
+    const getAssignerName = () => {
+        if (!tasks) return "Admin";
+        if (tasks.assignedFrom && typeof tasks.assignedFrom === "string" && !/^[0-9a-fA-F]{24}$/.test(tasks.assignedFrom)) {
+            return tasks.assignedFrom;
+        }
+        if (tasks.createdBy && typeof tasks.createdBy === "string" && !/^[0-9a-fA-F]{24}$/.test(tasks.createdBy)) {
+            return tasks.createdBy;
+        }
+
+        const rawId = tasks.assignedBy || tasks.assignedFrom || tasks.createdBy;
+        if (!rawId) return "Admin";
+
+        const strId = String(rawId).toLowerCase().trim();
+        if (strId === "admin") return "Admin";
+
+        const found = (employees || []).find((emp) => {
+            if (!emp) return false;
+            const eId = String(emp._id || emp.id || emp.uid || "").toLowerCase();
+            const eEmail = String(emp.email || "").toLowerCase();
+            const eName = String(emp.employeeName || emp.name || emp.displayName || "").toLowerCase();
+            return (
+                eId === strId ||
+                eEmail === strId ||
+                (eEmail && strId.includes(eEmail)) ||
+                (eName && eName === strId)
+            );
+        });
+
+        if (found) {
+            return found.employeeName || found.name || found.displayName || (found.email ? found.email.split("@")[0] : strId);
+        }
+
+        if (typeof rawId === "string" && rawId.includes("@")) {
+            const prefix = rawId.split("@")[0];
+            return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        }
+
+        if (typeof rawId === "string" && !/^[0-9a-fA-F]{24}$/.test(rawId) && rawId.length < 20) {
+            return rawId;
+        }
+
+        return "Admin";
+    };
+
+    const assignerName = getAssignerName();
+
     return (
         <motion.div
             whileHover={{ y: -5 }}
@@ -12,21 +60,21 @@ const ETasksOverview = ({ tasks }) => {
             <div className="flex flex-col gap-4 ml-4">
                 <h1 className="font-semibold">Project Name</h1>
                 <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks.titl || "Sri Sai Millets"}</p>
+                    <p>{tasks?.titl || tasks?.title || "Sri Sai Millets"}</p>
                 </div>
 
             </div>
             <div className="flex flex-col gap-4 ml-4 mt-4">
                 <h1 className="font-semibold">Task Title</h1>
                 <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks.title || " ReDesign the onboarding experiences for enterprise accounts"}</p>
+                    <p>{tasks?.title || " ReDesign the onboarding experiences for enterprise accounts"}</p>
                 </div>
 
             </div>
             <div className="flex flex-col gap-4 ml-4 mt-4">
                 <h1 className="font-semibold">Task Description</h1>
                 <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks.notes || " ReDesign the onboarding experiences for enterprise accounts"}</p>
+                    <p>{tasks?.notes || tasks?.description || " ReDesign the onboarding experiences for enterprise accounts"}</p>
                 </div>
 
             </div>
@@ -55,7 +103,7 @@ const ETasksOverview = ({ tasks }) => {
                         </h3>
 
                         <p className="text-base font-semibold text-gray-800">
-                            {tasks?.assignedBy || "Ragavi M"}
+                            {assignerName}
                         </p>
                     </div>
 

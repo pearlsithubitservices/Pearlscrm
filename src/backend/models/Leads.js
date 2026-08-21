@@ -63,6 +63,16 @@ const leadSchema =
         type: String,
       },
 
+      activities: [
+        {
+          title: String,
+          description: String,
+          empName: String,
+          time: String,
+          date: { type: String, default: () => new Date().toLocaleString() }
+        }
+      ],
+
 
       followUpCount: {
         type: Number,

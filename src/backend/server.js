@@ -1,17 +1,17 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const http = require("http");
 
 dotenv.config();
 
 const connectDB = require("./db");
-const MarketingLeadRoutes =require("./routes/marketingLeadRoutes");
+// const MarketingLeadRoutes =require("./routes/marketingLeadRoutes");
 const leadRoutes = require("./routes/leadRoutes");
 const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-const attendanceRoutes =
-  require("./routes/AttendanceRoutes");
+const attendanceRoutes =require("./routes/AttendanceRoutes");
 const ProjectsRoutes = require("./routes/ProjectsRoutes");
 const ClientRoutes = require("./routes/ClientRoutes");
 const EmployeeRoutes = require('./routes/EmployeeRoutes');
@@ -34,18 +34,22 @@ const EmpEnrollment = require('./routes/EnrollmentRoutes');
 const EmpCourse = require('./routes/EmpCourseRoutes');
 const EmpSkillCertification = require('./routes/SkillCertificationRoutes');
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
-const EmpActivityRoutes= require("./routes/TaskActivityRoute")
+const EmpActivityRoutes= require("./routes/TaskActivityRoute");
 const EmpTotalLeave=require('./routes/TotalLeaveRoutes');
 
-
-
+const chatRoutes = require("./routes/ChatRoute");
+const messageRoutes = require("./routes/messageRoute");
+const { initSocket } = require("./Socket");
 
 connectDB();
 
 const app = express();
-console.log("EmployeeRoutes =", EmployeeRoutes);
-console.log("PaymentRoutes =", PaymentRoutes);
-console.log("MarketingLeadRoutes =", MarketingLeadRoutes);
+const server = http.createServer(app);
+initSocket(server);
+
+// console.log("EmployeeRoutes =", EmployeeRoutes);
+// console.log("PaymentRoutes =", PaymentRoutes);
+// console.log("MarketingLeadRoutes =", MarketingLeadRoutes);
 app.use(
   cors({
     origin: [
@@ -63,7 +67,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 
 app.use("/api/leads", leadRoutes);
@@ -75,7 +80,7 @@ app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
-app.use("/api/marketing-leads",MarketingLeadRoutes);
+// app.use("/api/marketing-leads",MarketingLeadRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
@@ -97,10 +102,13 @@ app.use("/api/contribution", EmpContributionRoutes);
 app.use("/api/activity",EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
 
+app.use("/api/chat", chatRoutes);
+app.use("/api/messages", messageRoutes);
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server running on port ${process.env.PORT}`);
-  console.log("Connected to database");
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log("Connected to database with WebSocket support");
 });
 
 

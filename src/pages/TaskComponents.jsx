@@ -19,11 +19,10 @@ import TaskOverview from "../components/TaskDetails/TaskOverview";
 import TaskActivity from "../components/TaskDetails/TaskAvctivity";
 import TaskNotes from "../components/TaskDetails/TaskNotes";
 import TaskDocuments from "../components/TaskDetails/TaskDocumentation";
+import TaskChat from "../components/TaskDetails/TaskChat";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import useEmployees from "../Hooks/useEmployees";
-
-
 
 export default function TaskComponents() {
     const [activeTab, setActiveTab] = useState("Overview");
@@ -79,10 +78,10 @@ export default function TaskComponents() {
 
     const tabs = [
         "Overview",
+        "Task Chat",
         "Activity",
         "Notes",
         "Documents",
-
     ];
     const buttons = [
 
@@ -104,6 +103,9 @@ export default function TaskComponents() {
                 return <TaskOverview
                     tasks={TaskById} />;
 
+            case "Task Chat":
+                return <TaskChat task={TaskById[0]} taskId={id} taskTitle={TaskById[0]?.taskName || TaskById[0]?.title} />;
+
             case "Activity":
                 return <TaskActivity
                     tasks={tasks} />
@@ -113,8 +115,6 @@ export default function TaskComponents() {
 
             case "Documents":
                 return <TaskDocuments />;
-
-
 
             default:
                 return null;

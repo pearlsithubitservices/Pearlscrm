@@ -60,21 +60,19 @@ export default function Tasks() {
 
   //STATS
 
-  const inprogress = tasks.filter((task) =>
-    task.status.toLowerCase() === "pending"
+  const inprogress = (tasks || []).filter(
+    (task) => (task?.status || "").toLowerCase() === "pending" || (task?.status || "").toLowerCase() === "in progress"
   );
-  const completed = tasks.filter((task) =>
-    task.status.toLowerCase() === "completed"
-  );
-
-  const overdue = tasks.filter((task) =>
-    new Date(task.dueDate) < new Date()
+  const completed = (tasks || []).filter(
+    (task) => (task?.status || "").toLowerCase() === "completed"
   );
 
-
+  const overdue = (tasks || []).filter(
+    (task) => task?.dueDate && new Date(task.dueDate) < new Date()
+  );
 
   const stats = [
-    { icon: User2, label: "Total Tasks", value: tasks.length || "0" },
+    { icon: User2, label: "Total Tasks", value: tasks?.length || "0" },
     { icon: Clock2, label: "Pending", value: inprogress.length || "0" },
     { icon: CheckCheck, label: "Completed", value: completed.length || "0" },
     { icon: CalendarArrowDown, label: "Overdue", value: overdue.length || "0" },
@@ -84,7 +82,6 @@ export default function Tasks() {
   function handleactiveindex(activeindex) {
     setActive(activeindex);
   }
-
 
   return (
     <div className="flex max-h-screen bg-gray-100 overflow-y-auto no-scrollbar">
@@ -102,7 +99,6 @@ export default function Tasks() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-
 
             <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
               <Bell size={18} className='text-white' />
@@ -179,17 +175,22 @@ export default function Tasks() {
               </div> :
               currentFiles.length == 0 ? <div className='font-bold bg-white h-[250px] flex justify-center items-center'>
                 <h3>No Data</h3></div> : currentFiles.map((task, index) => {
-                  const employeename = employees.find(
-                    (emp) => emp.id === task.assignedTo
-                  );
-                  console.log(employeename);
-                  const employeenameBy = employees.find(
-                    (emp) => emp.id === task.assignedBy
-                  );
-                  console.log(employeename);
+                  const employeenameBy = (employees || []).find((emp) => {
+                    if (!emp) return false;
+                    const eId = String(emp._id || emp.id || emp.uid || "").toLowerCase();
+                    const eEmail = String(emp.email || "").toLowerCase();
+                    const target = String(task?.assignedBy || task?.assignedFrom || "").toLowerCase();
+                    return eId === target || eEmail === target || (eEmail && target.includes(eEmail));
+                  });
+                  const assignerName = task?.assignedFrom && typeof task.assignedFrom === "string" && !/^[0-9a-fA-F]{24}$/.test(task.assignedFrom)
+                    ? task.assignedFrom
+                    : employeenameBy?.employeeName || employeenameBy?.name || employeenameBy?.displayName || (task?.assignedBy === "admin" || !task?.assignedBy ? "Admin" : !/^[0-9a-fA-F]{24}$/.test(String(task.assignedBy)) ? task.assignedBy : "Admin");
+                  const taskStatus = task?.status || "Pending";
+                  const taskPriority = task?.priority || "Medium";
+
                   return (
                     <motion.div
-                      key={index}
+                      key={task?.id || index}
                       initial={{ opacity: 0, y: 25 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
@@ -198,8 +199,8 @@ export default function Tasks() {
                     border
                     border-gray-200
                     rounded-2xl
-                    p-5 md:p-7"
-                      onClick={() => navigate(`/employee/taskDetails/${task.uid}`)}>
+                    p-5 md:p-7 cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => navigate(`/employee/taskDetails/${task._id || task.id || task.uid}`)}>
 
                       {/* TOP */}
 
@@ -210,11 +211,11 @@ export default function Tasks() {
                         <div>
 
                           <h1 className="text-sm md:text-xl font-normal text-[#082f57]">
-                            <span className="font-bold tracking-tighter">Project Name: </span>{employeenameBy.name || " Ragavi"}
+                            <span className="font-bold tracking-tighter">Assigned By: </span>{assignerName}
                           </h1>
 
                           <p className="mt-1 text-lg md:text-xl text-[#082f57]">
-                            <span className="font-semibold tracking-tighter"> Task Title: </span> {task.title || " Redesign onboarding flow for enterprise clients"}
+                            <span className="font-semibold tracking-tighter"> Task Title: </span> {task.title || "Redesign onboarding flow"}
                           </p>
 
                         </div>
@@ -227,22 +228,20 @@ export default function Tasks() {
 
                             <div
                               className={`
-                            ${task.status.toLowerCase() === "pending" ? "bg-red-200 text-red-600" : task.status.toLowerCase() === "in progress" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
+                            ${taskStatus.toLowerCase() === "pending" ? "bg-red-100 text-red-600" : taskStatus.toLowerCase() === "in progress" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-800"}
                             
                             px-4
                             py-2
                             rounded-full
                             text-sm
-                            bg-blue-100
-                            text-blue-500
                           `}
                             >
-                              ● {task.status || "Pending"}
+                              ● {taskStatus}
                             </div>
 
                             <div
                               className={`
-                            ${task.priority.toLowerCase() === "hot" ? "bg-red-200 text-red-600" : task.priority.toLowerCase() === "warm" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
+                            ${taskPriority.toLowerCase() === "hot" ? "bg-red-100 text-red-600" : taskPriority.toLowerCase() === "warm" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-800"}
                             px-4
                             py-2
                             rounded-full
@@ -250,11 +249,10 @@ export default function Tasks() {
                           
                           `}
                             >
-                              ● {task.priority || "Medium"}
+                              ● {taskPriority}
                             </div>
 
                           </div>
-
 
                         </div>
 

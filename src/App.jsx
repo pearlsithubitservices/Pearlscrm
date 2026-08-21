@@ -46,7 +46,8 @@ import TaskDetails from './pages/TaskDetails';
 import Login from './pages/Login';
 
 import ClientManagement from './pages/ClientManagement';
-import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx'
+import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx';
+import Messenger from './components/messager/Messager.jsx';
 
 // EMPLOYEE
 
@@ -246,6 +247,14 @@ export default function App() {
                   <AdminCommunication />
                 }
               />
+              <Route
+                path="/collaboration"
+                element={<Messenger />}
+              />
+              <Route
+                path="/chat"
+                element={<Messenger />}
+              />
 
               <Route
                 path="/settings"
@@ -308,24 +317,16 @@ export default function App() {
               />
               <Route path="/employee/attendance" element={<EmpAttendance />} />
               <Route path="/employee/communication" element={<EmpCommunication />} />
+              <Route path="/employee/collaboration" element={<Messenger />} />
+              <Route path="/employee/chat" element={<Messenger />} />
               <Route path="/employee/reports" element={<EmpReports />} />
               <Route path="/employee/leave" element={<EmpLeave />} />
               <Route path="/employee/payroll" element={<EmpPayroll />} />
               <Route path="/employee/performance" element={<EmpPerformance />} />
               <Route path="/employee/settings" element={<EmpSettings />} />
-              <Route path="/employee/task" element={<EmpTask />} />
               <Route path="/employee/dashboard" element={<EmpDashboard />} />
               <Route path="/employee/follow-ups" element={<EmpFollowUps />} />
-              <Route path="/employee/performance" element={<EmpPerformance />} />
-              <Route path="/employee/reports" element={<EmpReportStatements />} />
               <Route path="/employee/performance/:id" element={<EmpGoalDetails />} />
-
-              <Route
-                path="/employee/attendance"
-                element={
-                  <Attendance />
-                }
-              />
             </Route>
 
             {/* FALLBACK */}

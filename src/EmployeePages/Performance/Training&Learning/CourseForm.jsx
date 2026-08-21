@@ -135,10 +135,11 @@ export default function CourseForm({ onClose, fetchCourse }) {
                 )}
                 <div className="flex items-center justify-between gap-4">
                     <button
+                        type="button"
                         onClick={onClose}
-                        className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700"
+                        className="w-full bg-gray-500 text-white p-3 rounded-lg hover:bg-gray-600"
                     >
-                        cancel
+                        Cancel
                     </button>
                     <button
                         type="submit"

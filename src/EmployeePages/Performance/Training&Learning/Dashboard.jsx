@@ -41,6 +41,7 @@ export default function Dashboard() {
                     {course.map((item) => (
                         <CourseCard
                             key={item._id}
+                            id={item._id}
                             src={`http://localhost:5000${item.image}`}
                             title={item.title}
                             tag={item.tag}

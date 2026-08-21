@@ -118,7 +118,7 @@ export default function LeadDetails({ lead }) {
                   text-[#082f57]
                   "
                 >
-                  ₹{lead?.dealValue || "120,000"}
+                  ₹{lead?.budget || lead?.dealValue || "0"}
                 </h1>
 
                 <p className="text-gray-400 mt-3">

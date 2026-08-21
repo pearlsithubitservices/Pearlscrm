@@ -29,7 +29,6 @@ import {
   Calendar,
   X
 } from 'lucide-react';
-import { title } from 'framer-motion/client';
 
 export default function CreateTask({ onClose }) {
 
