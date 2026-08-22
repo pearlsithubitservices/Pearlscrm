@@ -53,6 +53,12 @@ export default function Login() {
     if (code.includes('auth/invalid-email')) {
       return 'Please enter a valid email address.';
     }
+    if (code.includes('auth/user-disabled')) {
+      return 'This account has been disabled. Please contact your administrator.';
+    }
+    if (code.includes('auth/too-many-requests')) {
+      return 'Too many unsuccessful attempts. Please wait a moment and try again.';
+    }
     if (
       code.includes('auth/invalid-credential') ||
       code.includes('auth/user-not-found') ||
@@ -118,15 +124,22 @@ export default function Login() {
   // EMAIL LOGIN / REGISTER
   const handleEmailAuth = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
+      setError('Please enter your email and password.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const selectedRole = role || 'Admin';
 
       // 1. LOGIN
       if (isLogin) {
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const userCred = await signInWithEmailAndPassword(auth, normalizedEmail, password);
         const uid = userCred.user.uid;
 
         const userRef = doc(db, 'users', uid);
@@ -144,16 +157,16 @@ export default function Login() {
         } else {
           await setDoc(userRef, {
             uid,
-            email,
-            displayName: name || email.split('@')[0],
+            email: normalizedEmail,
+            displayName: name || normalizedEmail.split('@')[0],
             role: selectedRole,
             industry,
             createdAt: new Date(),
           });
           await setDoc(doc(db, 'employees', uid), {
             uid,
-            name: name || email.split('@')[0],
-            email,
+            name: name || normalizedEmail.split('@')[0],
+            email: normalizedEmail,
             role: selectedRole,
             createdAt: new Date(),
           });
@@ -170,7 +183,7 @@ export default function Login() {
       }
       // 2. REGISTER
       else {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
+        const result = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
         const uid = result.user.uid;
 
         await setDoc(doc(db, 'users', uid), {
