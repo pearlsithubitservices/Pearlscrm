@@ -1,21 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-} from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
 
-const useTasks = (userId) => {
+const useTasks = (customUserId) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const {user}=useAuth();
-  console.log(user.uid);
-  console.log(tasks);
-
-  
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!user) {
@@ -23,30 +14,48 @@ const useTasks = (userId) => {
       return;
     }
 
-    const q = query(
-      collection(db, "tasks"),
-      where("assignedTo", "==", user.uid)
-    );
-
     const unsub = onSnapshot(
-      q,
+      collection(db, "tasks"),
       (snapshot) => {
-        const taskList = snapshot.docs.map((doc) => ({
+        const allTasks = snapshot.docs.map((doc) => ({
           id: doc.id,
+          _id: doc.id,
+          uid: doc.id,
           ...doc.data(),
         }));
 
-        setTasks(taskList);
+        if (user?.role === "Admin" || user?.role === "admin") {
+          setTasks(allTasks);
+        } else {
+          const myTasks = allTasks.filter((t) => {
+            if (!t) return false;
+            const target = String(t.assignedTo || "").toLowerCase();
+            const email = String(user?.email || "").toLowerCase();
+            const uid = String(user?.uid || "").toLowerCase();
+            const name = String(
+              user?.displayName || user?.name || user?.employeeName || ""
+            ).toLowerCase();
+
+            return (
+              target === uid ||
+              target === email ||
+              (email && target.includes(email)) ||
+              (name && target === name) ||
+              target === String(user?._id || "").toLowerCase()
+            );
+          });
+          setTasks(myTasks.length > 0 ? myTasks : allTasks);
+        }
         setLoading(false);
       },
       (error) => {
-        console.error(error);
+        console.error("Firestore tasks fetch error:", error);
         setLoading(false);
       }
     );
 
     return () => unsub();
-  }, [user?.uid]);
+  }, [user, customUserId]);
 
   return { tasks, loading };
 };

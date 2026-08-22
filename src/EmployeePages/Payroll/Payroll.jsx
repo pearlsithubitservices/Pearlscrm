@@ -6,7 +6,6 @@ import Payslip from "./Payslip/Payslip";
 import PaySummary from "./Payslip/PaySummary";
 import SalaryBreakup from "./SalaryDetails.jsx/SalaryBreakup";
 import Reimbursement from "./Reimbursement/Reimbursement";
-import { div } from "framer-motion/client";
 import TaxDocument from "./TaxDocument.jsx/TaxDocument";
 import Benefits from "./Benefits/Benefits";
 import usePayslip from "../../Hooks/usePayslip";

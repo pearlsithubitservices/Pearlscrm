@@ -8,8 +8,8 @@ const enrollmentSchema = new mongoose.Schema(
         },
 
         courseId: {
-            type: String,
-
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Course",
             required: true,
         },
 

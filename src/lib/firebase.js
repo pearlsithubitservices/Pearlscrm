@@ -5,14 +5,15 @@ import { getFirestore } from "firebase/firestore";
 
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBuh-0ZNvqbMG8XfXpWpGHkWPHS_LjzEZM",
-  authDomain: "pearlscrm-fbf72.firebaseapp.com",
-  projectId: "pearlscrm-fbf72",
-  storageBucket: "pearlscrm-fbf72.firebasestorage.app",
-  messagingSenderId: "324927871298",
-  appId: "1:324927871298:web:335c2c53375f94a1c350db",
-  measurementId: "G-MFV1THQHWL"
+  apiKey: "AIzaSyCrGp36_f16N_18MUxAoxhoxr3p-ZzmgfI",
+  authDomain: "pearlscrm-4f491.firebaseapp.com",
+  projectId: "pearlscrm-4f491",
+  storageBucket: "pearlscrm-4f491.firebasestorage.app",
+  messagingSenderId: "179186324936",
+  appId: "1:179186324936:web:403c437872b0580493dcfd",
+  measurementId: "G-W27EX80M80"
 };
+
 
 const app = initializeApp(firebaseConfig);
 

@@ -5,12 +5,12 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Layout() {
-  const { user, loading } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-gray-50">
-        <motion.div 
+        <motion.div
           animate={{ scale: [1, 1.1, 1] }}
           transition={{ repeat: Infinity, duration: 1 }}
           className="w-12 h-12 bg-black rounded-xl"
@@ -23,10 +23,14 @@ export default function Layout() {
     return <Navigate to="/login" replace />;
   }
 
+  if (!isAdmin) {
+    return <Navigate to="/employee-dashboard" replace />;
+  }
+
   return (
-    <div className="flex bg-[#FBFBFA] min-h-screen h-screen overflow-hidden">
+    <div className="flex bg-[#FBFBFA] min-h-screen">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto min-w-0">
+      <main className="flex-1 overflow-auto pt-14 lg:pt-0">
         <AnimatePresence mode="wait">
           <motion.div
             initial={{ opacity: 0, y: 10 }}

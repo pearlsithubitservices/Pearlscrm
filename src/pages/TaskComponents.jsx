@@ -19,11 +19,10 @@ import TaskOverview from "../components/TaskDetails/TaskOverview";
 import TaskActivity from "../components/TaskDetails/TaskAvctivity";
 import TaskNotes from "../components/TaskDetails/TaskNotes";
 import TaskDocuments from "../components/TaskDetails/TaskDocumentation";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import TaskChat from "../components/TaskDetails/TaskChat";
+import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import useEmployees from "../Hooks/useEmployees";
-
-
 
 export default function TaskComponents() {
     const [activeTab, setActiveTab] = useState("Overview");
@@ -35,43 +34,11 @@ export default function TaskComponents() {
     const { lead, loading } = useLead();
     const [tasks, setTasks] = useState([]);
     console.log(tasks);
-    const task = useMemo(() => {
-        return tasks.find((item) => item.id === id);
-    }, [tasks, id]);
-    console.log(task);
+    const TaskById = tasks.filter((item) =>
 
-    const [isEditing, setIsEditing] = useState(false);
-    const [editData, setEditData] = useState({});
-
-    useEffect(() => {
-        if (task) {
-            setEditData(task);
-        }
-    }, [task]);
-
-    const handleChange = (e) => {
-        setEditData({
-            ...editData,
-            [e.target.name]: e.target.value,
-        });
-    };
-
-
-    const handleUpdate = async () => {
-        try {
-            const taskRef = doc(db, "tasks", task.id);
-
-            await updateDoc(taskRef, {
-                ...editData,
-            });
-
-            setIsEditing(false);
-        } catch (err) {
-            console.log(err);
-        }
-    };
-
-
+        item.id == id
+    );
+    console.log(TaskById);
     const employeeMap = useMemo(() => {
         return employees.reduce((map, employee) => {
             map[employee.uid] = employee.name;
@@ -111,10 +78,10 @@ export default function TaskComponents() {
 
     const tabs = [
         "Overview",
+        "Task Chat",
         "Activity",
         "Notes",
         "Documents",
-
     ];
     const buttons = [
 
@@ -134,10 +101,10 @@ export default function TaskComponents() {
         switch (activeTab) {
             case "Overview":
                 return <TaskOverview
-                    tasks={task}
-                    isEditing={isEditing}
-                    editData={editData}
-                    handleChange={handleChange} />;
+                    tasks={TaskById} />;
+
+            case "Task Chat":
+                return <TaskChat task={TaskById[0]} taskId={id} taskTitle={TaskById[0]?.taskName || TaskById[0]?.title} />;
 
             case "Activity":
                 return <TaskActivity
@@ -148,8 +115,6 @@ export default function TaskComponents() {
 
             case "Documents":
                 return <TaskDocuments />;
-
-
 
             default:
                 return null;
@@ -179,7 +144,7 @@ export default function TaskComponents() {
                             <div>
 
                                 <h1 className="font-bold text-xl text-[#082f57]">
-                                    {employeeMap[task?.assignedTo] || "Vishnu"}
+                                    {employeeMap[TaskById[0]?.assignedTo] || "Vishnu"}
                                 </h1>
 
                                 <p className="text-gray-400 tracking-tighter">
@@ -213,41 +178,20 @@ export default function TaskComponents() {
                             <div className="flex gap-3">
 
                                 <span className="bg-green-100 text-green-600 px-4 py-1 rounded-full">
-                                    {task?.status || "In Progress"}
+                                    {TaskById[0]?.status || "In Progress"}
                                 </span>
 
                                 <span className="bg-red-100 text-red-500 px-4 py-1 rounded-full">
-                                    {task?.priority || "Hot"}
+                                    {TaskById[0]?.priority || "Hot"}
                                 </span>
 
                             </div>
-                            <div className="flex items-center justify-between">
 
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="border px-5 py-2 rounded-lg flex items-center gap-2 hover:scale-110 transition-transform duration-200"
-                                >
-                                    <Pencil size={16} />
-                                    Edit
-                                </button>
-                                {isEditing && (
-                                    <div className="flex gap-3 mt-3">
-                                        <button
-                                            onClick={handleUpdate}
-                                            className="bg-green-600 text-white px-4 py-2 rounded-lg"
-                                        >
-                                            Save
-                                        </button>
-
-                                        <button
-                                            onClick={() => setIsEditing(false)}
-                                            className="bg-gray-300 px-4 py-2 rounded-lg"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                            <button
+                                className="border px-5 py-2 rounded-lg flex items-center gap-2 hover:scale-110 transition-transform duration-200">
+                                <Pencil size={16} />
+                                Edit
+                            </button>
 
                         </div>
 

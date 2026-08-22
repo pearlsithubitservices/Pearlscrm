@@ -1,6 +1,5 @@
 import React, {
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 
@@ -30,8 +29,6 @@ import {
   Calendar,
   X
 } from 'lucide-react';
-import { title } from 'framer-motion/client';
-import { useAuth } from '../context/AuthContext';
 
 export default function CreateTask({ onClose }) {
 
@@ -40,17 +37,8 @@ export default function CreateTask({ onClose }) {
 
   const [employees, setEmployees] =
     useState([]);
-  const { user } = useAuth()
-  const employeeMap = useMemo(() => {
-    return employees.reduce((map, employee) => {
-      map[employee.uid] = {
-        name: employee.name || employee.employeeName,
-        role: employee.role || employee.employeeRole
-      }
-      return map;
-    }, {});
-  }, [employees]);
 
+  console.log(employees);
 
   const [task, setTask] =
     useState({
@@ -110,7 +98,6 @@ export default function CreateTask({ onClose }) {
         });
 
         setEmployees(employeeList);
-        console.log("employees:", employeeList);
 
       } catch (error) {
 
@@ -246,14 +233,12 @@ export default function CreateTask({ onClose }) {
           placeholder="Agent Name"
           Icon={Users}
           type='select'
-          options={
-            [
-              {
-                value: user?.uid,
-                label: employeeMap[user?.uid]?.name
-              }
-            ]
-          }
+          options={employees.map((emp) => (
+            {
+              label: emp.name,
+              value: emp.id
+            }
+          ))}
         />
 
         <InputField
@@ -264,17 +249,10 @@ export default function CreateTask({ onClose }) {
           placeholder="Agent Name"
           Icon={Users}
           type='select'
-          options={[...(employees || [])]
-            .sort((a, b) => {
-              const aTime = a.createdAt?.seconds || 0;
-              const bTime = b.createdAt?.seconds || 0;
-              return bTime - aTime; // Newest first
-            })
-            .map((emp) => ({
-              label: emp.name || emp.employeeName,
-              value: emp.uid,
-            }))
-          }
+          options={employees.map((emp) => ({
+            label: emp.name,
+            value: emp.uid
+          }))}
         />
 
       </div>
