@@ -41,6 +41,10 @@ const leadSchema =
         type: String,
       },
 
+      nextActionDate: {
+        type: Date,
+      },
+
       service: {
         type: String,
       },
@@ -78,6 +82,16 @@ const leadSchema =
             type: Date,
             default: Date.now,
           },
+        },
+      ],
+
+      documents: [
+        {
+          name: { type: String, required: true },
+          type: { type: String, default: "FILE" },
+          size: { type: Number, default: 0 },
+          url: { type: String, required: true },
+          uploadedAt: { type: Date, default: Date.now },
         },
       ],
 

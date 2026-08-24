@@ -15,6 +15,7 @@ import {
   User,
   Activity,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 
 import ActivityTab from "../components/LeadDetails/LeadActivity";
@@ -145,15 +146,26 @@ export default function LeadDetails() {
       case "Overview":
         return <OverviewTab lead={lead} />;
       case "Activity":
-        return <ActivityTab lead={lead} />;
+        return <ActivityTab lead={lead} fetchLead={fetchLead} />;
       case "Notes":
         return <NotesTab lead={lead} />;
       case "Documents":
-        return <DocumentsTab lead={lead} />;
+        return <DocumentsTab lead={lead} fetchLead={fetchLead} />;
       case "Next Action":
-        return <NextActionTab lead={lead} />;
+        return <NextActionTab lead={lead} fetchLead={fetchLead} />;
       default:
         return null;
+    }
+  };
+
+  const deleteLead = async () => {
+    if (!id || !window.confirm("Delete this lead permanently?")) return;
+    try {
+      const response = await fetch(apiUrl(`/leads/${id}`), { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete lead");
+      navigate(-1);
+    } catch (error) {
+      alert(error.message);
     }
   };
 
@@ -277,6 +289,14 @@ export default function LeadDetails() {
               >
                 <Pencil size={14} />
                 <span>Edit</span>
+              </button>
+              <button
+                onClick={deleteLead}
+                className="border border-red-200 bg-red-50 text-red-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-red-600 hover:text-white transition-all shadow-xs"
+                aria-label="Delete lead"
+              >
+                <Trash2 size={14} />
+                <span>Delete</span>
               </button>
             </div>
           </div>

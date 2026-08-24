@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { apiUrl } from "../../config/api.js";
 import { PlusCircle, Clock, User, FileText, Send } from "lucide-react";
+import { X } from "lucide-react";
 
-export default function LeadActivity({ lead }) {
+export default function LeadActivity({ lead, fetchLead }) {
   const [activities, setActivities] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -14,6 +15,21 @@ export default function LeadActivity({ lead }) {
     time: "",
     empName: "",
   });
+
+  const handleDeleteActivity = async (activityId) => {
+    if (!lead?._id || !activityId || !window.confirm("Delete this activity?")) return;
+    try {
+      const response = await fetch(apiUrl(`/leads/${lead._id}/activities/${activityId}`), {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete activity");
+      const updatedLead = await response.json();
+      setActivities(updatedLead.activities || []);
+      fetchLead?.();
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
   useEffect(() => {
     if (lead?.activities && Array.isArray(lead.activities)) {
@@ -212,7 +228,7 @@ export default function LeadActivity({ lead }) {
                           </span>
                         )}
                       </h3>
-                      <span className="text-[11px] text-gray-400 font-medium bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                      <span className="text-[11px] text-gray-400 font-medium  bg-gray-50 px-10 py-0.5 rounded-md border border-gray-100">
                         {item.date}
                       </span>
                     </div>
@@ -225,7 +241,16 @@ export default function LeadActivity({ lead }) {
                       <User size={12} className="text-[#2563a9]" />
                       <span>Logged by: {item.empName || "Staff"}</span>
                     </div>
+                    <button
+                      type="button"
+                      className="absolute top-2 right-2 text-red-600"
+                      onClick={() => handleDeleteActivity(item._id)}
+                      aria-label="Delete activity"
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
+              
                 </motion.div>
               ))
             )}

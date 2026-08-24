@@ -11,7 +11,9 @@ export default function useLeadfilter(leads, search, active) {
         lead.assignedTo?.toLowerCase().includes(q) ||
         lead.status?.toLowerCase().includes(q) ||
         lead.priority?.toLowerCase().includes(q) ||
-        lead.company?.toLowerCase().includes(q);
+        lead.company?.toLowerCase().includes(q) ||
+        lead.source?.toLowerCase().includes(q) ||
+        lead.nextAction?.toLowerCase().includes(q);
 
       const filtered =
         active === "All"

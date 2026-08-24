@@ -23,6 +23,7 @@ import {
   ArrowLeftCircleIcon,
   ArrowRightFromLine,
   ArrowRightCircleIcon,
+  Trash2,
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,27 +34,28 @@ import LoadingPage from "../../components/Dashboard/Loading";
 import useLeadfilter from "../../Hooks/useLeadfilter"
 import { useAuth } from "../../context/AuthContext";
 import { formatCurrency } from "../../Utils/formatNumber";
+import { apiUrl } from "../../config/api";
+import useNotification from "../../Hooks/useNotification";
 export default function LeadManagement() {
 
   const [leaddetails, setLeaddetails] = useState([]);
   const [dashboarddata, setDashboardData] = useState();
-  console.log(leaddetails);
   const { user } = useAuth();
+  const { notifications } = useNotification(user?.uid || "");
 
   const [search, setSearch] = useState("");
   
 
-  const currentLead = leaddetails?.filter((item) => (
-    item.assignedTo == user.uid
-  ))
-  console.log(currentLead);
+  const currentLead = (Array.isArray(leaddetails) ? leaddetails : []).filter((item) =>
+    item.assignedTo === user?.uid
+  );
 
   useEffect(() => {
 
 
     fetchleads();
     fetchDashboard();
-  }, []);
+  }, [user?.uid]);
   //FETCH DASHBOARD
   const fetchDashboard =
     async () => {
@@ -88,14 +90,14 @@ export default function LeadManagement() {
 
         const response =
           await fetch(
-            "https://pearlscrm.onrender.com/api/leads"
+            apiUrl("/leads")
           );
 
         const data =
           await response.json();
 
 
-        setLeaddetails(data);
+        setLeaddetails(Array.isArray(data) ? data : []);
 
       } catch (error) {
 
@@ -111,7 +113,6 @@ export default function LeadManagement() {
   const [active, setActive] = useState(0);
 
   const buttons = ["All", "Hot", "Warm", "Cold"];
-  console.log(buttons[active]);
   const filteredLeads = useLeadfilter(currentLead, search, buttons[active]);
 
 
@@ -121,8 +122,8 @@ export default function LeadManagement() {
   const filesPerPage = 5;
   const lastIndex = currentPage * filesPerPage;
   const firstIndex = lastIndex - filesPerPage;
-  const currentFiles = filteredLeads?.slice(firstIndex, lastIndex);
-  const totalPages = Math.ceil(filteredLeads.length / filesPerPage);
+  const currentFiles = filteredLeads.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(filteredLeads.length / filesPerPage) || 1;
 
 
   const [openlead, setOpenlead] = useState(false);
@@ -131,8 +132,18 @@ export default function LeadManagement() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const convertedLeads = currentLead?.filter((lead) => (lead.status.toLowerCase() === "converted")).length;
-  const convertedPercent = currentLead?.length > 0 ? ((convertedLeads / leaddetails.length) * 100).toFixed(2) : 0;
+  const deleteLead = async (leadId) => {
+    if (!leadId || !window.confirm("Delete this lead permanently?")) return;
+    try {
+      const response = await fetch(apiUrl(`/leads/${leadId}`), { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete lead");
+      fetchleads();
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+  const convertedLeads = currentLead.filter((lead) => (lead.status || "").toLowerCase() === "converted").length;
+  const convertedPercent = currentLead.length > 0 ? ((convertedLeads / currentLead.length) * 100).toFixed(2) : 0;
   const pipelineValue = currentLead?.reduce((total, lead) => {
     return total + Number(lead.budget || 0);
   }, 0);
@@ -183,6 +194,7 @@ export default function LeadManagement() {
 
             <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
               <Bell size={18} className='text-white' />
+              {notifications.length > 0 && <span className="text-white text-xs">{notifications.length}</span>}
             </button>
 
           </div>
@@ -262,6 +274,7 @@ export default function LeadManagement() {
                   <th>BUDGET</th>
                   <th>SOURCE</th>
                   <th>FOLLOW UP</th>
+                  <th>ACTION</th>
                 </tr>
               </thead>
 
@@ -275,7 +288,7 @@ export default function LeadManagement() {
                     </td>
                   </tr>
                 ) : (currentFiles.map((l, i) => (
-                  <tr key={i} className="border-t" onClick={() => navigate(`/leadDetails/${l._id}`)}>
+                  <tr key={l._id || i} className="border-t" onClick={() => navigate(`/leadDetails/${l._id}`)}>
 
                     <td className="p-3">
                       <p className="font-medium">{l.name || "John Doe"}</p>
@@ -302,7 +315,13 @@ export default function LeadManagement() {
                       </span>
                     </td>
 
-                    <td>{l.follow || "Not Set"}</td>
+                    <td>{l.nextActionDate ? new Date(l.nextActionDate).toLocaleDateString() : l.follow || "Not Set"}</td>
+
+                    <td>
+                      <button type="button" onClick={(event) => { event.stopPropagation(); deleteLead(l._id); }} className="text-red-600" aria-label="Delete lead">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
 
                   </tr>
                 )))}

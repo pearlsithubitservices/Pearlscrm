@@ -45,11 +45,45 @@ export default function useLead(id) {
     }
   };
 
+  const addNote = async (leadId, note) => {
+    const response = await fetch(apiUrl(`/leads/${leadId}/notes`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(note),
+    });
+    if (!response.ok) throw new Error("Failed to save note");
+    const updatedLead = await response.json();
+    setLead(updatedLead);
+    return updatedLead;
+  };
+
+  const deleteNote = async (leadId, noteId) => {
+    const response = await fetch(apiUrl(`/leads/${leadId}/notes/${noteId}`), {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Failed to delete note");
+    const updatedLead = await response.json();
+    setLead(updatedLead);
+    return updatedLead;
+  };
+
+  const deleteLead = async (leadId) => {
+    const response = await fetch(apiUrl(`/leads/${leadId}`), { method: "DELETE" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to delete lead");
+    setLead({});
+    setFullLead((previous) => previous.filter((item) => item._id !== leadId));
+    return data;
+  };
+
   return {
     lead,
     loading,
     fetchLead,
     fetchfullLead,
     fulllead,
+    addNote,
+    deleteNote,
+    deleteLead,
   };
 }

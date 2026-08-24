@@ -1,38 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   FileText,
   FileImage,
-  FileSpreadsheet,
   Upload,
 } from "lucide-react";
 
 import toast from "react-hot-toast";
+import { apiUrl } from "../../config/api.js";
 
-export default function LeadDocuments() {
+export default function LeadDocuments({ lead, fetchLead }) {
 
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const [documents, setDocuments] = useState([
-    {
-      name: "Proposal_v2_Final.pdf",
-      type: "PDF",
-      size: "2.4 MB",
-      date: "Jun 9",
-      icon: FileText,
-      bg: "bg-gray-200",
-      iconColor: "text-gray-500",
-    },
-    {
-      name: "TechFlow_Requirements.docx",
-      type: "DOCX",
-      size: "840 KB",
-      date: "Jun 6",
-      icon: FileSpreadsheet,
-      bg: "bg-green-100",
-      iconColor: "text-green-500",
-    },
-  ]);
+  const documents = Array.isArray(lead?.documents) ? lead.documents : [];
 
   // Select File
 
@@ -51,40 +32,15 @@ export default function LeadDocuments() {
 
     try {
 
-      // Backend Upload Logic
-
       const formData = new FormData();
-
       formData.append("file", selectedFile);
-
-      /*
-      await axios.post(
-        "http://localhost:5000/upload",
-        formData
-      );
-      */
-
-      // Create New Document Object
-
-      const newDocument = {
-        name: selectedFile.name,
-        type: selectedFile.type.split("/")[1]?.toUpperCase(),
-        size: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
-        date: new Date().toLocaleDateString(),
-        icon: selectedFile.type.includes("image")
-          ? FileImage
-          : FileText,
-        bg: selectedFile.type.includes("image")
-          ? "bg-purple-200"
-          : "bg-gray-200",
-        iconColor: selectedFile.type.includes("image")
-          ? "text-purple-500"
-          : "text-gray-500",
-      };
-
-      // Update UI
-
-      setDocuments((prev) => [newDocument, ...prev]);
+      const response = await fetch(apiUrl(`/leads/${lead._id}/documents`), {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Upload failed");
+      await response.json();
+      fetchLead();
 
       toast.success("File Uploaded Successfully");
 
@@ -96,6 +52,21 @@ export default function LeadDocuments() {
 
       console.log(error);
 
+    }
+  };
+
+  const handleDeleteDocument = async (documentId) => {
+    if (!lead?._id || !documentId || !window.confirm("Delete this document?")) return;
+    try {
+      const response = await fetch(apiUrl(`/leads/${lead._id}/documents/${documentId}`), {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete document");
+      await response.json();
+      fetchLead();
+      toast.success("Document deleted");
+    } catch (error) {
+      toast.error(error.message);
     }
   };
 
@@ -171,9 +142,12 @@ export default function LeadDocuments() {
 
           <div className="space-y-5 mt-8">
 
-            {documents.map((doc, index) => (
+            {documents.map((doc, index) => {
+              const isImage = /image\//.test(doc.type || "");
+              const Icon = isImage ? FileImage : FileText;
+              return (
               <motion.div
-                key={index}
+                key={doc._id || index}
                 initial={{
                   opacity: 0,
                   y: 30,
@@ -211,10 +185,7 @@ export default function LeadDocuments() {
                   ${doc.bg}
                   `}
                 >
-                  <doc.icon
-                    className={doc.iconColor}
-                    size={22}
-                  />
+                  <Icon className="text-gray-500" size={22} />
                 </div>
 
                 {/* Text */}
@@ -239,13 +210,23 @@ export default function LeadDocuments() {
                     md:text-lg
                     "
                   >
-                    {doc.type} • {doc.size} • {doc.date}
+                    {doc.type} • {(doc.size / 1024 / 1024).toFixed(2)} MB • {new Date(doc.uploadedAt).toLocaleDateString()}
                   </p>
 
                 </div>
 
+                <button
+                  type="button"
+                  onClick={() => handleDeleteDocument(doc._id)}
+                  className="ml-auto text-red-600 hover:text-red-800"
+                  aria-label="Delete document"
+                >
+                  Delete
+                </button>
+
               </motion.div>
-            ))}
+              );
+            })}
 
           </div>
 

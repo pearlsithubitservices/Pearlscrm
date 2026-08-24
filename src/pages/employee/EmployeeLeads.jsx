@@ -15,6 +15,7 @@ import {
   Filter,
   ArrowRightCircle,
   IndianRupee,
+  Trash2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -103,6 +104,17 @@ export default function EmployeeLeads() {
     }
   };
 
+  const deleteLead = async (leadId) => {
+    if (!leadId || !window.confirm("Delete this lead permanently?")) return;
+    try {
+      const response = await fetch(apiUrl(`/leads/${leadId}`), { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete lead");
+      setLeads((previous) => previous.filter((lead) => (lead._id || lead.id) !== leadId));
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   // FILTER LEADS BY SEARCH & TAB
   const filteredLeads = leads.filter((lead) => {
     const clientName = lead.name || lead.clientName || "";
@@ -158,11 +170,11 @@ export default function EmployeeLeads() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-end sm:self-auto">
-          <button className="p-2 border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
+        <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
+          <button aria-label="Filter leads" title="Filter leads" className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
             <Filter size={16} className="text-white" />
           </button>
-          <button className="p-2 border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
+          <button aria-label="View lead notifications" title="View lead notifications" className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
             <Bell size={16} className="text-white" />
           </button>
         </div>
@@ -619,6 +631,15 @@ export default function EmployeeLeads() {
                         >
                           <Save size={13} />
                           <span>Save</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteLead(leadId)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-600 text-red-700 hover:text-white font-semibold text-xs shadow-xs transition-all"
+                          aria-label="Delete lead"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
                         </button>
                       </td>
                     </tr>

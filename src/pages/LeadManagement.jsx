@@ -9,6 +9,7 @@ import {
   ChartNoAxesCombined,
   Users2,
   Briefcase,
+  Trash2,
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -29,6 +30,12 @@ export default function LeadManagement() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const navigate = useNavigate();
+  const deleteLead = async (leadId) => {
+    if (!window.confirm("Delete this lead permanently?")) return;
+    const response = await fetch(apiUrl(`/leads/${leadId}`), { method: "DELETE" });
+    if (response.ok) fetchleads();
+    else alert("Failed to delete lead.");
+  };
   const buttons = ["All", "Hot", "Warm", "Cold"];
 
   useEffect(() => {
@@ -119,8 +126,8 @@ export default function LeadManagement() {
       {/* MAIN */}
       <div className="flex-1 flex flex-col">
         {/* TOPBAR */}
-        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
-          <div>
+        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-[#023167] p-2">
               Lead Management
             </h1>
@@ -129,20 +136,20 @@ export default function LeadManagement() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-end gap-2 shrink-0">
             <button
               onClick={() => setOpenlead(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded-lg hover:scale-105 transition-transform duration-200 shadow-xs text-sm font-medium"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#2563a9] text-white rounded-lg hover:scale-105 transition-transform duration-200 shadow-xs text-sm font-medium"
             >
               <Plus size={16} />
-              <span>Add Lead</span>
+              <span className="hidden sm:inline">Add Lead</span>
             </button>
 
-            <button className="p-2 border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
+            <button aria-label="Filter leads" title="Filter leads" className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
               <Filter size={18} className="text-white" />
             </button>
 
-            <button className="p-2 border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
+            <button aria-label="View lead notifications" title="View lead notifications" className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
               <Bell size={18} className="text-white" />
             </button>
           </div>
@@ -219,19 +226,20 @@ export default function LeadManagement() {
                   <th className="p-3.5">BUDGET</th>
                   <th className="p-3.5">SOURCE</th>
                   <th className="p-3.5">FOLLOW UP</th>
+                  <th className="p-3.5">ACTION</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-10">
+                      <td colSpan="7" className="text-center py-10">
                       <LoadingPage />
                     </td>
                   </tr>
                 ) : currentFiles.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-12 text-gray-400 italic">
+                    <td colSpan="7" className="text-center py-12 text-gray-400 italic">
                       No leads found in database.
                     </td>
                   </tr>
@@ -245,7 +253,9 @@ export default function LeadManagement() {
                       ? `₹${Number(String(l.budget).replace(/[^0-9.]/g, "")).toLocaleString("en-IN")}`
                       : "N/A";
                     const source = l.source || "Direct";
-                    const followUp = l.follow || l.followUpDate || "Not Set";
+                    const followUp = l.nextActionDate
+                      ? new Date(l.nextActionDate).toLocaleDateString()
+                      : l.follow || l.followUpDate || "Not Set";
 
                     return (
                       <tr
@@ -293,6 +303,11 @@ export default function LeadManagement() {
                         </td>
 
                         <td className="p-3.5 text-gray-500 text-[11px]">{followUp}</td>
+                        <td className="p-3.5">
+                          <button type="button" onClick={(event) => { event.stopPropagation(); deleteLead(l._id); }} className="text-red-600" aria-label="Delete lead">
+                            <Trash2 size={15} />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })
