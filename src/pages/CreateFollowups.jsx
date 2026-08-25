@@ -182,7 +182,7 @@ export default function CreateFollowups({ onClose, fetchdata }) {
       initial={{ opacity: 0, y: 25 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="relative w-full max-w-5xl bg-[#f3f0ea] rounded-[24px] md:rounded-[36px] p-6 md:p-10 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar border border-white/50"
+      className="relative w-full max-w-5xl bg-[#f3f0ea] rounded-[24px] md:rounded-[36px] p-6 md:p-10 shadow-2xl max-h-[90vh] overflow-y-auto modal-scrollbar border border-white/50"
     >
       <button
         onClick={() => onClose()}

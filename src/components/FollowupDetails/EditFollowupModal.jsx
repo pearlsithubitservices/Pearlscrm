@@ -54,7 +54,7 @@ export default function EditFollowupModal({ followup, onClose, onRefresh }) {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-2xl bg-white rounded-3xl p-8 shadow-2xl border border-gray-100 overflow-y-auto max-h-[90vh]"
+        className="w-full max-w-2xl bg-white rounded-3xl p-8 shadow-2xl border border-gray-100 overflow-y-auto modal-scrollbar max-h-[90vh]"
       >
         <div className="flex items-center justify-between border-b border-gray-100 pb-5 mb-6">
           <div>

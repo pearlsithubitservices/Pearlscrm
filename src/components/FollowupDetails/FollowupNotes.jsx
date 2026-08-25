@@ -84,7 +84,7 @@ export default function FollowupNotes({ followup, onRefresh }) {
             value={formData.description}
             onChange={handleChange}
             placeholder="Type detailed follow-up remarks or client conversation details..."
-            className="w-full h-28 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none text-sm text-gray-800 focus:border-[#2563a9] transition-all resize-none"
+            className="w-full h-28 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none text-sm text-gray-800 focus:border-[#2563a9] transition-all custom-scrollbar resize-none"
           />
 
           <div className="flex justify-end">
