@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion'
-import { Bell, Building2, ChevronRight, FolderOpen, LogOut, Upload, User } from 'lucide-react';
-import InputField from '../../components/InputField';
+import { Bell, Camera, LogOut, Upload } from 'lucide-react';
 import { useState } from 'react';
 import Document from './PersonalDetails/Document.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -8,50 +7,35 @@ import PersonalDetails from './PersonalDetails/PersonalDetails.jsx';
 import JobSalary from './BankDetails/JobSalary.jsx';
 import Accountinformation from './BankDetails/Accountinformation.jsx';
 import Verification from './BankDetails/Verification.jsx';
+import { uploadAvatar } from '../../services/profileApi';
 
 export default function EmployeeProfile() {
 
   const [activeTab, setActiveTab] = useState("personal");
+  const [startEditing, setStartEditing] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState('');
 
-  const { user, logout } = useAuth();
-  const sections = [
-    {
-      title: "Personal Information",
-      icon: User,
-      color: "bg-blue-100 text-blue-600",
-      items: [
-        "Profile Details",
-        "Contact Information",
-        "Emergency Contact",
-      ],
-    },
-    {
-      title: "Job & Organization Details",
-      icon: Building2,
-      color: "bg-purple-100 text-purple-600",
-      items: [
-        "Designation",
-        "Department",
-        "Reporting Manager",
-        "Work Location",
-      ],
-    },
-    {
-      title: "Documents",
-      icon: FolderOpen,
-      color: "bg-green-100 text-green-600",
-      items: [
-        "PAN Card",
-        "Aadhaar Card",
-        "Certificates",
-        "Other Documents",
-      ],
-    },
-
-  ];
-
-
-
+  const { user, logout, fetchCurrentUser } = useAuth();
+  const profile = user?.profile || {};
+  const displayName = `${user?.firstName || user?.name?.split(' ')[0] || 'Employee'} ${user?.lastName || user?.name?.split(' ').slice(1).join(' ') || ''}`.trim();
+  const initials = displayName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setAvatarSaving(true);
+    setAvatarMessage('');
+    try {
+      const { data } = await uploadAvatar(file);
+      await fetchCurrentUser();
+      setAvatarMessage(data.message || 'Avatar updated successfully');
+    } catch (error) {
+      setAvatarMessage(error.response?.data?.message || 'Failed to update avatar');
+    } finally {
+      setAvatarSaving(false);
+      event.target.value = '';
+    }
+  };
   return (
     <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#f3f0eb]">
 
@@ -79,20 +63,28 @@ export default function EmployeeProfile() {
         >
           <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
 
-            <img
-              src="https://i.pravatar.cc/200"
-              alt=""
-              className="w-24 h-24 rounded-full object-cover border-4 border-blue-100"
-            />
+            <div className="relative shrink-0">
+              {user?.avatar ? (
+                <img src={user.avatar} alt={`${displayName} avatar`} className="w-24 h-24 rounded-full object-cover border-4 border-blue-100" />
+              ) : (
+                <div className="w-24 h-24 rounded-full border-4 border-blue-100 bg-blue-100 text-[#0b2b57] flex items-center justify-center text-2xl font-bold">
+                  {initials}
+                </div>
+              )}
+              <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-[#0b2b57] text-white flex items-center justify-center cursor-pointer hover:bg-[#164785] transition" title="Upload profile avatar">
+                <Camera size={17} />
+              </label>
+              <input id="avatar-upload" type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarUpload} disabled={avatarSaving} />
+            </div>
 
             <div className="flex-1 text-center lg:text-left">
 
               <h1 className="text-2xl font-bold text-[#0b2b57]">
-                Deepan Raj
+                {displayName}
               </h1>
 
               <p className="text-gray-500 mt-1">
-                Senior CRM Executive
+                {profile.designation || 'Designation not assigned'}
               </p>
 
               <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-4">
@@ -102,14 +94,22 @@ export default function EmployeeProfile() {
                 </span>
 
                 <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm">
-                  Employee ID: EMP001
+                  Employee ID: {profile.empId || 'Not Assigned'}
                 </span>
 
               </div>
 
             </div>
 
-            <button className="px-5 py-3 rounded-xl bg-[#0b2b57] text-white flex items-center gap-2 hover:bg-[#164785] transition">
+            {avatarMessage && <p className="text-sm text-gray-500 text-center lg:text-left">{avatarSaving ? 'Uploading...' : avatarMessage}</p>}
+
+            <button
+              onClick={() => {
+                setActiveTab("personal");
+                setStartEditing(true);
+              }}
+              className="px-5 py-3 rounded-xl bg-[#0b2b57] text-white flex items-center gap-2 hover:bg-[#164785] transition"
+            >
 
               <Upload size={18} />
 
@@ -134,7 +134,7 @@ export default function EmployeeProfile() {
           activeTab === "personal" ? (
             <>
               {/* Personal Details */}
-              <PersonalDetails />
+              <PersonalDetails key={startEditing ? "editing" : "viewing"} startEditing={startEditing} />
 
               {/* Documents Section */}
               <div className="mt-6 rounded-3xl ">

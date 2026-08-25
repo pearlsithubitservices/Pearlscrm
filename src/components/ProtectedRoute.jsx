@@ -3,13 +3,8 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 
-/**
- * Modular Protected Route Component
- * 
- * @param {string} allowedRole - "admin" | "employee" | "any"
- */
-export default function ProtectedRoute({ allowedRole = "any" }) {
-  const { user, role, isAdmin, loading } = useAuth();
+export default function ProtectedRoute({ adminOnly = false }) {
+  const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
     return (
@@ -23,20 +18,12 @@ export default function ProtectedRoute({ allowedRole = "any" }) {
     );
   }
 
-  // 1. If not authenticated, redirect to Login
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // 2. Strict Role Checks
-  if (allowedRole === "admin" && !isAdmin) {
-    // Non-admin trying to access Admin pages -> redirect to Employee Portal
+  if (adminOnly && !isAdmin) {
     return <Navigate to="/employee-dashboard" replace />;
-  }
-
-  if (allowedRole === "employee" && isAdmin) {
-    // Admin trying to access Employee pages -> redirect to Admin Dashboard
-    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

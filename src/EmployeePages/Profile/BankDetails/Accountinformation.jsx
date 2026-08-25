@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import InputField from "../../../components/InputField";
 import { Eye, EyeOff } from "lucide-react";
+import { getProfile } from "../../../services/profileApi";
 
 export default function AccountInformation() {
     const [showAccount, setShowAccount] = useState(false);
     const [showConfirmAccount, setShowConfirmAccount] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
+    const isEditing = false;
 
     const [form, setForm] = useState({
         accountHolderName: "",
@@ -18,26 +19,18 @@ export default function AccountInformation() {
         bankBranchAddress: "",
     });
 
+    useEffect(() => {
+        getProfile().then(({ data }) => {
+            const bank = data.user?.profile?.bankDetails || {};
+            setForm((previous) => ({ ...previous, ...bank, confirmAccountNumber: bank.accountNumber || "" }));
+        }).catch(() => undefined);
+    }, []);
+
     const handleChange = (e) => {
         setForm((prev) => ({
             ...prev,
             [e.target.name]: e.target.value,
         }));
-    };
-
-    const handleSubmit = () => {
-        if (!isEditing) {
-            setIsEditing(true);
-            return;
-        }
-
-        // Save Data
-        console.log(form);
-
-        // API Call Here
-        // await updateAccountInfo(form);
-
-        setIsEditing(false);
     };
 
     const fields = [
@@ -106,12 +99,7 @@ export default function AccountInformation() {
                     Bank Account Information
                 </h2>
 
-                <button
-                    onClick={handleSubmit}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-semibold transition"
-                >
-                    {isEditing ? "Save Info" : "Update Info"}
-                </button>
+                <span className="text-sm text-gray-500">Managed by Admin / HR</span>
             </div>
 
             {/* Form Fields */}

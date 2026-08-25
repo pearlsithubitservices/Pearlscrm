@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useState
 } from 'react';
 
@@ -13,137 +12,19 @@ import {
 
 import EmployeeSidebar
 from './EmployeeSidebar';
-
-import {
-  auth,
-  db
-} from '../../lib/firebase';
-
-import {
-  collection,
-  query,
-  where,
-  getDocs
-} from 'firebase/firestore';
-
-import {
-  onAuthStateChanged
-} from 'firebase/auth';
+import { useAuth } from '../../context/AuthContext';
 
 export default function EmployeeDashboard() {
 
   const [searchQuery, setSearchQuery] =
     useState('');
 
-  const [currentUser, setCurrentUser] =
-    useState(null);
+  const { user, role } = useAuth();
 
-  const [tasks, setTasks] =
-    useState([]);
+  const currentUser = user || null;
 
-  const [followups, setFollowups] =
-    useState([]);
-
-  useEffect(() => {
-
-    const unsubscribe =
-      onAuthStateChanged(
-        auth,
-        async (user) => {
-
-          if (user) {
-
-            // USER DETAILS
-
-            const userQuery = query(
-              collection(db, 'users'),
-              where(
-                'uid',
-                '==',
-                user.uid
-              )
-            );
-
-            const userSnapshot =
-              await getDocs(userQuery);
-
-            userSnapshot.forEach((doc) => {
-
-              setCurrentUser(
-                doc.data()
-              );
-
-            });
-
-            // TASKS
-
-            const taskQuery = query(
-              collection(db, 'tasks'),
-              where(
-                'assignedTo',
-                '==',
-                user.uid
-              )
-            );
-
-            const taskSnapshot =
-              await getDocs(taskQuery);
-
-            const taskData = [];
-
-            taskSnapshot.forEach((doc) => {
-
-              taskData.push({
-                id: doc.id,
-                ...doc.data(),
-              });
-
-            });
-
-            setTasks(taskData);
-
-            // FOLLOWUPS
-
-            const followupQuery = query(
-              collection(
-                db,
-                'followups'
-              ),
-              where(
-                'assignedTo',
-                '==',
-                user.uid
-              )
-            );
-
-            const followupSnapshot =
-              await getDocs(
-                followupQuery
-              );
-
-            const followupData = [];
-
-            followupSnapshot.forEach((doc) => {
-
-              followupData.push({
-                id: doc.id,
-                ...doc.data(),
-              });
-
-            });
-
-            setFollowups(
-              followupData
-            );
-
-          }
-
-        }
-      );
-
-    return () => unsubscribe();
-
-  }, []);
+  const tasks = [];
+  const followups = [];
 
   // STATS
 

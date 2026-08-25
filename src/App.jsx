@@ -44,6 +44,7 @@ import CreateTask from './pages/createTask';
 import TaskDetails from './pages/TaskDetails';
 
 import Login from './pages/Login';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import ClientManagement from './pages/ClientManagement';
 import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx';
@@ -148,12 +149,13 @@ export default function App() {
 
             {/* ADMIN ROUTES */}
 
-            <Route element={<Layout />}>
+            <Route element={<ProtectedRoute adminOnly />}>
+              <Route element={<Layout />}>
 
-              <Route
-                path="/"
-                element={<Dashboard />}
-              />
+                <Route
+                  path="/"
+                  element={<Dashboard />}
+                />
 
               <Route
                 path="/leads"
@@ -256,27 +258,29 @@ export default function App() {
                 element={<Messenger />}
               />
 
-              <Route
-                path="/settings"
-                element={
-                  <PlaceholderPage
-                    title="System Settings"
-                  />
-                }
-              />
+                <Route
+                  path="/settings"
+                  element={
+                    <PlaceholderPage
+                      title="System Settings"
+                    />
+                  }
+                />
 
+              </Route>
             </Route>
 
             {/* EMPLOYEE ROUTES */}
 
-            <Route element={<EmployeeLayout />}>
+            <Route element={<ProtectedRoute />}>
+              <Route element={<EmployeeLayout />}>
 
-              <Route
-                path="/employee-dashboard"
-                element={
-                  <EmployeeDashboard />
-                }
-              />
+                <Route
+                  path="/employee-dashboard"
+                  element={
+                    <EmployeeDashboard />
+                  }
+                />
 
               <Route
                 path="/employee/tasks"
@@ -326,7 +330,8 @@ export default function App() {
               <Route path="/employee/settings" element={<EmpSettings />} />
               <Route path="/employee/dashboard" element={<EmpDashboard />} />
               <Route path="/employee/follow-ups" element={<EmpFollowUps />} />
-              <Route path="/employee/performance/:id" element={<EmpGoalDetails />} />
+                <Route path="/employee/performance/:id" element={<EmpGoalDetails />} />
+              </Route>
             </Route>
 
             {/* FALLBACK */}

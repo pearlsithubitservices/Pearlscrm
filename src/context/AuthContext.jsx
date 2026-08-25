@@ -1,21 +1,5 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  onAuthStateChanged,
-  signOut,
-} from "firebase/auth";
-
-import {
-  doc,
-  getDoc,
-} from "firebase/firestore";
-
-import { auth, db } from "../lib/firebase";
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "../lib/api";
 
 const AuthContext = createContext();
 
@@ -24,56 +8,89 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserRole = async (currentUser) => {
-    if (!currentUser) {
-      setRole(null);
+  const setAuthState = (authUser) => {
+    setUser(authUser);
+    setRole(authUser?.role || null);
+  };
+
+  const fetchCurrentUser = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setAuthState(null);
+      setLoading(false);
       return null;
     }
+
     try {
-      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-      if (userDoc.exists()) {
-        const fetchedRole = userDoc.data().role || "Admin";
-        setRole(fetchedRole);
-        return fetchedRole;
+      const response = await api.get("/auth/me");
+      const currentUser = response?.data?.user || null;
+
+      if (!currentUser) {
+        localStorage.removeItem("token");
+        setAuthState(null);
+        return null;
       }
-      const empDoc = await getDoc(doc(db, "employees", currentUser.uid));
-      if (empDoc.exists()) {
-        const fetchedRole = empDoc.data().role || "Employee";
-        setRole(fetchedRole);
-        return fetchedRole;
-      }
-      // Default to Admin if not explicitly defined
-      setRole("Admin");
-      return "Admin";
+
+      const profileResponse = await api.get("/profile");
+      const profileUser = profileResponse?.data?.user || currentUser;
+      setAuthState(profileUser);
+      return profileUser;
     } catch (error) {
-      console.error("Auth role fetch error:", error);
-      setRole("Admin");
-      return "Admin";
+      console.error("Auth fetch error:", error);
+      localStorage.removeItem("token");
+      setAuthState(null);
+      return null;
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchUserRole(currentUser);
-      } else {
-        setRole(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    fetchCurrentUser();
   }, []);
 
-  const logout = async () => {
+  const login = async (email, password) => {
     try {
-      await signOut(auth);
-      setUser(null);
-      setRole(null);
+      const response = await api.post("/auth/login", { email, password });
+      const { token, user: authUser } = response.data;
+
+      if (!token || !authUser) {
+        throw new Error("Login response missing token or user");
+      }
+
+      localStorage.setItem("token", token);
+      const profileResponse = await api.get("/profile");
+      const profileUser = profileResponse?.data?.user || authUser;
+      setAuthState(profileUser);
+      return profileUser;
     } catch (error) {
-      console.error("Logout error:", error);
+      const message = error?.response?.data?.message || "Login failed";
+      throw new Error(message);
     }
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await api.post("/auth/register", userData);
+      const { token, user: authUser } = response.data;
+
+      if (!token || !authUser) {
+        throw new Error("Registration response missing token or user");
+      }
+
+      localStorage.setItem("token", token);
+      setAuthState(authUser);
+      return authUser;
+    } catch (error) {
+      const message = error?.response?.data?.message || "Registration failed";
+      throw new Error(message);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setAuthState(null);
   };
 
   const isAdmin = typeof role === "string" && role.trim().toLowerCase() === "admin";
@@ -85,8 +102,10 @@ export const AuthProvider = ({ children }) => {
         role,
         isAdmin,
         loading,
+        login,
+        register,
         logout,
-        fetchUserRole,
+        fetchCurrentUser,
       }}
     >
       {children}
@@ -94,6 +113,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

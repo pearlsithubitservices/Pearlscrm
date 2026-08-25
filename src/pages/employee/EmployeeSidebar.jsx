@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, userProfile, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const { config } = useIndustry();
   const navigate = useNavigate();
 
@@ -195,7 +195,7 @@ export default function Sidebar() {
         >
           <img
             src={
-              user?.photoURL ||
+              user?.avatar ||
               'https://i.pravatar.cc/100'
             }
             alt="Profile"
@@ -203,10 +203,10 @@ export default function Sidebar() {
           />
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-xs text-white truncate">
-              {userProfile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Employee'}
+              {user?.name || user?.email?.split('@')[0] || 'Employee'}
             </h3>
             <p className="text-[11px] text-gray-300 truncate capitalize">
-              {userProfile?.role || 'Employee'}
+              {role || 'Employee'}
             </p>
           </div>
         </div>
