@@ -1,12 +1,11 @@
 import { useState } from "react";
-
-const API_URL = "https://pearlscrm.onrender.com/api/followups";
+import { apiUrl } from "../config/api";
 
 export default function useFollowups() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const request = async (url = "", method = "GET", body = null) => {
+  const request = async (urlPath = "", method = "GET", body = null) => {
     try {
       setLoading(true);
       setError(null);
@@ -22,8 +21,8 @@ export default function useFollowups() {
         options.body = JSON.stringify(body);
       }
 
-      const response = await fetch(`${API_URL}${url}`, options);
-
+      const fullUrl = apiUrl(`/followups${urlPath}`);
+      const response = await fetch(fullUrl, options);
       const data = await response.json();
 
       if (!response.ok) {

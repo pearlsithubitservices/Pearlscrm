@@ -18,6 +18,7 @@ import {
   auth,
   db
 } from '../../lib/firebase';
+import { apiUrl } from '../../config/api';
 
 import {
   collection,
@@ -76,31 +77,23 @@ export default function EmployeeDashboard() {
             });
 
             // TASKS
-
-            const taskQuery = query(
-              collection(db, 'tasks'),
-              where(
-                'assignedTo',
-                '==',
-                user.uid
-              )
-            );
-
-            const taskSnapshot =
-              await getDocs(taskQuery);
-
-            const taskData = [];
-
-            taskSnapshot.forEach((doc) => {
-
-              taskData.push({
-                id: doc.id,
-                ...doc.data(),
-              });
-
-            });
-
-            setTasks(taskData);
+            try {
+              const taskRes = await fetch(apiUrl('/tasks'));
+              if (taskRes.ok) {
+                const allTasks = await taskRes.json();
+                const myTasks = (Array.isArray(allTasks) ? allTasks : []).filter((t) => {
+                  const target = String(
+                    typeof t.assignedTo === 'object' ? t.assignedTo?._id || t.assignedTo?.uid || t.assignedTo?.name || '' : t.assignedTo || ''
+                  ).toLowerCase();
+                  const uid = String(user.uid || '').toLowerCase();
+                  const email = String(user.email || '').toLowerCase();
+                  return target === uid || target === email || (email && target.includes(email));
+                }).map(t => ({ ...t, id: t._id || t.id }));
+                setTasks(myTasks);
+              }
+            } catch (err) {
+              console.error("Error fetching tasks in EmployeeDashboard:", err);
+            }
 
             // FOLLOWUPS
 
@@ -301,42 +294,53 @@ export default function EmployeeDashboard() {
 
             <div className="space-y-4">
 
-              {tasks.slice(0, 5).map((task) => (
+              {tasks.slice(0, 5).map((task) => {
+                const getPersonName = (val, defaultName = "Unassigned") => {
+                  if (!val) return defaultName;
+                  if (typeof val === 'object' && val !== null) {
+                    return val.name || val.employeeName || val.displayName || val.email || defaultName;
+                  }
+                  const isRawId = /^[0-9a-fA-F]{24}$/.test(val) || /^[A-Za-z0-9_-]{20,}$/.test(val);
+                  return isRawId ? defaultName : val;
+                };
 
-                <div
-                  key={task.id}
-                  className="bg-white/5 rounded-2xl p-4"
-                >
+                const assignedByPerson = getPersonName(task.assignedBy || task.assignedFrom, "Admin");
+                const st = (task.status || "Pending").toLowerCase();
+                const badgeColor = st === 'completed' 
+                  ? 'bg-green-500/20 text-green-300' 
+                  : st === 'in progress' 
+                  ? 'bg-blue-500/20 text-blue-300' 
+                  : 'bg-yellow-500/20 text-yellow-300';
 
-                  <div className="flex items-center justify-between">
+                return (
+                  <div
+                    key={task.id || task._id}
+                    className="bg-white/5 rounded-2xl p-4"
+                  >
 
-                    <div>
+                    <div className="flex items-center justify-between">
 
-                      <h3 className="font-bold text-lg">
+                      <div>
 
-                        {task.company}
+                        <h3 className="font-bold text-lg">
+                          {task.title || task.company || "Untitled Task"}
+                        </h3>
 
-                      </h3>
+                        <p className="text-gray-400 text-sm mt-1">
+                          Assigned By: <span className="text-purple-400 font-medium">{assignedByPerson}</span>
+                        </p>
 
-                      <p className="text-gray-400 text-sm mt-1">
+                      </div>
 
-                        {task.title}
-
-                      </p>
+                      <span className={`px-3 py-1 rounded-xl text-sm font-medium ${badgeColor}`}>
+                        ● {task.status || "Pending"}
+                      </span>
 
                     </div>
 
-                    <span className="px-3 py-1 rounded-xl bg-purple-500/10 text-purple-300 text-sm">
-
-                      {task.status}
-
-                    </span>
-
                   </div>
-
-                </div>
-
-              ))}
+                );
+              })}
 
             </div>
 

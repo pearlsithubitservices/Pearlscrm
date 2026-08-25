@@ -3,6 +3,10 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const http = require("http");
 
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 dotenv.config();
 
 const connectDB = require("./db");
@@ -11,7 +15,7 @@ const leadRoutes = require("./routes/leadRoutes");
 const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-const attendanceRoutes =require("./routes/AttendanceRoutes");
+const attendanceRoutes = require("./routes/AttendanceRoutes");
 const ProjectsRoutes = require("./routes/ProjectsRoutes");
 const ClientRoutes = require("./routes/ClientRoutes");
 const EmployeeRoutes = require('./routes/EmployeeRoutes');
@@ -34,8 +38,10 @@ const EmpEnrollment = require('./routes/EnrollmentRoutes');
 const EmpCourse = require('./routes/EmpCourseRoutes');
 const EmpSkillCertification = require('./routes/SkillCertificationRoutes');
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
-const EmpActivityRoutes= require("./routes/TaskActivityRoute");
-const EmpTotalLeave=require('./routes/TotalLeaveRoutes');
+const EmpActivityRoutes = require("./routes/TaskActivityRoute");
+const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
+
+const taskDocumentRoutes = require('./routes/TaskDocumentRoutes');
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
@@ -90,6 +96,7 @@ app.use("/api/announcement", AnnouncementSchema);
 app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/feedback", FeedbackRoutes);
 app.use("/api/payslip", PayslipRoutes);
 app.use("/api/empAttendanceCorrection", EmpAttendanceCorrectionRoutes);
@@ -99,16 +106,20 @@ app.use("/api/empenrollment", EmpEnrollment);
 app.use("/api/empCourse", EmpCourse);
 app.use("/api/skillscertification", EmpSkillCertification);
 app.use("/api/contribution", EmpContributionRoutes);
-app.use("/api/activity",EmpActivityRoutes);
+app.use("/api/activity", EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
+app.use("/api/task-documents", taskDocumentRoutes);
 
 app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
-const PORT = process.env.PORT || 5000;
+const { startFollowupReminderScheduler } = require("./services/followupReminderScheduler");
+
+const PORT = process.env.PORT || `${process.env.PORT}`;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log("Connected to database with WebSocket support");
+  startFollowupReminderScheduler();
 });
 
 

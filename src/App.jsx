@@ -175,8 +175,6 @@ export default function App() {
                 element={<ClientDetails />} />
               <Route path="/followupDetails/:id"
                 element={<FollowupDetails />} />
-              <Route path="/empfollowupDetails/:id"
-                element={<EmpFollowupDetails />} />
 
               <Route
                 path="/attendance"
@@ -306,7 +304,19 @@ export default function App() {
               <Route
                 path="/employee/followups"
                 element={
-                  <EmployeeFollowups />
+                  <EmpFollowUps />
+                }
+              />
+              <Route
+                path="/empfollowupDetails/:id"
+                element={
+                  <EmpFollowupDetails />
+                }
+              />
+              <Route
+                path="/employee/followupDetails/:id"
+                element={
+                  <EmpFollowupDetails />
                 }
               />
               <Route
@@ -319,6 +329,7 @@ export default function App() {
               <Route path="/employee/communication" element={<EmpCommunication />} />
               <Route path="/employee/collaboration" element={<Messenger />} />
               <Route path="/employee/chat" element={<Messenger />} />
+              <Route path="/empchat" element={<Messenger />} />
               <Route path="/employee/reports" element={<EmpReports />} />
               <Route path="/employee/leave" element={<EmpLeave />} />
               <Route path="/employee/payroll" element={<EmpPayroll />} />

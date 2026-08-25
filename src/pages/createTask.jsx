@@ -10,10 +10,10 @@ import {
 import {
   collection,
   getDocs,
-  addDoc,
 } from 'firebase/firestore';
 
 import { db } from '../lib/firebase';
+import { apiUrl } from '../config/api';
 
 import InputField from '../components/InputField';
 
@@ -30,7 +30,7 @@ import {
   X
 } from 'lucide-react';
 
-export default function CreateTask({ onClose }) {
+export default function CreateTask({ onClose, onSuccess }) {
 
   const navigate =
     useNavigate();
@@ -38,148 +38,118 @@ export default function CreateTask({ onClose }) {
   const [employees, setEmployees] =
     useState([]);
 
-  console.log(employees);
-
   const [task, setTask] =
     useState({
-
-      notes: '',
-
       title: '',
-
-      assignedTo: ' ',
-
-      assignedBy: ' ',
-
+      description: '',
+      notes: '',
+      assignedTo: '',
+      assignedBy: '',
       priority: 'Medium',
-
       status: 'Pending',
-
       dueDate: '',
-
     });
 
   useEffect(() => {
-
     fetchEmployees();
-
   }, []);
 
-  // FETCH EMPLOYEES
-
-  const fetchEmployees =
-    async () => {
-
-      try {
-
-        const snapshot =
-          await getDocs(
-            collection(
-              db,
-              'employees'
-            )
-          );
-
-        const employeeList = [];
-
-        snapshot.forEach((doc) => {
-
-          employeeList.push({
-
-            id: doc.id,
-
-
-            ...doc.data(),
-
-          });
-          console.log("Employee Doc ID:", doc.id);
-          console.log("Employee Data:", doc.data());
-
-        });
-
-        setEmployees(employeeList);
-
-      } catch (error) {
-
-        console.log(error);
-
+  // FETCH EMPLOYEES (Combine MongoDB API & Firebase Firestore)
+  const fetchEmployees = async () => {
+    let apiEmployees = [];
+    try {
+      const res = await fetch(apiUrl('/employees'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          apiEmployees = data.map((emp) => ({
+            id: emp._id || emp.id || emp.uid,
+            _id: emp._id || emp.id,
+            uid: emp.uid || emp._id,
+            name: emp.employeeName || emp.name || emp.email || "Employee",
+          }));
+        }
       }
+    } catch (err) {
+      console.log("Error fetching employees from API:", err);
+    }
 
-    };
+    let firestoreEmployees = [];
+    try {
+      const snapshot = await getDocs(collection(db, 'employees'));
+      snapshot.forEach((doc) => {
+        firestoreEmployees.push({
+          id: doc.id,
+          _id: doc.id,
+          uid: doc.data().uid || doc.id,
+          name: doc.data().name || doc.data().employeeName || doc.data().email || "Employee",
+          ...doc.data(),
+        });
+      });
+    } catch (error) {
+      console.log("Error fetching employees from Firestore:", error);
+    }
 
-  //ADD TASKS
-
-  // const addtasks = async () => {
-  //   try {
-  //     const response = await fetch('http://localhost:5000/api/tasks', {
-  //       method: 'POST',
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(task),
-  //     });
-
-  //     const data = await response.json();
-  //     console.log(data);
-
-  //     if (response.ok) {
-  //       alert('Task added successfully');
-  //       navigate('/tasks');
-  //     } else {
-  //       alert(data.message || 'Failed to add task');
-  //     }
-
-  //   } catch (error) {
-  //     console.log(error);
-  //     alert('Failed to add task. Please try again.');
-  //   }
-  // };
-
-  // HANDLE CHANGE
-
-  const handleChange = (e) => {
-
-    setTask({
-
-      ...task,
-
-      [e.target.name]:
-        e.target.value,
-
+    // Merge employees from API and Firestore without duplicates
+    const empMap = new Map();
+    apiEmployees.forEach(emp => empMap.set((emp.name || '').toLowerCase(), emp));
+    firestoreEmployees.forEach(emp => {
+      const key = (emp.name || '').toLowerCase();
+      if (!empMap.has(key)) {
+        empMap.set(key, emp);
+      }
     });
 
+    const combinedList = Array.from(empMap.values());
+    setEmployees(combinedList);
+  };
+
+  // HANDLE CHANGE
+  const handleChange = (e) => {
+    setTask({
+      ...task,
+      [e.target.name]: e.target.value,
+    });
   };
 
   // ADD TASK
+  const addTask = async () => {
+    if (!task.title.trim()) {
+      alert('Please enter a task title');
+      return;
+    }
 
-  const addTask =
-    async () => {
+    try {
+      const payload = {
+        ...task,
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+      };
 
-      try {
+      const response = await fetch(apiUrl('/tasks'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-        await addDoc(
-          collection(db, 'tasks'),
-          {
-
-            ...task,
-
-            createdAt:
-              new Date(),
-
-          }
-        );
-
-        alert('Task Added');
-        onClose();
+      if (response.ok) {
+        alert('Task Added successfully to MongoDB!');
+        if (onSuccess) {
+          onSuccess();
+        } else if (onClose) {
+          onClose();
+        }
         navigate('/tasks');
-
-      } catch (error) {
-
-        console.log(error);
-
+      } else {
+        const errData = await response.json();
+        alert(errData.message || 'Failed to add task');
       }
-
-    };
+    } catch (error) {
+      console.error('Add task error:', error);
+      alert('Failed to add task. Please check server connection.');
+    }
+  };
 
   const priorities = [
 
@@ -215,10 +185,11 @@ export default function CreateTask({ onClose }) {
         </label>
 
         <textarea
-          name='notes'
-          value={task.notes}
+          name='description'
+          value={task.description}
           onChange={handleChange}
-          className="w-full h-40 p-4 rounded-xl mt-2"
+          placeholder="Enter task description..."
+          className="w-full h-40 p-4 rounded-xl mt-2 outline-none border border-gray-300"
         />
 
       </div>
@@ -235,8 +206,8 @@ export default function CreateTask({ onClose }) {
           type='select'
           options={employees.map((emp) => (
             {
-              label: emp.name,
-              value: emp.id
+              label: emp.name || emp.employeeName || emp.email,
+              value: emp.id || emp._id || emp.uid
             }
           ))}
         />
@@ -250,8 +221,8 @@ export default function CreateTask({ onClose }) {
           Icon={Users}
           type='select'
           options={employees.map((emp) => ({
-            label: emp.name,
-            value: emp.uid
+            label: emp.name || emp.employeeName || emp.email,
+            value: emp.id || emp._id || emp.uid
           }))}
         />
 

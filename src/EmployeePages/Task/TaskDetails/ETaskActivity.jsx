@@ -1,210 +1,147 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Send, Clock } from "lucide-react";
+import { apiUrl } from "../../../config/api";
+import { useAuth } from "../../../context/AuthContext";
 
-export default function ETasksNotes({tasks}) {
+export default function ETaskActivity({ task, onRefresh }) {
+  const { user } = useAuth();
+  const taskId = task?._id || task?.id || task?.uid;
 
-  // Existing notes list
-  const [notes, setNotes] = useState([
-    {
-      title: "Budget confirmed verbally — $120K range",
-      description:
-        "Client confirmed budget in phone conversation. Wants implementation in 6 weeks post-signing.",
-      date: "Jun 7 · Rohan M",
-    },
-    {
-      title: "Competitor comparison requested",
-      description:
-        "Evaluating 2 other vendors. We're in the final 2. Need to highlight data security certifications.",
-      date: "Jun 3 · Priya S.",
-    },
-    {
-      title: "Budget confirmed verbally — $130K range",
-      description:
-        "Client confirmed budget in phone conversation. Wants implementation in 6 weeks post-signing.",
-      date: "Jun 8 · Priya S.",
-    },
-  ]);
+  const [activitiesList, setActivitiesList] = useState([]);
+  const [newNoteText, setNewNoteText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-  });
+  const fetchTaskActivities = async () => {
+    if (!taskId) return;
+    try {
+      const res = await fetch(apiUrl(`/activity?taskId=${taskId}`));
+      if (res.ok) {
+        const json = await res.json();
+        const data = json.data || json || [];
+        setActivitiesList(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Error fetching task activities:", err);
+    }
+  };
 
-  // Handle input change
-  function handleChange(e) {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  }
+  useEffect(() => {
+    fetchTaskActivities();
+  }, [taskId]);
 
-  // Add note
-  function handleNote() {
-
-    if (
-      formData.title.trim() === "" ||
-      formData.description.trim() === ""
-    ) {
-      alert("Fill all fields");
+  const handleAddNote = async () => {
+    if (!newNoteText.trim()) {
+      alert("Please enter a progress update.");
       return;
     }
 
-    const newNote = {
-      title: formData.title,
-      description: formData.description,
-      date: new Date().toLocaleString(),
-    };
+    if (!taskId) {
+      alert("Task ID not found.");
+      return;
+    }
 
-    // add new note to top
-    setNotes([newNote, ...notes]);
+    setSubmitting(true);
+    try {
+      const res = await fetch(apiUrl("/activity"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_uid: user?.uid || user?._id || "employee",
+          name: user?.displayName || user?.name || user?.employeeName || user?.email?.split("@")[0] || "Employee",
+          text: newNoteText,
+          taskId: String(taskId),
+        }),
+      });
 
-    // clear inputs
-    setFormData({
-      title: "",
-      description: "",
-    });
-  }
+      if (res.ok) {
+        setNewNoteText("");
+        alert("Progress activity submitted successfully!");
+        fetchTaskActivities();
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Failed to submit progress activity.");
+      }
+    } catch (err) {
+      console.error("Error submitting progress activity:", err);
+      alert("Failed to submit progress activity.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#f5f2ec] p-8">
-
+    <div className="bg-[#f5f2ec] p-4 md:p-8 rounded-2xl min-h-[500px]">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-7xl mx-auto rounded-[30px]"
+        className="max-w-4xl mx-auto space-y-6"
       >
+        {/* INPUT SECTION */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+          <h3 className="font-bold text-gray-800 text-base flex items-center gap-2">
+            <Clock size={18} className="text-[#2563a9]" />
+            Post Progress Update Activity
+          </h3>
 
-        <div className="px-5 mt-5">
+          <textarea
+            value={newNoteText}
+            onChange={(e) => setNewNoteText(e.target.value)}
+            placeholder="Type your activity update here..."
+            className="w-full h-28 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none text-sm text-gray-800 focus:border-[#2563a9] transition-all resize-none"
+          />
 
-          {/* INPUT SECTION */}
-
-          <div className="flex flex-col gap-4">
-
-            <h3 className="font-bold  ml-2">Update Progress</h3>
-
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Add a new note..."
-              className="
-              w-full
-              h-[120px]
-              bg-white
-              rounded-2xl
-              p-5
-              outline-none
-              resize-none
-              "
-            />
-
-            <div className="flex justify-end">
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: .95 }}
-                onClick={handleNote}
-                className="
-                bg-blue-600
-                text-white
-                px-6
-                py-3
-                rounded-full
-                "
-              >
-                Add Note
-              </motion.button>
-
-            </div>
-
+          <div className="flex justify-end">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={submitting}
+              onClick={handleAddNote}
+              className="bg-[#2563a9] hover:bg-[#1d4ed8] text-white px-6 py-2.5 rounded-xl font-semibold text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              <Send size={14} />
+              {submitting ? "Saving..." : "Submit Progress Note"}
+            </motion.button>
           </div>
-
-          {/* NOTES TIMELINE */}
-
-          <h2 className="font-bold text-gray-500 text-xl mt-10">
-            PREVIOUS NOTES
-          </h2>
-
-          <div className="mt-10 relative">
-
-            {/* Vertical line */}
-
-            <div className="absolute top-0 left-[10px] h-full w-[2px] bg-gray-300"></div>
-
-            {notes.map((item, index) => (
-
-              <motion.div
-                key={index}
-                initial={{
-                  opacity: 0,
-                  x: -30
-                }}
-                animate={{
-                  opacity: 1,
-                  x: 0
-                }}
-                transition={{
-                  delay: index * .1
-                }}
-                className="
-                relative
-                flex
-                gap-6
-                mb-10
-                "
-              >
-
-                {/* Dot */}
-
-                <div className="w-5 h-5 rounded-full bg-blue-600 mt-2 z-10"></div>
-
-                {/* Content */}
-
-                <div className="
-                bg-white
-                p-5
-                rounded-xl
-                shadow-sm
-                w-full
-                ">
-
-                  <h1 className="
-                  text-lg
-                  font-bold
-                  text-[#082f57]
-                  ">
-                    {item.title}
-                  </h1>
-
-                  <p className="
-                  text-gray-500
-                  mt-2
-                  leading-7
-                  ">
-                    {item.description}
-                  </p>
-
-                  <p className="
-                  text-sm
-                  text-gray-400
-                  mt-3
-                  ">
-                    {item.date}
-                  </p>
-
-                </div>
-
-              </motion.div>
-
-            ))}
-
-          </div>
-
         </div>
 
-      </motion.div>
+        {/* PROGRESS HISTORY */}
+        <div className="space-y-4">
+          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wider">
+            Task Activity Timeline
+          </h2>
 
+          {activitiesList.length === 0 ? (
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 text-center text-gray-500 text-sm">
+              No progress updates posted yet for this task.
+            </div>
+          ) : (
+            <div className="relative pl-6 space-y-6 border-l-2 border-blue-200">
+              {activitiesList.map((item, index) => (
+                <motion.div
+                  key={item._id || index}
+                  initial={{ opacity: 0, x: -15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="relative bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-2"
+                >
+                  {/* Timeline Dot */}
+                  <div className="absolute -left-[31px] top-5 w-4 h-4 rounded-full bg-[#2563a9] border-2 border-white" />
+
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span className="font-bold text-[#082f57]">{item.name || "Employee"}</span>
+                    <span>{item.createdAt ? new Date(item.createdAt).toLocaleString() : item.time || "Just now"}</span>
+                  </div>
+
+                  <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">
+                    {item.text}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

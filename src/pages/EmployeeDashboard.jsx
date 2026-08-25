@@ -20,6 +20,7 @@ import EmployeeSidebar
 from './EmployeeSidebar';
 
 import { auth, db } from '../lib/firebase';
+import { apiUrl } from '../config/api';
 
 import {
   collection,
@@ -77,31 +78,23 @@ const [followups, setFollowups] =
           });
 
           // TASKS
-
-          const taskQuery = query(
-            collection(db, 'tasks'),
-            where(
-              'assignedTo',
-              '==',
-              user.uid
-            )
-          );
-
-          const taskSnapshot =
-            await getDocs(taskQuery);
-
-          const taskData = [];
-
-          taskSnapshot.forEach((doc) => {
-
-            taskData.push({
-              id: doc.id,
-              ...doc.data(),
-            });
-
-          });
-
-          setTasks(taskData);
+          try {
+            const taskRes = await fetch(apiUrl('/tasks'));
+            if (taskRes.ok) {
+              const allTasks = await taskRes.json();
+              const myTasks = (Array.isArray(allTasks) ? allTasks : []).filter((t) => {
+                const target = String(
+                  typeof t.assignedTo === 'object' ? t.assignedTo?._id || t.assignedTo?.uid || t.assignedTo?.name || '' : t.assignedTo || ''
+                ).toLowerCase();
+                const uid = String(user.uid || '').toLowerCase();
+                const email = String(user.email || '').toLowerCase();
+                return target === uid || target === email || (email && target.includes(email));
+              }).map(t => ({ ...t, id: t._id || t.id }));
+              setTasks(myTasks);
+            }
+          } catch (err) {
+            console.error("Error fetching tasks in EmployeeDashboard:", err);
+          }
 
           // LEADS
 
