@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const API = "http://localhost:5000/api/payslip";
+const API = "https://pearlscrm.onrender.com/api/payslip";
 
 export default function usePayslip() {
   const [payslips, setPayslips] = useState([]);

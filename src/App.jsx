@@ -47,6 +47,7 @@ import Login from './pages/Login';
 
 import ClientManagement from './pages/ClientManagement';
 import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx'
+import ProtectedRoutes from './components/ProtectedRoutes.jsx'
 
 // EMPLOYEE
 
@@ -72,6 +73,11 @@ import TaskComponent from './pages/TaskComponents.jsx'
 import ProjectDetails from './pages/ProjectDetails.jsx'
 import ClientDetails from './pages/ClientDetails.jsx'
 import ETaskDetails from './EmployeePages/Task/TaskDetails/ETaskDetails.jsx';
+import Leave from './pages/LeaveAdmin/LeaveManagement.jsx'
+import AdminPayroll from './pages/Payroll/PayrollDashboard.jsx'
+import AcceptInvite from './components/AcceptInvite.jsx'
+import PayslipAdmin from './pages/Payroll/PayslipAdmin.jsx';
+import Performance from './pages/Performance & Growth/Performance.jsx'
 
 // EMPLOYEE PAGES
 import EmpMyprofile from './EmployeePages/Profile/Myprofile.jsx';
@@ -88,12 +94,25 @@ import EmpSettings from './EmployeePages/Settings/settings.jsx';
 import EmpDashboard from './EmployeePages/Dashboard/Dashboard.jsx';
 import EmpFollowUps from './EmployeePages/FollowUps/FollowUps.jsx'
 import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.jsx'
+// import EmployeeDetails from './components/EmployeeDetails/Employeehome.jsx'
+import EmpLead from './EmployeePages/Leads/Lead.jsx'
 
 
 
 
 import FollowupDetails from './pages/FollowupDetails.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx'
+import ProtectedRoute from './components/ProtectedRoutes.jsx';
+import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
+
+import WhatsAppLayout from './pages/WhatsApp/WhatsAppLayout.jsx';
+import CampaignBuilder from './pages/WhatsApp/CampaignBuilder.jsx';
+import Templates from './pages/WhatsApp/Templates.jsx';
+import Broadcast from './pages/WhatsApp/Broadcast.jsx';
+import LiveQueue from './pages/WhatsApp/LiveQueue.jsx';
+import CampaignAnalytics from './pages/WhatsApp/CampaignAnalytics.jsx';
+import ApiKeys from './pages/WhatsApp/ApiKeys.jsx';
+
 // PLACEHOLDER
 
 function PlaceholderPage({
@@ -144,14 +163,28 @@ export default function App() {
               path="/login"
               element={<Login />}
             />
+            <Route
+              path="/accept-invite/:id"
+              element={<AcceptInvite />}
+            />
 
             {/* ADMIN ROUTES */}
 
-            <Route element={<Layout />}>
+            <Route
+              element={
+                <ProtectedRoute role="admin">
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
 
               <Route
                 path="/"
-                element={<Dashboard />}
+                element={
+                  <ProtectedRoute role="admin">
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
               />
 
               <Route
@@ -246,6 +279,45 @@ export default function App() {
                   <AdminCommunication />
                 }
               />
+              <Route
+                path="/leave"
+                element={
+                  <Leave />
+                }
+              />
+              <Route
+                path="/admin-payroll"
+                element={
+                  <AdminPayroll />
+                }
+              />
+              <Route
+                path="/payslipadmin/:id"
+                element={
+                  <PayslipAdmin />
+                }
+              />
+              <Route
+                path="/admin-performance"
+                element={
+                  <PerformanceList />
+                }
+              />
+              <Route
+                path="/admin-performance/:id"
+                element={
+                  <Performance />
+                }
+              />
+
+              <Route path="/whatsapp" element={<WhatsAppLayout />}>
+                <Route path="campaign" element={<CampaignBuilder />} />
+                <Route path="templates" element={<Templates />} />
+                <Route path="broadcast" element={<Broadcast />} />
+                <Route path="queue" element={<LiveQueue />} />
+                <Route path="analytics" element={<CampaignAnalytics />} />
+                <Route path="api-keys" element={<ApiKeys />} />
+              </Route>
 
               <Route
                 path="/settings"
@@ -256,11 +328,19 @@ export default function App() {
                 }
               />
 
+
+
             </Route>
 
             {/* EMPLOYEE ROUTES */}
 
-            <Route element={<EmployeeLayout />}>
+            <Route
+              element={
+                <ProtectedRoute role='employee'>
+                  <EmployeeLayout />
+                </ProtectedRoute>
+              }
+            >
 
               <Route
                 path="/employee-dashboard"
@@ -319,6 +399,7 @@ export default function App() {
               <Route path="/employee/performance" element={<EmpPerformance />} />
               <Route path="/employee/reports" element={<EmpReportStatements />} />
               <Route path="/employee/performance/:id" element={<EmpGoalDetails />} />
+              <Route path="/employee/lead" element={<EmpLead />} />
 
               <Route
                 path="/employee/attendance"
@@ -334,7 +415,7 @@ export default function App() {
               path="*"
               element={
                 <Navigate
-                  to="/"
+                  to="/login"
                   replace
                 />
               }

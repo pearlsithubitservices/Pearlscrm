@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Calendar, Upload, Plus, X } from "lucide-react";
 
-const HolidayForm = ({onClose}) => {
+const HolidayForm = ({ onClose }) => {
   const [holidayData, setHolidayData] = useState({
     holidayName: "",
     holidayDate: "",
@@ -23,7 +23,8 @@ const HolidayForm = ({onClose}) => {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/holidays",
+        // "http://localhost:5000/api/holidays",
+        "https://pearlscrm.onrender.com/api/holidays",
         {
           method: "POST",
           headers: {
@@ -64,7 +65,8 @@ const HolidayForm = ({onClose}) => {
       formData.append("file", excelFile);
 
       const response = await fetch(
-        "http://localhost:5000/api/holidays/bulk-upload",
+        // "http://localhost:5000/api/holidays/bulk-upload",
+        "https://pearlscrm.onrender.com/api/holidays/bulk-upload",
         {
           method: "POST",
           body: formData,
@@ -92,7 +94,7 @@ const HolidayForm = ({onClose}) => {
             <h1 className="text-2xl font-bold text-[#0B2B57]">
               Company Holidays
             </h1>
-            <X size={20} className="bg-red-500 text-white rounded" onClick={() => onClose()}/>
+            <X size={20} className="bg-red-500 text-white rounded" onClick={() => onClose()} />
 
             <p className="text-gray-500 mt-1">
               Add individual holidays or upload holidays in bulk.

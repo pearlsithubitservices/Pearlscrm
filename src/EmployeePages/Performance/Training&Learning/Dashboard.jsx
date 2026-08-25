@@ -37,21 +37,22 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                
-                    {course.map((item) => (
-                        <CourseCard
-                            key={item._id}
-                            src={`http://localhost:5000${item.image}`}
-                            title={item.title}
-                            tag={item.tag}
-                            time={item.duration}
-                            level={item.level}
-                            provider={item.provider}
-                        />
-                    ))}
-               
 
-                
+                {course.map((item) => (
+                    <CourseCard
+                        key={item._id}
+                        // src={`http://localhost:5000${item.image}`}
+                        src={`https://pearlscrm.onrender.com${item.image}`}
+                        title={item.title}
+                        tag={item.tag}
+                        time={item.duration}
+                        level={item.level}
+                        provider={item.provider}
+                    />
+                ))}
+
+
+
             </div>
 
             {/* History */}
@@ -104,7 +105,7 @@ export default function Dashboard() {
             {showform && (
                 <div className="fixed inset-0 z-40  backdrop-blur-sm p-2  overflow-y-auto no-scrollbar">
                     <CourseForm
-                    fetchCourse={fetchCourse}
+                        fetchCourse={fetchCourse}
                         onClose={() => setShowForm(false)} />
                 </div>
             )

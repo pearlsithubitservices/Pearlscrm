@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 
 export default function EmployeeDetails({ onClose, empId }) {
   const employee = empId || {};
+  console.log(employee);
 
   const Field = ({ label, value }) => (
     <div className="flex items-center justify-between gap-4 border-b py-2">
@@ -33,10 +34,10 @@ export default function EmployeeDetails({ onClose, empId }) {
       {/* HEADER */}
       <div className="p-6">
         <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-sky-100 rounded-2xl p-5 flex flex-col items-center">
-          
+
           {/* AVATAR */}
           <span className="w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-lg shadow-md">
-            {(employee?.name || "U").charAt(0).toUpperCase()}
+            {(employee?.name || employee?.employeeName || "E").charAt(0).toUpperCase()}
           </span>
 
           {/* ID */}
@@ -46,7 +47,7 @@ export default function EmployeeDetails({ onClose, empId }) {
 
           {/* NAME */}
           <h2 className="mt-3 text-lg font-bold text-[#123861] text-center break-words">
-            {employee?.name || "Unknown Employee"}
+            {employee?.name || employee?.employeeName || "Unknown Employee"}
           </h2>
         </div>
       </div>
@@ -58,12 +59,12 @@ export default function EmployeeDetails({ onClose, empId }) {
         </h3>
 
         <div className="space-y-1">
-          <Field label="Name" value={employee?.name} />
-          <Field label="Department" value={employee?.dept} />
-          <Field label="Role" value={employee?.role} />
+          <Field label="Name" value={employee?.name || employee?.employeeName} />
+          <Field label="Department" value={employee?.employeeDepartment} />
+          <Field label="Role" value={employee?.role || employee?.employeeRole} />
           <Field label="Location" value={employee?.location} />
-          <Field label="Work Mode" value={employee?.workMode} />
-          <Field label="Phone" value={employee?.phone} />
+          <Field label="Work Mode" value={employee?.workMode || "WFH"} />
+          <Field label="Phone" value={employee?.contact} />
           <Field label="Email" value={employee?.email} />
         </div>
 

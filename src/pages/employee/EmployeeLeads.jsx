@@ -43,7 +43,7 @@ export default function EmployeeLeads() {
     fetchLeads();
 
   }, []);
-
+console.log(leads)
   // FETCH LEADS
 
   const fetchLeads =

@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
 
-const ETasksOverview = ({ tasks }) => {
+const ETasksOverview = ({ tasks, employeemap }) => {
     return (
         <motion.div
             whileHover={{ y: -5 }}
@@ -12,21 +12,21 @@ const ETasksOverview = ({ tasks }) => {
             <div className="flex flex-col gap-4 ml-4">
                 <h1 className="font-semibold">Project Name</h1>
                 <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks.titl || "Sri Sai Millets"}</p>
+                    <p>{tasks?.title || "Sri Sai Millets"}</p>
                 </div>
 
             </div>
             <div className="flex flex-col gap-4 ml-4 mt-4">
                 <h1 className="font-semibold">Task Title</h1>
                 <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks.title || " ReDesign the onboarding experiences for enterprise accounts"}</p>
+                    <p>{tasks?.title || " ReDesign the onboarding experiences for enterprise accounts"}</p>
                 </div>
 
             </div>
             <div className="flex flex-col gap-4 ml-4 mt-4">
                 <h1 className="font-semibold">Task Description</h1>
                 <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks.notes || " ReDesign the onboarding experiences for enterprise accounts"}</p>
+                    <p>{tasks?.notes || " ReDesign the onboarding experiences for enterprise accounts"}</p>
                 </div>
 
             </div>
@@ -55,7 +55,7 @@ const ETasksOverview = ({ tasks }) => {
                         </h3>
 
                         <p className="text-base font-semibold text-gray-800">
-                            {tasks?.assignedBy || "Ragavi M"}
+                            {employeemap[tasks?.assignedBy] || "Ragavi M"}
                         </p>
                     </div>
 

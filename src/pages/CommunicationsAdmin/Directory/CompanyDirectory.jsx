@@ -88,7 +88,7 @@ export default function CompanyDirectory() {
     },
   ];
   const { employees } = useEmployees();
-  console.log(employees[0]);
+
   const [activeTab, setACtiveTab] = useState("all");
   const [employeesdata, setEmployeesdata] = useState();
   const [showDetails, setShowDetails] = useState(false);
@@ -109,12 +109,12 @@ export default function CompanyDirectory() {
     setEmployeesdata(filtered);
   };
 
-  const handledetails = (id) => {
-    setShowDetails(true);
+  // const handledetails = (id) => {
+  //   setShowDetails(true);
 
-    const emp = employees.find((e) => e.id === id);
-    setSelectedEmployee(emp);
-  };
+  //   const emp = employees.find((e) => e.id === id);
+  //   setSelectedEmployee(emp);
+  // };
   return (
     <div className="min-h-screen bg-[#efede8] flex">
 
@@ -163,7 +163,7 @@ export default function CompanyDirectory() {
                 key={i}
                 whileHover={{ y: -4 }}
                 className="bg-white border rounded-2xl p-5 shadow-sm cursor-pointer"
-                onClick={() => handledetails(emp.uid)}
+                onClick={() => setSelectedEmployee(emp) || setShowDetails(true)}
               >
                 <div className="flex justify-between">
                   <div className="relative">
@@ -173,7 +173,7 @@ export default function CompanyDirectory() {
                       className="w-16 h-16 rounded-2xl object-cover"
                     /> */}
                     <span className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md">
-                      {emp.name.charAt(0).toUpperCase()}
+                      {emp?.name?.charAt(0)?.toUpperCase() || emp?.employeeName?.charAt(0)?.toUpperCase()}
                     </span>
                     <span
                       className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${emp.status}`}
@@ -181,12 +181,12 @@ export default function CompanyDirectory() {
                   </div>
 
                   <span className="text-slate-500">
-                    ID: {emp.id.slice(0, 5)}
+                    ID: {emp?.id?.slice(0, 5)}
                   </span>
                 </div>
 
                 <h3 className="text-xl font-bold text-[#1f5fa8] mt-4 ">
-                  {emp.name}
+                  {emp?.name || emp.employeeName}
                 </h3>
 
                 <p className="font-bold">{emp.role}</p>
@@ -203,7 +203,7 @@ export default function CompanyDirectory() {
 
                   <div className="flex items-center gap-2">
                     <MapPin size={16} />
-                    {emp.location||"Chennai-60001"}
+                    {emp.location || "Chennai-60001"}
                   </div>
                 </div>
 

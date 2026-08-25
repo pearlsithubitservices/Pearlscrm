@@ -13,7 +13,7 @@ const useAttendanceCorrection = () => {
 
         try {
             const res = await fetch(
-                "http://localhost:5000/api/empAttendanceCorrection",
+                "https://pearlscrm.onrender.com/api/empAttendanceCorrection",
                 {
                     method: "POST",
                     headers: {
@@ -41,7 +41,8 @@ const useAttendanceCorrection = () => {
     const updateStatus = async (id, status) => {
         try {
             const res = await fetch(
-                `http://localhost:5000/api/empAttendanceCorrection/${id}/status`,
+                // `http://localhost:5000/api/empAttendanceCorrection/${id}/status`,
+                `https://pearlscrm.onrender.com/api/empAttendanceCorrection/${id}/status`,
                 {
                     method: "PATCH",
                     headers: {

@@ -18,47 +18,63 @@ import AnimateModals from "../components/Dashboard/AnimateModals";
 import LoadingPage from "../components/Dashboard/Loading";
 import CreateFollowups from "./CreateFollowups";
 import useFollowups from "../Hooks/useFollowups";
+import useEmployees from "../Hooks/useEmployees";
 
 
 export default function FollowUps() {
-  const{getFollowups}=useFollowups();
-  const [followups, setFollowups]=useState([]);
-  
-  useEffect(()=>{
-   const fetchdata = async () => {
-    try{
+  const { getFollowups } = useFollowups();
+  const [followups, setFollowups] = useState([]);
+  const { employees } = useEmployees();
+  const [loading, setLoading] = useState(false);
+  const fetchdata = async () => {
+    try {
+      setLoading(true);
       const data = await getFollowups();
       setFollowups(data);
+      
       console.log(data);
     }
-    catch(err){
+    catch (err) {
       console.log(err);
     }
-   }
+    finally{
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+
     fetchdata();
-  },[]);
+  }, []);
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = employee.name;
+      return map;
+    }, {});
+  }, [employees]);
+  console.log(employeeMap);
 
   const navigate = useNavigate();
-
+  console.log(followups);
   const [search, setSearch] = useState("");
   const [active, setActive] = useState(0);
-  const [loading] = useState(false);
+
   const [openFollowup, setOpenfollowup] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const buttons = ["All", "Missed", "Pending", "Completed", "Scheduled"];
+  const buttons = ["All",  "Pending", "Completed", ];
 
-  
-const pending= followups.filter((item)=>(
-  item.status.toLowerCase() == "pending"
-));
-const completed= followups.filter((item)=>(
-  item.status.toLowerCase() == "completed"
-));
+
+  const pending = followups.filter((item) => (
+    item.status.toLowerCase() == "pending"
+  ));
+  const completed = followups.filter((item) => (
+    item.status.toLowerCase() == "completed"
+  ));
   const stats = [
     { icon: Users2, title: "Total FollowUps", value: followups.length },
     { icon: PhoneMissed, title: "Missed Today", value: "2" },
-    { icon: Clock2, title: "Pending Meetings", value: pending.length  },
+    { icon: Clock2, title: "Pending Meetings", value: pending.length },
     { icon: CheckCheck, title: "Completed", value: completed.length },
   ];
 
@@ -79,7 +95,7 @@ const completed= followups.filter((item)=>(
       return matchesSearch && matchesStatus;
     });
 
-  }, [search, active,followups]);
+  }, [search, active, followups]);
 
   /* PAGINATION */
 
@@ -191,12 +207,11 @@ const completed= followups.filter((item)=>(
                     setCurrentPage(1);
                   }}
                   className={`
-                  px-4 py-2 tracking-tight rounded-xl text-sm transition
-                  ${
-                    active === index
+                  px-4 flex gap-18 items-center py-2 tracking-tight rounded-xl text-sm transition
+                  ${active === index
                       ? "bg-[#2563a9] text-white"
                       : "text-gray-500 hover:bg-[#2563a9] hover:text-white"
-                  }
+                    }
                   `}
                 >
                   {btn}
@@ -271,41 +286,41 @@ const completed= followups.filter((item)=>(
                   currentFiles?.map((item) => (
 
                     <tr
-                      key={item._id}
+                      key={item?._id}
                       onClick={() => navigate(`/followupDetails/${item._id}`)}
                       className="border-t hover:bg-gray-50 cursor-pointer transition"
-                      
+
                     >
 
                       <td className="p-4">
 
                         <p className="font-medium">
-                          {item.clientName}
+                          {item?.clientName}
                         </p>
 
                         <p className="text-xs text-gray-400">
-                          {item.companyName}
+                          {item?.companyName}
                         </p>
 
                       </td>
 
                       <td>
                         <span className="bg-green-100 text-green-600 px-3 py-1 rounded text-xs">
-                          {item.type}
+                          {item?.type}
                         </span>
                       </td>
 
                       <td>
                         <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
-                          {item.assignedTo}
+                          {employeeMap[item?.assignedTo] || "No One"}
                         </span>
                       </td>
 
-                      <td>{item.followupTime}</td>
+                      <td>{item?.followupTime || "00.00"}</td>
 
                       <td>
                         <span className="bg-gray-100 px-3 py-1 rounded text-xs">
-                          {item.status}
+                          {item?.status}
                         </span>
                       </td>
 
@@ -343,7 +358,7 @@ const completed= followups.filter((item)=>(
 
           <CreateFollowups
             onClose={() => setOpenfollowup(false)}
-            fetchdata={()=>getFollowups()}
+            fetchdata={fetchdata}
           />
 
         </AnimateModals>

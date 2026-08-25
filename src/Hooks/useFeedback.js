@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
-const BASE_URL = "http://localhost:5000/api/feedback";
+const BASE_URL = "https://pearlscrm.onrender.com/api/feedback";
 
 export default function useFeedback() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -62,7 +62,7 @@ export default function useFeedback() {
       throw err;
     }
   };
-  
+
   useEffect(() => {
     fetchFeedbacks();
   }, []);

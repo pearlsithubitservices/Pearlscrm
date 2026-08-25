@@ -76,10 +76,16 @@ export default function ReimbursementClaimForm({ onClose, getclaims }) {
         placeholder="Travel (local)"
         type="select"
         options={[
-          "Travel (local)",
-          "Medical",
-          "Training / Courses",
-          "Equipment (WFH)",
+          {value:"travel",
+            label:"Travel (local)"},
+          {value:"medical",
+            label:"Medical"},
+          {value:"training",
+            label:"Training "},
+          {value:"equipment",
+            label:"Equipment(WFHQ)"},
+          
+          
         ]}
       />
 

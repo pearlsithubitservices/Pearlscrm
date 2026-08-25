@@ -1,30 +1,62 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import useLead from "../../Hooks/useLead";
+import { useParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { X } from "lucide-react";
 
 export default function LeadNotesPage() {
+  const { addNote, fetchLead, lead, deleteNote } = useLead();
+  const { id } = useParams();
 
   // Existing notes list
-  const [notes, setNotes] = useState([
-    {
-      title: "Budget confirmed verbally — $120K range",
-      description:
-        "Client confirmed budget in phone conversation. Wants implementation in 6 weeks post-signing.",
-      date: "Jun 7 · Rohan M",
-    },
-    {
-      title: "Competitor comparison requested",
-      description:
-        "Evaluating 2 other vendors. We're in the final 2. Need to highlight data security certifications.",
-      date: "Jun 3 · Priya S.",
-    },
-    {
-      title: "Budget confirmed verbally — $130K range",
-      description:
-        "Client confirmed budget in phone conversation. Wants implementation in 6 weeks post-signing.",
-      date: "Jun 8 · Priya S.",
-    },
-  ]);
+  const [notes, setNotes] = useState([]);
+  console.log(notes);
 
+
+  // useEffect(() => {
+  //   const fetchlead = async () => {
+  //     try {
+  //      const note = await fetchLead();
+  //      conosole.log(note);
+  //      setNotes(note.leadnotes);
+  //     }
+  //     catch (error) {
+  //       console.log(error.message);
+  //     }
+  //   }
+  //   fetchlead();
+
+  // }, []);
+  useEffect(() => {
+    fetchleads();
+  }, []);
+
+  const fetchleads =
+    async () => {
+
+
+      try {
+
+        const response =
+          await fetch(
+            "https://pearlscrm.onrender.com/api/leads"
+          );
+
+        const data =
+          await response.json();
+
+        console.log(data);
+        setNotes(data);
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+
+    };
   // Form state
   const [formData, setFormData] = useState({
     title: "",
@@ -39,33 +71,49 @@ export default function LeadNotesPage() {
     });
   }
 
-  // Add note
-  function handleNote() {
 
-    if (
-      formData.title.trim() === "" ||
-      formData.description.trim() === ""
-    ) {
+  const currentNotes = notes.find((item) => (
+    item._id == id
+  ));
+  console.log(currentNotes?.leadnotes);
+  // Add note
+
+  const handleaddNote = async () => {
+    if (!formData.title.trim() || !formData.description.trim()) {
       alert("Fill all fields");
       return;
     }
 
-    const newNote = {
-      title: formData.title,
-      description: formData.description,
-      date: new Date().toLocaleString(),
-    };
+    try {
+      const updatedLead = await addNote(id, {
+        title: formData.title,
+        description: formData.description,
+      });
+      await fetchleads(); // Refresh leads
+      console.log(updatedLead.leadnotes);
 
-    // add new note to top
-    setNotes([newNote, ...notes]);
+      // setNotes(updatedLead.leadnotes);
 
-    // clear inputs
-    setFormData({
-      title: "",
-      description: "",
-    });
-  }
+      setFormData({
+        title: "",
+        description: "",
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
+  const handleDeleteNote = async (noteId) => {
+    try {
+      const updatedLead = await deleteNote(id, noteId);
+
+      // Update the lead in state
+      await fetchleads();
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <div className="min-h-screen bg-[#f5f2ec] p-8">
 
@@ -117,7 +165,7 @@ export default function LeadNotesPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: .95 }}
-                onClick={handleNote}
+                onClick={handleaddNote}
                 className="
                 bg-blue-600
                 text-white
@@ -145,7 +193,7 @@ export default function LeadNotesPage() {
 
             <div className="absolute top-0 left-[10px] h-full w-[2px] bg-gray-300"></div>
 
-            {notes.map((item, index) => (
+            {currentNotes?.leadnotes?.length > 0 > 0 ? currentNotes?.leadnotes?.map((item, index) => (
 
               <motion.div
                 key={index}
@@ -168,6 +216,7 @@ export default function LeadNotesPage() {
                 "
               >
 
+                <X className="absolute top-2 right-2 text-red-600" onClick={() => handleDeleteNote(item._id)} />
                 {/* Dot */}
 
                 <div className="w-5 h-5 rounded-full bg-blue-600 mt-2 z-10"></div>
@@ -210,7 +259,10 @@ export default function LeadNotesPage() {
 
               </motion.div>
 
-            ))}
+            ))
+              :
+              <p>
+                No notes</p>}
 
           </div>
 

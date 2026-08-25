@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API_URL = "http://localhost:5000/api/followups";
+const API_URL = "https://pearlscrm.onrender.com/api/followups";
 
 export default function useFollowups() {
   const [loading, setLoading] = useState(false);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-const API_URL = "http://localhost:5000/api/ticket";
+const API_URL = "https://pearlscrm.onrender.com/api/ticket";
 
 const useTicket = () => {
     const [tickets, setTickets] = useState([]);
@@ -21,7 +21,7 @@ const useTicket = () => {
             }
 
             const data = await res.json();
-            
+
 
             setTickets(data);
             setError(null);

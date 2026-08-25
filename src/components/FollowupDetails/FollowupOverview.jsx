@@ -1,16 +1,27 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { motion } from "framer-motion";
+import { Phone } from 'lucide-react';
+import useEmployees from '../../Hooks/useEmployees';
 const FollowupOverview = ({ followups, fetchfollowups }) => {
   console.log(followups);
+  const { employees } = useEmployees();
+
+  const employeeMap = useMemo(() => {
+    return employees.reduce((map, employee) => {
+      map[employee.uid] = employee.name;
+      return map;
+    }, {});
+  }, [employees]);
   const info = [
-    ["EMAIL", "sarah.chen@gmail.com", true],
-    ["PHONE", "+ 91 9876543210"],
-    ["TYPE", "Call"],
-    ["ASSIGNED TO", "Ragavi M"],
+    ["EMAIL", followups?.email, true],
+    ["PHONE", followups?.phone],
+    ["TYPE", followups?.type],
+    ["ASSIGNED TO", employeeMap[followups?.assignedTo]],
     ["FOLLOW- UP", "Today"],
-    ["FOLLOW- UP - COUNT", "2"],
-    ["FOLLOW-UP-TIME", "Today · 10:30 AM"],
+    ["FOLLOW- UP - COUNT", followups?.followupCount],
+    ["FOLLOW-UP-TIME", followups?.followupTime],
   ];
+
   return (
     <div className="p-6">
 
@@ -34,8 +45,8 @@ const FollowupOverview = ({ followups, fetchfollowups }) => {
 
             <h1
               className={`mt-2 text-2xl font-medium ${blue
-                  ? "text-[#3167dc]"
-                  : "text-[#0b2d59]"
+                ? "text-[#3167dc]"
+                : "text-[#0b2d59]"
                 }`}
             >
               {value}

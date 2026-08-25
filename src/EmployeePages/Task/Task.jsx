@@ -40,9 +40,12 @@ export default function Tasks() {
     useState('');
 
   const [active, setActive] = useState("All");
+  const sortedTasks = [...tasks].sort((a, b) => {
+    return b.createdAt?.toDate() - a.createdAt?.toDate();
+  });
 
   const buttons = ["All", "Hot", "Warm", "Cold"];
-  const filterdata = useTaskfilter(tasks, search, active);
+  const filterdata = useTaskfilter(sortedTasks, search, active);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 3;
@@ -61,10 +64,10 @@ export default function Tasks() {
   //STATS
 
   const inprogress = tasks.filter((task) =>
-    task.status.toLowerCase() === "pending"
+    task?.status?.toLowerCase() === "pending"
   );
   const completed = tasks.filter((task) =>
-    task.status.toLowerCase() === "completed"
+    task?.status?.toLowerCase() === "completed"
   );
 
   const overdue = tasks.filter((task) =>
@@ -199,7 +202,7 @@ export default function Tasks() {
                     border-gray-200
                     rounded-2xl
                     p-5 md:p-7"
-                      onClick={() => navigate(`/employee/taskDetails/${task.uid}`)}>
+                      onClick={() => navigate(`/employee/taskDetails/${task.id}`)}>
 
                       {/* TOP */}
 
@@ -210,7 +213,7 @@ export default function Tasks() {
                         <div>
 
                           <h1 className="text-sm md:text-xl font-normal text-[#082f57]">
-                            <span className="font-bold tracking-tighter">Project Name: </span>{employeenameBy.name || " Ragavi"}
+                            <span className="font-bold tracking-tighter">Project Name: </span>{employeenameBy?.name || " Ragavi"}
                           </h1>
 
                           <p className="mt-1 text-lg md:text-xl text-[#082f57]">
@@ -227,7 +230,7 @@ export default function Tasks() {
 
                             <div
                               className={`
-                            ${task.status.toLowerCase() === "pending" ? "bg-red-200 text-red-600" : task.status.toLowerCase() === "in progress" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
+                            ${task?.status?.toLowerCase() === "pending" ? "bg-red-200 text-red-600" : task?.status?.toLowerCase() === "in progress" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
                             
                             px-4
                             py-2
@@ -242,15 +245,15 @@ export default function Tasks() {
 
                             <div
                               className={`
-                            ${task.priority.toLowerCase() === "hot" ? "bg-red-200 text-red-600" : task.priority.toLowerCase() === "warm" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
+                            ${task?.priority?.toLowerCase() === "hot" ? "bg-red-200 text-red-600" : task?.priority?.toLowerCase() === "warm" ? "bg-yellow-200 text-yellow-700" : "bg-green-200 text-green-800"}
                             px-4
                             py-2
-                            rounded-full
+                            rounded-full  
                             text-sm
                           
                           `}
                             >
-                              ● {task.priority || "Medium"}
+                              ● {task?.priority || "Medium"}
                             </div>
 
                           </div>
