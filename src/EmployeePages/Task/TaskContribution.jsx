@@ -15,7 +15,7 @@ export default function TaskContribution() {
     summary: "",
   });
   const { user } = useAuth();
-  const userId = user.uid;
+  const userId = user?.uid || user?._id || user?.id;
   const { tasks } = useTasks(userId);
 
 

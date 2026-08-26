@@ -1,136 +1,169 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  Pencil,
   CheckCircle2,
-  Flame,
+  Building2,
+  Calendar,
+  Clock,
+  CircleDollarSign,
+  UserCheck,
+  Activity,
+  FileText
 } from "lucide-react";
 import useEmployees from "../../Hooks/useEmployees";
 
 export default function ProjectDetailsPage({ projects }) {
-  const [activeTab, setActiveTab] = useState("Overview");
   const { employees } = useEmployees();
-  //GETTING EMPLOYEES NAME
+
+  const currentProject = projects[0] || {};
+  const progressVal = Number(currentProject.progress) || 0;
+
   const employeeMap = useMemo(() => {
     return employees.reduce((map, employee) => {
-      map[employee.uid] = employee.name;
+      const eKey = employee._id || employee.uid || employee.id;
+      if (eKey) map[eKey] = employee.name || employee.employeeName || employee.email;
       return map;
     }, {});
   }, [employees]);
 
+  const leaderName = typeof currentProject.leader === 'object' 
+    ? (currentProject.leader?.name || currentProject.leader?.employeeName)
+    : (employeeMap[currentProject.leader] || currentProject.leader || "Not Assigned");
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? "N/A" : d.toLocaleDateString('en-GB');
+  };
+
+  const infoCards = [
+    {
+      label: "CLIENT",
+      value: currentProject.company || "N/A",
+      icon: Building2,
+      color: "text-blue-600 bg-blue-50"
+    },
+    {
+      label: "STATUS",
+      value: currentProject.status || "Active",
+      icon: Activity,
+      color: "text-emerald-600 bg-emerald-50"
+    },
+    {
+      label: "ASSIGNED DATE",
+      value: formatDate(currentProject.assignedDate),
+      icon: Calendar,
+      color: "text-purple-600 bg-purple-50"
+    },
+    {
+      label: "DUE DATE",
+      value: formatDate(currentProject.dueDate),
+      icon: Clock,
+      color: "text-amber-600 bg-amber-50"
+    },
+    {
+      label: "BUDGET",
+      value: currentProject.budget ? `$${currentProject.budget}` : "N/A",
+      icon: CircleDollarSign,
+      color: "text-indigo-600 bg-indigo-50"
+    },
+    {
+      label: "TEAM LEADER",
+      value: leaderName,
+      icon: UserCheck,
+      color: "text-rose-600 bg-rose-50"
+    },
+  ];
 
   return (
-    <>
-      {/* Main Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-6xl bg-[#F4F1EC] rounded-[28px] overflow-hidden "
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="w-full max-w-6xl mx-auto bg-[#F5F3EF] rounded-2xl md:rounded-[28px] overflow-hidden p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8"
+    >
+      {/* Project Description */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <FileText size={18} className="text-[#2563a9]" />
+          <h2 className="text-xs sm:text-sm md:text-base font-bold text-gray-500 uppercase tracking-wider">
+            PROJECT DESCRIPTION
+          </h2>
+        </div>
 
+        <div className="border border-gray-300/80 rounded-2xl bg-white/80 backdrop-blur-xs p-4 sm:p-6 md:p-8 shadow-2xs">
+          <p className="text-[#0B2D57] text-sm sm:text-base md:text-lg leading-relaxed font-medium">
+            {currentProject.description || "No project description provided."}
+          </p>
+        </div>
+      </div>
 
+      {/* Project Information */}
+      <div>
+        <h2 className="text-xs sm:text-sm md:text-base font-bold text-gray-500 uppercase tracking-wider mb-4">
+          PROJECT INFORMATION
+        </h2>
 
-        {/* Content */}
-        <div className="p-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+          {infoCards.map((item, index) => (
+            <motion.div
+              whileHover={{ y: -3 }}
+              key={index}
+              className="bg-white rounded-2xl p-4 sm:p-5 md:p-6 border border-gray-200/80 shadow-2xs flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  {item.label}
+                </span>
+                <div className={`p-2 rounded-xl ${item.color}`}>
+                  <item.icon size={18} />
+                </div>
+              </div>
 
-          {/* Project Description */}
-          <div>
-            <h2 className="text-gray-400 font-bold text-[10px] md:text-[20px] uppercase">
-              PROJECT DESCRIPTION
-            </h2>
+              <p className="text-[#0B2D57] font-bold text-base sm:text-lg md:text-xl truncate">
+                {item.value}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
 
-            <div className="mt-5 border border-gray-300 rounded-2xl bg-[#F4F1EC] p-8">
-              <p className="text-[#0B2D57] text-[10px] md:text-[18px] leading-relaxed font-medium">
-                {projects[0]?.description}
+      {/* Project Progress */}
+      <div>
+        <h2 className="text-xs sm:text-sm md:text-base font-bold text-gray-500 uppercase tracking-wider mb-4">
+          PROJECT PROGRESS
+        </h2>
+
+        <div className="bg-white rounded-2xl p-5 sm:p-6 md:p-8 border border-gray-200/80 shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <p className="text-[#0B2D57] text-base sm:text-lg font-bold">
+                Project Completion: {progressVal}%
+              </p>
+              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">
+                {progressVal === 100 ? "Project is fully completed!" : "In active development milestone phase"}
               </p>
             </div>
-          </div>
 
-          {/* Project Information */}
-          <div className="mt-10">
-            <h2 className="text-gray-400 font-bold text-[10px] md:text-[20px] uppercase">
-              PROJECT INFORMATION
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-
-              {[
-                {
-                  label: "CLIENT",
-                  value: projects[0]?.company,
-                },
-                {
-                  label: "STATUS",
-                  value: projects[0]?.status,
-                },
-                {
-                  label: "ASSIGNED DATE",
-                  value: new Date(projects[0]?.assignedDate).toLocaleDateString('en-GB'),
-                },
-                {
-                  label: "DUE DATE",
-                  value: new Date(projects[0]?.dueDate).toLocaleDateString('en-GB'),
-                },
-                {
-                  label: "BUDGET",
-                  value: projects[0]?.budget,
-                },
-                {
-                  label: "Team Leader",
-                  value: employeeMap[projects[0]?.leader],
-                },
-              ].map((item, index) => (
-                <motion.div
-                  whileHover={{ y: -4 }}
-                  key={index}
-                  className="bg-[#F8F7FB] rounded-2xl p-6 text-[10px] md:text-[14px]"
-                >
-                  <h4 className="text-gray-400 font-bold  text-xl uppercase">
-                    {item.label}
-                  </h4>
-
-                  <p className="mt-3 text-[#0B2D57]  font-semibold">
-                    {item.value}
-                  </p>
-                </motion.div>
-              ))}
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <CheckCircle2
+                size={28}
+                className={progressVal === 100 ? "text-emerald-500" : "text-[#2563a9]"}
+              />
             </div>
           </div>
 
-          {/* Project Progress */}
-          <div className="mt-10">
-            <h2 className="text-gray-400 font-bold text-[10px] md:text-[20px] uppercase">
-              PROJECT PROGRESS
-            </h2>
-
-            <div className="mt-5 bg-[#F8F7FB] rounded-2xl p-6">
-
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-[#0B2D57] text-[10pxpx] md:text-[18px] font-medium">
-                  Project Progress 65% complete
-                </p>
-
-                <CheckCircle2
-                  size={28}
-                  className="text-blue-500"
-                />
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full h-4 bg-gray-300 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "65%" }}
-                  transition={{ duration: 1 }}
-                  className="h-full bg-[#4B82FF] rounded-full"
-                />
-              </div>
-            </div>
+          {/* Progress Bar */}
+          <div className="w-full h-3.5 sm:h-4 bg-gray-100 rounded-full overflow-hidden border border-gray-200/60 p-0.5">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progressVal}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-2xs"
+            />
           </div>
-
         </div>
-      </motion.div>
-    </>
+      </div>
+    </motion.div>
   );
 }

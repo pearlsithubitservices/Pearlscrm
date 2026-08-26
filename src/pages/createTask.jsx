@@ -7,12 +7,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
-import {
-  collection,
-  getDocs,
-} from 'firebase/firestore';
 
-import { db } from '../lib/firebase';
 import { apiUrl } from '../config/api';
 
 import InputField from '../components/InputField';
@@ -30,79 +25,34 @@ import {
   X
 } from 'lucide-react';
 
+import useEmployees from '../Hooks/useEmployees';
+import { useAuth } from '../context/AuthContext';
+
 export default function CreateTask({ onClose, onSuccess }) {
+  const navigate = useNavigate();
+  const { employees } = useEmployees();
+  const { user } = useAuth();
 
-  const navigate =
-    useNavigate();
+  const adminName = user?.displayName || user?.name || user?.employeeName || (user?.email ? user.email.split('@')[0] : "Admin");
+  const adminId = user?._id || user?.uid || user?.id || adminName;
 
-  const [employees, setEmployees] =
-    useState([]);
+  const [task, setTask] = useState({
+    title: '',
+    description: '',
+    notes: '',
+    assignedTo: '',
+    assignedBy: adminId,
+    priority: 'Medium',
+    status: 'Pending',
+    dueDate: '',
+  });
 
-  const [task, setTask] =
-    useState({
-      title: '',
-      description: '',
-      notes: '',
-      assignedTo: '',
-      assignedBy: '',
-      priority: 'Medium',
-      status: 'Pending',
-      dueDate: '',
-    });
-
+  // Keep assignedBy updated if user changes or loads asynchronously
   useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  // FETCH EMPLOYEES (Combine MongoDB API & Firebase Firestore)
-  const fetchEmployees = async () => {
-    let apiEmployees = [];
-    try {
-      const res = await fetch(apiUrl('/employees'));
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          apiEmployees = data.map((emp) => ({
-            id: emp._id || emp.id || emp.uid,
-            _id: emp._id || emp.id,
-            uid: emp.uid || emp._id,
-            name: emp.employeeName || emp.name || emp.email || "Employee",
-          }));
-        }
-      }
-    } catch (err) {
-      console.log("Error fetching employees from API:", err);
+    if (adminId && !task.assignedBy) {
+      setTask((prev) => ({ ...prev, assignedBy: adminId }));
     }
-
-    let firestoreEmployees = [];
-    try {
-      const snapshot = await getDocs(collection(db, 'employees'));
-      snapshot.forEach((doc) => {
-        firestoreEmployees.push({
-          id: doc.id,
-          _id: doc.id,
-          uid: doc.data().uid || doc.id,
-          name: doc.data().name || doc.data().employeeName || doc.data().email || "Employee",
-          ...doc.data(),
-        });
-      });
-    } catch (error) {
-      console.log("Error fetching employees from Firestore:", error);
-    }
-
-    // Merge employees from API and Firestore without duplicates
-    const empMap = new Map();
-    apiEmployees.forEach(emp => empMap.set((emp.name || '').toLowerCase(), emp));
-    firestoreEmployees.forEach(emp => {
-      const key = (emp.name || '').toLowerCase();
-      if (!empMap.has(key)) {
-        empMap.set(key, emp);
-      }
-    });
-
-    const combinedList = Array.from(empMap.values());
-    setEmployees(combinedList);
-  };
+  }, [adminId]);
 
   // HANDLE CHANGE
   const handleChange = (e) => {
@@ -122,6 +72,7 @@ export default function CreateTask({ onClose, onSuccess }) {
     try {
       const payload = {
         ...task,
+        assignedBy: task.assignedBy || adminId,
         dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
       };
 
@@ -199,17 +150,10 @@ export default function CreateTask({ onClose, onSuccess }) {
         <InputField
           label="Assigned From"
           name="assignedBy"
-          value={task.assignedBy}
-          onChange={handleChange}
-          placeholder="Agent Name"
+          value={adminName}
+          disabled={true}
           Icon={Users}
-          type='select'
-          options={employees.map((emp) => (
-            {
-              label: emp.name || emp.employeeName || emp.email,
-              value: emp.id || emp._id || emp.uid
-            }
-          ))}
+          placeholder="Admin Name"
         />
 
         <InputField
@@ -217,12 +161,12 @@ export default function CreateTask({ onClose, onSuccess }) {
           name="assignedTo"
           value={task.assignedTo}
           onChange={handleChange}
-          placeholder="Agent Name"
+          placeholder="Select Employee"
           Icon={Users}
           type='select'
           options={employees.map((emp) => ({
-            label: emp.name || emp.employeeName || emp.email,
-            value: emp.id || emp._id || emp.uid
+            label: emp.employeeName || emp.name || emp.displayName || (emp.email ? emp.email.split('@')[0] : "Employee"),
+            value: emp._id || emp.id || emp.uid || emp.email
           }))}
         />
 

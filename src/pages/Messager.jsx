@@ -27,12 +27,9 @@ import {
   Star,
   FileText,
   ChevronRight,
-} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import useChat from "../Hooks/chat.js";
 import { apiUrl } from "../config/api.js";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../lib/firebase";
 
 import { requestNotificationPermission } from "../Utils/notificationResolver.js";
 
@@ -273,7 +270,6 @@ export default function Messenger() {
       setLoadingEmployees(true);
       let list = [];
 
-      // 1. Try MongoDB API
       try {
         const response = await fetch(apiUrl("/employees"));
         const result = await response.json();
@@ -283,23 +279,6 @@ export default function Messenger() {
         }
       } catch (err) {
         console.log("MongoDB fetch employees error:", err);
-      }
-
-      // 2. Try Firestore DB if list is empty
-      if (!list || list.length === 0) {
-        try {
-          const snapshot = await getDocs(collection(db, "employees"));
-          const fbList = snapshot.docs.map((doc) => ({
-            _id: doc.id,
-            id: doc.id,
-            ...doc.data(),
-          }));
-          if (fbList && fbList.length > 0) {
-            list = fbList;
-          }
-        } catch (err) {
-          console.log("Firestore fetch employees error:", err);
-        }
       }
 
       setEmployees(list || []);
@@ -323,18 +302,6 @@ export default function Messenger() {
         if (apiList && apiList.length > 0) list = apiList;
       } catch (err) {
         console.log("Error fetching tasks from API:", err);
-      }
-      if (!list || list.length === 0) {
-        try {
-          const snapshot = await getDocs(collection(db, "tasks"));
-          list = snapshot.docs.map((doc) => ({
-            _id: doc.id,
-            id: doc.id,
-            ...doc.data(),
-          }));
-        } catch (err) {
-          console.log("Error fetching tasks from Firestore:", err);
-        }
       }
       setTasks(list);
     } catch (err) {

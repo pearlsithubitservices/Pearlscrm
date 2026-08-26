@@ -125,8 +125,8 @@ export default function Tasks() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const fetchTasksData = async () => {
-    setLoading(true);
+  const fetchTasksData = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const res = await fetch(apiUrl('/tasks'));
       if (res.ok) {
@@ -140,7 +140,7 @@ export default function Tasks() {
     } catch (err) {
       console.error('Error fetching tasks from MongoDB API:', err);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -183,7 +183,7 @@ export default function Tasks() {
 
     if (socket) {
       const handleTaskUpdated = () => {
-        fetchTasksData();
+        fetchTasksData(true);
       };
       socket.on("taskUpdated", handleTaskUpdated);
       socket.on("taskCreated", handleTaskUpdated);

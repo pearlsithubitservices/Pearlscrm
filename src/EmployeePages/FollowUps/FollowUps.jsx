@@ -36,15 +36,15 @@ export default function FollowUps() {
   const [dateFilter, setDateFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchdata = async () => {
+  const fetchdata = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground) setLoading(true);
       const data = await getFollowups();
       setFollowups(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error fetching employee followups:", err);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -52,7 +52,7 @@ export default function FollowUps() {
     fetchdata();
 
     if (socket) {
-      const handleSync = () => fetchdata();
+      const handleSync = () => fetchdata(true);
       const handleReminder = (data) => {
         toast((t) => (
           <div className="flex flex-col gap-1">
@@ -60,7 +60,7 @@ export default function FollowUps() {
             <span className="text-xs text-gray-700">{data.message || "You have a scheduled follow-up due!"}</span>
           </div>
         ), { icon: "⏰", duration: 6000 });
-        fetchdata();
+        fetchdata(true);
       };
 
       socket.on("followupUpdated", handleSync);

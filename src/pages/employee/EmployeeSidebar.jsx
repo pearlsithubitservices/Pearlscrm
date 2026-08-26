@@ -15,6 +15,7 @@ import {
   Share2,
   Menu,
   X,
+  Briefcase,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -32,6 +33,11 @@ export default function Sidebar() {
       name: 'Dashboard',
       icon: BarChart3,
       path: '/employee/dashboard',
+    },
+    {
+      name: 'Projects',
+      icon: Briefcase,
+      path: '/employee/projects',
     },
     {
       name: 'Leads Management',

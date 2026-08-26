@@ -14,37 +14,107 @@ import ClientActivity from '../components/ProjectDetails/ProjectActivity.jsx'
 import { useNavigate, useParams } from "react-router-dom";
 import useEmployees from "../Hooks/useEmployees.js";
 
+import { apiUrl } from "../config/api.js";
+import { socket } from "../config/socket.js";
+
 export default function ClientDetails({ tasks }) {
     const [activeTab, setActiveTab] = useState("Overview");
     const navigate = useNavigate();
     const { id } = useParams();
     const { employees } = useEmployees();
     const [projects, setProjects] = useState([]);
-    console.log(projects);
-    const projectById = projects.filter((item) =>
-        item._id == id);
-    console.log(projectById);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editData, setEditData] = useState({
+        title: "",
+        company: "",
+        companylocation: "",
+        status: "",
+        priority: "",
+        progress: 0,
+        description: "",
+        dueDate: "",
+        budget: "",
+    });
+
+    const fetchProjects = async () => {
+        try {
+            const res = await fetch(apiUrl('/projects'));
+            if (!res.ok) throw new Error("Failed to fetch projects");
+            const data = await res.json();
+            setProjects(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error fetching project details:", error);
+        }
+    };
+
     useEffect(() => {
-        const fetchProjects = async () => {
-            try {
-                // const res = await fetch("http://localhost:5000/api/projects");
-                const res = await fetch("https://pearlscrm.onrender.com/api/projects");
-
-                if (!res.ok) {
-                    throw new Error("Failed to fetch projects");
-                }
-
-                const data = await res.json();
-                setProjects(data);
-
-                console.log(data);
-            } catch (error) {
-                console.error(error);
-            }
-        };
-
         fetchProjects();
-    }, []);
+
+        if (socket) {
+            const handleSync = () => fetchProjects();
+            socket.on("projectUpdated", handleSync);
+            return () => socket.off("projectUpdated", handleSync);
+        }
+    }, [id]);
+
+    const projectById = useMemo(() => {
+        return projects.filter((item) => String(item._id || item.id) === String(id));
+    }, [projects, id]);
+
+    const currentProject = projectById[0] || {};
+
+    const handleOpenEdit = () => {
+        if (!currentProject) return;
+        setEditData({
+            title: currentProject.title || "",
+            company: currentProject.company || "",
+            companylocation: currentProject.companylocation || "",
+            status: currentProject.status || "In Progress",
+            priority: currentProject.priority || "Medium",
+            progress: currentProject.progress || 0,
+            description: currentProject.description || "",
+            dueDate: currentProject.dueDate ? currentProject.dueDate.split("T")[0] : "",
+            budget: currentProject.budget || "",
+        });
+        setIsEditOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        try {
+            const res = await fetch(apiUrl(`/projects/${id}`), {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(editData),
+            });
+
+            if (res.ok) {
+                alert("Project updated successfully!");
+                setIsEditOpen(false);
+                fetchProjects();
+            } else {
+                alert("Failed to update project");
+            }
+        } catch (error) {
+            console.error("Error updating project:", error);
+            alert("Error saving project changes");
+        }
+    };
+
+    const handlePriorityUpdate = async (newPriority) => {
+        if (!id) return;
+        try {
+            const res = await fetch(apiUrl(`/projects/${id}`), {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ priority: newPriority }),
+            });
+            if (res.ok) {
+                fetchProjects();
+            }
+        } catch (error) {
+            console.error("Error updating priority:", error);
+        }
+    };
 
     //GETTING EMPLOYEES NAME
     const employeeMap = useMemo(() => {
@@ -69,16 +139,18 @@ export default function ClientDetails({ tasks }) {
 
             case "Milestones":
                 return <ClientMilestone
-                    tasks={tasks} />
+                    projects={projectById}
+                    fetchProjects={fetchProjects} />;
 
             case "Notes":
-                return <ClientNotes />;
+                return <ClientNotes projects={projectById} fetchProjects={fetchProjects} />;
 
             case "Team":
                 return <ClientTeam
-                    projects={projectById} />;
+                    projects={projectById}
+                    fetchProjects={fetchProjects} />;
             case "Activity":
-                return <ClientActivity />;
+                return <ClientActivity projects={projectById} />;
 
 
 
@@ -144,16 +216,29 @@ export default function ClientDetails({ tasks }) {
                                     {projectById[0]?.status || "Qualified"}
                                 </div>
 
-                                <div className="px-4 py-2 rounded-full bg-[#FFD3C8] text-[#FF5B2E] text-sm font-semibold flex items-center gap-1">
-                                    {projectById[0]?.priority || "cold"}
-                                </div>
+                                <select
+                                    value={projectById[0]?.priority || "Medium"}
+                                    onChange={(e) => handlePriorityUpdate(e.target.value)}
+                                    className="px-4 py-2 rounded-full bg-[#FFD3C8] text-[#FF5B2E] text-sm font-semibold outline-none border-none cursor-pointer hover:scale-105 transition"
+                                >
+                                    <option value="Urgent">🔥 Urgent</option>
+                                    <option value="Hot">🔥 Hot</option>
+                                    <option value="High">⚡ High</option>
+                                    <option value="Medium">⚡ Medium</option>
+                                    <option value="Warm">⚡ Warm</option>
+                                    <option value="Low">🌱 Low</option>
+                                    <option value="Cold">❄️ Cold</option>
+                                </select>
                                 <div>
                                     <X size={20} className="bg-red-500 rounded text-white hover:bg-white hover:text-red-700" onClick={() => navigate(-1)} />
                                 </div>
                             </div>
 
                             {/* Edit Button */}
-                            <button className="flex items-center gap-2 px-5 py-3 rounded-lg border border-gray-400 hover:bg-gray-100 transition">
+                            <button
+                                onClick={handleOpenEdit}
+                                className="flex items-center gap-2 px-5 py-3 rounded-lg border border-gray-400 hover:bg-gray-100 transition cursor-pointer"
+                            >
                                 <Pencil size={16} />
                                 <span className="text-sm font-medium">
                                     Edit
@@ -215,6 +300,143 @@ export default function ClientDetails({ tasks }) {
                 </AnimatePresence>
 
             </motion.div>
+
+            {/* EDIT PROJECT MODAL */}
+            {isEditOpen && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white rounded-2xl p-6 md:p-8 max-w-2xl w-full space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]"
+                    >
+                        <div className="flex justify-between items-center border-b pb-3">
+                            <h2 className="text-xl font-bold text-[#0b2b57]">Edit Project</h2>
+                            <button
+                                onClick={() => setIsEditOpen(false)}
+                                className="text-gray-400 hover:text-red-500 p-1"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold text-gray-700">
+                            <div>
+                                <label className="block mb-1">Project Title</label>
+                                <input
+                                    type="text"
+                                    value={editData.title}
+                                    onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                                    className="w-full border rounded-lg p-2.5 outline-none font-normal"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1">Company / Client</label>
+                                <input
+                                    type="text"
+                                    value={editData.company}
+                                    onChange={(e) => setEditData({ ...editData, company: e.target.value })}
+                                    className="w-full border rounded-lg p-2.5 outline-none font-normal"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1">Company Location</label>
+                                <input
+                                    type="text"
+                                    value={editData.companylocation}
+                                    onChange={(e) => setEditData({ ...editData, companylocation: e.target.value })}
+                                    className="w-full border rounded-lg p-2.5 outline-none font-normal"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1">Status</label>
+                                <select
+                                    value={editData.status}
+                                    onChange={(e) => setEditData({ ...editData, status: e.target.value })}
+                                    className="w-full border rounded-lg p-2.5 outline-none font-normal bg-white"
+                                >
+                                    <option value="Pending">Pending</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block mb-1">Priority</label>
+                                <select
+                                    value={editData.priority}
+                                    onChange={(e) => setEditData({ ...editData, priority: e.target.value })}
+                                    className="w-full border rounded-lg p-2.5 outline-none font-normal bg-white"
+                                >
+                                    <option value="Hot">Hot (High)</option>
+                                    <option value="Warm">Warm (Medium)</option>
+                                    <option value="Cold">Cold (Low)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block mb-1">Progress (%)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={editData.progress}
+                                    onChange={(e) => setEditData({ ...editData, progress: Number(e.target.value) })}
+                                    className="w-full border rounded-lg p-2.5 outline-none font-normal"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1">Due Date</label>
+                                <input
+                                    type="date"
+                                    value={editData.dueDate}
+                                    onChange={(e) => setEditData({ ...editData, dueDate: e.target.value })}
+                                    className="w-full border rounded-lg p-2.5 outline-none font-normal"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1">Budget</label>
+                                <input
+                                    type="text"
+                                    value={editData.budget}
+                                    onChange={(e) => setEditData({ ...editData, budget: e.target.value })}
+                                    className="w-full border rounded-lg p-2.5 outline-none font-normal"
+                                    placeholder="e.g. ₹50,000"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
+                            <textarea
+                                rows={3}
+                                value={editData.description}
+                                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                className="w-full border rounded-lg p-2.5 outline-none text-xs"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-3 border-t">
+                            <button
+                                onClick={() => setIsEditOpen(false)}
+                                className="px-5 py-2.5 rounded-lg border text-gray-600 hover:bg-gray-100 text-xs font-semibold"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                className="px-6 py-2.5 rounded-lg bg-[#2563a9] text-white hover:bg-blue-700 text-xs font-semibold shadow-md"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </>
     );
 }

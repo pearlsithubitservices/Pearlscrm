@@ -1,3 +1,7 @@
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -7,6 +11,7 @@ const path = require("path");
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 const connectDB = require("./db");
+
 const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const leadRoutes = require("./routes/leadRoutes");
@@ -36,6 +41,7 @@ const EmpSkillCertification = require("./routes/SkillCertificationRoutes");
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
 const EmpActivityRoutes= require("./routes/TaskActivityRoute");
 const EmpTotalLeave=require('./routes/TotalLeaveRoutes');
+const TaskDocumentRoutes = require("./routes/TaskDocumentRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
@@ -62,6 +68,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/task-documents", TaskDocumentRoutes);
 app.use("/api/followups", followupRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/attendance", attendanceRoutes);

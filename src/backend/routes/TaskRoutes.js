@@ -56,13 +56,20 @@ router.get("/", async (req, res) => {
   try {
     const tasks = await Task.find().sort({ createdAt: -1 }).lean();
 
-    // Fetch employees safely to resolve assignedTo whether it's an ObjectId, UID, or string name
+    // Fetch employees & users safely to resolve assignedTo whether it's an ObjectId, UID, email, or string name
     const Employee = require("../models/Employee");
+    const User = require("../models/User");
     let employees = [];
+    let users = [];
     try {
       employees = await Employee.find().lean();
     } catch (e) {
       console.warn("Could not fetch employees for Task lookup:", e.message);
+    }
+    try {
+      users = await User.find().lean();
+    } catch (e) {
+      console.warn("Could not fetch users for Task lookup:", e.message);
     }
 
     const employeeMap = {};
@@ -73,6 +80,23 @@ router.get("/", async (req, res) => {
       if (emp.uid) employeeMap[emp.uid] = emp;
       if (emp.name) employeeMap[emp.name] = emp;
       if (emp.employeeName) employeeMap[emp.employeeName] = emp;
+      if (emp.email) employeeMap[emp.email.toLowerCase()] = emp;
+    });
+
+    users.forEach((u) => {
+      const name = u.name || u.employeeName || u.displayName || u.email;
+      const empObj = {
+        _id: u._id,
+        name: name,
+        employeeName: name,
+        email: u.email,
+        uid: u.uid || u._id,
+      };
+      if (u._id) employeeMap[u._id.toString()] = empObj;
+      if (u.id) employeeMap[u.id.toString()] = empObj;
+      if (u.uid) employeeMap[u.uid] = empObj;
+      if (u.name) employeeMap[u.name] = empObj;
+      if (u.email) employeeMap[u.email.toLowerCase()] = empObj;
     });
 
     const populatedTasks = tasks.map((task) => {
@@ -80,7 +104,8 @@ router.get("/", async (req, res) => {
         if (typeof task.assignedTo === "object") {
           return task;
         }
-        const found = employeeMap[task.assignedTo];
+        const lookupKey = String(task.assignedTo).toLowerCase();
+        const found = employeeMap[task.assignedTo] || employeeMap[lookupKey];
         if (found) {
           return {
             ...task,

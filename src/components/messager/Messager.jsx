@@ -32,8 +32,6 @@ import { useAuth } from "../../context/AuthContext";
 import useChat from "../../Hooks/chat.js";
 import useEmployees from "../../Hooks/useEmployees";
 import { apiUrl } from "../../config/api.js";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../lib/firebase";
 import CollabCreateView from "./CollabCreateView";
 import AccessPermissionsModal from "./AccessPermissionsModal";
 
@@ -47,7 +45,10 @@ export default function Messenger() {
     user?.employeeName ||
     (user?.email ? user.email.split("@")[0] : null);
 
-  const userId = userDisplayName || user?.uid || user?._id || "admin";
+  const userEmail = user?.email || "";
+  const userDbId = user?._id || user?.id || user?.uid || "";
+
+  const userId = userDbId || userEmail || userDisplayName || "admin";
   const { employees: hookEmployees } = useEmployees();
 
   const [activeTab, setActiveTab] = useState("Chats");
@@ -201,52 +202,42 @@ export default function Messenger() {
     try {
       setLoadingModalData(true);
       const combined = [];
-      const seenIds = new Set();
+      const seenKeys = new Set();
 
-      // 1. Fetch from Firestore `employees`
-      try {
-        const empSnap = await getDocs(collection(db, "employees"));
-        empSnap.docs.forEach((docSnap) => {
-          const d = docSnap.data();
-          const item = { _id: docSnap.id, id: docSnap.id, ...d };
-          combined.push(item);
-          if (item.email) seenIds.add(item.email.toLowerCase());
-          if (docSnap.id) seenIds.add(docSnap.id);
-        });
-      } catch (e) {
-        console.log("Firestore employees fetch error:", e);
-      }
-
-      // 2. Fetch from Firestore `users`
-      try {
-        const userSnap = await getDocs(collection(db, "users"));
-        userSnap.docs.forEach((docSnap) => {
-          const d = docSnap.data();
-          const item = { _id: docSnap.id, id: docSnap.id, ...d };
-          const emailKey = d.email ? d.email.toLowerCase() : docSnap.id;
-          if (!seenIds.has(emailKey)) {
-            combined.push(item);
-            seenIds.add(emailKey);
-          }
-        });
-      } catch (e) {
-        console.log("Firestore users fetch error:", e);
-      }
-
-      // 3. Fetch from Backend API `/employees`
+      // 1. Fetch from Backend API `/employees`
       try {
         const res = await fetch(apiUrl("/employees"));
-        const data = await res.json();
-        const apiList = Array.isArray(data) ? data : data.data || data.employees || [];
-        apiList.forEach((emp) => {
-          const emailKey = emp.email ? emp.email.toLowerCase() : (emp._id || emp.id);
-          if (emailKey && !seenIds.has(emailKey)) {
-            combined.push(emp);
-            seenIds.add(emailKey);
-          }
-        });
+        if (res.ok) {
+          const data = await res.json();
+          const apiList = Array.isArray(data) ? data : data.data || data.employees || [];
+          apiList.forEach((emp) => {
+            const key = String(emp.email || emp._id || emp.id || emp.uid || "").toLowerCase();
+            if (key && !seenKeys.has(key)) {
+              combined.push(emp);
+              seenKeys.add(key);
+            }
+          });
+        }
       } catch (e) {
         console.log("API employees fetch error:", e);
+      }
+
+      // 2. Fetch from Backend API `/auth/users`
+      try {
+        const resUsers = await fetch(apiUrl("/auth/users"));
+        if (resUsers.ok) {
+          const userData = await resUsers.json();
+          const rawUsers = Array.isArray(userData) ? userData : (userData?.data || []);
+          rawUsers.forEach((u) => {
+            const key = String(u.email || u._id || u.id || "").toLowerCase();
+            if (key && !seenKeys.has(key)) {
+              combined.push(u);
+              seenKeys.add(key);
+            }
+          });
+        }
+      } catch (e) {
+        console.log("API users fetch error:", e);
       }
 
       setEmployeeList(combined);
@@ -262,26 +253,14 @@ export default function Messenger() {
       let list = [];
       try {
         const res = await fetch(apiUrl("/tasks"));
-        const data = await res.json();
-        const apiTasks = Array.isArray(data) ? data : data.data || [];
-        if (apiTasks && apiTasks.length > 0) list = apiTasks;
+        if (res.ok) {
+          const data = await res.json();
+          const apiTasks = Array.isArray(data) ? data : data.data || [];
+          if (apiTasks && apiTasks.length > 0) list = apiTasks;
+        }
       } catch (e) {
         console.log("API tasks fetch error:", e);
       }
-
-      if (!list || list.length === 0) {
-        try {
-          const snapshot = await getDocs(collection(db, "tasks"));
-          list = snapshot.docs.map((doc) => ({
-            _id: doc.id,
-            id: doc.id,
-            ...doc.data(),
-          }));
-        } catch (e) {
-          console.log("Firestore tasks fetch error:", e);
-        }
-      }
-
       setTaskList(list);
     } catch (err) {
       console.error("Error fetching dynamic tasks:", err);
@@ -367,8 +346,19 @@ export default function Messenger() {
 
   const otherParticipant =
     activeChat?.participants?.find((p) => {
-      const pStr = typeof p === "object" ? (p._id || p.id || p.uid || p.email) : p;
-      return pStr !== userId && pStr !== user?.email && pStr !== user?.uid;
+      const pStr = typeof p === "object" ? (p._id || p.id || p.uid || p.email || p.name) : String(p);
+      const lowerP = String(pStr).toLowerCase();
+      const lowerUser = String(userId).toLowerCase();
+      const lowerEmail = String(user?.email || "").toLowerCase();
+      const lowerId = String(user?._id || user?.id || "").toLowerCase();
+      const lowerName = String(userDisplayName || "").toLowerCase();
+
+      return (
+        lowerP !== lowerUser &&
+        lowerP !== lowerEmail &&
+        lowerP !== lowerId &&
+        lowerP !== lowerName
+      );
     }) || activeChat?.participants?.[0];
 
   // Filter chats by tab and search
@@ -382,9 +372,20 @@ export default function Messenger() {
     }
 
     const otherEmp = c.participants?.find((p) => {
-      const pStr = typeof p === "object" ? (p._id || p.id || p.uid || p.email) : p;
-      return pStr !== userId && pStr !== user?.email && pStr !== user?.uid;
-    });
+      const pStr = typeof p === "object" ? (p._id || p.id || p.uid || p.email || p.name) : String(p);
+      const lowerP = String(pStr).toLowerCase();
+      const lowerUser = String(userId).toLowerCase();
+      const lowerEmail = String(user?.email || "").toLowerCase();
+      const lowerId = String(user?._id || user?.id || "").toLowerCase();
+      const lowerName = String(userDisplayName || "").toLowerCase();
+
+      return (
+        lowerP !== lowerUser &&
+        lowerP !== lowerEmail &&
+        lowerP !== lowerId &&
+        lowerP !== lowerName
+      );
+    }) || c.participants?.[0];
 
     const name = c.isGroup ? c.chatName : getEmployeeName(otherEmp);
     return (name || "").toLowerCase().includes(search.toLowerCase());
