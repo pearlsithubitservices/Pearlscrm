@@ -15,7 +15,7 @@ const EmployeeDetails = () => {
   const { id } = useParams()
   const { employees } = useEmployees();
   const currentEmployee = employees?.find((item) => (
-    item.id == id
+    String(item.id) === String(id) || String(item._id) === String(id) || String(item.uid) === String(id)
   ));
   console.log(currentEmployee);
 

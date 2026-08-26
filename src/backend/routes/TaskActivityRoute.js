@@ -1,12 +1,18 @@
 const express = require("express");
 const router = express.Router();
 
-const Activity = require("../models/TaskModels/TaskActivityModel");
+const { getIO } = require("../Socket");
 
 // Create Activity
 router.post("/", async (req, res) => {
     try {
         const activity = await Activity.create(req.body);
+
+        const io = getIO();
+        if (io) {
+            io.emit("taskActivityAdded", activity);
+            io.emit("taskUpdated", { taskId: req.body.taskId });
+        }
 
         res.status(201).json({
             success: true,
@@ -19,10 +25,18 @@ router.post("/", async (req, res) => {
         });
     }
 });
-// Get All Activities
+// Get All Activities (with optional query filters: taskId, employee_uid)
 router.get("/", async (req, res) => {
     try {
-        const activities = await Activity.find().sort({ createdAt: -1 });
+        const filter = {};
+        if (req.query.taskId) {
+            filter.taskId = req.query.taskId;
+        }
+        if (req.query.employee_uid) {
+            filter.employee_uid = req.query.employee_uid;
+        }
+
+        const activities = await Activity.find(filter).sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,

@@ -70,3 +70,31 @@
   scrollbar-width: thin;
   scrollbar-color: #2563a9 #f1f5f9;
 }
+
+/* Modern Form Modal Custom Scrollbar matching CRM Aesthetic */
+.modal-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.5);
+  border-radius: 12px;
+  margin: 12px 0;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3167dc 0%, #2563a9 100%);
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 6px rgba(49, 103, 220, 0.25);
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #1d4ed8 0%, #1e3a8a 100%);
+}
+
+.modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3167dc rgba(226, 232, 240, 0.5);
+}

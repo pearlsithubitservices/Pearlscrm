@@ -1,55 +1,99 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import useEmployees from "../../../Hooks/useEmployees";
+import { apiUrl } from "../../../config/api";
 
-const ETasksOverview = ({ tasks }) => {
+const ETasksOverview = ({ tasks, onRefresh }) => {
     const { employees } = useEmployees();
+    const taskId = tasks?._id || tasks?.id || tasks?.uid;
 
-    const getAssignerName = () => {
-        if (!tasks) return "Admin";
-        if (tasks.assignedFrom && typeof tasks.assignedFrom === "string" && !/^[0-9a-fA-F]{24}$/.test(tasks.assignedFrom)) {
-            return tasks.assignedFrom;
+    const [currentStatus, setCurrentStatus] = useState(tasks?.status || "Pending");
+    const [currentPriority, setCurrentPriority] = useState(tasks?.priority || "Cold");
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (tasks) {
+            setCurrentStatus(tasks.status || "Pending");
+            setCurrentPriority(tasks.priority || "Cold");
         }
-        if (tasks.createdBy && typeof tasks.createdBy === "string" && !/^[0-9a-fA-F]{24}$/.test(tasks.createdBy)) {
-            return tasks.createdBy;
+    }, [tasks]);
+
+    const handleQuickSave = async () => {
+        if (!taskId) return;
+        setSaving(true);
+        try {
+            const res = await fetch(apiUrl(`/tasks/${taskId}`), {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    status: currentStatus,
+                    priority: currentPriority,
+                }),
+            });
+
+            if (res.ok) {
+                alert("Task status & priority updated successfully!");
+                if (onRefresh) onRefresh();
+            } else {
+                alert("Failed to update task status.");
+            }
+        } catch (err) {
+            console.error("Error updating task status:", err);
+            alert("Failed to update task status.");
+        } finally {
+            setSaving(false);
         }
+    };
 
-        const rawId = tasks.assignedBy || tasks.assignedFrom || tasks.createdBy;
-        if (!rawId) return "Admin";
+    const getPersonName = (val, defaultName = "Unassigned") => {
+        if (!val) return defaultName;
+        if (typeof val === 'object' && val !== null) {
+            return val.name || val.employeeName || val.displayName || val.email || defaultName;
+        }
+        const strVal = String(val).trim();
+        if (!strVal) return defaultName;
+        if (strVal.toLowerCase() === "admin") return "Admin";
 
-        const strId = String(rawId).toLowerCase().trim();
-        if (strId === "admin") return "Admin";
-
+        const lowerVal = strVal.toLowerCase();
         const found = (employees || []).find((emp) => {
             if (!emp) return false;
             const eId = String(emp._id || emp.id || emp.uid || "").toLowerCase();
             const eEmail = String(emp.email || "").toLowerCase();
             const eName = String(emp.employeeName || emp.name || emp.displayName || "").toLowerCase();
             return (
-                eId === strId ||
-                eEmail === strId ||
-                (eEmail && strId.includes(eEmail)) ||
-                (eName && eName === strId)
+                (eId && eId === lowerVal) ||
+                (eEmail && eEmail === lowerVal) ||
+                (eEmail && lowerVal.includes(eEmail)) ||
+                (eName && eName === lowerVal) ||
+                (eName && lowerVal.includes(eName))
             );
         });
 
         if (found) {
-            return found.employeeName || found.name || found.displayName || (found.email ? found.email.split("@")[0] : strId);
+            return found.employeeName || found.name || found.displayName || (found.email ? found.email.split("@")[0] : strVal);
         }
 
-        if (typeof rawId === "string" && rawId.includes("@")) {
-            const prefix = rawId.split("@")[0];
+        if (strVal.includes("@")) {
+            const prefix = strVal.split("@")[0];
             return prefix.charAt(0).toUpperCase() + prefix.slice(1);
         }
 
-        if (typeof rawId === "string" && !/^[0-9a-fA-F]{24}$/.test(rawId) && rawId.length < 20) {
-            return rawId;
+        const isRawId = /^[0-9a-fA-F]{24}$/.test(strVal) || /^[A-Za-z0-9_-]{20,}$/.test(strVal);
+        if (isRawId) {
+            return defaultName;
         }
 
-        return "Admin";
+        return strVal;
     };
 
-    const assignerName = getAssignerName();
+    const assignerName = getPersonName(tasks?.assignedBy || tasks?.assignedFrom || tasks?.createdBy, "Admin");
+    const assignedToName = getPersonName(tasks?.assignedTo, "Unassigned");
+
+    const formattedDate = (() => {
+        if (!tasks?.dueDate) return "No Due Date";
+        const d = new Date(tasks.dueDate);
+        return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : tasks.dueDate;
+    })();
 
     return (
         <motion.div
@@ -57,33 +101,26 @@ const ETasksOverview = ({ tasks }) => {
             className=" rounded-xl p-4 "
         >
 
-            <div className="flex flex-col gap-4 ml-4">
-                <h1 className="font-semibold">Project Name</h1>
-                <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks?.titl || tasks?.title || "Sri Sai Millets"}</p>
-                </div>
-
-            </div>
             <div className="flex flex-col gap-4 ml-4 mt-4">
-                <h1 className="font-semibold">Task Title</h1>
-                <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks?.title || " ReDesign the onboarding experiences for enterprise accounts"}</p>
+                <h1 className="font-semibold text-gray-600">TASK TITLE</h1>
+                <div className="bg-white rounded-lg w-full p-4 border border-gray-100 shadow-sm">
+                    <p className="font-bold text-gray-800 text-lg">{tasks?.title || tasks?.taskName || "No Title"}</p>
                 </div>
-
             </div>
+
             <div className="flex flex-col gap-4 ml-4 mt-4">
-                <h1 className="font-semibold">Task Description</h1>
-                <div className="bg-white rounded-lg w-full h-20 p-2">
-                    <p>{tasks?.notes || tasks?.description || " ReDesign the onboarding experiences for enterprise accounts"}</p>
+                <h1 className="font-semibold text-gray-600">TASK DESCRIPTION</h1>
+                <div className="bg-white rounded-lg w-full p-4 border border-gray-100 shadow-sm">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{tasks?.description || "No description provided."}</p>
                 </div>
-
             </div>
-            <div className="mt-4 w-full ml-4">
-                <h1 className="text-lg  mb-4 font-semibold">
-                    Task Informations
+
+            <div className="mt-6 w-full ml-4">
+                <h1 className="text-lg mb-4 font-bold text-[#082f57]">
+                    TASK INFORMATION
                 </h1>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
 
                     {/* Due Date */}
                     <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col gap-2">
@@ -92,7 +129,18 @@ const ETasksOverview = ({ tasks }) => {
                         </h3>
 
                         <p className="text-base font-semibold text-gray-800">
-                            {tasks?.dueDate || "26-06-2026"}
+                            {formattedDate}
+                        </p>
+                    </div>
+
+                    {/* Assigned To */}
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col gap-2">
+                        <h3 className="text-sm font-medium text-gray-500">
+                            ASSIGNED TO
+                        </h3>
+
+                        <p className="text-base font-semibold text-blue-700">
+                            {assignedToName}
                         </p>
                     </div>
 
@@ -102,11 +150,50 @@ const ETasksOverview = ({ tasks }) => {
                             ASSIGNED BY
                         </h3>
 
-                        <p className="text-base font-semibold text-gray-800">
+                        <p className="text-base font-semibold text-purple-700">
                             {assignerName}
                         </p>
                     </div>
 
+                </div>
+
+                {/* Quick Update Status & Priority Card */}
+                <div className="bg-white rounded-xl p-5 shadow-xs border border-gray-200 mt-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex flex-wrap gap-6 items-center">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">UPDATE STATUS</label>
+                            <select
+                                value={currentStatus}
+                                onChange={(e) => setCurrentStatus(e.target.value)}
+                                className="border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold bg-gray-50 text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                            >
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">UPDATE PRIORITY</label>
+                            <select
+                                value={currentPriority}
+                                onChange={(e) => setCurrentPriority(e.target.value)}
+                                className="border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold bg-gray-50 text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                            >
+                                <option value="Hot">Hot</option>
+                                <option value="Warm">Warm</option>
+                                <option value="Cold">Cold</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button
+                        disabled={saving}
+                        onClick={handleQuickSave}
+                        className="bg-[#2563a9] hover:bg-[#1d4ed8] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                    >
+                        {saving ? "Saving..." : "Save Status & Priority"}
+                    </button>
                 </div>
             </div>
             <div className="mt-4 w-full ml-4">

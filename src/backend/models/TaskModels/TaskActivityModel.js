@@ -24,6 +24,10 @@ const activitySchema = new mongoose.Schema(
                     minute: "2-digit",
                 }),
         },
+        taskId: {
+            type: String,
+            trim: true,
+        },
     },
     {
         timestamps: true,

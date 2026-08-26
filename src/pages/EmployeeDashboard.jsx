@@ -18,7 +18,17 @@ import {
 } from 'lucide-react';
 import EmployeeSidebar
 from './EmployeeSidebar';
-import { useAuth } from '../context/AuthContext';
+
+import { auth, db } from '../lib/firebase';
+
+import {
+  collection,
+  query,
+  where,
+  getDocs
+} from 'firebase/firestore';
+
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function EmployeeDashboard() {
 
@@ -28,12 +38,133 @@ export default function EmployeeDashboard() {
   const [searchQuery, setSearchQuery] =
     useState('');
 
-  const { user } = useAuth();
+  
 
-  const currentUser = user || null;
-  const tasks = [];
-  const leads = [];
-  const followups = [];
+ const [currentUser, setCurrentUser] =
+  useState(null);
+
+const [tasks, setTasks] =
+  useState([]);
+
+const [leads, setLeads] =
+  useState([]);
+
+const [followups, setFollowups] =
+  useState([]);
+  useEffect(() => {
+
+  const unsubscribe =
+    onAuthStateChanged(
+      auth,
+      async (user) => {
+
+        if (user) {
+
+          // CURRENT USER DETAILS
+
+          const userQuery = query(
+            collection(db, 'users'),
+            where('uid', '==', user.uid)
+          );
+
+          const userSnapshot =
+            await getDocs(userQuery);
+
+          userSnapshot.forEach((doc) => {
+
+            setCurrentUser(doc.data());
+
+          });
+
+          // TASKS
+
+          const taskQuery = query(
+            collection(db, 'tasks'),
+            where(
+              'assignedTo',
+              '==',
+              user.uid
+            )
+          );
+
+          const taskSnapshot =
+            await getDocs(taskQuery);
+
+          const taskData = [];
+
+          taskSnapshot.forEach((doc) => {
+
+            taskData.push({
+              id: doc.id,
+              ...doc.data(),
+            });
+
+          });
+
+          setTasks(taskData);
+
+          // LEADS
+
+          const leadsQuery = query(
+            collection(db, 'leads'),
+            where(
+              'assignedTo',
+              '==',
+              user.uid
+            )
+          );
+
+          const leadsSnapshot =
+            await getDocs(leadsQuery);
+
+          const leadsData = [];
+
+          leadsSnapshot.forEach((doc) => {
+
+            leadsData.push({
+              id: doc.id,
+              ...doc.data(),
+            });
+
+          });
+
+          setLeads(leadsData);
+
+          // FOLLOWUPS
+
+          const followupQuery = query(
+            collection(db, 'followups'),
+            where(
+              'assignedTo',
+              '==',
+              user.uid
+            )
+          );
+
+          const followupSnapshot =
+            await getDocs(followupQuery);
+
+          const followupData = [];
+
+          followupSnapshot.forEach((doc) => {
+
+            followupData.push({
+              id: doc.id,
+              ...doc.data(),
+            });
+
+          });
+
+          setFollowups(followupData);
+
+        }
+
+      }
+    );
+
+  return () => unsubscribe();
+
+}, []);
   const stats = [
 
     {
