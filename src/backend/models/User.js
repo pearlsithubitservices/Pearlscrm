@@ -73,6 +73,7 @@ const userSchema = new mongoose.Schema(
         bankName: String,
         branchName: String,
         ifscCode: String,
+        accountType: String,
       },
       verification: {
         status: String,

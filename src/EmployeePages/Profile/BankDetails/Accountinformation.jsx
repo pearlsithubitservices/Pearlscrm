@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import InputField from "../../../components/InputField";
 import { Eye, EyeOff } from "lucide-react";
-import { getProfile } from "../../../services/profileApi";
+import { getProfile, updateProfile } from "../../../services/profileApi";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function AccountInformation() {
+    const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState({ type: "", text: "" });
     const [showAccount, setShowAccount] = useState(false);
     const [showConfirmAccount, setShowConfirmAccount] = useState(false);
-    const isEditing = false;
+    const { fetchCurrentUser } = useAuth();
 
     const [form, setForm] = useState({
         accountHolderName: "",
@@ -16,14 +20,19 @@ export default function AccountInformation() {
         confirmAccountNumber: "",
         ifscCode: "",
         accountType: "",
-        bankBranchAddress: "",
+        branchName: "",
     });
 
     useEffect(() => {
         getProfile().then(({ data }) => {
             const bank = data.user?.profile?.bankDetails || {};
-            setForm((previous) => ({ ...previous, ...bank, confirmAccountNumber: bank.accountNumber || "" }));
-        }).catch(() => undefined);
+            setForm((previous) => ({
+                ...previous,
+                ...bank,
+                branchName: bank.branchName || bank.bankBranchAddress || "",
+                confirmAccountNumber: bank.accountNumber || "",
+            }));
+        }).catch((error) => setMessage({ type: "error", text: error.response?.data?.message || "Failed to load bank details" }));
     }, []);
 
     const handleChange = (e) => {
@@ -31,6 +40,32 @@ export default function AccountInformation() {
             ...prev,
             [e.target.name]: e.target.value,
         }));
+    };
+
+    const handleSubmit = async () => {
+        if (!isEditing) {
+            setIsEditing(true);
+            setMessage({ type: "", text: "" });
+            return;
+        }
+        if (form.accountNumber !== form.confirmAccountNumber) {
+            setMessage({ type: "error", text: "Account numbers do not match" });
+            return;
+        }
+
+        setSaving(true);
+        setMessage({ type: "", text: "" });
+        try {
+            const { confirmAccountNumber, ...bankDetails } = form;
+            await updateProfile({ bankDetails });
+            await fetchCurrentUser();
+            setIsEditing(false);
+            setMessage({ type: "success", text: "Bank details updated successfully" });
+        } catch (error) {
+            setMessage({ type: "error", text: error.response?.data?.message || "Failed to update bank details" });
+        } finally {
+            setSaving(false);
+        }
     };
 
     const fields = [
@@ -99,8 +134,16 @@ export default function AccountInformation() {
                     Bank Account Information
                 </h2>
 
-                <span className="text-sm text-gray-500">Managed by Admin / HR</span>
+                <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={saving}
+                    className="bg-blue-900 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:scale-105 transition duration-300 disabled:opacity-60 disabled:hover:scale-100"
+                >
+                    {saving ? "Saving..." : isEditing ? "Save" : "Edit"}
+                </button>
             </div>
+            {message.text && <p className={`mb-4 text-sm ${message.type === "error" ? "text-red-600" : "text-green-600"}`}>{message.text}</p>}
 
             {/* Form Fields */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -124,9 +167,9 @@ export default function AccountInformation() {
                 <div className="lg:col-span-2">
                     <InputField
                         label="Bank Branch Address"
-                        name="bankBranchAddress"
+                        name="branchName"
                         type="textarea"
-                        value={form.bankBranchAddress}
+                        value={form.branchName}
                         onChange={handleChange}
                         placeholder="Enter Branch Address"
                         disabled={!isEditing}

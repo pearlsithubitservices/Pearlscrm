@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState
 } from 'react';
 
@@ -13,6 +14,7 @@ import {
 import EmployeeSidebar
 from './EmployeeSidebar';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../lib/api';
 
 export default function EmployeeDashboard() {
 
@@ -23,101 +25,69 @@ export default function EmployeeDashboard() {
 
   const currentUser = user || null;
 
+  const [tasks, setTasks] =
+    useState([]);
+
   const [followups, setFollowups] =
     useState([]);
 
   useEffect(() => {
+    if (!user) {
+      setTasks([]);
+      setFollowups([]);
+      return;
+    }
 
-    const unsubscribe =
-      onAuthStateChanged(
-        auth,
-        async (user) => {
+    const userValues = [
+      user._id,
+      user.uid,
+      user.email,
+      user.name,
+      user.displayName,
+      user.employeeName,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase());
 
-          if (user) {
+    const matchesAssignedUser = (item) => {
+      const assignedTo = item?.assignedTo;
+      const assignedValue = typeof assignedTo === 'object'
+        ? assignedTo?._id || assignedTo?.uid || assignedTo?.email || assignedTo?.name
+        : assignedTo;
+      return userValues.includes(String(assignedValue || '').toLowerCase());
+    };
 
-            // USER DETAILS
+    const loadDashboardData = async () => {
+      try {
+        const [tasksResponse, followupsResponse] = await Promise.all([
+          api.get('/tasks'),
+          api.get('/followups'),
+        ]);
 
-            const userQuery = query(
-              collection(db, 'users'),
-              where(
-                'uid',
-                '==',
-                user.uid
-              )
-            );
+        const allTasks = Array.isArray(tasksResponse.data)
+          ? tasksResponse.data
+          : [];
+        setTasks(
+          allTasks
+            .filter(matchesAssignedUser)
+            .map((task) => ({ ...task, id: task._id || task.id }))
+        );
 
-            const userSnapshot =
-              await getDocs(userQuery);
+        const allFollowups = Array.isArray(followupsResponse.data)
+          ? followupsResponse.data
+          : [];
+        setFollowups(
+          allFollowups
+            .filter(matchesAssignedUser)
+            .map((followup) => ({ ...followup, id: followup._id || followup.id }))
+        );
+      } catch (error) {
+        console.error('Error fetching employee dashboard data:', error);
+      }
+    };
 
-            userSnapshot.forEach((doc) => {
-
-              setCurrentUser(
-                doc.data()
-              );
-
-            });
-
-            // TASKS
-            try {
-              const taskRes = await fetch(apiUrl('/tasks'));
-              if (taskRes.ok) {
-                const allTasks = await taskRes.json();
-                const myTasks = (Array.isArray(allTasks) ? allTasks : []).filter((t) => {
-                  const target = String(
-                    typeof t.assignedTo === 'object' ? t.assignedTo?._id || t.assignedTo?.uid || t.assignedTo?.name || '' : t.assignedTo || ''
-                  ).toLowerCase();
-                  const uid = String(user.uid || '').toLowerCase();
-                  const email = String(user.email || '').toLowerCase();
-                  return target === uid || target === email || (email && target.includes(email));
-                }).map(t => ({ ...t, id: t._id || t.id }));
-                setTasks(myTasks);
-              }
-            } catch (err) {
-              console.error("Error fetching tasks in EmployeeDashboard:", err);
-            }
-
-            // FOLLOWUPS
-
-            const followupQuery = query(
-              collection(
-                db,
-                'followups'
-              ),
-              where(
-                'assignedTo',
-                '==',
-                user.uid
-              )
-            );
-
-            const followupSnapshot =
-              await getDocs(
-                followupQuery
-              );
-
-            const followupData = [];
-
-            followupSnapshot.forEach((doc) => {
-
-              followupData.push({
-                id: doc.id,
-                ...doc.data(),
-              });
-
-            });
-
-            setFollowups(
-              followupData
-            );
-
-          }
-
-        }
-      );
-
-    return () => unsubscribe();
-
-  }, []);
+    loadDashboardData();
+  }, [user]);
 
   // STATS
 

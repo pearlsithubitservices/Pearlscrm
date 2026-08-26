@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const http = require("http");
+const path = require("path");
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
@@ -94,7 +95,7 @@ app.use("/api/messages", messageRoutes);
 
 const { startFollowupReminderScheduler } = require("./services/followupReminderScheduler");
 
-const PORT = process.env.PORT || `${process.env.PORT}`;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log("Connected to database with WebSocket support");

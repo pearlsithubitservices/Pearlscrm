@@ -40,7 +40,24 @@ const updateProfile = async (req, res) => {
     const {
       firstName, lastName, email, dob, gender, phone, emergencyNo, empId, address,
       designation, department, joiningDate, reportingManager, workLocation,
+      bankDetails,
     } = req.body;
+    const isBankOnlyUpdate = bankDetails && typeof bankDetails === "object" && !firstName && !email;
+    if (isBankOnlyUpdate) {
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user.id,
+        { $set: { "profile.bankDetails": {
+          accountHolderName: String(bankDetails.accountHolderName || "").trim(),
+          accountNumber: String(bankDetails.accountNumber || "").trim(),
+          bankName: String(bankDetails.bankName || "").trim(),
+          branchName: String(bankDetails.branchName || "").trim(),
+          ifscCode: String(bankDetails.ifscCode || "").trim(),
+          accountType: String(bankDetails.accountType || "").trim(),
+        } } },
+        { new: true, runValidators: true }
+      ).select("-password");
+      return res.json({ success: true, message: "Bank details updated successfully", user: serializeUser(updatedUser) });
+    }
     if (!String(firstName || "").trim() || !String(email || "").trim()) {
       return res.status(422).json({ success: false, message: "First name and email are required" });
     }
