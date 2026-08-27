@@ -39,6 +39,7 @@ const EmpContributionRoutes = require("./routes/ContributionRoutes");
 const EmpActivityRoutes = require("./routes/TaskActivityRoute")
 const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
 
+
 const whatsappCampaignRoutes = require('./routes/WhatsAppCampaign/campaignRoutes');
 const whatsappTemplateRoutes = require('./routes/WhatsAppCampaign/templateRoutes');
 const whatsappBroadcastRoutes = require('./routes/WhatsAppCampaign/broadcastRoutes');
@@ -47,7 +48,11 @@ const whatsappAnalyticsRoutes = require('./routes/WhatsAppCampaign/analyticsRout
 const whatsappConnectionRoutes = require('./routes/WhatsAppCampaign/connectionRoutes');
 const whatsappWebhookRoutes = require('./routes/WhatsAppCampaign/webhookRoutes');
 
-
+const whatsappConversationRoutes = require('./routes/Whatsapp Automation/ConversationRoute');
+const automationRuleRoutes = require("./routes/Whatsapp Automation/AutomationRuleRoutes");
+const messageTemplateRoutes = require("./routes/Whatsapp Automation/messageTemplates");
+const aiConfigRoutes = require("./routes/Whatsapp Automation/aiConfig");
+const reportRoutes = require("./routes/Whatsapp Automation/report");
 connectDB();
 
 const app = express();
@@ -102,7 +107,7 @@ app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
-app.use("/api/marketing-leads",MarketingLeadRoutes);
+//app.use("/api/marketing-leads",MarketingLeadRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
@@ -136,6 +141,11 @@ app.use('/api/whatsapp/connection', whatsappConnectionRoutes);
 app.use('/api/whatsapp/webhook', whatsappWebhookRoutes);
 
 
+app.use('/api/conversations',whatsappConversationRoutes);
+app.use("/api/automation-rules", automationRuleRoutes);
+app.use("/api/message-templates", messageTemplateRoutes);
+app.use("/api/ai-config", aiConfigRoutes);
+app.use("/api/reports", reportRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
   console.log("Connected to database");
