@@ -105,7 +105,18 @@ const useEmployees = () => {
         }
     };
 
-    return { employees, loading, refetch: fetchEmployees, deleteEmployee };
+    const toggleEmployeeStatus = async (id) => {
+        const res = await fetch(apiUrl(`/auth/users/${id}/status`), {
+            method: "PUT",
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Unable to update employee status");
+        setEmployees((prev) => prev.map((employee) => (employee.id === id || employee._id === id) ? { ...employee, status: data.status } : employee));
+        return data;
+    };
+
+    return { employees, loading, refetch: fetchEmployees, deleteEmployee, toggleEmployeeStatus };
 };
 
 export default useEmployees;

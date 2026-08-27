@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Edit3, Mail, Notebook, Phone, X } from "lucide-react";
 
@@ -8,6 +8,7 @@ import EmployeeWork from "../components/EmployeeDetails/EmployeeWork";
 import EmployeeActivity from "../components/EmployeeDetails/EmployeeActivity";
 import { useNavigate, useParams } from "react-router-dom";
 import useEmployees from "../Hooks/useEmployees";
+import api from "../lib/api";
 
 const EmployeeDetails = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -17,7 +18,43 @@ const EmployeeDetails = () => {
   const currentEmployee = employees?.find((item) => (
     String(item.id) === String(id) || String(item._id) === String(id) || String(item.uid) === String(id)
   ));
-  console.log(currentEmployee);
+  const currentSalary = currentEmployee?.profile?.salary || {};
+  const [editingSalary, setEditingSalary] = useState(false);
+  const [savingSalary, setSavingSalary] = useState(false);
+  const [salaryForm, setSalaryForm] = useState({ basicSalary: "", grossSalary: "", netSalary: "", allowances: "", deductions: "" });
+
+  useEffect(() => {
+    setSalaryForm({
+      basicSalary: currentSalary.basicSalary || "",
+      grossSalary: currentSalary.grossSalary || "",
+      netSalary: currentSalary.netSalary || "",
+      allowances: Object.entries(currentSalary.allowances || {}).map(([key, value]) => `${key}: ${value}`).join(", "),
+      deductions: Object.entries(currentSalary.deductions || {}).map(([key, value]) => `${key}: ${value}`).join(", "),
+    });
+  }, [currentEmployee]);
+
+  const updateSalary = async (event) => {
+    event.preventDefault();
+    setSavingSalary(true);
+    try {
+      const parseAmounts = (value) => value.split(",").reduce((result, item) => {
+        const [key, amount] = item.split(":").map((part) => part.trim());
+        if (key && amount) result[key] = Number(amount) || 0;
+        return result;
+      }, {});
+      await api.put(`/auth/users/${id}/salary`, {
+        ...salaryForm,
+        allowances: parseAmounts(salaryForm.allowances),
+        deductions: parseAmounts(salaryForm.deductions),
+      });
+      setEditingSalary(false);
+      window.location.reload();
+    } catch (error) {
+      alert(error.response?.data?.message || "Unable to update salary");
+    } finally {
+      setSavingSalary(false);
+    }
+  };
 
   const tabs = ["overview", "performance", "assigned work", "activity"];
   const [button, setButton] = useState('');
@@ -57,7 +94,6 @@ const EmployeeDetails = () => {
                   key={i}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`flex items-center gap-2 border border-black/80 px-4 py-1  ${button.toLowerCase() === btn.label.toLowerCase() ? "bg-blue-700 text-white" : "bg-[#efede8] text-black"}  rounded-md text-sm hover:bg-blue-700 transition`}
                   onClick={() => handleButton(btn.label)}
                 >
                   <btn.icon size={16} />
@@ -67,7 +103,6 @@ const EmployeeDetails = () => {
             </div>
           </div>
         </div>
-
         {/* RIGHT STATUS */}
         <div className="relative flex flex-col gap-3  h-[130px]">
           <div className="flex gap-4 items-center">
@@ -112,8 +147,20 @@ const EmployeeDetails = () => {
         animate={{ opacity: 1, y: 0 }}
         className="mt-6"
       >
-        {activeTab === "overview" && <Employeehome
-          employees={currentEmployee} />}
+        {activeTab === "overview" && <>
+          <Employeehome employees={currentEmployee} />
+          <section className="bg-white rounded-xl border border-gray-200 p-5 mt-6">
+            <div className="flex items-center justify-between gap-4">
+              <div><h3 className="font-bold text-gray-700">Salary Updates</h3><p className="text-sm text-gray-500">Update this employee&apos;s stored salary details.</p></div>
+              <button type="button" onClick={() => setEditingSalary((value) => !value)} className="px-4 py-2 bg-blue-700 text-white rounded-md text-sm">{editingSalary ? "Cancel" : "Edit Salary"}</button>
+            </div>
+            {editingSalary && <form onSubmit={updateSalary} className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+              {[['basicSalary', 'Basic Salary'], ['grossSalary', 'Gross Salary'], ['netSalary', 'Net Salary']].map(([name, label]) => <label key={name} className="text-sm text-gray-600">{label}<input required type="number" min="0" value={salaryForm[name]} onChange={(event) => setSalaryForm({ ...salaryForm, [name]: event.target.value })} className="mt-1 w-full border rounded-md p-2" /></label>)}
+              {[['allowances', 'Allowances'], ['deductions', 'Deductions']].map(([name, label]) => <label key={name} className="text-sm text-gray-600 md:col-span-3">{label} <span className="text-gray-400">(name: amount, comma separated)</span><input value={salaryForm[name]} onChange={(event) => setSalaryForm({ ...salaryForm, [name]: event.target.value })} className="mt-1 w-full border rounded-md p-2" placeholder="Travel: 1000, Meal: 500" /></label>)}
+              <button disabled={savingSalary} type="submit" className="md:col-span-3 justify-self-end px-5 py-2 bg-green-700 text-white rounded-md">{savingSalary ? "Saving..." : "Save Salary"}</button>
+            </form>}
+          </section>
+        </>}
 
         {activeTab === "performance" && <EmployeePerformancePage
         />}
