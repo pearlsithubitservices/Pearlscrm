@@ -1,16 +1,25 @@
 """
-Deterministic intent detection for CRM chatbot requests.
+Intent detection for the AI CRM assistant.
 
-This service:
-- Detects what the user is asking for.
-- Does NOT call Gemini.
-- Does NOT call the CRM.
-- Extracts employee names and requested fields.
+The chatbot supports:
 
-Supported areas:
-    Employee
+    Employees
     Attendance
-    General Chat
+    Tasks
+    Leave
+
+It also separates:
+
+    1. Unwanted / casual conversation
+       -> fixed response
+       -> NO HR handoff
+
+    2. Work-related questions that cannot be answered
+       -> Gemini fallback
+       -> possible human handoff
+
+The intent service does NOT call CRM or Gemini.
+It only understands what the user is asking for.
 """
 
 import re
@@ -24,875 +33,977 @@ from enum import Enum
 class Intent(str, Enum):
 
     # -----------------------------------------------------
-    # EMPLOYEE
+    # EMPLOYEES
     # -----------------------------------------------------
 
-    GET_EMPLOYEES = "GET_EMPLOYEES"
+    GET_EMPLOYEES = "get_employees"
 
-    GET_EMPLOYEE_DETAILS = "GET_EMPLOYEE_DETAILS"
+    GET_EMPLOYEE_DETAILS = "get_employee_details"
 
-    GET_EMPLOYEE_FIELD = "GET_EMPLOYEE_FIELD"
+    GET_EMPLOYEE_FIELD = "get_employee_field"
 
-    GET_EMPLOYEE_FIELD_LIST = "GET_EMPLOYEE_FIELD_LIST"
+    GET_EMPLOYEE_FIELD_LIST = "get_employee_field_list"
 
-    GET_MY_DETAILS = "GET_MY_DETAILS"
+    GET_MY_DETAILS = "get_my_details"
 
     # -----------------------------------------------------
     # ATTENDANCE
     # -----------------------------------------------------
 
-    # Example:
-    # show Pavithra attendance
-    GET_ATTENDANCE = "GET_ATTENDANCE"
+    GET_ATTENDANCE = "get_attendance"
 
-    # Example:
-    # show Pavithra login time
-    # show Pavithra status
-    GET_ATTENDANCE_FIELD = "GET_ATTENDANCE_FIELD"
+    GET_ATTENDANCE_FIELD = "get_attendance_field"
 
-    # Example:
-    # show active attendance
-    GET_ACTIVE_ATTENDANCE = "GET_ACTIVE_ATTENDANCE"
+    GET_ACTIVE_ATTENDANCE = "get_active_attendance"
 
-    # Example:
-    # show attendance history
-    GET_ATTENDANCE_HISTORY = "GET_ATTENDANCE_HISTORY"
+    GET_ATTENDANCE_HISTORY = "get_attendance_history"
 
     # -----------------------------------------------------
-    # GENERAL
+    # TASKS
     # -----------------------------------------------------
 
-    GENERAL_CHAT = "GENERAL_CHAT"
+    GET_TASKS = "get_tasks"
 
+    GET_TASKS_BY_EMPLOYEE = "get_tasks_by_employee"
 
-# =========================================================
-# ALL EMPLOYEES
-# =========================================================
+    GET_TASK = "get_task"
 
-_EMPLOYEE_LIST_PATTERNS = [
+    CREATE_TASK = "create_task"
 
-    r"\bshow\s+all\s+employees?\b",
-
-    r"\blist\s+(all\s+)?employees?\b",
-
-    r"\bwho\s+are\s+the\s+employees?\b",
-
-    r"\ball\s+employees?\b",
-
-    r"\bemployee\s+list\b",
-]
-
-
-# =========================================================
-# ALL EMPLOYEES + FIELD
-# =========================================================
-
-_EMPLOYEE_FIELD_LIST_PATTERNS = [
-
-    # Email
-    r"\bshow\s+all\s+employee\s+(emails?|email\s+addresses?)\b",
-
-    r"\blist\s+all\s+employee\s+(emails?|email\s+addresses?)\b",
-
-    # Contact
-    r"\bshow\s+all\s+employee\s+(contacts?|phone\s+numbers?)\b",
-
-    r"\blist\s+all\s+employee\s+(contacts?|phone\s+numbers?)\b",
-
-    # ID
-    r"\bshow\s+all\s+employee\s+(ids?|employee\s+ids?)\b",
-
-    r"\blist\s+all\s+employee\s+(ids?|employee\s+ids?)\b",
-
-    # Joining date
-    r"\bshow\s+all\s+employee\s+(join(?:ing)?\s+dates?)\b",
-
-    r"\blist\s+all\s+employee\s+(join(?:ing)?\s+dates?)\b",
-
-    # Location
-    r"\bshow\s+all\s+employee\s+(locations?)\b",
-
-    r"\blist\s+all\s+employee\s+(locations?)\b",
-
-    # Role
-    r"\bshow\s+all\s+employee\s+(roles?|designations?)\b",
-
-    r"\blist\s+all\s+employee\s+(roles?|designations?)\b",
-]
-
-
-# =========================================================
-# SPECIFIC EMPLOYEE + FIELD
-# =========================================================
-
-_EMPLOYEE_FIELD_PATTERNS = [
-
-    # Email
-    r"\bshow\s+(.+?)\s+(email|email\s+address)\b",
-
-    r"\bget\s+(.+?)\s+(email|email\s+address)\b",
-
-    # Contact
-    r"\bshow\s+(.+?)\s+(contact|phone|phone\s+number)\b",
-
-    r"\bget\s+(.+?)\s+(contact|phone|phone\s+number)\b",
-
-    # Employee ID
-    r"\bshow\s+(.+?)\s+(employee\s+id|employeeid|id)\b",
-
-    r"\bget\s+(.+?)\s+(employee\s+id|employeeid|id)\b",
-
-    # Joining date
-    r"\bshow\s+(.+?)\s+(join(?:ing)?\s+date)\b",
-
-    r"\bget\s+(.+?)\s+(join(?:ing)?\s+date)\b",
-
-    # Location
-    r"\bshow\s+(.+?)\s+(location)\b",
-
-    r"\bget\s+(.+?)\s+(location)\b",
-
-    # Role
-    r"\bshow\s+(.+?)\s+(role|designation|position)\b",
-
-    r"\bget\s+(.+?)\s+(role|designation|position)\b",
-]
-
-
-# =========================================================
-# SPECIFIC EMPLOYEE DETAILS
-# =========================================================
-
-_EMPLOYEE_DETAILS_PATTERNS = [
-
-    r"\bshow\s+(.+?)\s+details?\b",
-
-    r"\bget\s+(.+?)\s+details?\b",
-
-    r"\bshow\s+details?\s+of\s+(.+?)\b",
-
-    r"\bget\s+details?\s+of\s+(.+?)\b",
-]
-
-
-# =========================================================
-# MY DETAILS
-# =========================================================
-
-_MY_DETAILS_PATTERNS = [
-
-    r"\bshow\s+my\s+employee\s+id\b",
-
-    r"\bshow\s+my\s+id\b",
-
-    r"\bshow\s+my\s+email\b",
-
-    r"\bshow\s+my\s+contact\b",
-
-    r"\bshow\s+my\s+phone\b",
-
-    r"\bshow\s+my\s+joining\s+date\b",
-
-    r"\bshow\s+my\s+location\b",
-
-    r"\bshow\s+my\s+role\b",
-
-    r"\bshow\s+my\s+details?\b",
-]
-
-
-# =========================================================
-# ATTENDANCE FIELD
-# =========================================================
-#
-# Examples:
-#
-# show Pavithra login time
-# show Pavithra logout time
-# show Pavithra status
-# show Pavithra break start
-# show Pavithra break end
-# show Pavithra attendance id
-# show Pavithra total work seconds
-# show Pavithra total work time
-#
-# =========================================================
-
-_ATTENDANCE_FIELD_PATTERNS = [
+    UPDATE_TASK = "update_task"
 
     # -----------------------------------------------------
-    # LOGIN TIME
+    # LEAVE
     # -----------------------------------------------------
 
-    r"\bshow\s+(.+?)\s+login\s+time\b",
+    GET_LEAVES = "get_leaves"
 
-    r"\bget\s+(.+?)\s+login\s+time\b",
+    GET_LEAVES_BY_EMPLOYEE = "get_leaves_by_employee"
 
-    # -----------------------------------------------------
-    # LOGOUT TIME
-    # -----------------------------------------------------
+    CREATE_LEAVE = "create_leave"
 
-    r"\bshow\s+(.+?)\s+logout\s+time\b",
+    UPDATE_LEAVE = "update_leave"
 
-    r"\bget\s+(.+?)\s+logout\s+time\b",
+    UPDATE_LEAVE_STATUS = "update_leave_status"
 
     # -----------------------------------------------------
-    # BREAK START
+    # SPECIAL
     # -----------------------------------------------------
 
-    r"\bshow\s+(.+?)\s+break\s+start\b",
+    UNWANTED_TALK = "unwanted_talk"
 
-    r"\bget\s+(.+?)\s+break\s+start\b",
+    HUMAN_HELP = "human_help"
 
-    # -----------------------------------------------------
-    # BREAK END
-    # -----------------------------------------------------
-
-    r"\bshow\s+(.+?)\s+break\s+end\b",
-
-    r"\bget\s+(.+?)\s+break\s+end\b",
-
-    # -----------------------------------------------------
-    # STATUS
-    # -----------------------------------------------------
-
-    r"\bshow\s+(.+?)\s+status\b",
-
-    r"\bget\s+(.+?)\s+status\b",
-
-    # -----------------------------------------------------
-    # ATTENDANCE ID
-    # -----------------------------------------------------
-
-    r"\bshow\s+(.+?)\s+attendance\s+id\b",
-
-    r"\bget\s+(.+?)\s+attendance\s+id\b",
-
-    # -----------------------------------------------------
-    # TOTAL WORK SECONDS
-    # -----------------------------------------------------
-
-    r"\bshow\s+(.+?)\s+total\s+work\s+seconds\b",
-
-    r"\bget\s+(.+?)\s+total\s+work\s+seconds\b",
-
-    # -----------------------------------------------------
-    # TOTAL WORK TIME
-    # -----------------------------------------------------
-
-    r"\bshow\s+(.+?)\s+total\s+work\s+time\b",
-
-    r"\bget\s+(.+?)\s+total\s+work\s+time\b",
-]
+    GENERAL_CHAT = "general_chat"
 
 
 # =========================================================
-# ACTIVE ATTENDANCE
+# COMMON WORDS
 # =========================================================
 
-_ACTIVE_ATTENDANCE_PATTERNS = [
+def _contains_any(
+    text: str,
+    words: list[str],
+) -> bool:
 
-    r"\bshow\s+active\s+attendance\b",
-
-    r"\bget\s+active\s+attendance\b",
-
-    r"\bshow\s+currently\s+active\s+employees?\b",
-
-    r"\bget\s+currently\s+active\s+employees?\b",
-
-    r"\bshow\s+online\s+employees?\b",
-
-    r"\bget\s+online\s+employees?\b",
-]
-
-
-# =========================================================
-# ATTENDANCE HISTORY
-# =========================================================
-
-_ATTENDANCE_HISTORY_PATTERNS = [
-
-    r"\bshow\s+attendance\s+history\b",
-
-    r"\bget\s+attendance\s+history\b",
-
-    r"\blist\s+attendance\s+history\b",
-
-    r"\bshow\s+all\s+attendance\b",
-
-    r"\bget\s+all\s+attendance\b",
-
-    r"\blist\s+all\s+attendance\b",
-]
-
-
-# =========================================================
-# SPECIFIC EMPLOYEE ATTENDANCE
-# =========================================================
-#
-# Examples:
-#
-# show Pavithra attendance
-# show Deepan Raj C attendance
-# get Venkat attendance
-#
-# =========================================================
-
-_ATTENDANCE_PATTERNS = [
-
-    r"\bshow\s+(.+?)\s+attendance\b",
-
-    r"\bget\s+(.+?)\s+attendance\b",
-]
-
-
-# =========================================================
-# COMPILE PATTERNS
-# =========================================================
-
-_COMPILED_EMPLOYEE_LIST_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
+    return any(
+        word in text
+        for word in words
     )
 
-    for pattern in _EMPLOYEE_LIST_PATTERNS
-]
 
+def _normalize(text: str) -> str:
 
-_COMPILED_EMPLOYEE_FIELD_LIST_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
+    return re.sub(
+        r"\s+",
+        " ",
+        text.strip().lower(),
     )
-
-    for pattern in _EMPLOYEE_FIELD_LIST_PATTERNS
-]
-
-
-_COMPILED_EMPLOYEE_FIELD_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
-    )
-
-    for pattern in _EMPLOYEE_FIELD_PATTERNS
-]
-
-
-_COMPILED_EMPLOYEE_DETAILS_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
-    )
-
-    for pattern in _EMPLOYEE_DETAILS_PATTERNS
-]
-
-
-_COMPILED_MY_DETAILS_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
-    )
-
-    for pattern in _MY_DETAILS_PATTERNS
-]
-
-
-_COMPILED_ATTENDANCE_FIELD_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
-    )
-
-    for pattern in _ATTENDANCE_FIELD_PATTERNS
-]
-
-
-_COMPILED_ACTIVE_ATTENDANCE_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
-    )
-
-    for pattern in _ACTIVE_ATTENDANCE_PATTERNS
-]
-
-
-_COMPILED_ATTENDANCE_HISTORY_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
-    )
-
-    for pattern in _ATTENDANCE_HISTORY_PATTERNS
-]
-
-
-_COMPILED_ATTENDANCE_PATTERNS = [
-
-    re.compile(
-        pattern,
-        re.IGNORECASE,
-    )
-
-    for pattern in _ATTENDANCE_PATTERNS
-]
 
 
 # =========================================================
-# DETECT INTENT
+# UNWANTED / CASUAL TALK
 # =========================================================
 
-def detect_intent(
+UNWANTED_PATTERNS = [
+
+    # -----------------------------------------------------
+    # Jokes
+    # -----------------------------------------------------
+
+    r"\btell me a joke\b",
+    r"\bmake me laugh\b",
+    r"\bdo you know any jokes\b",
+    r"\bsay a joke\b",
+
+    # -----------------------------------------------------
+    # Songs / singing
+    # -----------------------------------------------------
+
+    r"\bsing a song\b",
+    r"\bsing for me\b",
+    r"\bsing something\b",
+
+    # -----------------------------------------------------
+    # Stories
+    # -----------------------------------------------------
+
+    r"\btell me a story\b",
+    r"\btell me a funny story\b",
+
+    # -----------------------------------------------------
+    # Games
+    # -----------------------------------------------------
+
+    r"\bplay a game\b",
+    r"\bplay with me\b",
+
+    # -----------------------------------------------------
+    # Personal / entertainment
+    # -----------------------------------------------------
+
+    r"\bwho is your boyfriend\b",
+    r"\bwho is your girlfriend\b",
+    r"\bdo you have a girlfriend\b",
+    r"\bdo you have a boyfriend\b",
+    r"\bwhat is your favorite movie\b",
+    r"\bwhat is your favorite song\b",
+
+    # -----------------------------------------------------
+    # Random AI requests
+    # -----------------------------------------------------
+
+    r"\bwrite me a poem\b",
+    r"\bwrite a poem\b",
+    r"\bwrite me a song\b",
+    r"\bwrite a song\b",
+    r"\bdance for me\b",
+    r"\bcan you dance\b",
+
+]
+
+
+def is_unwanted_talk(
     message: str,
-) -> Intent:
+) -> bool:
 
-    normalized = message.strip()
+    text = _normalize(message)
 
-    if not normalized:
-
-        return Intent.GENERAL_CHAT
-
-    # =====================================================
-    # MY DETAILS
-    # =====================================================
-
-    for pattern in _COMPILED_MY_DETAILS_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_MY_DETAILS
-
-    # =====================================================
-    # ALL EMPLOYEE + FIELD
-    # =====================================================
-
-    for pattern in _COMPILED_EMPLOYEE_FIELD_LIST_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_EMPLOYEE_FIELD_LIST
-
-    # =====================================================
-    # ATTENDANCE FIELD
-    #
-    # IMPORTANT:
-    # This must be checked BEFORE normal attendance.
-    #
-    # Example:
-    #
-    # show Pavithra login time
-    #
-    # should become:
-    #
-    # GET_ATTENDANCE_FIELD
-    #
-    # NOT:
-    #
-    # GENERAL_CHAT
-    #
-    # =====================================================
-
-    for pattern in _COMPILED_ATTENDANCE_FIELD_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_ATTENDANCE_FIELD
-
-    # =====================================================
-    # SPECIFIC EMPLOYEE + FIELD
-    # =====================================================
-
-    for pattern in _COMPILED_EMPLOYEE_FIELD_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_EMPLOYEE_FIELD
-
-    # =====================================================
-    # SPECIFIC EMPLOYEE DETAILS
-    # =====================================================
-
-    for pattern in _COMPILED_EMPLOYEE_DETAILS_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_EMPLOYEE_DETAILS
-
-    # =====================================================
-    # ACTIVE ATTENDANCE
-    # =====================================================
-
-    for pattern in _COMPILED_ACTIVE_ATTENDANCE_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_ACTIVE_ATTENDANCE
-
-    # =====================================================
-    # ATTENDANCE HISTORY
-    # =====================================================
-
-    for pattern in _COMPILED_ATTENDANCE_HISTORY_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_ATTENDANCE_HISTORY
-
-    # =====================================================
-    # SPECIFIC EMPLOYEE ATTENDANCE
-    # =====================================================
-
-    for pattern in _COMPILED_ATTENDANCE_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_ATTENDANCE
-
-    # =====================================================
-    # ALL EMPLOYEES
-    # =====================================================
-
-    for pattern in _COMPILED_EMPLOYEE_LIST_PATTERNS:
-
-        if pattern.search(normalized):
-
-            return Intent.GET_EMPLOYEES
-
-    # =====================================================
-    # GENERAL CHAT
-    # =====================================================
-
-    return Intent.GENERAL_CHAT
+    return any(
+        re.search(
+            pattern,
+            text,
+            flags=re.IGNORECASE,
+        )
+        for pattern in UNWANTED_PATTERNS
+    )
 
 
 # =========================================================
-# EXTRACT EMPLOYEE NAME
+# HUMAN HELP / HR REQUEST
+# =========================================================
+
+HUMAN_HELP_PATTERNS = [
+
+    r"\btalk to hr\b",
+    r"\bconnect me to hr\b",
+    r"\bconnect me with hr\b",
+    r"\bcontact hr\b",
+    r"\bi want to talk to hr\b",
+    r"\bi need hr\b",
+    r"\btalk to a human\b",
+    r"\btalk to a person\b",
+    r"\bconnect me to a human\b",
+    r"\bconnect me with a person\b",
+    r"\bneed human help\b",
+    r"\bneed human assistance\b",
+    r"\bcontact human\b",
+    r"\bconnect with human\b",
+]
+
+
+def is_human_help_request(
+    message: str,
+) -> bool:
+
+    text = _normalize(message)
+
+    return any(
+        re.search(
+            pattern,
+            text,
+            flags=re.IGNORECASE,
+        )
+        for pattern in HUMAN_HELP_PATTERNS
+    )
+
+
+# =========================================================
+# EMPLOYEE NAME EXTRACTION
 # =========================================================
 
 def extract_employee_name(
     message: str,
 ) -> str | None:
 
-    normalized = message.strip()
+    text = message.strip()
 
-    # -----------------------------------------------------
-    # Specific employee + field
-    # -----------------------------------------------------
+    patterns = [
 
-    for pattern in _COMPILED_EMPLOYEE_FIELD_PATTERNS:
+        r"(?:show|get|find|give|display)\s+(.+?)\s+(?:details|information|info)$",
 
-        match = pattern.search(normalized)
+        r"(?:show|get|find|give|display)\s+(.+?)\s+"
+        r"(?:email|mail|phone|contact|role|position|department|designation)$",
 
-        if match:
+        r"(?:what is|what's)\s+(.+?)\s+"
+        r"(?:email|mail|phone|contact|role|position|department)$",
 
-            name = match.group(1).strip()
+    ]
 
-            if name:
+    for pattern in patterns:
 
-                return name
-
-    # -----------------------------------------------------
-    # Employee details
-    # -----------------------------------------------------
-
-    for pattern in _COMPILED_EMPLOYEE_DETAILS_PATTERNS:
-
-        match = pattern.search(normalized)
+        match = re.search(
+            pattern,
+            text,
+            flags=re.IGNORECASE,
+        )
 
         if match:
 
             name = match.group(1).strip()
 
             if name:
-
                 return name
 
     return None
 
 
 # =========================================================
-# EXTRACT EMPLOYEE FIELD
+# EMPLOYEE FIELD EXTRACTION
 # =========================================================
 
 def extract_employee_field(
     message: str,
 ) -> str | None:
 
-    normalized = message.strip()
+    text = _normalize(message)
 
-    for pattern in _COMPILED_EMPLOYEE_FIELD_PATTERNS:
+    field_patterns = {
 
-        match = pattern.search(normalized)
-
-        if not match:
-
-            continue
-
-        field = match.group(2).strip().lower()
-
-        # Email
-        if field in (
+        "email": [
             "email",
+            "mail",
             "email address",
-        ):
+        ],
 
-            return "email"
-
-        # Contact
-        if field in (
+        "contact": [
             "contact",
             "phone",
             "phone number",
-        ):
+            "mobile",
+            "mobile number",
+        ],
 
-            return "contact"
-
-        # Employee ID
-        if field in (
-            "employee id",
-            "employeeid",
-            "id",
-        ):
-
-            return "employee_id"
-
-        # Joining date
-        if field in (
-            "join date",
-            "joining date",
-        ):
-
-            return "join_date"
-
-        # Location
-        if field == "location":
-
-            return "location"
-
-        # Role
-        if field in (
+        "role": [
             "role",
-            "designation",
             "position",
-        ):
+            "job role",
+        ],
 
-            return "role"
+        "department": [
+            "department",
+            "dept",
+        ],
+
+        "designation": [
+            "designation",
+        ],
+
+    }
+
+    for field, keywords in field_patterns.items():
+
+        if _contains_any(text, keywords):
+
+            return field
 
     return None
 
 
 # =========================================================
-# EXTRACT EMPLOYEE LIST FIELD
+# EMPLOYEE LIST FIELD
 # =========================================================
 
 def extract_employee_list_field(
     message: str,
 ) -> str | None:
 
-    normalized = message.strip().lower()
+    text = _normalize(message)
 
-    # Email
-    if "email" in normalized:
-
+    if _contains_any(
+        text,
+        [
+            "all emails",
+            "employee emails",
+            "all employee emails",
+            "email addresses",
+        ],
+    ):
         return "email"
 
-    # Contact
-    if (
-        "contact" in normalized
-        or "phone" in normalized
+    if _contains_any(
+        text,
+        [
+            "all contacts",
+            "employee contacts",
+            "all phone numbers",
+            "employee phone numbers",
+        ],
     ):
-
         return "contact"
 
-    # Employee ID
-    if (
-        "employee id" in normalized
-        or "employeeid" in normalized
+    if _contains_any(
+        text,
+        [
+            "all roles",
+            "employee roles",
+            "all positions",
+        ],
     ):
-
-        return "employee_id"
-
-    # Joining date
-    if (
-        "joining date" in normalized
-        or "join date" in normalized
-    ):
-
-        return "join_date"
-
-    # Location
-    if "location" in normalized:
-
-        return "location"
-
-    # Role
-    if (
-        "role" in normalized
-        or "designation" in normalized
-    ):
-
         return "role"
+
+    if _contains_any(
+        text,
+        [
+            "all departments",
+            "employee departments",
+        ],
+    ):
+        return "department"
+
+    if _contains_any(
+        text,
+        [
+            "all designations",
+            "employee designations",
+        ],
+    ):
+        return "designation"
 
     return None
 
 
 # =========================================================
-# EXTRACT ATTENDANCE EMPLOYEE NAME
-# =========================================================
-#
-# Examples:
-#
-# show Pavithra attendance
-# show Pavithra login time
-# show Pavithra status
-# show Deepan Raj C logout time
-#
+# ATTENDANCE EMPLOYEE NAME
 # =========================================================
 
 def extract_attendance_employee_name(
     message: str,
 ) -> str | None:
 
-    normalized = message.strip()
+    text = message.strip()
 
-    # -----------------------------------------------------
-    # First check attendance field requests
-    # -----------------------------------------------------
+    patterns = [
 
-    for pattern in _COMPILED_ATTENDANCE_FIELD_PATTERNS:
+        r"(?:show|get|find|give|display)\s+(.+?)\s+"
+        r"(?:attendance|login|logout|status|"
+        r"break|attendance id|total work|work time)",
 
-        match = pattern.search(normalized)
+        r"(?:what is|what's)\s+(.+?)\s+"
+        r"(?:login|logout|attendance|status|"
+        r"break|work time)",
 
-        if not match:
+    ]
 
-            continue
+    for pattern in patterns:
 
-        # The first capture group is the employee name.
-        name = match.group(1).strip()
+        match = re.search(
+            pattern,
+            text,
+            flags=re.IGNORECASE,
+        )
 
-        if name:
+        if match:
 
-            return name
+            name = match.group(1).strip()
 
-    # -----------------------------------------------------
-    # Then check normal attendance request
-    # -----------------------------------------------------
-
-    for pattern in _COMPILED_ATTENDANCE_PATTERNS:
-
-        match = pattern.search(normalized)
-
-        if not match:
-
-            continue
-
-        name = match.group(1).strip()
-
-        if name:
-
-            return name
+            if name:
+                return name
 
     return None
 
 
 # =========================================================
-# EXTRACT ATTENDANCE FIELD
-# =========================================================
-#
-# Returns:
-#
-# login_time
-# logout_time
-# break_start
-# break_end
-# status
-# attendance_id
-# total_work_seconds
-#
+# ATTENDANCE FIELD
 # =========================================================
 
 def extract_attendance_field(
     message: str,
 ) -> str | None:
 
-    normalized = message.strip().lower()
+    text = _normalize(message)
 
-    # -----------------------------------------------------
-    # Login
-    # -----------------------------------------------------
-
-    if "login time" in normalized:
-
-        return "login_time"
-
-    # -----------------------------------------------------
-    # Logout
-    # -----------------------------------------------------
-
-    if "logout time" in normalized:
-
-        return "logout_time"
-
-    # -----------------------------------------------------
-    # Break start
-    # -----------------------------------------------------
-
-    if "break start" in normalized:
-
-        return "break_start"
-
-    # -----------------------------------------------------
-    # Break end
-    # -----------------------------------------------------
-
-    if "break end" in normalized:
-
-        return "break_end"
-
-    # -----------------------------------------------------
-    # Attendance ID
-    # -----------------------------------------------------
-
-    if "attendance id" in normalized:
-
+    if _contains_any(
+        text,
+        [
+            "attendance id",
+            "attendance id number",
+        ],
+    ):
         return "attendance_id"
 
-    # -----------------------------------------------------
-    # Total work seconds
-    # -----------------------------------------------------
-
-    if "total work seconds" in normalized:
-
-        return "total_work_seconds"
-
-    # -----------------------------------------------------
-    # Total work time
-    # -----------------------------------------------------
-
-    if "total work time" in normalized:
-
-        return "total_work_seconds"
-
-    # -----------------------------------------------------
-    # Status
-    # -----------------------------------------------------
-
-    if re.search(
-        r"\bstatus\b",
-        normalized,
+    if _contains_any(
+        text,
+        [
+            "login time",
+            "login",
+            "check in",
+            "check-in",
+            "checkin",
+        ],
     ):
+        return "login_time"
 
+    if _contains_any(
+        text,
+        [
+            "logout time",
+            "logout",
+            "check out",
+            "check-out",
+            "checkout",
+        ],
+    ):
+        return "logout_time"
+
+    if _contains_any(
+        text,
+        [
+            "break start",
+            "break started",
+            "break in",
+        ],
+    ):
+        return "break_start"
+
+    if _contains_any(
+        text,
+        [
+            "break end",
+            "break ended",
+            "break out",
+        ],
+    ):
+        return "break_end"
+
+    if _contains_any(
+        text,
+        [
+            "status",
+            "attendance status",
+        ],
+    ):
         return "status"
 
+    if _contains_any(
+        text,
+        [
+            "total work time",
+            "total working time",
+            "work time",
+            "working time",
+            "hours worked",
+        ],
+    ):
+        return "total_work_seconds"
+
     return None
+
+
+# =========================================================
+# TASK EMPLOYEE NAME
+# =========================================================
+
+def extract_task_employee_name(
+    message: str,
+) -> str | None:
+
+    text = message.strip()
+
+    patterns = [
+
+        r"(?:show|get|find|give|display)\s+(.+?)\s+"
+        r"(?:tasks|task)",
+
+        r"(?:tasks|task)\s+(?:for|of)\s+(.+?)(?:\?|$)",
+
+        r"(?:show|get)\s+(.+?)\s+recent tasks",
+
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        if match:
+
+            name = match.group(1).strip()
+
+            if name:
+                return name
+
+    return None
+
+
+# =========================================================
+# TASK ID
+# =========================================================
+
+def extract_task_id(
+    message: str,
+) -> str | None:
+
+    match = re.search(
+        r"(?:task\s*(?:id)?|task)\s*[:#]?\s*"
+        r"([a-zA-Z0-9_-]{4,})",
+        message,
+        flags=re.IGNORECASE,
+    )
+
+    if match:
+
+        return match.group(1).strip()
+
+    return None
+
+
+# =========================================================
+# LEAVE EMPLOYEE NAME
+# =========================================================
+
+def extract_leave_employee_name(
+    message: str,
+) -> str | None:
+
+    text = message.strip()
+
+    patterns = [
+
+        r"(?:show|get|find|give|display)\s+(.+?)\s+"
+        r"(?:leave|leaves|leave history)",
+
+        r"(?:leave|leaves)\s+(?:for|of)\s+(.+?)(?:\?|$)",
+
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        if match:
+
+            name = match.group(1).strip()
+
+            if name:
+                return name
+
+    return None
+
+
+# =========================================================
+# LEAVE ID
+# =========================================================
+
+def extract_leave_id(
+    message: str,
+) -> str | None:
+
+    match = re.search(
+        r"(?:leave\s*(?:id)?|leave request\s*(?:id)?)"
+        r"\s*[:#]?\s*([a-zA-Z0-9_-]{4,})",
+        message,
+        flags=re.IGNORECASE,
+    )
+
+    if match:
+
+        return match.group(1).strip()
+
+    return None
+
+
+# =========================================================
+# LEAVE STATUS
+# =========================================================
+
+def extract_leave_status(
+    message: str,
+) -> str | None:
+
+    text = _normalize(message)
+
+    statuses = [
+        "approved",
+        "rejected",
+        "pending",
+        "cancelled",
+        "canceled",
+    ]
+
+    for status in statuses:
+
+        if re.search(
+            rf"\b{re.escape(status)}\b",
+            text,
+        ):
+
+            if status == "canceled":
+                return "cancelled"
+
+            return status
+
+    return None
+
+
+# =========================================================
+# INTENT DETECTION
+# =========================================================
+
+def detect_intent(
+    message: str,
+) -> Intent:
+
+    text = _normalize(message)
+
+    # =====================================================
+    # SPECIAL CASE 1
+    # UNWANTED TALK
+    #
+    # MUST COME BEFORE GENERAL CHAT.
+    # =====================================================
+
+    if is_unwanted_talk(text):
+
+        return Intent.UNWANTED_TALK
+
+    # =====================================================
+    # SPECIAL CASE 2
+    # EXPLICIT HUMAN HELP
+    # =====================================================
+
+    if is_human_help_request(text):
+
+        return Intent.HUMAN_HELP
+
+    # =====================================================
+    # ATTENDANCE
+    # =====================================================
+
+    if _contains_any(
+        text,
+        [
+            "active attendance",
+            "currently working",
+            "currently active",
+            "who is working",
+            "who are working",
+        ],
+    ):
+
+        return Intent.GET_ACTIVE_ATTENDANCE
+
+    if _contains_any(
+        text,
+        [
+            "attendance history",
+            "attendance records",
+            "all attendance",
+            "attendance report",
+        ],
+    ):
+
+        return Intent.GET_ATTENDANCE_HISTORY
+
+    attendance_field = extract_attendance_field(
+        text
+    )
+
+    attendance_employee = (
+        extract_attendance_employee_name(text)
+    )
+
+    if (
+        attendance_field
+        and attendance_employee
+    ):
+
+        return Intent.GET_ATTENDANCE_FIELD
+
+    if _contains_any(
+        text,
+        [
+            "attendance",
+            "attendance details",
+            "attendance record",
+        ],
+    ):
+
+        if attendance_employee:
+
+            return Intent.GET_ATTENDANCE
+
+    # =====================================================
+    # TASKS
+    # =====================================================
+
+    if _contains_any(
+        text,
+        [
+            "create task",
+            "create a task",
+            "add task",
+            "add a task",
+            "new task",
+        ],
+    ):
+
+        return Intent.CREATE_TASK
+
+    if _contains_any(
+        text,
+        [
+            "update task",
+            "edit task",
+            "change task",
+            "modify task",
+        ],
+    ):
+
+        return Intent.UPDATE_TASK
+
+    if (
+        _contains_any(
+            text,
+            [
+                "recent tasks",
+                "recent task",
+            ],
+        )
+        and extract_task_employee_name(text)
+    ):
+
+        return Intent.GET_TASKS_BY_EMPLOYEE
+
+    if (
+        _contains_any(
+            text,
+            [
+                "task id",
+                "task details",
+                "get task",
+                "show task",
+            ],
+        )
+        and extract_task_id(text)
+    ):
+
+        return Intent.GET_TASK
+
+    if _contains_any(
+        text,
+        [
+            "all tasks",
+            "show tasks",
+            "show all tasks",
+            "list tasks",
+            "tasks",
+        ],
+    ):
+
+        task_employee = extract_task_employee_name(text)
+
+        if task_employee:
+
+            return Intent.GET_TASKS_BY_EMPLOYEE
+
+        return Intent.GET_TASKS
+
+    # =====================================================
+    # LEAVE
+    # =====================================================
+
+    if _contains_any(
+        text,
+        [
+            "create leave",
+            "apply leave",
+            "apply for leave",
+            "request leave",
+            "new leave",
+        ],
+    ):
+
+        return Intent.CREATE_LEAVE
+
+    if _contains_any(
+        text,
+        [
+            "update leave",
+            "edit leave",
+            "change leave",
+            "modify leave",
+        ],
+    ):
+
+        return Intent.UPDATE_LEAVE
+
+    if _contains_any(
+        text,
+        [
+            "approve leave",
+            "reject leave",
+            "cancel leave",
+            "change leave status",
+        ],
+    ):
+
+        return Intent.UPDATE_LEAVE_STATUS
+
+    if (
+        _contains_any(
+            text,
+            [
+                "leave id",
+                "leave request",
+            ],
+        )
+        and extract_leave_id(text)
+        and extract_leave_status(text)
+    ):
+
+        return Intent.UPDATE_LEAVE_STATUS
+
+    if _contains_any(
+        text,
+        [
+            "my leaves",
+            "my leave",
+            "my leave history",
+        ],
+    ):
+
+        return Intent.GET_LEAVES_BY_EMPLOYEE
+
+    if _contains_any(
+        text,
+        [
+            "leave history",
+            "all leaves",
+            "all leave",
+            "show leaves",
+            "show all leaves",
+            "list leaves",
+        ],
+    ):
+
+        leave_employee = (
+            extract_leave_employee_name(text)
+        )
+
+        if leave_employee:
+
+            return Intent.GET_LEAVES_BY_EMPLOYEE
+
+        return Intent.GET_LEAVES
+
+    # =====================================================
+    # EMPLOYEES
+    # =====================================================
+
+    if _contains_any(
+        text,
+        [
+            "all employees",
+            "show employees",
+            "show all employees",
+            "list employees",
+            "employees",
+        ],
+    ):
+
+        return Intent.GET_EMPLOYEES
+
+    # -----------------------------------------------------
+    # All employee field list
+    # -----------------------------------------------------
+
+    employee_list_field = (
+        extract_employee_list_field(text)
+    )
+
+    if employee_list_field:
+
+        return Intent.GET_EMPLOYEE_FIELD_LIST
+
+    # -----------------------------------------------------
+    # My details
+    # -----------------------------------------------------
+
+    if _contains_any(
+        text,
+        [
+            "my details",
+            "my employee details",
+            "my profile",
+            "my employee information",
+        ],
+    ):
+
+        return Intent.GET_MY_DETAILS
+
+    # -----------------------------------------------------
+    # Specific employee field
+    # -----------------------------------------------------
+
+    employee_field = (
+        extract_employee_field(text)
+    )
+
+    employee_name = (
+        extract_employee_name(text)
+    )
+
+    if employee_field and employee_name:
+
+        return Intent.GET_EMPLOYEE_FIELD
+
+    # -----------------------------------------------------
+    # Specific employee details
+    # -----------------------------------------------------
+
+    if _contains_any(
+        text,
+        [
+            "employee details",
+            "employee information",
+            "employee info",
+        ],
+    ):
+
+        if employee_name:
+
+            return Intent.GET_EMPLOYEE_DETAILS
+
+    # =====================================================
+    # GEMINI FALLBACK
+    # =====================================================
+
+    return Intent.GENERAL_CHAT

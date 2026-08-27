@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import chat, crm, health, whatsapp
+from app.api.routes import (chat, crm, health, whatsapp, handoff, )
 from app.core.config import get_settings
 
 
@@ -48,3 +48,4 @@ app.include_router(crm.router)
 
 app.include_router(chat.router)
 app.include_router(whatsapp.router)
+app.include_router(handoff.router)
