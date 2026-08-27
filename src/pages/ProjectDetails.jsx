@@ -11,6 +11,8 @@ import ClientMilestone from '../components/ProjectDetails/ProjectMilestone.jsx'
 import ClientNotes from '../components/ProjectDetails/ProjectNotes.jsx'
 import ClientTeam from '../components/ProjectDetails/ProjectTeam.jsx'
 import ClientActivity from '../components/ProjectDetails/ProjectActivity.jsx'
+import ProjectTasks from '../components/ProjectDetails/ProjectTasks.jsx'
+import ProjectDocuments from '../components/ProjectDetails/ProjectDocuments.jsx'
 import { useNavigate, useParams } from "react-router-dom";
 import useEmployees from "../Hooks/useEmployees.js";
 
@@ -53,7 +55,13 @@ export default function ClientDetails({ tasks }) {
         if (socket) {
             const handleSync = () => fetchProjects();
             socket.on("projectUpdated", handleSync);
-            return () => socket.off("projectUpdated", handleSync);
+            socket.on("taskUpdated", handleSync);
+            socket.on("taskCreated", handleSync);
+            return () => {
+                socket.off("projectUpdated", handleSync);
+                socket.off("taskUpdated", handleSync);
+                socket.off("taskCreated", handleSync);
+            };
         }
     }, [id]);
 
@@ -128,6 +136,8 @@ export default function ClientDetails({ tasks }) {
         "Overview",
         "Milestones",
         "Notes",
+        "Tasks",
+        "Documents",
         "Team",
         "Activity",
     ];
@@ -145,6 +155,12 @@ export default function ClientDetails({ tasks }) {
             case "Notes":
                 return <ClientNotes projects={projectById} fetchProjects={fetchProjects} />;
 
+            case "Tasks":
+                return <ProjectTasks project={currentProject} projects={projectById} fetchProjects={fetchProjects} />;
+
+            case "Documents":
+                return <ProjectDocuments project={currentProject} projects={projectById} fetchProjects={fetchProjects} />;
+
             case "Team":
                 return <ClientTeam
                     projects={projectById}
@@ -152,22 +168,19 @@ export default function ClientDetails({ tasks }) {
             case "Activity":
                 return <ClientActivity projects={projectById} />;
 
-
-
             default:
                 return null;
         }
     };
 
     return (
-
-        <>
+        <div className="w-full min-h-screen overflow-y-auto custom-scrollbar bg-[#f5f3ef] p-4 md:p-8 flex justify-center">
             {/* Main Card */}
             <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="w-full max-w-6xl bg-[#f3f0eb] rounded-[28px] overflow-hidden shadow-2xl max-h-screen overflow-y-auto no-scrollbar"
+                className="w-full max-w-6xl bg-[#f3f0eb] rounded-[28px] shadow-2xl pb-12"
             >
 
                 {/* Header */}
@@ -437,6 +450,6 @@ export default function ClientDetails({ tasks }) {
                     </motion.div>
                 </div>
             )}
-        </>
+        </div>
     );
 }
