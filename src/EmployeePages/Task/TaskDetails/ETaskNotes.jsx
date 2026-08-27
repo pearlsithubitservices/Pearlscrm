@@ -1,223 +1,155 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { NotebookTabs, Send } from "lucide-react";
+import { apiUrl } from "../../../config/api";
+import { useAuth } from "../../../context/AuthContext";
 
-export default function ETasksNotes({tasks}) {
+export default function ETasksNotes({ task, tasks, onRefresh }) {
+  const { user } = useAuth();
+  const currentTask = task || (Array.isArray(tasks) ? tasks[0] : tasks) || {};
+  const taskId = currentTask?._id || currentTask?.id;
 
-  // Existing notes list
-  const [notes, setNotes] = useState([
-    {
-      title: "Budget confirmed verbally — $120K range",
-      description:
-        "Client confirmed budget in phone conversation. Wants implementation in 6 weeks post-signing.",
-      date: "Jun 7 · Rohan M",
-    },
-    {
-      title: "Competitor comparison requested",
-      description:
-        "Evaluating 2 other vendors. We're in the final 2. Need to highlight data security certifications.",
-      date: "Jun 3 · Priya S.",
-    },
-    {
-      title: "Budget confirmed verbally — $130K range",
-      description:
-        "Client confirmed budget in phone conversation. Wants implementation in 6 weeks post-signing.",
-      date: "Jun 8 · Priya S.",
-    },
-  ]);
+  const [notesList, setNotesList] = useState([]);
+  const [newNote, setNewNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-  });
+  useEffect(() => {
+    if (currentTask && currentTask.notes) {
+      const blocks = currentTask.notes.split(/\n\n(?=\[)/g);
+      const parsed = blocks.map((block) => {
+        const match = block.match(/^\[(.*?) - (.*?)\]:\s*([\s\S]*)$/);
+        if (match) {
+          return {
+            date: match[1],
+            author: match[2],
+            description: match[3],
+          };
+        }
+        return {
+          date: currentTask.updatedAt
+            ? new Date(currentTask.updatedAt).toLocaleDateString()
+            : new Date().toLocaleDateString(),
+          author: "Note",
+          description: block,
+        };
+      });
+      setNotesList(parsed.reverse());
+    } else {
+      setNotesList([]);
+    }
+  }, [currentTask]);
 
-  // Handle input change
-  function handleChange(e) {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  }
+  const authorName =
+    user?.displayName ||
+    user?.name ||
+    user?.employeeName ||
+    (user?.email ? user.email.split("@")[0] : "Employee");
 
-  // Add note
-  function handleNote() {
-
-    if (
-      formData.title.trim() === "" ||
-      formData.description.trim() === ""
-    ) {
-      alert("Fill all fields");
+  const handleAddNote = async () => {
+    if (!newNote.trim()) {
+      alert("Please enter a note.");
+      return;
+    }
+    if (!taskId) {
+      alert("Task not selected.");
       return;
     }
 
-    const newNote = {
-      title: formData.title,
-      description: formData.description,
-      date: new Date().toLocaleString(),
-    };
+    setSubmitting(true);
+    try {
+      const formattedNote = `[${new Date().toLocaleDateString()} - ${authorName}]: ${newNote}`;
+      const updatedNotes = currentTask?.notes
+        ? `${currentTask.notes}\n\n${formattedNote}`
+        : formattedNote;
 
-    // add new note to top
-    setNotes([newNote, ...notes]);
+      const res = await fetch(apiUrl(`/tasks/${taskId}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notes: updatedNotes,
+        }),
+      });
 
-    // clear inputs
-    setFormData({
-      title: "",
-      description: "",
-    });
-  }
+      if (res.ok) {
+        setNewNote("");
+        alert("Note added successfully!");
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Failed to add note.");
+      }
+    } catch (err) {
+      console.error("Error adding note:", err);
+      alert("Failed to add note.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#f5f2ec] p-8">
+    <div className="bg-[#f5f2ec] p-4 md:p-8 min-h-[500px]">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* INPUT SECTION */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+          <h3 className="font-bold text-[#082f57] text-base flex items-center gap-2">
+            <NotebookTabs size={18} className="text-[#2563a9]" />
+            Add Task Notes
+          </h3>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-7xl mx-auto rounded-[30px]"
-      >
+          <textarea
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            placeholder="Type notes or progress remarks..."
+            className="w-full h-28 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none text-sm text-gray-800 focus:border-[#2563a9] transition-all resize-none"
+          />
 
-        <div className="px-5 mt-5">
-
-          {/* INPUT SECTION */}
-
-          <div className="flex flex-col gap-4">
-
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Enter title..."
-              className="
-              w-full
-              bg-white
-              rounded-2xl
-              p-5
-              outline-none
-              "
-            />
-
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Add a new note..."
-              className="
-              w-full
-              h-[120px]
-              bg-white
-              rounded-2xl
-              p-5
-              outline-none
-              resize-none
-              "
-            />
-
-            <div className="flex justify-end">
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: .95 }}
-                onClick={handleNote}
-                className="
-                bg-blue-600
-                text-white
-                px-6
-                py-3
-                rounded-full
-                "
-              >
-                Add Note
-              </motion.button>
-
-            </div>
-
+          <div className="flex justify-end">
+            <button
+              disabled={submitting}
+              onClick={handleAddNote}
+              className="bg-[#2563a9] hover:bg-[#1d4ed8] text-white px-6 py-2.5 rounded-xl font-semibold text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              <Send size={14} />
+              {submitting ? "Saving..." : "Save Note"}
+            </button>
           </div>
-
-          {/* NOTES TIMELINE */}
-
-          <h2 className="font-bold text-gray-500 text-xl mt-10">
-            PREVIOUS NOTES
-          </h2>
-
-          <div className="mt-10 relative">
-
-            {/* Vertical line */}
-
-            <div className="absolute top-0 left-[10px] h-full w-[2px] bg-gray-300"></div>
-
-            {notes.map((item, index) => (
-
-              <motion.div
-                key={index}
-                initial={{
-                  opacity: 0,
-                  x: -30
-                }}
-                animate={{
-                  opacity: 1,
-                  x: 0
-                }}
-                transition={{
-                  delay: index * .1
-                }}
-                className="
-                relative
-                flex
-                gap-6
-                mb-10
-                "
-              >
-
-                {/* Dot */}
-
-                <div className="w-5 h-5 rounded-full bg-blue-600 mt-2 z-10"></div>
-
-                {/* Content */}
-
-                <div className="
-                bg-white
-                p-5
-                rounded-xl
-                shadow-sm
-                w-full
-                ">
-
-                  <h1 className="
-                  text-lg
-                  font-bold
-                  text-[#082f57]
-                  ">
-                    {item.title}
-                  </h1>
-
-                  <p className="
-                  text-gray-500
-                  mt-2
-                  leading-7
-                  ">
-                    {item.description}
-                  </p>
-
-                  <p className="
-                  text-sm
-                  text-gray-400
-                  mt-3
-                  ">
-                    {item.date}
-                  </p>
-
-                </div>
-
-              </motion.div>
-
-            ))}
-
-          </div>
-
         </div>
 
-      </motion.div>
+        {/* NOTES LIST SECTION */}
+        <div className="space-y-4 pt-2">
+          <h2 className="font-bold text-gray-600 text-sm uppercase tracking-wider">
+            Previous Task Notes
+          </h2>
 
+          {notesList.length === 0 ? (
+            <div className="bg-white p-8 rounded-2xl border border-gray-200 text-center text-gray-500 text-sm">
+              No notes recorded yet for this task.
+            </div>
+          ) : (
+            <div className="relative pl-6 space-y-6 border-l-2 border-blue-200 mt-4">
+              {notesList.map((item, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="relative bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-2"
+                >
+                  <div className="absolute -left-[31px] top-5 w-4 h-4 rounded-full bg-[#2563a9] border-2 border-white" />
+
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span className="font-bold text-[#082f57]">{item.author}</span>
+                    <span>{item.date}</span>
+                  </div>
+
+                  <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">
+                    {item.description}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

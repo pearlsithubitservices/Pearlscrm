@@ -1,8 +1,12 @@
-import React from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from "framer-motion";
 import { ShieldCheck, CalendarDays } from 'lucide-react';
+import { getProfile } from '../../../services/profileApi';
 
 const Verification = () => {
+  const [verification, setVerification] = useState({});
+  useEffect(() => { getProfile().then(({ data }) => setVerification(data.user?.profile?.verification || {})).catch(() => undefined); }, []);
+  const verifiedDate = verification.verifiedAt ? new Date(verification.verifiedAt).toLocaleDateString() : 'Not available';
   return (
     <motion.div
         initial={{ opacity: 0 }}
@@ -26,11 +30,11 @@ const Verification = () => {
 
             <div className="flex items-center gap-2 mt-4 text-green-600 font-semibold">
               <ShieldCheck size={18} />
-              Verified
+              {verification.status || 'Not verified'}
             </div>
 
             <p className="text-gray-500 text-sm mt-2">
-              Verified on Jun 1, 2024
+              Verified on {verifiedDate}
             </p>
           </div>
 
@@ -41,11 +45,11 @@ const Verification = () => {
 
             <div className="flex items-center gap-2 mt-4 text-[#0b2b57] font-semibold">
               <CalendarDays size={18} />
-              Jun 1, 2024
+              {verifiedDate}
             </div>
 
             <p className="text-gray-500 text-sm mt-2">
-              Verified on Jun 1, 2024
+              Verified on {verifiedDate}
             </p>
           </div>
 

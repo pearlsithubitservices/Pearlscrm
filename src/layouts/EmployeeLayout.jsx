@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import EmployeeSidebar from "../pages/employee/EmployeeSidebar";
 
 export default function EmployeeLayout() {
-  const { user, loading } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
     return (
@@ -23,11 +23,16 @@ export default function EmployeeLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  // If logged in user is Admin, redirect them to main Admin Dashboard
+  if (isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="flex min-h-screen bg-[#FBFBFA]">
       <EmployeeSidebar />
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pt-14 lg:pt-0">
         <AnimatePresence mode="wait">
           <motion.div
             initial={{ opacity: 0, y: 10 }}

@@ -1,6 +1,5 @@
 import React, {
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 
@@ -8,13 +7,8 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
-import {
-  collection,
-  getDocs,
-  addDoc,
-} from 'firebase/firestore';
 
-import { db } from '../lib/firebase';
+import { apiUrl } from '../config/api';
 
 import InputField from '../components/InputField';
 
@@ -30,169 +24,83 @@ import {
   Calendar,
   X
 } from 'lucide-react';
-import { title } from 'framer-motion/client';
+
+import useEmployees from '../Hooks/useEmployees';
 import { useAuth } from '../context/AuthContext';
 
-export default function CreateTask({ onClose }) {
+export default function CreateTask({ onClose, onSuccess }) {
+  const navigate = useNavigate();
+  const { employees } = useEmployees();
+  const { user } = useAuth();
 
-  const navigate =
-    useNavigate();
+  const adminName = user?.displayName || user?.name || user?.employeeName || (user?.email ? user.email.split('@')[0] : "Admin");
+  const adminId = user?._id || user?.uid || user?.id || adminName;
 
-  const [employees, setEmployees] =
-    useState([]);
-  const { user } = useAuth()
-  const employeeMap = useMemo(() => {
-    return employees.reduce((map, employee) => {
-      map[employee.uid] = {
-        name: employee.name || employee.employeeName,
-        role: employee.role || employee.employeeRole
-      }
-      return map;
-    }, {});
-  }, [employees]);
+  const [task, setTask] = useState({
+    title: '',
+    description: '',
+    notes: '',
+    assignedTo: '',
+    assignedBy: adminId,
+    priority: 'Medium',
+    status: 'Pending',
+    dueDate: '',
+  });
 
-
-  const [task, setTask] =
-    useState({
-
-      notes: '',
-
-      title: '',
-
-      assignedTo: ' ',
-
-      assignedBy: ' ',
-
-      priority: 'Medium',
-
-      status: 'Pending',
-
-      dueDate: '',
-
-    });
-
+  // Keep assignedBy updated if user changes or loads asynchronously
   useEffect(() => {
-
-    fetchEmployees();
-
-  }, []);
-
-  // FETCH EMPLOYEES
-
-  const fetchEmployees =
-    async () => {
-
-      try {
-
-        const snapshot =
-          await getDocs(
-            collection(
-              db,
-              'employees'
-            )
-          );
-
-        const employeeList = [];
-
-        snapshot.forEach((doc) => {
-
-          employeeList.push({
-
-            id: doc.id,
-
-
-            ...doc.data(),
-
-          });
-          console.log("Employee Doc ID:", doc.id);
-          console.log("Employee Data:", doc.data());
-
-        });
-
-        setEmployees(employeeList);
-        console.log("employees:", employeeList);
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
-
-  //ADD TASKS
-
-  // const addtasks = async () => {
-  //   try {
-  //     const response = await fetch('http://localhost:5000/api/tasks', {
-  //       method: 'POST',
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(task),
-  //     });
-
-  //     const data = await response.json();
-  //     console.log(data);
-
-  //     if (response.ok) {
-  //       alert('Task added successfully');
-  //       navigate('/tasks');
-  //     } else {
-  //       alert(data.message || 'Failed to add task');
-  //     }
-
-  //   } catch (error) {
-  //     console.log(error);
-  //     alert('Failed to add task. Please try again.');
-  //   }
-  // };
+    if (adminId && !task.assignedBy) {
+      setTask((prev) => ({ ...prev, assignedBy: adminId }));
+    }
+  }, [adminId]);
 
   // HANDLE CHANGE
-
   const handleChange = (e) => {
-
     setTask({
-
       ...task,
-
-      [e.target.name]:
-        e.target.value,
-
+      [e.target.name]: e.target.value,
     });
-
   };
 
   // ADD TASK
+  const addTask = async () => {
+    if (!task.title.trim()) {
+      alert('Please enter a task title');
+      return;
+    }
 
-  const addTask =
-    async () => {
+    try {
+      const payload = {
+        ...task,
+        assignedBy: task.assignedBy || adminId,
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+      };
 
-      try {
+      const response = await fetch(apiUrl('/tasks'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-        await addDoc(
-          collection(db, 'tasks'),
-          {
-
-            ...task,
-
-            createdAt:
-              new Date(),
-
-          }
-        );
-
-        alert('Task Added');
-        onClose();
+      if (response.ok) {
+        alert('Task Added successfully to MongoDB!');
+        if (onSuccess) {
+          onSuccess();
+        } else if (onClose) {
+          onClose();
+        }
         navigate('/tasks');
-
-      } catch (error) {
-
-        console.log(error);
-
+      } else {
+        const errData = await response.json();
+        alert(errData.message || 'Failed to add task');
       }
-
-    };
+    } catch (error) {
+      console.error('Add task error:', error);
+      alert('Failed to add task. Please check server connection.');
+    }
+  };
 
   const priorities = [
 
@@ -228,10 +136,11 @@ export default function CreateTask({ onClose }) {
         </label>
 
         <textarea
-          name='notes'
-          value={task.notes}
+          name='description'
+          value={task.description}
           onChange={handleChange}
-          className="w-full h-40 p-4 rounded-xl mt-2"
+          placeholder="Enter task description..."
+          className="w-full h-40 p-4 rounded-xl mt-2 outline-none border border-gray-300"
         />
 
       </div>
@@ -241,19 +150,10 @@ export default function CreateTask({ onClose }) {
         <InputField
           label="Assigned From"
           name="assignedBy"
-          value={task.assignedBy}
-          onChange={handleChange}
-          placeholder="Agent Name"
+          value={adminName}
+          disabled={true}
           Icon={Users}
-          type='select'
-          options={
-            [
-              {
-                value: user?.uid,
-                label: employeeMap[user?.uid]?.name
-              }
-            ]
-          }
+          placeholder="Admin Name"
         />
 
         <InputField
@@ -261,20 +161,13 @@ export default function CreateTask({ onClose }) {
           name="assignedTo"
           value={task.assignedTo}
           onChange={handleChange}
-          placeholder="Agent Name"
+          placeholder="Select Employee"
           Icon={Users}
           type='select'
-          options={[...(employees || [])]
-            .sort((a, b) => {
-              const aTime = a.createdAt?.seconds || 0;
-              const bTime = b.createdAt?.seconds || 0;
-              return bTime - aTime; // Newest first
-            })
-            .map((emp) => ({
-              label: emp.name || emp.employeeName,
-              value: emp.uid,
-            }))
-          }
+          options={employees.map((emp) => ({
+            label: emp.employeeName || emp.name || emp.displayName || (emp.email ? emp.email.split('@')[0] : "Employee"),
+            value: emp._id || emp.id || emp.uid || emp.email
+          }))}
         />
 
       </div>

@@ -7,11 +7,12 @@ import useEmployees from "../../Hooks/useEmployees";
 
 export default function TaskActivityFeed() {
   const { user } = useAuth();
-  console.log(user);
   const { employees } = useEmployees();
-  const empName = employees.find((item) =>
-    item.uid == user.uid);
-  console.log(empName);
+  const userUid = user?.uid || user?._id || user?.id;
+  const empObj = (employees || []).find((item) =>
+    item?.uid === userUid || item?._id === userUid || item?.id === userUid
+  );
+  const empName = empObj?.name || empObj?.employeeName || user?.displayName || user?.name || "Employee";
   const {
     createActivity,
     getActivities,
@@ -20,12 +21,12 @@ export default function TaskActivityFeed() {
 
   const [activities, setActivities] = useState([]);
   const [text, setText] = useState("");
-  console.log(activities);
+
   useEffect(() => {
-    if (user?.uid) {
+    if (userUid) {
       fetchActivities();
     }
-  }, [user]);
+  }, [userUid]);
 
   const fetchActivities = async () => {
     try {
@@ -41,8 +42,8 @@ export default function TaskActivityFeed() {
 
     try {
       await createActivity({
-        employee_uid: user.uid,
-        name: empName.name || "Employee",
+        employee_uid: userUid || "employee",
+        name: empName,
         text,
       });
 

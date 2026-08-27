@@ -3,30 +3,31 @@ const mongoose = require("mongoose");
 const taskSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
+    description: String,
     notes: String,
 
     assignedTo: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       ref: "Employee",
-      required: true
+      default: "Unassigned"
     },
 
     assignedBy: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       ref: "User",
-      required:true
+      default: "Admin"
     },
 
     priority: {
       type: String,
-      enum: ["Hot", "Warm", "Cold"],
-      default: "cold"
+      enum: ["Hot", "Warm", "Cold", "High", "Medium", "Normal", "Low"],
+      default: "High"
     },
 
     status: {
       type: String,
-      enum: ["Pending", "In Progress", "Completed"],
-      default: "Pending"
+      enum: ["Pending", "In Progress", "Completed", "New"],
+      default: "New"
     },
 
     dueDate: Date

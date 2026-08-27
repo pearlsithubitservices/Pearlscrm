@@ -5,17 +5,27 @@ export default function useTaskFilter(tasks, search, active) {
     const q = search.toLowerCase();
 
     return tasks.filter((task) => {
+      const assignedToText = typeof task.assignedTo === 'object' && task.assignedTo !== null
+        ? (task.assignedTo.name || task.assignedTo.employeeName || task.assignedTo.email || "")
+        : String(task.assignedTo || "");
+
+      const assignedEmpText = typeof task.assignedEmployee === 'object' && task.assignedEmployee !== null
+        ? (task.assignedEmployee.name || task.assignedEmployee.employeeName || task.assignedEmployee.email || "")
+        : String(task.assignedEmployee || "");
+
       const searched =
-        task.company?.toLowerCase().includes(q) ||
-        task.assignedEmployee?.toLowerCase().includes(q) ||
-        task.assignedTo?.toLowerCase().includes(q) ||
-        task.status?.toLowerCase().includes(q) ||
-        task.priority?.toLowerCase().includes(q);
+        (task.title || task.company || "")?.toLowerCase().includes(q) ||
+        assignedEmpText.toLowerCase().includes(q) ||
+        assignedToText.toLowerCase().includes(q) ||
+        (task.status || "")?.toLowerCase().includes(q) ||
+        (task.priority || "")?.toLowerCase().includes(q);
 
       const filtered =
         active === "All"
           ? true
-          : task.priority?.toLowerCase() === active.toLowerCase();
+          : active.toLowerCase() === "pending"
+          ? (task.status || "").toLowerCase() === "pending"
+          : (task.priority || "").toLowerCase() === active.toLowerCase();
 
       return searched && filtered;
     });

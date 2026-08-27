@@ -5,8 +5,9 @@ const notificationSchema = require('../models/CommunicationModels/Notifications'
 //Get Notification
 router.get("/", async (req, res) => {
     try {
+        const filter = req.query.employeeId ? { employeeId: req.query.employeeId } : {};
         const result = await notificationSchema
-            .find()
+            .find(filter)
             .sort({ createdAt: -1 });
 
         res.status(200).json(result);

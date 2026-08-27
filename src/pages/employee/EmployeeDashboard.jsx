@@ -13,30 +13,17 @@ import {
 
 import EmployeeSidebar
 from './EmployeeSidebar';
-
-import {
-  auth,
-  db
-} from '../../lib/firebase';
-
-import {
-  collection,
-  query,
-  where,
-  getDocs
-} from 'firebase/firestore';
-
-import {
-  onAuthStateChanged
-} from 'firebase/auth';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../lib/api';
 
 export default function EmployeeDashboard() {
 
   const [searchQuery, setSearchQuery] =
     useState('');
 
-  const [currentUser, setCurrentUser] =
-    useState(null);
+  const { user, role } = useAuth();
+
+  const currentUser = user || null;
 
   const [tasks, setTasks] =
     useState([]);
@@ -45,105 +32,62 @@ export default function EmployeeDashboard() {
     useState([]);
 
   useEffect(() => {
+    if (!user) {
+      setTasks([]);
+      setFollowups([]);
+      return;
+    }
 
-    const unsubscribe =
-      onAuthStateChanged(
-        auth,
-        async (user) => {
+    const userValues = [
+      user._id,
+      user.uid,
+      user.email,
+      user.name,
+      user.displayName,
+      user.employeeName,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase());
 
-          if (user) {
+    const matchesAssignedUser = (item) => {
+      const assignedTo = item?.assignedTo;
+      const assignedValue = typeof assignedTo === 'object'
+        ? assignedTo?._id || assignedTo?.uid || assignedTo?.email || assignedTo?.name
+        : assignedTo;
+      return userValues.includes(String(assignedValue || '').toLowerCase());
+    };
 
-            // USER DETAILS
+    const loadDashboardData = async () => {
+      try {
+        const [tasksResponse, followupsResponse] = await Promise.all([
+          api.get('/tasks'),
+          api.get('/followups'),
+        ]);
 
-            const userQuery = query(
-              collection(db, 'users'),
-              where(
-                'uid',
-                '==',
-                user.uid
-              )
-            );
+        const allTasks = Array.isArray(tasksResponse.data)
+          ? tasksResponse.data
+          : [];
+        setTasks(
+          allTasks
+            .filter(matchesAssignedUser)
+            .map((task) => ({ ...task, id: task._id || task.id }))
+        );
 
-            const userSnapshot =
-              await getDocs(userQuery);
+        const allFollowups = Array.isArray(followupsResponse.data)
+          ? followupsResponse.data
+          : [];
+        setFollowups(
+          allFollowups
+            .filter(matchesAssignedUser)
+            .map((followup) => ({ ...followup, id: followup._id || followup.id }))
+        );
+      } catch (error) {
+        console.error('Error fetching employee dashboard data:', error);
+      }
+    };
 
-            userSnapshot.forEach((doc) => {
-
-              setCurrentUser(
-                doc.data()
-              );
-
-            });
-
-            // TASKS
-
-            const taskQuery = query(
-              collection(db, 'tasks'),
-              where(
-                'assignedTo',
-                '==',
-                user.uid
-              )
-            );
-
-            const taskSnapshot =
-              await getDocs(taskQuery);
-
-            const taskData = [];
-
-            taskSnapshot.forEach((doc) => {
-
-              taskData.push({
-                id: doc.id,
-                ...doc.data(),
-              });
-
-            });
-
-            setTasks(taskData);
-
-            // FOLLOWUPS
-
-            const followupQuery = query(
-              collection(
-                db,
-                'followups'
-              ),
-              where(
-                'assignedTo',
-                '==',
-                user.uid
-              )
-            );
-
-            const followupSnapshot =
-              await getDocs(
-                followupQuery
-              );
-
-            const followupData = [];
-
-            followupSnapshot.forEach((doc) => {
-
-              followupData.push({
-                id: doc.id,
-                ...doc.data(),
-              });
-
-            });
-
-            setFollowups(
-              followupData
-            );
-
-          }
-
-        }
-      );
-
-    return () => unsubscribe();
-
-  }, []);
+    loadDashboardData();
+  }, [user]);
 
   // STATS
 
@@ -301,42 +245,53 @@ export default function EmployeeDashboard() {
 
             <div className="space-y-4">
 
-              {tasks.slice(0, 5).map((task) => (
+              {tasks.slice(0, 5).map((task) => {
+                const getPersonName = (val, defaultName = "Unassigned") => {
+                  if (!val) return defaultName;
+                  if (typeof val === 'object' && val !== null) {
+                    return val.name || val.employeeName || val.displayName || val.email || defaultName;
+                  }
+                  const isRawId = /^[0-9a-fA-F]{24}$/.test(val) || /^[A-Za-z0-9_-]{20,}$/.test(val);
+                  return isRawId ? defaultName : val;
+                };
 
-                <div
-                  key={task.id}
-                  className="bg-white/5 rounded-2xl p-4"
-                >
+                const assignedByPerson = getPersonName(task.assignedBy || task.assignedFrom, "Admin");
+                const st = (task.status || "Pending").toLowerCase();
+                const badgeColor = st === 'completed' 
+                  ? 'bg-green-500/20 text-green-300' 
+                  : st === 'in progress' 
+                  ? 'bg-blue-500/20 text-blue-300' 
+                  : 'bg-yellow-500/20 text-yellow-300';
 
-                  <div className="flex items-center justify-between">
+                return (
+                  <div
+                    key={task.id || task._id}
+                    className="bg-white/5 rounded-2xl p-4"
+                  >
 
-                    <div>
+                    <div className="flex items-center justify-between">
 
-                      <h3 className="font-bold text-lg">
+                      <div>
 
-                        {task.company}
+                        <h3 className="font-bold text-lg">
+                          {task.title || task.company || "Untitled Task"}
+                        </h3>
 
-                      </h3>
+                        <p className="text-gray-400 text-sm mt-1">
+                          Assigned By: <span className="text-purple-400 font-medium">{assignedByPerson}</span>
+                        </p>
 
-                      <p className="text-gray-400 text-sm mt-1">
+                      </div>
 
-                        {task.title}
-
-                      </p>
+                      <span className={`px-3 py-1 rounded-xl text-sm font-medium ${badgeColor}`}>
+                        ● {task.status || "Pending"}
+                      </span>
 
                     </div>
 
-                    <span className="px-3 py-1 rounded-xl bg-purple-500/10 text-purple-300 text-sm">
-
-                      {task.status}
-
-                    </span>
-
                   </div>
-
-                </div>
-
-              ))}
+                );
+              })}
 
             </div>
 

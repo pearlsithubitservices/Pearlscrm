@@ -58,4 +58,15 @@ router.get("/",
          }
     }
 );
+
+// DELETE EMPLOYEE
+router.delete("/:id", async (req, res) => {
+    try {
+        await Employee.findByIdAndDelete(req.params.id);
+        res.status(200).json({ success: true, message: "Employee deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 module.exports = router;

@@ -12,14 +12,11 @@ import {
   X
 } from "lucide-react";
 
-import {
-  collection,
-  getDocs
-} from "firebase/firestore";
-
-import { db } from "../lib/firebase.js";
+import { apiUrl } from "../config/api.js";
+import useEmployees from "../Hooks/useEmployees.js";
 
 export default function ProjectForm({ onClose, fetchProjects }) {
+  const { employees } = useEmployees();
   const [project, setProject] = useState({
     company: "",
     companylocation: "",
@@ -30,113 +27,50 @@ export default function ProjectForm({ onClose, fetchProjects }) {
     dueDate: "",
     leader: "",
     budget: "",
+    status: "In Progress",
+    priority: "Medium",
+    progress: 0,
   });
-
-  const [employees, setEmployees] = useState([]);
-  console.log("first employee:", employees[0]);
-  console.log("name:", employees[0]?.name);
-  // FETCH EMPLOYEES
-  const fetchEmployees = async () => {
-
-    try {
-
-      const snapshot = await getDocs(
-        collection(db, "employees")
-      );
-
-      const employeeList = [];
-
-      snapshot.forEach((doc) => {
-
-        employeeList.push({
-          id: doc.id,
-          ...doc.data(),
-        });
-
-      });
-
-      setEmployees(employeeList);
-      console.log("employees:", employeeList);
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
 
   // EMPLOYEE MAP
   const employeeMap = useMemo(() => {
-
     const map = {};
-
     employees.forEach((emp) => {
-      map[emp.id] = emp;
+      const eKey = emp._id || emp.id || emp.uid;
+      if (eKey) map[eKey] = emp;
     });
-
     return map;
-
   }, [employees]);
 
   // ADD PROJECT
   const handleAddProject = async () => {
+    if (!project.title.trim()) {
+      alert("Please enter a project title");
+      return;
+    }
 
     try {
-
-      console.log("Adding project:", project);
-
-      const response = await fetch(
-        // "http://localhost:5000/api/projects",
-        "https://pearlscrm.onrender.com/api/projects",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(project)
-        }
-      );
+      const response = await fetch(apiUrl("/projects"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(project)
+      });
 
       const data = await response.json();
 
-      console.log("Response from server:", data);
-
       if (response.ok) {
-
-        console.log(
-          "Project added successfully:",
-          data
-        );
-
         alert("Project Added Successfully");
-        await fetchProjects();
-
+        if (fetchProjects) await fetchProjects();
         onClose();
-
       } else {
-
-        console.error(
-          "Error adding project:",
-          data.message
-        );
-
+        alert(data.message || "Error adding project");
       }
-
     } catch (error) {
-
-      console.log(error);
-
-      alert(
-        "Failed to add project. Please try again."
-      );
-
+      console.error(error);
+      alert("Failed to add project. Please try again.");
     }
-
   };
 
   const handleChange = (e) => {
@@ -212,7 +146,7 @@ export default function ProjectForm({ onClose, fetchProjects }) {
         <div>
 
           <label className="font-bold text-[#0b2b57]">
-            Add Project Members
+            Add Project Members (From Database)
           </label>
 
           <div className="bg-white rounded-xl p-3 border relative">
@@ -222,23 +156,16 @@ export default function ProjectForm({ onClose, fetchProjects }) {
             <select
               value=""
               onChange={(e) => {
-
-                const selectedId =
-                  e.target.value;
-
+                const selectedId = e.target.value;
                 if (!selectedId) return;
 
-                // Prevent duplicates
                 const employee = employeeMap[selectedId];
-
                 if (!employee) return;
 
-                // Prevent duplicates
-                if (
-                  project.members.some(
-                    (member) => member.uid === employee.uid
-                  )
-                ) {
+                const empUid = employee._id || employee.id || employee.uid;
+                const empName = employee.name || employee.employeeName || employee.email;
+
+                if (project.members.some((m) => (m.uid || m._id || m.id) === empUid)) {
                   return;
                 }
 
@@ -247,14 +174,15 @@ export default function ProjectForm({ onClose, fetchProjects }) {
                   members: [
                     ...prev.members,
                     {
-                      uid: employee.uid,
-                      name: employee.name,
+                      uid: empUid,
+                      _id: empUid,
+                      id: empUid,
+                      name: empName,
                       role: "Developer",
                       progress: 0,
                     },
                   ],
                 }));
-
               }}
               className="
                 w-full
@@ -266,22 +194,18 @@ export default function ProjectForm({ onClose, fetchProjects }) {
             >
 
               <option value="">
-                Select Employee
+                Select Employee...
               </option>
 
-              {employees.map((emp) => (
-
-                <option
-                  key={emp.id}
-                  value={emp.id}
-                >
-
-                  {JSON.stringify(emp.name)}
-
-                </option>
-
-              ))}
-
+              {employees.map((emp) => {
+                const eId = emp._id || emp.id || emp.uid;
+                const eName = emp.name || emp.employeeName || emp.email;
+                return (
+                  <option key={eId} value={eId}>
+                    {eName}
+                  </option>
+                );
+              })}
             </select>
 
             {/* SELECTED MEMBERS */}
@@ -290,26 +214,28 @@ export default function ProjectForm({ onClose, fetchProjects }) {
               {project.members.map((member) => (
                 <div
                   key={member.uid}
-                  className="flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full"
+                  className="flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold"
                 >
                   <span>{member.name}</span>
 
                   <select
                     value={member.role}
                     onChange={(e) => {
+                      const newRole = e.target.value;
                       setProject((prev) => ({
                         ...prev,
+                        leader: newRole === "Leader" ? member.name : prev.leader,
                         members: prev.members.map((m) =>
                           m.uid === member.uid
                             ? {
                               ...m,
-                              role: e.target.value,
+                              role: newRole,
                             }
                             : m
                         ),
                       }));
                     }}
-                    className="border rounded px-2 py-1 text-sm bg-white"
+                    className="border rounded px-2 py-0.5 text-xs bg-white text-gray-700 outline-none"
                   >
                     <option value="Leader">Leader</option>
                     <option value="Developer">Developer</option>
@@ -328,7 +254,7 @@ export default function ProjectForm({ onClose, fetchProjects }) {
                         ),
                       }))
                     }
-                    className="hover:text-red-500"
+                    className="hover:text-red-500 transition"
                   >
                     <X size={14} />
                   </button>
@@ -372,13 +298,45 @@ export default function ProjectForm({ onClose, fetchProjects }) {
             label="Project Leader"
             name="leader"
             value={project.leader}
-            onChange={handleChange}
-            placeholder="Leader"
+            onChange={(e) => {
+              const selectedLeaderName = e.target.value;
+              setProject((prev) => {
+                const updatedMembers = [...prev.members];
+                const empObj = employees.find(
+                  (emp) => (emp.name || emp.employeeName || emp.email) === selectedLeaderName
+                );
+                if (empObj) {
+                  const empUid = empObj._id || empObj.id || empObj.uid;
+                  const exists = updatedMembers.some(
+                    (m) => (m.uid || m._id || m.id) === empUid
+                  );
+                  if (!exists) {
+                    updatedMembers.push({
+                      uid: empUid,
+                      _id: empUid,
+                      id: empUid,
+                      name: empObj.name || empObj.employeeName || empObj.email,
+                      role: "Leader",
+                      progress: 0,
+                    });
+                  }
+                }
+                return {
+                  ...prev,
+                  leader: selectedLeaderName,
+                  members: updatedMembers,
+                };
+              });
+            }}
+            placeholder="Select Leader"
             type="select"
-            options={employees.map((emp) => ({
-              label: emp.name,
-              value: emp.uid,
-            }))}
+            options={employees.map((emp) => {
+              const eName = emp.name || emp.employeeName || emp.email;
+              return {
+                label: eName,
+                value: eName,
+              };
+            })}
           />
 
           <InputField

@@ -1,11 +1,19 @@
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const http = require("http");
+const path = require("path");
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 const connectDB = require("./db");
-const MarketingLeadRoutes =require("./routes/marketingLeadRoutes");
+
+const authRoutes = require("./routes/authRoutes");
+const profileRoutes = require("./routes/profileRoutes");
 const leadRoutes = require("./routes/leadRoutes");
 const taskRoutes = require("./routes/TaskRoutes");
 const followupRoutes = require("./routes/followupRoutes");
@@ -13,32 +21,31 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const attendanceRoutes = require("./routes/AttendanceRoutes");
 const ProjectsRoutes = require("./routes/ProjectsRoutes");
 const ClientRoutes = require("./routes/ClientRoutes");
-const EmployeeRoutes = require('./routes/EmployeeRoutes');
-const PaymentRoutes = require('./routes/PaymentRoutes');
-const LeaveRoute = require('./routes/LeaveRoute');
-const HolidayRoute = require('./routes/HolidayRoute');
-const ReimbursementRoutes = require('./routes/ReimbursementRoutes');
-const EmailRoutes = require('./routes/EmailRoutes');
-const ReimbursementPolicyRoutes = require('./routes/ReimbursementPolicyroutes');
-const TaxDocumentRoutes = require('./routes/TaxDocumentsRoutes');
-
-const EmpAttendanceRoutes = require('./routes/EmpAttendanceRoutes');
-const AnnouncementSchema = require('./routes/Announcements');
-const NotificationRoutes = require('./routes/NotificationRoutes');
-const TicketRoutes = require('./routes/TicketRoutes');
-const path = require("path");
-const FeedbackRoutes = require('./routes/FeedbackRoutes');
-const PayslipRoutes = require('./routes/PayslipRoutes');
-const EmpAttendanceCorrectionRoutes = require('./routes/EmpAttendanceCorrectionRoutes');
-const EmpMyGoal = require('./routes/MyGoalRoutes');
-const EmpReview = require('./routes/ReviewRoutes');
-const EmpEnrollment = require('./routes/EnrollmentRoutes');
-const EmpCourse = require('./routes/EmpCourseRoutes');
-const EmpSkillCertification = require('./routes/SkillCertificationRoutes');
+const EmployeeRoutes = require("./routes/EmployeeRoutes");
+const PaymentRoutes = require("./routes/PaymentRoutes");
+const LeaveRoute = require("./routes/LeaveRoute");
+const HolidayRoute = require("./routes/HolidayRoute");
+const ReimbursementRoutes = require("./routes/ReimbursementRoutes");
+const EmpAttendanceRoutes = require("./routes/EmpAttendanceRoutes");
+const AnnouncementSchema = require("./routes/Announcements");
+const NotificationRoutes = require("./routes/NotificationRoutes");
+const TicketRoutes = require("./routes/TicketRoutes");
+const FeedbackRoutes = require("./routes/FeedbackRoutes");
+const PayslipRoutes = require("./routes/PayslipRoutes");
+const EmpAttendanceCorrectionRoutes = require("./routes/EmpAttendanceCorrectionRoutes");
+const EmpMyGoal = require("./routes/MyGoalRoutes");
+const EmpReview = require("./routes/ReviewRoutes");
+const EmpEnrollment = require("./routes/EnrollmentRoutes");
+const EmpCourse = require("./routes/EmpCourseRoutes");
+const EmpSkillCertification = require("./routes/SkillCertificationRoutes");
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
-const EmpActivityRoutes = require("./routes/TaskActivityRoute")
+const EmpActivityRoutes = require("./routes/TaskActivityRoute");
 const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
+const TaskDocumentRoutes = require("./routes/TaskDocumentRoutes");
 
+const chatRoutes = require("./routes/ChatRoute");
+const messageRoutes = require("./routes/messageRoute");
+const { initSocket } = require("./Socket");
 
 const whatsappCampaignRoutes = require('./routes/WhatsAppCampaign/campaignRoutes');
 const whatsappTemplateRoutes = require('./routes/WhatsAppCampaign/templateRoutes');
@@ -57,50 +64,25 @@ const whatsappConfigRoutes = require("./routes/Whatsapp Automation/whatsappInteg
 connectDB();
 
 const app = express();
-console.log("EmployeeRoutes =", EmployeeRoutes);
-console.log("PaymentRoutes =", PaymentRoutes);
-console.log("MarketingLeadRoutes =", MarketingLeadRoutes);
+const server = http.createServer(app);
+initSocket(server);
+
 app.use(
   cors({
-    origin: [
-      'http://localhost:5173',
-      'https://pearlscrm.vercel.app'
-    ],
-    methods: [
-      'GET',
-      'POST',
-      'PUT',
-      'DELETE',
-      'PATCH',
-    ],
+    origin: ["http://localhost:5173", "https://pearlscrm.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
-app.use(express.json());
- 
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-app.get("/download/:filename", (req, res) => {
-  const filePath = path.join(
-    __dirname,
-    "uploads",
-    "certificates",
-    req.params.filename
-  );
-
-  res.download(filePath, (err) => {
-    if (err) {
-      res.status(404).json({
-        success: false,
-        message: "File not found",
-      });
-    }
-  });
-});
-
-
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/task-documents", TaskDocumentRoutes);
 app.use("/api/followups", followupRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/attendance", attendanceRoutes);
@@ -108,49 +90,45 @@ app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
-//app.use("/api/marketing-leads",MarketingLeadRoutes);
+// app.use("/api/marketing-leads",MarketingLeadRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
-app.use("/api/email", EmailRoutes);
-
-app.use("/api/empattendancenew", EmpAttendanceRoutes)
+app.use("/api/empattendancenew", EmpAttendanceRoutes);
 app.use("/api/announcement", AnnouncementSchema);
 app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/feedback", FeedbackRoutes);
 app.use("/api/payslip", PayslipRoutes);
 app.use("/api/empAttendanceCorrection", EmpAttendanceCorrectionRoutes);
-app.use("/api/mygoal", EmpMyGoal)
+app.use("/api/mygoal", EmpMyGoal);
 app.use("/api/review", EmpReview);
 app.use("/api/empenrollment", EmpEnrollment);
 app.use("/api/empCourse", EmpCourse);
 app.use("/api/skillscertification", EmpSkillCertification);
 app.use("/api/contribution", EmpContributionRoutes);
-app.use("/api/activity", EmpActivityRoutes);
+app.use("/api/activity",EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
-app.use('/api/reimbursementpolicy', ReimbursementPolicyRoutes);
-app.use('/api/taxdocuments', TaxDocumentRoutes);
 
-app.use('/api/whatsapp/campaigns', whatsappCampaignRoutes);
-app.use('/api/whatsapp/templates', whatsappTemplateRoutes);
-app.use('/api/whatsapp/broadcasts', whatsappBroadcastRoutes);
-app.use('/api/whatsapp/queue', whatsappQueueRoutes);
-app.use('/api/whatsapp/analytics', whatsappAnalyticsRoutes);
-app.use('/api/whatsapp/connection', whatsappConnectionRoutes);
-app.use('/api/whatsapp/webhook', whatsappWebhookRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/messages", messageRoutes);
 
+const { startFollowupReminderScheduler } = require("./services/followupReminderScheduler");
 
-app.use('/api/conversations',whatsappConversationRoutes);
+app.use('/api/conversations', whatsappConversationRoutes);
 app.use("/api/automation-rules", automationRuleRoutes);
 app.use("/api/message-templates", messageTemplateRoutes);
 app.use("/api/ai-config", aiConfigRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/whatsapp-integration", whatsappConfigRoutes);
-app.listen(process.env.PORT, () => {
-  console.log(`Server running on port ${process.env.PORT}`);
-  console.log("Connected to database");
-});
 
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log("Connected to database with WebSocket support");
+  startFollowupReminderScheduler();
+});
 

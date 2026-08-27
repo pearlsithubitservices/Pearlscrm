@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
     FileText,
@@ -10,58 +10,72 @@ import {
     Eye,
     Pencil,
 } from "lucide-react";
+import { getProfile, uploadDocument } from "../../../services/profileApi";
 
 export default function EmployeeDocuments() {
     const [documents, setDocuments] = useState([
         {
             title: "Latest Resume",
+            type: "resume",
             icon: FileText,
             file: null,
         },
         {
             title: "PAN Card",
+            type: "panCard",
             icon: IdCard,
             file: null,
         },
         {
             title: "Aadhaar Card",
+            type: "aadhaarCard",
             icon: Fingerprint,
             file: null,
         },
         {
             title: "Edu. Certificates",
+            type: "certificates",
             icon: GraduationCap,
             file: null,
         },
         {
             title: "Experience",
+            type: "experience",
             icon: FileBadge,
             file: null,
         },
     ]);
+    const [uploading, setUploading] = useState("");
+    const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(true);
 
-    const handleFileUpload = (e, title) => {
+    useEffect(() => {
+        getProfile().then(({ data }) => {
+            const stored = data.user?.profile?.documents || {};
+            setDocuments((previous) => previous.map((doc) => ({ ...doc, file: stored[doc.type] || null })));
+        }).catch(() => setMessage("Failed to load documents")).finally(() => setLoading(false));
+    }, []);
+
+    const handleFileUpload = async (e, documentType) => {
         const selectedFile = e.target.files[0];
 
         if (!selectedFile) return;
-
-        setDocuments((prev) =>
-            prev.map((doc) =>
-                doc.title === title
-                    ? {
-                        ...doc,
-                        file: selectedFile,
-                    }
-                    : doc
-            )
-        );
+        setUploading(documentType);
+        setMessage("");
+        try {
+            const { data } = await uploadDocument(documentType, selectedFile);
+            setDocuments((prev) => prev.map((doc) => doc.type === documentType ? { ...doc, file: data.document } : doc));
+            setMessage("Document uploaded successfully");
+        } catch (error) {
+            setMessage(error.response?.data?.message || "Failed to upload document");
+        } finally {
+            setUploading("");
+            e.target.value = "";
+        }
     };
 
     const handleView = (file) => {
-        if (!file) return;
-
-        const fileURL = URL.createObjectURL(file);
-        window.open(fileURL, "_blank");
+        if (file?.fileUrl) window.open(file.fileUrl, "_blank", "noopener,noreferrer");
     };
 
     return (
@@ -70,6 +84,8 @@ export default function EmployeeDocuments() {
             <h2 className="text-3xl font-bold text-black mb-8">
                 Documents
             </h2>
+            {message && <p className="text-sm text-gray-600 mb-4">{message}</p>}
+            {loading && <p className="text-sm text-gray-500 mb-4">Loading documents...</p>}
 
             {/* Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -102,7 +118,7 @@ export default function EmployeeDocuments() {
 
                             {/* File Name */}
                             <p className="text-gray-500 text-sm mb-6 truncate">
-                                {doc.file ? doc.file.name : "Not uploaded"}
+                                {doc.file ? doc.file.fileName : "Not uploaded"}
                             </p>
                         </div>
 
@@ -111,6 +127,7 @@ export default function EmployeeDocuments() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => handleView(doc.file)}
+                                    disabled={uploading === doc.type}
                                     className="flex-1 bg-[#1f5ea8] hover:bg-[#164785] text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition"
                                 >
                                     <Eye size={16} />
@@ -121,18 +138,18 @@ export default function EmployeeDocuments() {
                                     onClick={() =>
                                         document.getElementById(`upload-${index}`).click()
                                     }
+                                    disabled={uploading === doc.type}
                                     className="w-12 bg-slate-100 hover:bg-slate-200 text-[#0b2b57] py-3 rounded-xl flex items-center justify-center transition"
                                 >
                                     <Pencil size={16} />
                                 </button>
-
                                 <input
                                     type="file"
                                     id={`upload-${index}`}
                                     className="hidden"
                                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                                     onChange={(e) =>
-                                        handleFileUpload(e, doc.title)
+                                        handleFileUpload(e, doc.type)
                                     }
                                 />
                             </div>
@@ -144,7 +161,7 @@ export default function EmployeeDocuments() {
                                     className="hidden"
                                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                                     onChange={(e) =>
-                                        handleFileUpload(e, doc.title)
+                                        handleFileUpload(e, doc.type)
                                     }
                                 />
 
@@ -155,9 +172,10 @@ export default function EmployeeDocuments() {
                                             .click()
                                     }
                                     className="w-full border-2 border-dashed border-blue-300 text-[#1f5ea8] py-3 rounded-xl font-small flex items-center justify-center gap-2 hover:bg-blue-50 transition"
+                                    disabled={uploading === doc.type}
                                 >
                                     <Upload size={18} />
-                                    Upload File
+                                    {uploading === doc.type ? "Uploading..." : "Upload File"}
                                 </button>
                             </>
                         )}

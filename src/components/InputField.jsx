@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function InputField({
   label,
   Icon,
@@ -52,6 +50,7 @@ export default function InputField({
             name={name}
             value={value}
             onChange={onChange}
+            disabled={disabled}
             className="border rounded px-3 py-2 w-full"
           >
             <option value="">Select {label}</option>

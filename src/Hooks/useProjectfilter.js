@@ -19,12 +19,21 @@ export default function useProjectFilter(projects, search, active) {
 
       let filtered = true;
 
-      if (active === "on Track") {
-        // Today and future projects
-        filtered = dueDate >= today;
+      if (active === "Pending") {
+        // Projects that are pending or in progress (not completed)
+        const st = (project.status || "").toLowerCase();
+        filtered = st === "pending" || st === "in progress" || st === "planning" || (st !== "completed" && (Number(project.progress) || 0) < 100);
+      } else if (active === "on Track") {
+        // Today and future projects not completed
+        const st = (project.status || "").toLowerCase();
+        filtered = dueDate >= today && st !== "completed";
       } else if (active === "At Risk") {
-        // Projects due today or earlier
-        filtered = dueDate <= today;
+        // Projects due before today and not completed
+        const st = (project.status || "").toLowerCase();
+        filtered = dueDate < today && st !== "completed";
+      } else if (active === "Completed") {
+        const st = (project.status || "").toLowerCase();
+        filtered = st === "completed" || (Number(project.progress) || 0) === 100;
       }
 
       return searched && filtered;

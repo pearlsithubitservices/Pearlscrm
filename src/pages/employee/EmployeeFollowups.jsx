@@ -1,25 +1,8 @@
 import React, {
-  useEffect,
   useState
 } from 'react';
 
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc
-} from 'firebase/firestore';
-
-import {
-  onAuthStateChanged
-} from 'firebase/auth';
-
-import {
-  auth,
-  db
-} from '../../lib/firebase';
+import { useAuth } from '../../context/AuthContext';
 
 import {
   Search,
@@ -43,55 +26,13 @@ export default function EmployeeFollowups() {
   const [search, setSearch] =
     useState('');
 
-  const [loading, setLoading] =
-    useState(true);
+  const { user } = useAuth();
 
-  useEffect(() => {
+  const loading = false;
 
-    const unsubscribe =
-      onAuthStateChanged(
-        auth,
-        async (user) => {
-
-          if (user) {
-
-            const q = query(
-              collection(db, 'followups'),
-              where(
-                'assignedTo',
-                '==',
-                user.uid
-              )
-            );
-
-            const snapshot =
-              await getDocs(q);
-
-            const followupList = [];
-
-            snapshot.forEach((doc) => {
-
-              followupList.push({
-                id: doc.id,
-                ...doc.data(),
-              });
-
-            });
-
-            setFollowups(
-              followupList
-            );
-
-            setLoading(false);
-
-          }
-
-        }
-      );
-
-    return () => unsubscribe();
-
-  }, []);
+  if (!user) {
+    return null;
+  }
 
   // HANDLE CHANGE
 

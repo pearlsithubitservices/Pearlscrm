@@ -1,9 +1,15 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import InputField from '../../../components/InputField';
+import { getProfile, updateProfile } from '../../../services/profileApi';
+import { useAuth } from '../../../context/AuthContext';
 
-const PersonalDetails = () => {
+const PersonalDetails = ({ startEditing = false }) => {
 
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(startEditing);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState({ type: '', text: '' });
+    const { fetchCurrentUser } = useAuth();
 
     const [details, setDetails] = useState(
         {
@@ -30,6 +36,38 @@ const PersonalDetails = () => {
         }
     );
 
+    useEffect(() => {
+        let active = true;
+        getProfile()
+            .then(({ data }) => {
+                if (!active) return;
+                const profile = data.user?.profile || {};
+                const firstName = data.user?.firstName || data.user?.name?.split(' ')[0] || '';
+                const lastName = data.user?.lastName || data.user?.name?.split(' ').slice(1).join(' ') || '';
+                setDetails({
+                    firstname: firstName,
+                    lastname: lastName,
+                    dob: profile.dob ? profile.dob.slice(0, 10) : '',
+                    gender: profile.gender || '',
+                    email: data.user?.email || '',
+                    phone: profile.phone || data.user?.phone || '',
+                    emergencyNO: profile.emergencyNo || '',
+                    empId: profile.empId || '',
+                    address: profile.address || '',
+                });
+                setJobDetails({
+                    designation: profile.designation || '',
+                    department: profile.department || '',
+                    joiningdate: profile.joiningDate ? profile.joiningDate.slice(0, 10) : '',
+                    reportingmanager: profile.reportingManager || '',
+                    workLocation: profile.workLocation || '',
+                });
+            })
+            .catch((error) => setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to load profile' }))
+            .finally(() => active && setLoading(false));
+        return () => { active = false; };
+    }, []);
+
     //Onchange for Details
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -49,19 +87,41 @@ const PersonalDetails = () => {
         }));
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!isEditing) {
             setIsEditing(true);
             return;
         }
 
-        setIsEditing(false);
-        console.log(details);
-        console.log(jobdetails);
-
-        // API Call
-
+        setSaving(true);
+        setMessage({ type: '', text: '' });
+        try {
+            await updateProfile({
+                firstName: details.firstname,
+                lastName: details.lastname,
+                email: details.email,
+                dob: details.dob || null,
+                gender: details.gender,
+                phone: details.phone,
+                emergencyNo: details.emergencyNO,
+                empId: details.empId,
+                address: details.address,
+                designation: jobdetails.designation,
+                department: jobdetails.department,
+                joiningDate: jobdetails.joiningdate || null,
+                reportingManager: jobdetails.reportingmanager,
+                workLocation: jobdetails.workLocation,
+            });
+            await fetchCurrentUser();
+            setIsEditing(false);
+            setMessage({ type: 'success', text: 'Profile updated successfully' });
+        } catch (error) {
+            setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to update profile' });
+        } finally {
+            setSaving(false);
+        }
     };
+    if (loading) return <div className="mt-8 bg-white rounded-lg p-6 text-gray-500">Loading profile...</div>;
     return (
         <div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -165,10 +225,12 @@ const PersonalDetails = () => {
                     <div className="flex justify-between items-center">
                         <h3>JOB DETAILS</h3>
                         <button className=" bg-blue-900 mt-2 mr-4 text-white font-semibold text-sm p-2 rounded-lg hover:scale-105 transition duration-300"
-                            onClick={handleSubmit}>
-                            {isEditing ? "Save Info" : "Update Info"}
+                            onClick={handleSubmit}
+                            disabled={saving}>
+                            {saving ? "Saving..." : isEditing ? "Save Info" : "Update Info"}
                         </button>
                     </div>
+                    {message.text && <p className={message.type === 'error' ? 'text-red-600 text-sm' : 'text-green-600 text-sm'}>{message.text}</p>}
                     <div>
                         <InputField
                             label="Designation:"

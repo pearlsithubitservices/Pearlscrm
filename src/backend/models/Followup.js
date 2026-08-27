@@ -15,7 +15,6 @@ const FollowupSchema = new mongoose.Schema(
 
     phone: {
       type: String,
-      required: true,
       trim: true,
     },
 
@@ -27,8 +26,8 @@ const FollowupSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["New", "Pending", "Completed"],
-      default: "New",
+      enum: ["New", "Pending", "In Progress", "Completed", "Scheduled"],
+      default: "Pending",
     },
 
     leadSchedule: {
@@ -38,8 +37,7 @@ const FollowupSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["Call", "Email", "Website", "Meeting"],
-      required: true,
+      default: "Call",
     },
 
     assignedTo: {
@@ -49,12 +47,16 @@ const FollowupSchema = new mongoose.Schema(
 
     followupCount: {
       type: Number,
-      default: 0,
+      default: 1,
       min: 0,
     },
 
     followupTime: {
       type: String, // Example: "17:30"
+    },
+
+    date: {
+      type: String,
     },
 
     nextFollowupDate: {
@@ -66,7 +68,21 @@ const FollowupSchema = new mongoose.Schema(
       trim: true,
     },
 
+    history: [
+      {
+        date: { type: String },
+        note: { type: String },
+        author: { type: String, default: "User" },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+
     isCompleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    reminderSent: {
       type: Boolean,
       default: false,
     },

@@ -2,166 +2,147 @@ import React, {
   Activity,
   useEffect,
   useState,
-} from 'react';
+} from "react";
+
+import { useNavigate } from "react-router-dom";
 
 import {
-  useNavigate,
-} from 'react-router-dom';
+  Phone,
+  Users,
+  IndianRupee,
+  Globe,
+  Calendar,
+  Repeat,
+  X,
+  Mail,
+} from "lucide-react";
 
-import { Phone, Users, IndianRupee, Globe, Calendar, RefreshCcwIcon, Repeat, Cross, X, Mail } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   collection,
   getDocs,
-  addDoc,
-} from 'firebase/firestore';
+} from "firebase/firestore";
 
-import { db } from '../lib/firebase';
+import { db } from "../lib/firebase";
 
-import InputField from '../components/InputField';
-import { useAuth } from '../context/AuthContext';
+import InputField from "../components/InputField";
+import { apiUrl } from "../config/api";
 
 export default function CreateLead({ onClose, fetchleads }) {
+  const navigate = useNavigate();
 
-  const navigate =
-    useNavigate();
-
-  const [employees,
-    setEmployees] =
-    useState([]);
-  const { user } = useAuth();
+  const [employees, setEmployees] = useState([]);
 
   const [lead, setLead] = useState({
-    name: '',
-    company: '',
-    phone: '',
-    email: '',
-    website: '',
-    source: '',
-    budget: '',
-    platform: '',
-    nextAction: 'call',
-    assignedTo: '',
-    assignedEmployee: '',
-    status: 'New',
-    priority: 'Warm',
+    name: "",
+    company: "",
+    phone: "",
+    email: "",
+    source: "",
+    budget: "",
+    nextAction: "call",
+    assignedTo: "",
+    status: "New",
+    priority: "Warm",
     followUpCount: 0,
-    notes: '',
-    email: '',
+    notes: "",
   });
 
+  // FETCH EMPLOYEES
   useEffect(() => {
-
     fetchEmployees();
-
-
   }, []);
 
-  // FETCH EMPLOYEES
+  const fetchEmployees = async () => {
+    try {
+      const snapshot = await getDocs(
+        collection(db, "employees")
+      );
 
-  const fetchEmployees =
-    async () => {
+      const employeeList = [];
 
-      try {
-
-        const snapshot =
-          await getDocs(
-            collection(
-              db,
-              'employees'
-            )
-          );
-
-        const employeeList = [];
-
-        snapshot.forEach((doc) => {
-
-          employeeList.push({
-
-            id: doc.id,
-
-            ...doc.data(),
-
-          });
-
+      snapshot.forEach((doc) => {
+        employeeList.push({
+          id: doc.id,
+          ...doc.data(),
         });
-
-        setEmployees(employeeList);
-        console.log("employees:", employeeList);
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
-
-  // HANDLE CHANGE
-
-  const handleChange =
-    (e) => {
-
-      setLead({
-
-        ...lead,
-
-        [e.target.name]:
-          e.target.value,
-
       });
 
-    };
+      setEmployees(employeeList);
+    } catch (error) {
+      console.error("Failed to fetch employees:", error);
+    }
+  };
+
+  // HANDLE CHANGE
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setLead((prev) => ({
+      ...prev,
+      [name]:
+        name === "followUpCount"
+          ? Number(value)
+          : value,
+    }));
+  };
 
   // ADD LEAD
   const addLead = async () => {
     try {
-      console.log(lead);
+      console.log("Lead Data:", lead);
+
       const response = await fetch(
-        // "http://localhost:5000/api/leads",
-        "https://pearlscrm.onrender.com/api/leads",
+        apiUrl("/leads"),
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
-
-          body: JSON.stringify({
-            ...lead,
-
-          })
+          body: JSON.stringify(lead),
         }
       );
 
       const data = await response.json();
-      if (response.ok) {
-        fetchleads();
+
+      console.log("API Response:", data);
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to add lead"
+        );
       }
 
-      console.log(data);
+      fetchleads();
 
       alert("Lead Added Successfully");
+
       onClose();
 
       navigate("/leads");
-
     } catch (error) {
+      console.error("Add Lead Error:", error);
 
-      console.log(error);
-
-      alert("Failed To Add Lead");
-
+      alert(
+        error.message || "Failed To Add Lead"
+      );
     }
   };
 
   return (
+    <div className="max-w-5xl mx-auto p-6 md:p-10 rounded-[30px] md:rounded-[40px] bg-[#e9e7e2] relative max-h-[85vh] overflow-y-auto custom-scrollbar">
 
-    <div className="max-w-5xl mx-auto p-10 rounded-[40px] bg-[#e9e7e2] relative">
-
-      <div className='absolute top-5 right-5 text-red-600 font-bold w-25 h-25 hover:bg-white rounded'>
-        <X size={22} strokeWidth='3px' onClick={onClose} />
+      {/* CLOSE */}
+      <div className="absolute top-5 right-5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-red-600 font-bold p-2 hover:bg-white rounded"
+        >
+          <X size={22} strokeWidth={3} />
+        </button>
       </div>
 
+      {/* FORM */}
       <div className="grid md:grid-cols-2 gap-5">
 
         <InputField
@@ -190,20 +171,27 @@ export default function CreateLead({ onClose, fetchleads }) {
         />
 
         <InputField
+          label="Email Address"
+          name="email"
+          value={lead.email}
+          onChange={handleChange}
+          placeholder="example@gmail.com"
+          Icon={Mail}
+          type="email"
+        />
+
+        <InputField
           label="Assigned To"
           name="assignedTo"
           value={lead.assignedTo}
           onChange={handleChange}
           placeholder="Agent"
           Icon={Users}
-          type='select'
-          options={
-            employees.map((employee) => ({
-              label: employee.name,
-              value: employee.uid,
-            }))
-          }
-
+          type="select"
+          options={employees.map((employee) => ({
+            label: employee.name,
+            value: employee.uid,
+          }))}
         />
 
         <InputField
@@ -213,23 +201,6 @@ export default function CreateLead({ onClose, fetchleads }) {
           onChange={handleChange}
           placeholder="New"
           Icon={Activity}
-          type='select'
-          options={
-            [
-              {
-                label: "New",
-                value: "New",
-              },
-              {
-                label: "Interested",
-                value: "Interested",
-              },
-              {
-                label: "Converted",
-                value: "Converted",
-              }
-            ]
-          }
         />
 
         <InputField
@@ -255,15 +226,17 @@ export default function CreateLead({ onClose, fetchleads }) {
           name="priority"
           value={lead.priority}
           onChange={handleChange}
-          placeholder="Hot"
+          placeholder="Warm"
         />
+
         <InputField
-          label="Follow-up Counts"
+          label="Follow-up Count"
           name="followUpCount"
           value={lead.followUpCount}
           onChange={handleChange}
           placeholder="0"
           Icon={Repeat}
+          type="number"
         />
 
         <InputField
@@ -275,20 +248,11 @@ export default function CreateLead({ onClose, fetchleads }) {
           Icon={Calendar}
         />
 
-
-
       </div>
-      <div className='mt-2'>
-        <InputField
-          label="E-Mail"
-          name="email"
-          value={lead.email}
-          onChange={handleChange}
-          placeholder="abc@gmail.com"
-          Icon={Mail}
-          type='email'
-        />
-        <label className="font-bold text-[#0b2b57] mt-2">
+
+      {/* DESCRIPTION */}
+      <div className="mt-4">
+        <label className="font-bold text-[#0b2b57]">
           Lead Description
         </label>
 
@@ -296,28 +260,31 @@ export default function CreateLead({ onClose, fetchleads }) {
           name="notes"
           value={lead.notes}
           onChange={handleChange}
+          placeholder="Enter lead description..."
           className="w-full h-40 p-4 rounded-xl mt-2"
         />
       </div>
-      <div className="border-t pt-8 flex gap-4">
 
-        <button className="px-10 py-4 border rounded-xl bg-blue-700 hover:bg-blue-600 text-white" onClick={onClose}>
+      {/* BUTTONS */}
+      <div className="border-t pt-8 mt-6 flex gap-4">
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-10 py-4 border rounded-xl bg-blue-700 hover:bg-blue-600 text-white"
+        >
           Cancel
         </button>
 
         <button
+          type="button"
           onClick={addLead}
-          className="flex-1 bg-blue-700 hover:bg-blue-600 text-white rounded-xl">
-
+          className="flex-1 bg-blue-700 hover:bg-blue-600 text-white rounded-xl"
+        >
           + Add Lead
-
         </button>
 
       </div>
-
     </div>
-
-  )
-
-
-}  
+  );
+}
