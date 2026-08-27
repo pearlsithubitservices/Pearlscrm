@@ -53,6 +53,7 @@ const automationRuleRoutes = require("./routes/Whatsapp Automation/AutomationRul
 const messageTemplateRoutes = require("./routes/Whatsapp Automation/messageTemplates");
 const aiConfigRoutes = require("./routes/Whatsapp Automation/aiConfig");
 const reportRoutes = require("./routes/Whatsapp Automation/report");
+const whatsappConfigRoutes = require("./routes/Whatsapp Automation/whatsappIntegration");
 connectDB();
 
 const app = express();
@@ -146,6 +147,7 @@ app.use("/api/automation-rules", automationRuleRoutes);
 app.use("/api/message-templates", messageTemplateRoutes);
 app.use("/api/ai-config", aiConfigRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/whatsapp-integration", whatsappConfigRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
   console.log("Connected to database");
