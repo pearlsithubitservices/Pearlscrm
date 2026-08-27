@@ -19,6 +19,7 @@
     "firebase": "^12.12.1",
     "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",
+    "joi": "^18.2.5",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",

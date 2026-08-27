@@ -7,7 +7,7 @@ export default function ProtectedRoute({
     role,
 }) {
     const { user, loading } = useAuth();
-    const { employees } = useEmployees();
+    const { employees, loading: employeesLoading } = useEmployees();
 
     console.log(employees);
 
@@ -27,7 +27,7 @@ export default function ProtectedRoute({
     }
 
     // Wait until employees are loaded
-    if (!employees) {
+    if (employeesLoading) {
         return (
             <div className="h-screen flex items-center justify-center">
                 Loading employee data...
@@ -36,9 +36,17 @@ export default function ProtectedRoute({
     }
     console.log(employees);
     // Find logged-in employee
-    const employee = employees.find(
-        (item) => item.uid == user.uid
-    );
+    const userIds = [user.uid, user.id, user._id]
+        .filter(Boolean)
+        .map(String);
+    const employee = employees.find((item) => {
+        const employeeIds = [item.uid, item.id, item._id]
+            .filter(Boolean)
+            .map(String);
+
+        return employeeIds.some((id) => userIds.includes(id)) ||
+            (item.email && user.email && item.email.toLowerCase() === user.email.toLowerCase());
+    });
 
     console.log(employee);
     // Employee document not found
