@@ -60,8 +60,6 @@ const automationRuleRoutes = require("./routes/Whatsapp Automation/AutomationRul
 const messageTemplateRoutes = require("./routes/Whatsapp Automation/messageTemplates");
 const aiConfigRoutes = require("./routes/Whatsapp Automation/aiConfig");
 const reportRoutes = require("./routes/Whatsapp Automation/report");
-connectDB();
-
 const app = express();
 const server = http.createServer(app);
 initSocket(server);
@@ -123,9 +121,18 @@ app.use("/api/ai-config", aiConfigRoutes);
 app.use("/api/reports", reportRoutes);
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log("Connected to database with WebSocket support");
-  startFollowupReminderScheduler();
+
+const startServer = async () => {
+  await connectDB();
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log("Connected to database with WebSocket support");
+    startFollowupReminderScheduler();
+  });
+};
+
+startServer().catch((error) => {
+  console.error("Server startup error:", error.message);
+  process.exit(1);
 });
 

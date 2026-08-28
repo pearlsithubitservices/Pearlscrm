@@ -2,6 +2,8 @@ const Followup = require("../models/Followup");
 const Notification = require("../models/CommunicationModels/Notifications");
 const { getIO } = require("../Socket");
 
+let schedulerStarted = false;
+
 /**
  * Checks for follow-ups due for reminder every 60 seconds
  */
@@ -75,11 +77,17 @@ const checkFollowupReminders = async () => {
 };
 
 const startFollowupReminderScheduler = () => {
+  if (schedulerStarted) {
+    return;
+  }
+
+  schedulerStarted = true;
   console.log("⏰ [FollowupScheduler] Starting automated follow-up reminder service...");
   // Initial check after 10 seconds
-  setTimeout(checkFollowupReminders, 10000);
-  // Run every 60 seconds
-  setInterval(checkFollowupReminders, 60000);
+  setTimeout(async function runReminderCheck() {
+    await checkFollowupReminders();
+    setTimeout(runReminderCheck, 60000);
+  }, 10000);
 };
 
 module.exports = { startFollowupReminderScheduler, checkFollowupReminders };
