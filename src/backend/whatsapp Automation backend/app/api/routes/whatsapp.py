@@ -1,9 +1,34 @@
 import logging
+import uuid
 
-from fastapi import APIRouter, Query, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+    Request,
+)
 from fastapi.responses import PlainTextResponse
 
 from app.core.config import get_settings
+
+from app.services.ai_service import (
+    AiService,
+    get_ai_service,
+)
+
+from app.services.chat_service import (
+    ChatService,
+)
+
+from app.services.crm_service import (
+    CrmService,
+    get_crm_service,
+)
+
+from app.services.handoff_service import (
+    HumanHandoffService,
+    get_handoff_service,
+)
 
 
 logger = logging.getLogger("app.api.whatsapp")
@@ -13,6 +38,25 @@ router = APIRouter(
     prefix="/api/whatsapp",
     tags=["WhatsApp"],
 )
+
+
+# =========================================================
+# CHAT SERVICE DEPENDENCY
+# =========================================================
+
+def get_chat_service(
+    ai: AiService = Depends(get_ai_service),
+    crm: CrmService = Depends(get_crm_service),
+    handoff: HumanHandoffService = Depends(
+        get_handoff_service
+    ),
+) -> ChatService:
+
+    return ChatService(
+        ai=ai,
+        crm=crm,
+        handoff=handoff,
+    )
 
 
 # =========================================================
@@ -66,15 +110,20 @@ async def verify_webhook(
 # =========================================================
 
 @router.post("/webhook")
-async def receive_webhook(request: Request):
+async def receive_webhook(
+    request: Request,
+    chat_service: ChatService = Depends(
+        get_chat_service
+    ),
+):
     """
     Receive events from Meta WhatsApp Cloud API.
 
-    Currently prepares and parses incoming WhatsApp
-    text messages.
+    Incoming employee text messages are processed through
+    the existing ChatService.
 
-    AI processing and automatic replies will be connected
-    in the next step.
+    Meta sending is not enabled yet because the real Meta
+    credentials are not configured.
     """
 
     try:
@@ -99,19 +148,6 @@ async def receive_webhook(request: Request):
         "WhatsApp payload: %s",
         payload,
     )
-
-    # =====================================================
-    # META WEBHOOK STRUCTURE
-    #
-    # entry
-    #   └── changes
-    #         └── value
-    #               ├── messages
-    #               └── statuses
-    #
-    # Status events such as sent/delivered/read do not
-    # contain incoming employee messages.
-    # =====================================================
 
     entries = payload.get(
         "entry",
@@ -147,13 +183,7 @@ async def receive_webhook(request: Request):
             )
 
             # =================================================
-            # IGNORE STATUS EVENTS
-            #
-            # Meta can send events for:
-            # sent
-            # delivered
-            # read
-            # failed
+            # STATUS EVENTS
             # =================================================
 
             statuses = value.get(
@@ -170,7 +200,7 @@ async def receive_webhook(request: Request):
                 )
 
             # =================================================
-            # GET INCOMING MESSAGES
+            # INCOMING MESSAGES
             # =================================================
 
             messages = value.get(
@@ -215,7 +245,7 @@ async def receive_webhook(request: Request):
                 )
 
                 # =============================================
-                # CURRENTLY SUPPORT TEXT MESSAGES ONLY
+                # SUPPORT TEXT MESSAGES ONLY
                 # =============================================
 
                 if message_type != "text":
@@ -254,10 +284,6 @@ async def receive_webhook(request: Request):
 
                     continue
 
-                # =============================================
-                # SUCCESSFULLY PARSED MESSAGE
-                # =============================================
-
                 logger.info(
                     "WhatsApp text message parsed "
                     "from=%s message_id=%s "
@@ -267,26 +293,59 @@ async def receive_webhook(request: Request):
                     len(message_text),
                 )
 
-                logger.info(
-                    "WhatsApp message content: %s",
-                    message_text,
+                # =============================================
+                # PROCESS MESSAGE USING EXISTING CHAT SERVICE
+                # =============================================
+
+                request_id = (
+                    message_id
+                    or str(uuid.uuid4())
                 )
 
-                # =============================================
-                # NEXT STEP
-                #
-                # message_text
-                #       ↓
-                # Existing AI / Intent processing
-                #       ↓
-                # CRM lookup if needed
-                #       ↓
-                # AI response
-                #       ↓
-                # WhatsAppService.send_message()
-                #
-                # We intentionally do not send a reply yet.
-                # =============================================
+                try:
+
+                    answer = (
+                        await chat_service.process_message(
+                            message=message_text,
+                            source="whatsapp",
+                            request_id=request_id,
+                            employee_phone=sender_phone,
+                        )
+                    )
+
+                    logger.info(
+                        "WhatsApp message processed "
+                        "successfully "
+                        "from=%s message_id=%s",
+                        sender_phone,
+                        message_id,
+                    )
+
+                    # =========================================
+                    # TEMPORARY LOCAL OUTPUT
+                    #
+                    # Meta credentials are not ready yet.
+                    # Therefore we log the response instead
+                    # of sending it to WhatsApp.
+                    # =========================================
+
+                    logger.info(
+                        "WhatsApp AI/CRM response "
+                        "to=%s message_id=%s "
+                        "response=%s",
+                        sender_phone,
+                        message_id,
+                        answer,
+                    )
+
+                except Exception:
+
+                    logger.exception(
+                        "Failed to process WhatsApp "
+                        "message from=%s message_id=%s",
+                        sender_phone,
+                        message_id,
+                    )
 
     # =====================================================
     # META EXPECTS A SUCCESS RESPONSE

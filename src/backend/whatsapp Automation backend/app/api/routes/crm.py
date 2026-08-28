@@ -76,6 +76,7 @@ async def test_active_attendance(
         return CrmTestResponse(
             success=True,
             source="existing CRM",
+            employee_count=len(attendance),
             data=attendance,
         )
 
@@ -173,7 +174,22 @@ async def test_tasks(
             detail=exc.message,
         )
 
+# =========================================================
+# DEBUG CRM METHODS - TEMPORARY
+# =========================================================
 
+@router.get("/debug-crm-methods")
+async def debug_crm_methods(
+    crm: CrmService = Depends(get_crm_service),
+):
+    return {
+        "has_get_tasks": hasattr(crm, "get_tasks"),
+        "methods": [
+            method
+            for method in dir(crm)
+            if not method.startswith("_")
+        ],
+    }
 # =========================================================
 # TASKS - RECENT
 # =========================================================

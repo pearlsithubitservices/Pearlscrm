@@ -83,23 +83,78 @@ def find_employee(
     for employee in employees:
 
         actual_name = str(
-            employee.get("employeeName", "")
+            employee.get(
+                "employeeName",
+                "",
+            )
         ).strip().lower()
 
         if actual_name == requested:
+
             return employee
 
     # Partial match
     for employee in employees:
 
         actual_name = str(
-            employee.get("employeeName", "")
+            employee.get(
+                "employeeName",
+                "",
+            )
         ).strip().lower()
 
         if (
             requested in actual_name
             or actual_name in requested
         ):
+
+            return employee
+
+    return None
+
+
+# =========================================================
+# FIND EMPLOYEE BY PHONE
+# =========================================================
+
+def find_employee_by_phone(
+    employees: list[dict],
+    phone: str,
+) -> dict | None:
+
+    if not phone:
+
+        return None
+
+    requested_phone = (
+        str(phone)
+        .replace("+", "")
+        .replace(" ", "")
+        .replace("-", "")
+        .strip()
+    )
+
+    for employee in employees:
+
+        employee_phone = (
+            employee.get("contact")
+            or employee.get("phone")
+            or ""
+        )
+
+        normalized_employee_phone = (
+            str(employee_phone)
+            .replace("+", "")
+            .replace(" ", "")
+            .replace("-", "")
+            .strip()
+        )
+
+        if (
+            normalized_employee_phone
+            == requested_phone
+        ):
+
             return employee
 
     return None
@@ -140,23 +195,33 @@ def format_attendance_field_response(
 
     elif field == "login_time":
 
-        value = record.get("login_time")
+        value = record.get(
+            "login_time"
+        )
 
     elif field == "logout_time":
 
-        value = record.get("logout_time")
+        value = record.get(
+            "logout_time"
+        )
 
     elif field == "break_start":
 
-        value = record.get("break_start")
+        value = record.get(
+            "break_start"
+        )
 
     elif field == "break_end":
 
-        value = record.get("break_end")
+        value = record.get(
+            "break_end"
+        )
 
     elif field == "status":
 
-        value = record.get("status")
+        value = record.get(
+            "status"
+        )
 
     elif field == "total_work_seconds":
 
@@ -172,9 +237,13 @@ def format_attendance_field_response(
 
             try:
 
-                seconds = int(seconds)
+                seconds = int(
+                    seconds
+                )
 
-                hours = seconds // 3600
+                hours = (
+                    seconds // 3600
+                )
 
                 minutes = (
                     seconds % 3600
@@ -195,36 +264,54 @@ def format_attendance_field_response(
                 ValueError,
             ):
 
-                value = str(seconds)
+                value = str(
+                    seconds
+                )
 
     else:
 
-        value = record.get(field)
+        value = record.get(
+            field
+        )
 
-    if value is None or value == "":
+    if (
+        value is None
+        or value == ""
+    ):
 
         value = "Not available"
 
     field_names = {
 
-        "attendance_id": "Attendance ID",
+        "attendance_id":
+            "Attendance ID",
 
-        "login_time": "Login Time",
+        "login_time":
+            "Login Time",
 
-        "logout_time": "Logout Time",
+        "logout_time":
+            "Logout Time",
 
-        "break_start": "Break Start",
+        "break_start":
+            "Break Start",
 
-        "break_end": "Break End",
+        "break_end":
+            "Break End",
 
-        "status": "Status",
+        "status":
+            "Status",
 
-        "total_work_seconds": "Total Work Time",
+        "total_work_seconds":
+            "Total Work Time",
     }
 
-    display_field = field_names.get(
-        field,
-        field.replace("_", " ").title(),
+    display_field = (
+        field_names.get(
+            field,
+            field
+            .replace("_", " ")
+            .title(),
+        )
     )
 
     return (
@@ -284,10 +371,14 @@ def format_tasks(
         )
 
         lines.append(
-            f"{index}. {task_title} — {status}"
+            f"{index}. "
+            f"{task_title} — "
+            f"{status}"
         )
 
-    return "\n".join(lines)
+    return "\n".join(
+        lines
+    )
 
 
 # =========================================================
@@ -301,7 +392,9 @@ def format_leaves(
 
     if not leaves:
 
-        return "No leave records found."
+        return (
+            "No leave records found."
+        )
 
     lines = [
         title,
@@ -339,18 +432,25 @@ def format_leaves(
 
         date_text = ""
 
-        if start_date or end_date:
+        if (
+            start_date
+            or end_date
+        ):
 
             date_text = (
                 f" ({start_date} - {end_date})"
             )
 
         lines.append(
-            f"{index}. {employee} — "
-            f"{status}{date_text}"
+            f"{index}. "
+            f"{employee} — "
+            f"{status}"
+            f"{date_text}"
         )
 
-    return "\n".join(lines)
+    return "\n".join(
+        lines
+    )
 
 
 # =========================================================
@@ -358,6 +458,7 @@ def format_leaves(
 # =========================================================
 
 class ChatService:
+
     """
     Shared message-processing service.
 
@@ -365,9 +466,6 @@ class ChatService:
 
     - Admin chat
     - WhatsApp webhook
-
-    The service contains the common AI, intent, CRM,
-    and human-handoff processing logic.
     """
 
     def __init__(
@@ -376,9 +474,11 @@ class ChatService:
         crm: CrmService,
         handoff: HumanHandoffService,
     ):
+
         self.ai = ai
         self.crm = crm
         self.handoff = handoff
+
 
     # =====================================================
     # PROCESS MESSAGE
@@ -390,7 +490,12 @@ class ChatService:
         source: str = "admin",
         conversation_id: str | None = None,
         request_id: str | None = None,
+        employee_phone: str | None = None,
     ) -> str:
+
+        # =================================================
+        # REQUEST ID
+        # =================================================
 
         if request_id is None:
 
@@ -400,11 +505,77 @@ class ChatService:
 
         started_at = time.monotonic()
 
+
+        # =================================================
+        # VALIDATE MESSAGE
+        # =================================================
+
         message = message.strip()
 
         if not message:
 
-            return "Please enter a message."
+            return (
+                "Please enter a message."
+            )
+
+
+        # =================================================
+        # IDENTIFY WHATSAPP EMPLOYEE BY PHONE
+        # =================================================
+
+        current_employee = None
+
+        if (
+            source == "whatsapp"
+            and employee_phone
+        ):
+
+            try:
+
+                employees = (
+                    await self.crm.get_employees()
+                )
+
+                current_employee = (
+                    find_employee_by_phone(
+                        employees,
+                        employee_phone,
+                    )
+                )
+
+                if current_employee:
+
+                    logger.info(
+                        "WhatsApp employee identified "
+                        "request_id=%s employee=%s phone=%s",
+                        request_id,
+                        current_employee.get(
+                            "employeeName"
+                        ),
+                        employee_phone,
+                    )
+
+                else:
+
+                    logger.warning(
+                        "No CRM employee found for "
+                        "WhatsApp phone=%s",
+                        employee_phone,
+                    )
+
+            except CrmServiceError:
+
+                logger.exception(
+                    "Failed to identify WhatsApp employee "
+                    "request_id=%s phone=%s",
+                    request_id,
+                    employee_phone,
+                )
+
+
+        # =================================================
+        # START LOG
+        # =================================================
 
         logger.info(
             "message processing started "
@@ -413,6 +584,7 @@ class ChatService:
             source,
             len(message),
         )
+
 
         # =================================================
         # DETECT INTENT
@@ -430,24 +602,22 @@ class ChatService:
             intent.value,
         )
 
+
+        # =================================================
+        # MESSAGE LOWER
+        # =================================================
+
+        message_lower = message.lower()
+
+
         # =================================================
         # 0. UNWANTED TALK
-        #
-        # NO GEMINI
-        # NO HR
-        # NO HANDOFF
         # =================================================
 
         if intent is Intent.UNWANTED_TALK:
 
-            logger.info(
-                "unwanted request rejected "
-                "request_id=%s source=%s",
-                request_id,
-                source,
-            )
-
             return UNWANTED_RESPONSE
+
 
         # =================================================
         # 1. EXPLICIT HUMAN HELP
@@ -467,19 +637,15 @@ class ChatService:
 
                 logger.info(
                     "explicit human handoff created "
-                    "request_id=%s handoff_id=%s source=%s",
+                    "request_id=%s handoff_id=%s",
                     request_id,
                     handoff_request["id"],
-                    source,
                 )
 
             except Exception:
 
                 logger.exception(
-                    "failed to create explicit human handoff "
-                    "request_id=%s source=%s",
-                    request_id,
-                    source,
+                    "failed to create explicit human handoff"
                 )
 
                 raise HTTPException(
@@ -495,6 +661,7 @@ class ChatService:
                 "A human representative can assist you."
             )
 
+
         # =================================================
         # 2. ATTENDANCE FIELD
         # =================================================
@@ -507,8 +674,10 @@ class ChatService:
                 )
             )
 
-            field = extract_attendance_field(
-                message
+            field = (
+                extract_attendance_field(
+                    message
+                )
             )
 
             if not employee_name:
@@ -521,9 +690,7 @@ class ChatService:
 
                 return (
                     "Please specify the attendance "
-                    "information you want, such as "
-                    "login time, logout time, status, "
-                    "break time, or total work time."
+                    "information you want."
                 )
 
             try:
@@ -534,13 +701,9 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get employees "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             employee = find_employee(
                 employees,
@@ -559,13 +722,6 @@ class ChatService:
                 "_id"
             )
 
-            if not employee_id:
-
-                return (
-                    f"The employee '{employee_name}' "
-                    f"does not have a valid employee ID."
-                )
-
             try:
 
                 attendance = (
@@ -579,14 +735,9 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get attendance "
-                    "request_id=%s employee_id=%s",
-                    request_id,
-                    employee_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             return format_attendance_field_response(
                 employee,
@@ -594,63 +745,64 @@ class ChatService:
                 field,
             )
 
+
         # =================================================
-        # 3. SPECIFIC EMPLOYEE ATTENDANCE
+        # 3. EMPLOYEE ATTENDANCE
         # =================================================
 
         if intent is Intent.GET_ATTENDANCE:
 
-            employee_name = (
-                extract_attendance_employee_name(
-                    message
-                )
-            )
+            # WhatsApp "my attendance"
+            if (
+                source == "whatsapp"
+                and current_employee is not None
+                and "my attendance" in message_lower
+            ):
 
-            if not employee_name:
+                employee = current_employee
 
-                return (
-                    "Please provide the employee name."
-                )
+            else:
 
-            try:
-
-                employees = (
-                    await self.crm.get_employees()
-                )
-
-            except CrmServiceError as exc:
-
-                logger.exception(
-                    "failed to get employees "
-                    "request_id=%s",
-                    request_id,
+                employee_name = (
+                    extract_attendance_employee_name(
+                        message
+                    )
                 )
 
-                raise crm_http_exception(exc)
+                if not employee_name:
 
-            employee = find_employee(
-                employees,
-                employee_name,
-            )
+                    return (
+                        "Please provide the employee name."
+                    )
 
-            if employee is None:
+                try:
 
-                return (
-                    f"I could not find an employee "
-                    f"named '{employee_name}' "
-                    f"in the CRM."
+                    employees = (
+                        await self.crm.get_employees()
+                    )
+
+                except CrmServiceError as exc:
+
+                    raise crm_http_exception(
+                        exc
+                    )
+
+                employee = find_employee(
+                    employees,
+                    employee_name,
                 )
+
+                if employee is None:
+
+                    return (
+                        f"I could not find an employee "
+                        f"named '{employee_name}' "
+                        f"in the CRM."
+                    )
 
             employee_id = employee.get(
                 "_id"
             )
-
-            if not employee_id:
-
-                return (
-                    f"The employee '{employee_name}' "
-                    f"does not have a valid employee ID."
-                )
 
             try:
 
@@ -665,19 +817,15 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get attendance "
-                    "request_id=%s employee_id=%s",
-                    request_id,
-                    employee_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             return format_attendance(
                 employee,
                 attendance,
             )
+
 
         # =================================================
         # 4. ACTIVE ATTENDANCE
@@ -693,17 +841,14 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "active attendance request failed "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             return format_active_attendance(
                 attendance
             )
+
 
         # =================================================
         # 5. ATTENDANCE HISTORY
@@ -719,17 +864,14 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "attendance history request failed "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             return format_attendance_history(
                 attendance
             )
+
 
         # =================================================
         # 6. ALL EMPLOYEES
@@ -745,17 +887,14 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get employees "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             return format_employee_list(
                 employees
             )
+
 
         # =================================================
         # 7. EMPLOYEE FIELD LIST
@@ -771,16 +910,14 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get employee list "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
 
-                raise crm_http_exception(exc)
-
-            field = extract_employee_list_field(
-                message
+            field = (
+                extract_employee_list_field(
+                    message
+                )
             )
 
             if not field:
@@ -794,6 +931,7 @@ class ChatService:
                 field,
             )
 
+
         # =================================================
         # 8. SPECIFIC EMPLOYEE FIELD
         # =================================================
@@ -806,8 +944,10 @@ class ChatService:
                 )
             )
 
-            field = extract_employee_field(
-                message
+            field = (
+                extract_employee_field(
+                    message
+                )
             )
 
             if not employee_name:
@@ -831,13 +971,9 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get employees "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             employee = find_employee(
                 employees,
@@ -856,6 +992,7 @@ class ChatService:
                 employee,
                 field,
             )
+
 
         # =================================================
         # 9. EMPLOYEE DETAILS
@@ -883,13 +1020,9 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get employees "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             employee = find_employee(
                 employees,
@@ -908,6 +1041,7 @@ class ChatService:
                 employee
             )
 
+
         # =================================================
         # 10. ALL TASKS
         # =================================================
@@ -916,21 +1050,20 @@ class ChatService:
 
             try:
 
-                tasks = await self.crm.get_tasks()
+                tasks = (
+                    await self.crm.get_tasks()
+                )
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get tasks "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             return format_tasks(
                 tasks
             )
+
 
         # =================================================
         # 11. TASKS BY EMPLOYEE
@@ -938,47 +1071,76 @@ class ChatService:
 
         if intent is Intent.GET_TASKS_BY_EMPLOYEE:
 
-            employee_name = (
-                extract_task_employee_name(
-                    message
+            # =============================================
+            # WHATSAPP "MY TASKS"
+            # =============================================
+
+            if (
+                source == "whatsapp"
+                and current_employee is not None
+                and (
+                    "my task" in message_lower
+                    or "my tasks" in message_lower
+                    or "my recent task" in message_lower
+                    or "my recent tasks" in message_lower
                 )
-            )
+            ):
 
-            if not employee_name:
+                employee = current_employee
 
-                return (
-                    "Please provide the employee name "
-                    "to retrieve tasks."
-                )
-
-            try:
-
-                employees = (
-                    await self.crm.get_employees()
-                )
-
-            except CrmServiceError as exc:
-
-                logger.exception(
-                    "failed to get employees "
-                    "request_id=%s",
+                logger.info(
+                    "Using WhatsApp identified employee "
+                    "for tasks request_id=%s employee=%s",
                     request_id,
+                    employee.get(
+                        "employeeName"
+                    ),
                 )
 
-                raise crm_http_exception(exc)
+            else:
 
-            employee = find_employee(
-                employees,
-                employee_name,
-            )
-
-            if employee is None:
-
-                return (
-                    f"I could not find an employee "
-                    f"named '{employee_name}' "
-                    f"in the CRM."
+                employee_name = (
+                    extract_task_employee_name(
+                        message
+                    )
                 )
+
+                if not employee_name:
+
+                    return (
+                        "Please provide the employee name "
+                        "to retrieve tasks."
+                    )
+
+                try:
+
+                    employees = (
+                        await self.crm.get_employees()
+                    )
+
+                except CrmServiceError as exc:
+
+                    raise crm_http_exception(
+                        exc
+                    )
+
+                employee = find_employee(
+                    employees,
+                    employee_name,
+                )
+
+                if employee is None:
+
+                    return (
+                        f"I could not find an employee "
+                        f"named '{employee_name}' "
+                        f"in the CRM."
+                    )
+
+
+            # =============================================
+            # GET EMPLOYEE ID
+            # =============================================
 
             employee_id = employee.get(
                 "_id"
@@ -987,9 +1149,15 @@ class ChatService:
             if not employee_id:
 
                 return (
-                    f"The employee '{employee_name}' "
+                    f"The employee "
+                    f"'{employee.get('employeeName')}' "
                     f"does not have a valid employee ID."
                 )
+
+
+            # =============================================
+            # GET EMPLOYEE TASKS
+            # =============================================
 
             try:
 
@@ -1008,7 +1176,14 @@ class ChatService:
                     employee_id,
                 )
 
-                raise crm_http_exception(exc)
+                raise crm_http_exception(
+                    exc
+                )
+
+
+            # =============================================
+            # RESPONSE
+            # =============================================
 
             return format_tasks(
                 tasks,
@@ -1018,14 +1193,17 @@ class ChatService:
                 ),
             )
 
+
         # =================================================
         # 12. TASK BY ID
         # =================================================
 
         if intent is Intent.GET_TASK:
 
-            task_id = extract_task_id(
-                message
+            task_id = (
+                extract_task_id(
+                    message
+                )
             )
 
             if not task_id:
@@ -1036,8 +1214,10 @@ class ChatService:
 
             try:
 
-                task = await self.crm.get_task(
-                    task_id
+                task = (
+                    await self.crm.get_task(
+                        task_id
+                    )
                 )
 
             except CrmServiceError as exc:
@@ -1049,7 +1229,9 @@ class ChatService:
                         f"'{task_id}' in the CRM."
                     )
 
-                raise crm_http_exception(exc)
+                raise crm_http_exception(
+                    exc
+                )
 
             title = (
                 task.get("title")
@@ -1075,6 +1257,7 @@ class ChatService:
                 f"Description: {description}"
             )
 
+
         # =================================================
         # 13. CREATE TASK
         # =================================================
@@ -1083,9 +1266,10 @@ class ChatService:
 
             return (
                 "I can help create a task, but I need "
-                "the task details such as title, description, "
-                "and assigned employee."
+                "the task details such as title, "
+                "description, and assigned employee."
             )
+
 
         # =================================================
         # 14. UPDATE TASK
@@ -1099,6 +1283,7 @@ class ChatService:
                 "to change."
             )
 
+
         # =================================================
         # 15. ALL LEAVES
         # =================================================
@@ -1107,21 +1292,20 @@ class ChatService:
 
             try:
 
-                leaves = await self.crm.get_leaves()
+                leaves = (
+                    await self.crm.get_leaves()
+                )
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get leaves "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             return format_leaves(
                 leaves
             )
+
 
         # =================================================
         # 16. LEAVES BY EMPLOYEE
@@ -1150,13 +1334,9 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get employees "
-                    "request_id=%s",
-                    request_id,
+                raise crm_http_exception(
+                    exc
                 )
-
-                raise crm_http_exception(exc)
 
             employee = find_employee(
                 employees,
@@ -1175,13 +1355,6 @@ class ChatService:
                 "_id"
             )
 
-            if not employee_id:
-
-                return (
-                    f"The employee '{employee_name}' "
-                    f"does not have a valid employee ID."
-                )
-
             try:
 
                 leaves = (
@@ -1192,68 +1365,18 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get employee leaves "
-                    "request_id=%s employee_id=%s",
-                    request_id,
-                    employee_id,
+                raise crm_http_exception(
+                    exc
                 )
 
-                raise crm_http_exception(exc)
-
-            if not leaves:
-
-                return (
-                    f"No leave records found for "
-                    f"{employee.get('employeeName')}."
-                )
-
-            lines = [
-                "Employee Leave Records",
-                "",
-                (
-                    f"Employee: "
+            return format_leaves(
+                leaves,
+                title=(
+                    f"Leave Records - "
                     f"{employee.get('employeeName')}"
                 ),
-                "",
-            ]
+            )
 
-            for index, leave in enumerate(
-                leaves,
-                start=1,
-            ):
-
-                status = (
-                    leave.get("status")
-                    or "Not available"
-                )
-
-                start_date = (
-                    leave.get("startDate")
-                    or leave.get("start_date")
-                    or "Not available"
-                )
-
-                end_date = (
-                    leave.get("endDate")
-                    or leave.get("end_date")
-                    or "Not available"
-                )
-
-                reason = (
-                    leave.get("reason")
-                    or "Not available"
-                )
-
-                lines.append(
-                    f"{index}. "
-                    f"Status: {status}\n"
-                    f"   From: {start_date}\n"
-                    f"   To: {end_date}\n"
-                    f"   Reason: {reason}"
-                )
-
-            return "\n".join(lines)
 
         # =================================================
         # 17. CREATE LEAVE
@@ -1267,6 +1390,7 @@ class ChatService:
                 "end date, and reason."
             )
 
+
         # =================================================
         # 18. UPDATE LEAVE
         # =================================================
@@ -1279,6 +1403,7 @@ class ChatService:
                 "information you want to change."
             )
 
+
         # =================================================
         # 19. UPDATE LEAVE STATUS
         # =================================================
@@ -1290,18 +1415,27 @@ class ChatService:
                 "request ID and the new status."
             )
 
+
         # =================================================
         # 20. MY DETAILS
         # =================================================
 
         if intent is Intent.GET_MY_DETAILS:
 
+            if (
+                source == "whatsapp"
+                and current_employee is not None
+            ):
+
+                return format_employee_details(
+                    current_employee
+                )
+
             return (
                 "Your employee identity is not connected "
-                "to the chatbot yet. Authentication will "
-                "be required before I can retrieve your "
-                "personal CRM details."
+                "to the chatbot yet."
             )
+
 
         # =================================================
         # 21. GENERAL CHAT -> GEMINI
@@ -1309,79 +1443,41 @@ class ChatService:
 
         try:
 
-            answer = await self.ai.get_chat_response(
-                message
+            answer = (
+                await self.ai.get_chat_response(
+                    message
+                )
             )
 
         except AiServiceError as exc:
 
-            elapsed_ms = (
-                time.monotonic()
-                - started_at
-            ) * 1000
-
             logger.warning(
                 "Gemini request failed "
-                "request_id=%s source=%s status=%d "
-                "elapsed_ms=%.1f",
+                "request_id=%s source=%s status=%d",
                 request_id,
                 source,
                 exc.status_code,
-                elapsed_ms,
             )
-
-            # =============================================
-            # GEMINI FAILURE -> HUMAN HANDOFF
-            # =============================================
 
             try:
 
-                handoff_request = (
-                    await self.handoff.create_request(
-                        message=message,
-                        source=source,
-                        conversation_id=conversation_id,
-                    )
-                )
-
-                logger.info(
-                    "human handoff created after Gemini failure "
-                    "request_id=%s handoff_id=%s source=%s",
-                    request_id,
-                    handoff_request["id"],
-                    source,
+                await self.handoff.create_request(
+                    message=message,
+                    source=source,
+                    conversation_id=conversation_id,
                 )
 
             except Exception:
 
                 logger.exception(
-                    "failed to create human handoff "
-                    "request_id=%s source=%s",
-                    request_id,
-                    source,
+                    "failed to create human handoff"
                 )
 
             return HR_HANDOFF_RESPONSE
 
-        # =================================================
-        # GEMINI SUCCESS
-        # =================================================
-
-        elapsed_ms = (
-            time.monotonic()
-            - started_at
-        ) * 1000
-
-        logger.info(
-            "message processing succeeded via Gemini "
-            "request_id=%s source=%s elapsed_ms=%.1f",
-            request_id,
-            source,
-            elapsed_ms,
-        )
 
         # =================================================
-        # GEMINI UNKNOWN / HR FALLBACK
+        # GEMINI UNKNOWN -> HUMAN HANDOFF
         # =================================================
 
         if (
@@ -1391,32 +1487,20 @@ class ChatService:
 
             try:
 
-                handoff_request = (
-                    await self.handoff.create_request(
-                        message=message,
-                        source=source,
-                        conversation_id=conversation_id,
-                    )
-                )
-
-                logger.info(
-                    "human handoff created from Gemini fallback "
-                    "request_id=%s handoff_id=%s source=%s",
-                    request_id,
-                    handoff_request["id"],
-                    source,
+                await self.handoff.create_request(
+                    message=message,
+                    source=source,
+                    conversation_id=conversation_id,
                 )
 
             except Exception:
 
                 logger.exception(
-                    "failed to create human handoff "
-                    "request_id=%s source=%s",
-                    request_id,
-                    source,
+                    "failed to create human handoff"
                 )
 
             return HR_HANDOFF_RESPONSE
+
 
         # =================================================
         # FINAL RESPONSE

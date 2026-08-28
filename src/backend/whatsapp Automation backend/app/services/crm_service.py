@@ -60,9 +60,7 @@ class CrmService:
     ):
         self.settings = settings or get_settings()
 
-        self.base_url = (
-            self.settings.CRM_BASE_URL.rstrip("/")
-        )
+        self.base_url = self.settings.CRM_BASE_URL.rstrip("/")
 
         self.timeout = (
             self.settings.CRM_REQUEST_TIMEOUT_SECONDS
@@ -80,7 +78,6 @@ class CrmService:
         }
 
         if self.settings.CRM_API_TOKEN:
-
             headers["Authorization"] = (
                 f"Bearer {self.settings.CRM_API_TOKEN}"
             )
@@ -99,7 +96,6 @@ class CrmService:
         url = f"{self.base_url}{path}"
 
         try:
-
             async with httpx.AsyncClient(
                 timeout=self.timeout
             ) as client:
@@ -166,7 +162,6 @@ class CrmService:
         url = f"{self.base_url}{path}"
 
         try:
-
             async with httpx.AsyncClient(
                 timeout=self.timeout
             ) as client:
@@ -234,7 +229,6 @@ class CrmService:
         url = f"{self.base_url}{path}"
 
         try:
-
             async with httpx.AsyncClient(
                 timeout=self.timeout
             ) as client:
@@ -358,26 +352,14 @@ class CrmService:
 
     async def get_employees(self) -> list[dict]:
 
-        """
-        Get all employees.
-
-        CRM:
-            GET /api/employees
-        """
-
         response = await self._get(
             "/api/employees"
         )
 
         try:
-
             data = response.json()
 
         except ValueError as exc:
-
-            logger.error(
-                "CRM returned invalid JSON from /api/employees"
-            )
 
             raise CrmServiceError(
                 "The CRM service returned an invalid response.",
@@ -401,19 +383,11 @@ class CrmService:
         self,
     ) -> list[dict]:
 
-        """
-        Get currently active attendance records.
-
-        CRM:
-            GET /api/attendance/active
-        """
-
         response = await self._get(
             "/api/attendance/active"
         )
 
         try:
-
             data = response.json()
 
         except ValueError as exc:
@@ -440,19 +414,11 @@ class CrmService:
         self,
     ) -> list[dict]:
 
-        """
-        Get all attendance history.
-
-        CRM:
-            GET /api/attendance/history
-        """
-
         response = await self._get(
             "/api/attendance/history"
         )
 
         try:
-
             data = response.json()
 
         except ValueError as exc:
@@ -478,18 +444,18 @@ class CrmService:
     async def get_attendance_by_employee(
         self,
         employee_uid: str,
-        employee_name : str|None = None,
+        employee_name: str | None = None,
     ) -> list[dict]:
-
-      
-    
 
         attendance = await self.get_attendance_history()
 
         requested_uid = str(
             employee_uid or ""
         ).strip()
-        requested_name = str(employee_name or "").strip().lower()
+
+        requested_name = str(
+            employee_name or ""
+        ).strip().lower()
 
         result = []
 
@@ -501,14 +467,22 @@ class CrmService:
                     "",
                 )
             ).strip()
-            record_name=str(record.get("employee_name", "")).strip().lower()
+
+            record_name = str(
+                record.get(
+                    "employee_name",
+                    "",
+                )
+            ).strip().lower()
+
             if requested_uid and record_uid == requested_uid:
                 result.append(record)
                 continue
+
             if requested_name and record_name == requested_name:
                 result.append(record)
                 continue
-            
+
         return result
 
     # =====================================================
@@ -521,21 +495,12 @@ class CrmService:
         employee_name: str | None = None,
     ) -> dict:
 
-        """
-        Login an employee.
-
-        CRM:
-            POST /api/attendance/login
-        """
-
         payload: dict[str, Any] = {}
 
         if employee_uid:
-
             payload["employee_uid"] = employee_uid
 
         if employee_name:
-
             payload["employee_name"] = employee_name
 
         response = await self._post(
@@ -544,7 +509,6 @@ class CrmService:
         )
 
         try:
-
             return response.json()
 
         except ValueError as exc:
@@ -563,19 +527,11 @@ class CrmService:
         attendance_id: str,
     ) -> dict:
 
-        """
-        Put an employee on break.
-
-        CRM:
-            PUT /api/attendance/break/:id
-        """
-
         response = await self._put(
             f"/api/attendance/break/{attendance_id}"
         )
 
         try:
-
             return response.json()
 
         except ValueError as exc:
@@ -594,19 +550,11 @@ class CrmService:
         attendance_id: str,
     ) -> dict:
 
-        """
-        Resume an employee after break.
-
-        CRM:
-            PUT /api/attendance/resume/:id
-        """
-
         response = await self._put(
             f"/api/attendance/resume/{attendance_id}"
         )
 
         try:
-
             return response.json()
 
         except ValueError as exc:
@@ -626,13 +574,6 @@ class CrmService:
         total_seconds: int,
     ) -> dict:
 
-        """
-        Logout an employee.
-
-        CRM:
-            PUT /api/attendance/logout/:id
-        """
-
         payload = {
             "totalSeconds": total_seconds
         }
@@ -643,7 +584,6 @@ class CrmService:
         )
 
         try:
-
             return response.json()
 
         except ValueError as exc:
@@ -661,20 +601,12 @@ class CrmService:
         self,
     ) -> list[dict]:
 
-        """
-        Get all tasks.
-
-        CRM:
-            GET /api/tasks
-        """
-
         response = await self._get(
             "/api/tasks"
         )
 
         try:
-
-            data = response.json()
+            result = response.json()
 
         except ValueError as exc:
 
@@ -683,14 +615,23 @@ class CrmService:
                 status_code=502,
             ) from exc
 
-        if not isinstance(data, list):
+        # CRM may return a direct list
+        if isinstance(result, list):
+            return result
 
-            raise CrmServiceError(
-                "The CRM returned an unexpected tasks response.",
-                status_code=502,
-            )
+        # Or CRM may return:
+        # { "success": true, "data": [...] }
+        if isinstance(result, dict):
 
-        return data
+            tasks = result.get("data")
+
+            if isinstance(tasks, list):
+                return tasks
+
+        raise CrmServiceError(
+            "The CRM returned an unexpected tasks response.",
+            status_code=502,
+        )
 
     # =====================================================
     # TASKS - RECENT
@@ -701,19 +642,11 @@ class CrmService:
         employee_uid: str,
     ) -> list[dict]:
 
-        """
-        Get recent tasks for an employee.
-
-        CRM:
-            GET /api/tasks/recent/:employee_uid
-        """
-
         response = await self._get(
             f"/api/tasks/recent/{employee_uid}"
         )
 
         try:
-
             result = response.json()
 
         except ValueError as exc:
@@ -723,6 +656,9 @@ class CrmService:
                 status_code=502,
             ) from exc
 
+        if isinstance(result, list):
+            return result
+
         if isinstance(result, dict):
 
             data = result.get(
@@ -731,7 +667,6 @@ class CrmService:
             )
 
             if isinstance(data, list):
-
                 return data
 
         raise CrmServiceError(
@@ -748,19 +683,11 @@ class CrmService:
         task_id: str,
     ) -> dict:
 
-        """
-        Get one task by ID.
-
-        CRM:
-            GET /api/tasks/:id
-        """
-
         response = await self._get(
             f"/api/tasks/{task_id}"
         )
 
         try:
-
             return response.json()
 
         except ValueError as exc:
@@ -779,20 +706,12 @@ class CrmService:
         task_data: dict[str, Any],
     ) -> dict:
 
-        """
-        Create a new task.
-
-        CRM:
-            POST /api/tasks
-        """
-
         response = await self._post(
             "/api/tasks",
             task_data,
         )
 
         try:
-
             return response.json()
 
         except ValueError as exc:
@@ -812,20 +731,12 @@ class CrmService:
         task_data: dict[str, Any],
     ) -> dict:
 
-        """
-        Update an existing task.
-
-        CRM:
-            PUT /api/tasks/:id
-        """
-
         response = await self._put(
             f"/api/tasks/{task_id}",
             task_data,
         )
 
         try:
-
             return response.json()
 
         except ValueError as exc:
@@ -844,196 +755,18 @@ class CrmService:
         leave_data: dict,
     ) -> dict:
 
-        """
-        Create a leave request.
-
-        CRM:
-            POST /api/leave
-        """
-
         response = await self._post(
             "/api/leave",
             leave_data,
         )
 
         try:
-
             return response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
                 "The CRM service returned an invalid leave response.",
-                status_code=502,
-            ) from exc
-
-    # =====================================================
-    # LEAVE - UPDATE STATUS
-    # =====================================================
-
-    async def update_leave_status(
-        self,
-        leave_id: str,
-        status: str,
-    ) -> dict:
-
-        """
-        Update leave status.
-
-        CRM:
-            PATCH /api/leave/:id/status
-        """
-
-        url = (
-            f"{self.base_url}"
-            f"/api/leave/{leave_id}/status"
-        )
-
-        try:
-
-            async with httpx.AsyncClient(
-                timeout=self.timeout
-            ) as client:
-
-                response = await client.patch(
-                    url,
-                    json={
-                        "status": status
-                    },
-                    headers=self._headers(),
-                )
-
-        except httpx.ConnectError as exc:
-
-            raise CrmServiceError(
-                "Could not connect to the CRM service.",
-                status_code=503,
-            ) from exc
-
-        except httpx.TimeoutException as exc:
-
-            raise CrmServiceError(
-                "The CRM service took too long to respond.",
-                status_code=504,
-            ) from exc
-
-        except httpx.HTTPError as exc:
-
-            raise CrmServiceError(
-                "Unexpected error while contacting the CRM service.",
-                status_code=502,
-            ) from exc
-
-        if response.status_code == 404:
-
-            raise CrmServiceError(
-                "Leave request not found.",
-                status_code=404,
-            )
-
-        if response.status_code >= 400:
-
-            raise CrmServiceError(
-                "The CRM service rejected the leave status update.",
-                status_code=(
-                    502
-                    if response.status_code >= 500
-                    else response.status_code
-                ),
-            )
-
-        try:
-
-            return response.json()
-
-        except ValueError as exc:
-
-            raise CrmServiceError(
-                "The CRM service returned an invalid response.",
-                status_code=502,
-            ) from exc
-
-    # =====================================================
-    # LEAVE - UPDATE
-    # =====================================================
-
-    async def update_leave(
-        self,
-        leave_id: str,
-        leave_data: dict,
-    ) -> dict:
-
-        """
-        Update a leave.
-
-        CRM:
-            PUT /api/leave/:id
-        """
-
-        url = (
-            f"{self.base_url}"
-            f"/api/leave/{leave_id}"
-        )
-
-        try:
-
-            async with httpx.AsyncClient(
-                timeout=self.timeout
-            ) as client:
-
-                response = await client.put(
-                    url,
-                    json=leave_data,
-                    headers=self._headers(),
-                )
-
-        except httpx.ConnectError as exc:
-
-            raise CrmServiceError(
-                "Could not connect to the CRM service.",
-                status_code=503,
-            ) from exc
-
-        except httpx.TimeoutException as exc:
-
-            raise CrmServiceError(
-                "The CRM service took too long to respond.",
-                status_code=504,
-            ) from exc
-
-        except httpx.HTTPError as exc:
-
-            raise CrmServiceError(
-                "Unexpected error while contacting the CRM service.",
-                status_code=502,
-            ) from exc
-
-        if response.status_code == 404:
-
-            raise CrmServiceError(
-                "Leave request not found.",
-                status_code=404,
-            )
-
-        if response.status_code >= 400:
-
-            raise CrmServiceError(
-                "The CRM service rejected the leave update.",
-                status_code=(
-                    502
-                    if response.status_code >= 500
-                    else response.status_code
-                ),
-            )
-
-        try:
-
-            return response.json()
-
-        except ValueError as exc:
-
-            raise CrmServiceError(
-                "The CRM service returned an invalid response.",
                 status_code=502,
             ) from exc
 
@@ -1045,19 +778,11 @@ class CrmService:
         self,
     ) -> list[dict]:
 
-        """
-        Get all leaves.
-
-        CRM:
-            GET /api/leave
-        """
-
         response = await self._get(
             "/api/leave"
         )
 
         try:
-
             result = response.json()
 
         except ValueError as exc:
@@ -1068,18 +793,19 @@ class CrmService:
             ) from exc
 
         if isinstance(result, list):
-
             return result
 
         if isinstance(result, dict):
 
-            leaves = result.get(
-                "leaves"
-            )
+            leaves = result.get("leaves")
 
             if isinstance(leaves, list):
-
                 return leaves
+
+            data = result.get("data")
+
+            if isinstance(data, list):
+                return data
 
         raise CrmServiceError(
             "The CRM returned an unexpected leaves response.",
@@ -1095,13 +821,6 @@ class CrmService:
         employee_id: str,
     ) -> list[dict]:
 
-        """
-        Get leaves for one employee.
-
-        CRM:
-            POST /api/leave/by-employee
-        """
-
         response = await self._post(
             "/api/leave/by-employee",
             {
@@ -1110,7 +829,6 @@ class CrmService:
         )
 
         try:
-
             result = response.json()
 
         except ValueError as exc:
@@ -1120,15 +838,20 @@ class CrmService:
                 status_code=502,
             ) from exc
 
+        if isinstance(result, list):
+            return result
+
         if isinstance(result, dict):
 
-            leaves = result.get(
-                "leaves"
-            )
+            leaves = result.get("leaves")
 
             if isinstance(leaves, list):
-
                 return leaves
+
+            data = result.get("data")
+
+            if isinstance(data, list):
+                return data
 
         raise CrmServiceError(
             "The CRM returned an unexpected employee leave response.",
@@ -1138,6 +861,7 @@ class CrmService:
 
 # =========================================================
 # FASTAPI DEPENDENCY
+# IMPORTANT: OUTSIDE CrmService CLASS
 # =========================================================
 
 def get_crm_service() -> CrmService:
