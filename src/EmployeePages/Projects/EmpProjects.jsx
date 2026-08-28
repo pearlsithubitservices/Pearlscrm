@@ -18,7 +18,7 @@ import LoadingPage from '../../components/Dashboard/Loading';
 import Pagination from '../../components/Pagination';
 import { useAuth } from '../../context/AuthContext';
 import useEmployees from '../../Hooks/useEmployees';
-import { getProjectHealthStatus } from '../../utils/projectHealth';
+import { getProjectHealthStatus } from '../../Utils/projectHealth';
 import { apiUrl } from '../../config/api';
 import { socket } from '../../config/socket';
 

@@ -25,6 +25,7 @@ const AttendanceDashboard = ({
     setHours,
     setAttendanceRecords,
     attendanceRecords,
+    onAttendanceChange,
 }) => {
 
     
@@ -79,12 +80,113 @@ const AttendanceDashboard = ({
         }
     }, []);
 
+    // Dynamic sync with backend on mount or user change
+    useEffect(() => {
+        const syncCurrentAttendance = async () => {
+            const empUid = user?.uid || user?._id || user?.id || "";
+            if (!empUid) return;
+
+            try {
+                const res = await getAttendanceById(empUid);
+                const records = res?.data || [];
+                const todayStr = getLocalDateString();
+
+                const todayRecord = records.find((rec) => {
+                    if (!rec.date) return false;
+                    const recDate = new Date(rec.date).toISOString().split("T")[0];
+                    return recDate === todayStr;
+                });
+
+                if (todayRecord) {
+                    if (todayRecord.clockIn) {
+                        const inTime = new Date(todayRecord.clockIn);
+                        const stamp = inTime.getTime();
+                        setClockInStamp(stamp);
+                        setClockInTime(
+                            inTime.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            })
+                        );
+
+                        if (todayRecord.clockOut && todayRecord.attendanceState === "clocked_out") {
+                            setWorking(false);
+                            const outTime = new Date(todayRecord.clockOut);
+                            setClockOutStamp(outTime.getTime());
+                            setClockOutTime(
+                                outTime.toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                })
+                            );
+                        } else {
+                            setWorking(true);
+                            setClockOutTime("--:--");
+                            setClockOutStamp(null);
+                        }
+                    }
+
+                    const breaks = todayRecord.breaks || [];
+                    let finishedBreakSecs = 0;
+                    let activeBreak = null;
+
+                    breaks.forEach((b) => {
+                        const startMs = b.start ? new Date(b.start).getTime() : NaN;
+                        const endMs = b.end ? new Date(b.end).getTime() : NaN;
+
+                        if (!isNaN(startMs) && startMs > 100000000000) {
+                            if (!isNaN(endMs) && endMs >= startMs) {
+                                const dur = typeof b.duration === "number" && b.duration > 0 && b.duration < 86400
+                                    ? b.duration
+                                    : Math.min(86400, Math.floor((endMs - startMs) / 1000));
+                                finishedBreakSecs += Math.max(0, dur);
+                            } else if (isNaN(endMs) || !b.end) {
+                                activeBreak = b;
+                            }
+                        }
+                    });
+
+                    setCompletedBreakSeconds(finishedBreakSecs);
+
+                    if (activeBreak && activeBreak.start) {
+                        const activeMs = new Date(activeBreak.start).getTime();
+                        if (!isNaN(activeMs) && activeMs > 100000000000) {
+                            setOnBreak(true);
+                            setBreakStartStamp(activeMs);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error syncing attendance state:", err);
+            }
+        };
+
+        syncCurrentAttendance();
+    }, [user]);
+
+    const getCurrentBreakSeconds = () => {
+        if (!breakStartStamp) {
+            return completedBreakSeconds;
+        }
+
+        return (
+            completedBreakSeconds +
+            Math.floor((Date.now() - breakStartStamp) / 1000)
+        );
+    };
+
+    const getNetWorkingSeconds = () => {
+        if (!working || !clockInStamp) return 0;
+        const totalElapsed = Math.floor((Date.now() - clockInStamp) / 1000);
+        const breakSeconds = getCurrentBreakSeconds();
+        return Math.max(0, totalElapsed - breakSeconds);
+    };
+
     // Update timers when tab becomes visible
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible" && working && clockInStamp) {
-                const elapsedSeconds = Math.floor((Date.now() - clockInStamp) / 1000);
-                setSeconds(elapsedSeconds);
+                setSeconds(getNetWorkingSeconds());
             }
 
             if (document.visibilityState === "visible" && onBreak && breakStartStamp) {
@@ -97,20 +199,19 @@ const AttendanceDashboard = ({
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, [working, clockInStamp, onBreak, breakStartStamp, completedBreakSeconds]);
 
-    // Work timer effect (timestamp-based)
+    // Work timer effect (pauses during break)
     useEffect(() => {
         let interval;
 
         if (working && clockInStamp) {
+            setSeconds(getNetWorkingSeconds());
             interval = setInterval(() => {
-                const now = Date.now();
-                const elapsedSeconds = Math.floor((now - clockInStamp) / 1000);
-                setSeconds(elapsedSeconds);
+                setSeconds(getNetWorkingSeconds());
             }, 1000);
         }
 
         return () => clearInterval(interval);
-    }, [working, clockInStamp]);
+    }, [working, clockInStamp, onBreak, breakStartStamp, completedBreakSeconds]);
 
     // Break timer: compute display from timestamps + accumulated seconds
     useEffect(() => {
@@ -148,19 +249,6 @@ const AttendanceDashboard = ({
         return `${hrs}:${mins}:${secs}`;
     };
 
-    //helper function
-
-    const getCurrentBreakSeconds = () => {
-        if (!breakStartStamp) {
-            return completedBreakSeconds;
-        }
-
-        return (
-            completedBreakSeconds +
-            Math.floor((Date.now() - breakStartStamp) / 1000)
-        );
-    };
-
     // SAFE calculation using timestamps
     const calculateHours = (start, end) => {
         if (!start || !end) return 0;
@@ -187,6 +275,38 @@ const AttendanceDashboard = ({
         setShowClockInToast(true);
     };
 
+const getUserLocation = () => {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            resolve("Office");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+                    );
+                    const data = await res.json();
+                    const loc =
+                        data.address?.city ||
+                        data.address?.town ||
+                        data.address?.suburb ||
+                        data.address?.state ||
+                        "Office";
+                    resolve(loc);
+                } catch {
+                    resolve("Office");
+                }
+            },
+            () => resolve("Office"),
+            { timeout: 5000 }
+        );
+    });
+};
+
     // CLOCK IN
     const handleClockIn = async () => {
         if (!photoSubmitted) {
@@ -207,22 +327,35 @@ const AttendanceDashboard = ({
             setClockInStamp(now);
             setShowClockInToast(false);
             setClockInTime(formattedTime);
+            setClockOutTime("--:--");
+            setClockOutStamp(null);
 
-            // Save to localStorage
+            // Save to localStorage & clear previous clockOut
             localStorage.setItem("clockInStamp", now);
             localStorage.setItem("clockInTime", formattedTime);
+            localStorage.removeItem("clockOutStamp");
+            localStorage.removeItem("clockOutTime");
+
+            const empUid = user?.uid || user?._id || user?.id || user?.email || "";
+            const empName = user?.name || user?.displayName || user?.employeeName || "Employee";
+
+            // Fetch live location
+            const userLocation = await getUserLocation();
+            const selfie = localStorage.getItem("userSelfie") || (typeof photoSubmitted === "string" ? photoSubmitted : null);
 
             // Call API
             const res = await clockIn({
-                employee_uid: user.uid,
-                employee_name: user.displayName || "Deepan",
-                department: "Developer",
+                employee_uid: empUid,
+                employee_name: empName,
+                department: user?.department || "Developer",
                 date: getLocalDateString(),
-                photophotoStatus:"submitted",
-            
+                photoStatus: "submitted",
+                location: userLocation,
+                photo: selfie,
             });
 
             console.log("Clock In Success:", res);
+            onAttendanceChange?.();
 
         } catch (err) {
             console.error("Clock In Failed:", err);
@@ -241,6 +374,7 @@ const AttendanceDashboard = ({
     // Toggle Break (start/resume)
     const handleToggleBreak = async () => {
         const today = getLocalDateString();
+        const empUid = user?.uid || user?._id || user?.id || user?.email || "";
 
         try {
             if (!onBreak) {
@@ -248,7 +382,7 @@ const AttendanceDashboard = ({
                 const now = Date.now();
 
                 await startBreak({
-                    employee_uid: user.uid,
+                    employee_uid: empUid,
                     date: today,
                 });
 
@@ -265,7 +399,7 @@ const AttendanceDashboard = ({
                     );
 
                     await endBreak({
-                        employee_uid: user.uid,
+                        employee_uid: empUid,
                         date: today,
                     });
 
@@ -279,6 +413,7 @@ const AttendanceDashboard = ({
                     setOnBreak(false);
                 }
             }
+            onAttendanceChange?.();
         } catch (err) {
             console.error(err);
             alert(err.message);
@@ -287,6 +422,7 @@ const AttendanceDashboard = ({
 
     // CLOCK OUT
     const handleClockOut = async () => {
+        const empUid = user?.uid || user?._id || user?.id || user?.email || "";
         try {
             const now = Date.now();
 
@@ -301,14 +437,14 @@ const AttendanceDashboard = ({
                 );
 
                 await endBreak({
-                    employee_uid: user.uid,
+                    employee_uid: empUid,
                     date: getLocalDateString(),
                 });
             }
 
             // Call backend clock out
             const res = await clockOut({
-                employee_uid: user.uid,
+                employee_uid: empUid,
                 date: getLocalDateString(),
             });
 
@@ -336,6 +472,8 @@ const AttendanceDashboard = ({
             localStorage.removeItem("breakStartStamp");
             localStorage.removeItem("completedBreakSeconds");
             localStorage.removeItem("breakSeconds");
+
+            onAttendanceChange?.();
 
             // Optional: update UI records using backend response
             setAttendanceRecords?.((prev) => [
@@ -393,11 +531,13 @@ const AttendanceDashboard = ({
             </div>
 
             {/* BREAK */}
-            {onBreak && (
-                <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
-                    <h3 className="font-bold text-yellow-600">Tea Break Running</h3>
+            {(onBreak || completedBreakSeconds > 0) && (
+                <div className={`mt-4 border rounded-xl p-4 text-center ${onBreak ? "bg-yellow-50 border-yellow-200" : "bg-blue-50 border-blue-200"}`}>
+                    <h3 className={`font-bold ${onBreak ? "text-yellow-600" : "text-blue-600"}`}>
+                        {onBreak ? "☕ Tea Break Running" : "☕ Total Tea Break Today"}
+                    </h3>
 
-                    <p className="text-2xl mt-2">{formatTime(getCurrentBreakSeconds())}
+                    <p className="text-2xl font-bold mt-2">{formatTime(getCurrentBreakSeconds())}
                     </p>
                 </div>
             )}

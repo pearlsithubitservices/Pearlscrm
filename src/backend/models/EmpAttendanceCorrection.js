@@ -61,6 +61,11 @@ const attendanceCorrectionSchema = new mongoose.Schema(
         type: String, // file path or URL
       },
     ],
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+    },
   },
   { timestamps: true }
 );

@@ -3,24 +3,17 @@ const router = express.Router();
 
 const EmpAttendanceModel = require("../models/EmpAttendanceModel");
 const { calculateAttendanceStatus } = require("../../Utils/formatNumber");
+const { getIO } = require("../Socket");
 
 const parseDateOnly = (dateString) => {
   if (!dateString) return null;
-  const parts = dateString.split("-");
-  if (parts.length !== 3) return null;
-
-  const year = Number(parts[0]);
-  const month = Number(parts[1]) - 1;
-  const day = Number(parts[2]);
-  const parsed = new Date(year, month, day);
-
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 };
 
 const findAttendanceForDate = async (employee_uid, dateString) => {
-  const startOfDay = parseDateOnly(dateString);
-  if (!startOfDay) return null;
-
+  const startOfDay = parseDateOnly(dateString) || parseDateOnly(new Date());
   const endOfDay = new Date(startOfDay);
   endOfDay.setDate(endOfDay.getDate() + 1);
 
@@ -36,12 +29,23 @@ const findAttendanceForDate = async (employee_uid, dateString) => {
     });
   }
 
+  if (!attendance) {
+    attendance = await EmpAttendanceModel.findOne({
+      employee_uid,
+      clockIn: { $ne: null },
+      clockOut: null,
+    }).sort({ clockIn: -1 });
+  }
+
   return attendance;
 };
+
+const { cleanupOldPhotos } = require("../services/attendancePhotoCleanupScheduler");
 
 /* Get All Attendance */
 router.get("/", async (req, res) => {
   try {
+    cleanupOldPhotos().catch(() => {});
     const attendances = await EmpAttendanceModel.find()
       .sort({ createdAt: -1 });
 
@@ -61,17 +65,10 @@ router.get("/", async (req, res) => {
 /* Clock In */
 router.post("/clock-in", async (req, res) => {
   try {
-    const { employee_uid, employee_name, department, date } = req.body;
+    const { employee_uid, employee_name, department, date, location, photo } = req.body;
     const startOfDay = parseDateOnly(date);
 
     let attendance = await findAttendanceForDate(employee_uid, date);
-
-    // if (attendance?.clockIn && !attendance.clockOut) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Already clocked in",
-    //   });
-    // }
 
     if (!attendance) {
       attendance = new EmpAttendanceModel({
@@ -81,17 +78,26 @@ router.post("/clock-in", async (req, res) => {
         date: startOfDay,
         clockIn: new Date(),
         isOnline: true,
-        status: "present",
-        attendanceState:"working"
+        status: calculateAttendanceStatus(new Date(), null, 0),
+        attendanceState: "working",
+        location: location || "Office",
+        photo: photo || null,
+        photoStatus: photo ? "submitted" : null,
       });
     } else {
       attendance.clockIn = new Date();
       attendance.isOnline = true;
-      attendance.status = "present";
+      attendance.status = calculateAttendanceStatus(attendance.clockIn, attendance.clockOut, attendance.workingHours);
       attendance.attendanceState = "working";
+      if (location) attendance.location = location;
+      if (photo) {
+        attendance.photo = photo;
+        attendance.photoStatus = "submitted";
+      }
     }
 
     await attendance.save();
+    try { getIO()?.emit("attendanceUpdated", { employee_uid, attendance }); } catch (e) {}
 
     res.status(200).json({
       success: true,
@@ -110,18 +116,20 @@ router.post("/clock-in", async (req, res) => {
 router.post("/clock-out", async (req, res) => {
   try {
     const { employee_uid, date } = req.body;
-    console.log(req.body);
 
-    const attendance = await EmpAttendanceModel.findOne({
-      employee_uid,
-      clockIn: { $ne: null },
-      /*clockOut: null,*/
-    }).sort({ clockIn: -1 });
+    let attendance = await findAttendanceForDate(employee_uid, date);
+
+    if (!attendance) {
+      attendance = await EmpAttendanceModel.findOne({
+        employee_uid,
+        clockIn: { $ne: null },
+      }).sort({ clockIn: -1 });
+    }
 
     if (!attendance) {
       return res.status(404).json({
         success: false,
-        message: "Attendance not found",
+        message: "Attendance record not found for clock out",
       });
     }
 
@@ -132,28 +140,38 @@ router.post("/clock-out", async (req, res) => {
       });
     }
 
-
     attendance.clockOut = new Date();
-
     attendance.isOnline = false;
     attendance.attendanceState = "clocked_out";
-
 
     let totalBreakSeconds = 0;
 
     attendance.breaks.forEach((b) => {
-      totalBreakSeconds += b.duration || 0;
+      const bStart = b.start ? new Date(b.start).getTime() : NaN;
+      if (!b.end && !isNaN(bStart) && bStart > 100000000000) {
+        b.end = attendance.clockOut;
+        b.duration = Math.min(86400, Math.max(0, Math.floor((new Date(b.end).getTime() - bStart) / 1000)));
+      } else if (b.start && b.end) {
+        const bEnd = new Date(b.end).getTime();
+        if (!isNaN(bStart) && bStart > 100000000000 && !isNaN(bEnd) && bEnd >= bStart) {
+          b.duration = Math.min(86400, Math.max(0, Math.floor((bEnd - bStart) / 1000)));
+        } else {
+          b.duration = 0;
+        }
+      }
+      totalBreakSeconds += Math.min(86400, b.duration || 0);
     });
 
-    attendance.workingHours =
-      Math.max(
-        0,
-        (attendance.clockOut - attendance.clockIn) / 1000 -
-        totalBreakSeconds
-      );
-    attendance.status = calculateAttendanceStatus(attendance.clockIn, attendance.clockOut, attendance.workingHours);
+    const totalSeconds = (attendance.clockOut - attendance.clockIn) / 1000;
+    attendance.workingHours = Math.max(0, Math.floor(totalSeconds - totalBreakSeconds));
+    attendance.status = calculateAttendanceStatus(
+      attendance.clockIn,
+      attendance.clockOut,
+      attendance.workingHours
+    );
 
     await attendance.save();
+    try { getIO()?.emit("attendanceUpdated", { employee_uid, attendance }); } catch (e) {}
 
     res.status(200).json({
       success: true,
@@ -202,6 +220,7 @@ router.post("/break/start", async (req, res) => {
     attendance.attendanceState = "break";
 
     await attendance.save();
+    try { getIO()?.emit("attendanceUpdated", { employee_uid, attendance }); } catch (e) {}
 
     res.status(200).json({
       success: true,
@@ -251,6 +270,7 @@ router.post("/break/end", async (req, res) => {
     attendance.attendanceState = "working"
 
     await attendance.save();
+    try { getIO()?.emit("attendanceUpdated", { employee_uid, attendance }); } catch (e) {}
 
     res.status(200).json({
       success: true,

@@ -115,6 +115,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
 const { startFollowupReminderScheduler } = require("./services/followupReminderScheduler");
+const { startAttendancePhotoCleanupScheduler } = require("./services/attendancePhotoCleanupScheduler");
 
 app.use('/api/conversations', whatsappConversationRoutes);
 app.use("/api/automation-rules", automationRuleRoutes);
@@ -127,5 +128,6 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log("Connected to database with WebSocket support");
   startFollowupReminderScheduler();
+  startAttendancePhotoCleanupScheduler();
 });
 
