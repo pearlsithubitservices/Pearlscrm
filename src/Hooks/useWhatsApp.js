@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
-// const API_BASE = "https://pearlscrm.onrender.com/api/whatsapp";
-const API_BASE = "http://localhost:5000/api/whatsapp";
+const API_BASE = "https://pearlscrm.onrender.com/api/whatsapp";
+//const API_BASE = "http://localhost:5000/api/whatsapp";
 
 const useWhatsApp = () => {
   const [campaigns, setCampaigns] = useState([]);
@@ -71,7 +71,9 @@ const useWhatsApp = () => {
   const refreshAnalytics = useCallback(async (period = 30) => {
     try {
       const query = period === "all" ? "all" : period;
-      const data = await request(`/analytics/refresh?period=${query}`, { method: "POST" });
+      const data = await request(`/analytics/refresh?period=${query}`, {
+        method: "POST",
+      });
       setAnalytics(data);
       return data;
     } catch (err) {
