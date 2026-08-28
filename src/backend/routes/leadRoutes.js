@@ -1,4 +1,4 @@
-    const express =
+const express =
   require("express");
 
 const router =
@@ -7,7 +7,7 @@ const router =
 const Lead =
   require("../models/Leads");
 
-  
+
 
 
 
@@ -83,13 +83,9 @@ router.put(
     try {
 
       const updatedLead =
-        await Lead.findByIdAndUpdate(
-          req.params.id,
-          req.body,
-          {
-            new: true,
-          }
-        );
+        await Lead.findByIdAndUpdate(req.params.id, req.body, {
+          returnDocument: "after",
+        });
 
       res.json(
         updatedLead
@@ -136,12 +132,12 @@ router.post(
 );
 router.get("/:id", async (req, res) => {
   try {
-    const {id}=req.params;
+    const { id } = req.params;
     const data = await Lead.findById(id);
 
-    if(!data){
+    if (!data) {
       res.status(404).json();
-      
+
     }
 
     return res.status(200).json(data);
@@ -153,5 +149,86 @@ router.get("/:id", async (req, res) => {
     });
   }
 });
+
+// notes
+
+router.post("/:id/notes", async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    const lead = await Lead.findById(req.params.id);
+
+    if (!lead) {
+      return res.status(404).json({
+        message: "Lead not found",
+      });
+    }
+
+    lead.leadnotes.push({
+      title,
+      description,
+    });
+
+    await lead.save();
+
+    res.status(200).json(lead);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
+// DELETE LEAD
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const deletedLead = await Lead.findByIdAndDelete(req.params.id);
+
+    if (!deletedLead) {
+      return res.status(404).json({
+        message: "Lead not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Lead deleted successfully",
+      lead: deletedLead,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
+// DELETE SINGLE NOTE
+
+router.delete("/:leadId/notes/:noteId", async (req, res) => {
+  try {
+    const { leadId, noteId } = req.params;
+
+    const lead = await Lead.findById(leadId);
+
+    if (!lead) {
+      return res.status(404).json({
+        message: "Lead not found",
+      });
+    }
+
+    lead.leadnotes = lead.leadnotes.filter(
+      (note) => note._id.toString() !== noteId
+    );
+
+    await lead.save();
+
+    return res.status(200).json(lead);
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
 module.exports =
   router;

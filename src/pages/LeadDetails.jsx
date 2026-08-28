@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Mail,
@@ -27,7 +27,28 @@ export default function LeadDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const { lead, loading } = useLead(id);
+    const { lead, loading, updateLead } = useLead(id);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState({});
+    useEffect(() => {
+        if (lead) {
+            setEditData(lead);
+        }
+    }, [lead]);
+    const handleChange = (e) => {
+        setEditData({
+            ...editData,
+            [e.target.name]: e.target.value,
+        });
+    };
+    const handleUpdate = async () => {
+        try {
+            await updateLead(id, editData);
+            setIsEditing(false);
+        } catch (error) {
+            console.log(error);
+        }
+    };
     console.log(lead);
     const tabs = [
         "Overview",
@@ -60,7 +81,10 @@ export default function LeadDetails() {
         switch (activeTab) {
             case "Overview":
                 return <OverviewTab
-                    lead={lead} />;
+                    lead={lead}
+                    isEditing={isEditing}
+                    editData={editData}
+                    handleChange={handleChange} />;
 
             case "Activity":
                 return <ActivityTab
@@ -103,13 +127,13 @@ export default function LeadDetails() {
                             <div
                                 className="w-14 h-14 rounded-xl bg-[#dfe5ee] flex items-center
                                              justify-center text-blue-600 font-bold text-xl border border-black/40 ">
-                                VR
+                                {lead?.name?.charAt(0).toUpperCase()}
                             </div>
 
                             <div>
 
                                 <h1 className="font-bold text-xl text-[#082f57]">
-                                    {lead.name}
+                                    {lead?.name}
                                 </h1>
 
                                 <p className="text-gray-400 tracking-tighter">
@@ -143,22 +167,45 @@ export default function LeadDetails() {
                             <div className="flex gap-3">
 
                                 <span className="bg-green-100 text-green-600 px-4 py-1 rounded-full">
-                                    {lead.status}
+                                    {lead?.status}
                                 </span>
 
                                 <span className="bg-red-100 text-red-500 px-4 py-1 rounded-full">
-                                    {lead.priority}
+                                    {lead?.priority}
                                 </span>
-                               
+
 
                             </div>
+                            <div className="flex items-center justify-between">
 
-                            <button
-                                className="border px-5 py-2 rounded-lg flex items-center gap-2 hover:scale-110 transition-transform duration-200">
-                                <Pencil size={16} />
-                                Edit
-                            </button>
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="border px-5 py-2 rounded-lg flex items-center gap-2"
+                                >
+                                    <Pencil size={16} />
+                                    Edit
+                                </button>
+                                {isEditing && (
+                                    <div className="flex gap-3 mt-3">
+                                        <button
+                                            onClick={handleUpdate}
+                                            className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                                        >
+                                            Save
+                                        </button>
 
+                                        <button
+                                            onClick={() => {
+                                                setIsEditing(false);
+                                                setEditData(lead); // reset changes
+                                            }}
+                                            className="bg-gray-300 px-4 py-2 rounded-lg"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                     </div>

@@ -39,16 +39,19 @@ export default function AddCertification({ onClose }) {
     const handleSubmit = async () => {
         if (!formData.certificationName) return;
 
-        const payload = {
-            employee_uid: user?.uid, // replace with real user id
-            title: formData.certificationName,
-            issuer: formData.organization,
-            issued: formData.issueDate,
-            credentialId: formData.credentialId,
-            file: file ? file.name : null, // backend file upload not implemented yet
-        };
+        const form = new FormData();
 
-        const res = await addCertification(payload);
+        form.append("employee_uid", user?.uid);
+        form.append("title", formData.certificationName);
+        form.append("issuer", formData.organization);
+        form.append("issued", formData.issueDate);
+        form.append("credentialId", formData.credentialId);
+
+        if (file) {
+            form.append("image", file);
+        }
+
+        const res = await addCertification(form);
 
         if (res?.success) {
             setFormData({

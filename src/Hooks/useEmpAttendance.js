@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API_URL = "http://localhost:5000/api/empattendancenew";
+const API_URL = "https://pearlscrm.onrender.com/api/empattendancenew";
 
 export default function useEmpAttendance() {
   const [loading, setLoading] = useState(false);

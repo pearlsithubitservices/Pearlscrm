@@ -37,6 +37,10 @@ const performanceReviewSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    reviewerType: {
+      type: String,
+      required: true,
+    },
 
     reviewerDesignation: {
       type: String,

@@ -55,13 +55,31 @@ const leadSchema =
         default: "",
       },
       assignedEmployee: {
-        type:String,
+        type: String,
         default: "",
       },
 
       notes: {
         type: String,
       },
+      leadnotes: [
+        {
+          title: {
+            type: String,
+            required: true,
+          },
+
+          description: {
+            type: String,
+            required: true,
+          },
+
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
 
 
       followUpCount: {

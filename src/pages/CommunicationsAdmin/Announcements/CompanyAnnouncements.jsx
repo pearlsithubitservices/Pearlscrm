@@ -13,7 +13,7 @@ const CompanyAnnouncements = () => {
 
   const [selectedAnnouncements, setSelectedAnnouncements] = useState([]);
   const [data, setData] = useState([]);
-  const [search, setSearch] = useState();
+  const [search, setSearch] = useState("");
 
   const handleRead = async (item) => {
     setShowForm(true)
@@ -63,7 +63,7 @@ const CompanyAnnouncements = () => {
         <h2 className="text-2xl font-bold text-[#0B2B57]">
           Company Announcements
         </h2>
-         <span>
+        <div className="flex gap-8">
           <div className="relative flex gap-8">
 
             <input
@@ -74,13 +74,13 @@ const CompanyAnnouncements = () => {
               className=" p-2 border rounded-xl w-full" />
             <Search size={20} className="absolute text-gray-500 right-3 top-3  " />
           </div>
-        </span>
-        <div className="flex gap-8 ">
-         <button className="bg-blue-700 p-1 rounded-md text-white hover:scale-105 transition-transform duration-150" onClick={() => setShowAnnouncementForm(true)}>Announcement</button>
-      
-        <span className="px-4 py-2 bg-gray-100 rounded-full text-sm font-medium text-gray-500">
+
+          <div className="flex gap-8 ">
+            <button className="bg-blue-700 p-1 rounded-md text-white hover:scale-105 transition-transform duration-150" onClick={() => setShowAnnouncementForm(true)}>Announcement</button>
+          </div>
+          {/* <span className="px-4 py-2 bg-gray-100 rounded-full text-sm font-medium text-gray-500">
           {announcements.filter((item) => (item.isRead == false)).length} unread
-        </span>
+        </span> */}
         </div>
       </div>
 
@@ -88,73 +88,95 @@ const CompanyAnnouncements = () => {
 
       <div className=" rounded-2xl   p-4  space-y-4">
 
-        {sortedAnnouncements.slice(0, 5).map((item) => (
+        {sortedAnnouncements.length > 0 ? (
+          sortedAnnouncements.slice(0, 5).map((item) => (
 
-          <motion.div
-            key={item._id}
+            <motion.div
+              key={item._id}
 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2 * 0.1 }}
-            whileHover={{ y: -2 }}
-            className={`border border-gray-100 border-l-4 ${item.priority?.toLowerCase() == "high" ? "border-l border-red-500" : item.priority?.toLowerCase() == "med" ? "border-yellow-300" : "border-green-600"} cursor-pointer bg-white rounded-2xl p-5 hover:shadow-md transition-all`}
-            onClick={() => handleRead(item)}
-          >
-            <div className="flex justify-between items-start">
-              <span
-                className={`px-4 py-1 rounded-full text-xs font-semibold ${item.priority?.toLowerCase() == "high" ? " bg-red-300 text-red-700" : item.priority?.toLowerCase() == "med" ? "bg-yellow-200 text-yellow-700" : "bg-green-300 text-green-700"}`}
-              >
-                {item.priority}
-              </span>
-              <span className="flex gap-4">
-                <Pin
-                  size={16}
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent opening FullAnnouncements
-                    togglePin(item._id);
-                  }}
-                  className={`cursor-pointer transition-colors ${item.pinned
-                    ? "fill-yellow-500 text-yellow-500"
-                    : "text-gray-500"
-                    }`}
-                />
-                <DeleteIcon size={16}  className="" onClick={(e) => 
-                  {
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 2 * 0.1 }}
+              whileHover={{ y: -2 }}
+              className={`border border-gray-100 border-l-4 ${item.priority?.toLowerCase() == "high" ? "border-l border-red-500" : item.priority?.toLowerCase() == "med" ? "border-yellow-300" : "border-green-600"} cursor-pointer bg-white rounded-2xl p-5 hover:shadow-md transition-all`}
+              onClick={() => handleRead(item)}
+            >
+              <div className="flex justify-between items-start">
+                <span
+                  className={`px-4 py-1 rounded-full text-xs font-semibold ${item.priority?.toLowerCase() == "high" ? " bg-red-300 text-red-700" : item.priority?.toLowerCase() == "med" ? "bg-yellow-200 text-yellow-700" : "bg-green-300 text-green-700"}`}
+                >
+                  {item.priority}
+                </span>
+                <span className="flex gap-4">
+                  <Pin
+                    size={16}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent opening FullAnnouncements
+                      togglePin(item._id);
+                    }}
+                    className={`cursor-pointer transition-colors ${item.pinned
+                      ? "fill-yellow-500 text-yellow-500"
+                      : "text-gray-500"
+                      }`}
+                  />
+                  <DeleteIcon size={16} className="" onClick={(e) => {
                     e.stopPropagation();
-                    deleteannouncement(item._id)}} /></span>
-            </div>
-
-            <h3 className="mt-4 text-xl font-bold text-[#0B2B57]">
-              {item.title}
-            </h3>
-
-            <p className="text-gray-500 mt-3 leading-relaxed">
-              {item.description?.length > 100 ? `${item.description.slice(0, 100)}...` : item.description}
-            </p>
-
-            <div className="flex items-center justify-between mt-5">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[#0B2B57] text-white flex items-center justify-center font-semibold">
-                  {item.author.charAt().toUpperCase()}
-                </div>
-
-                <div>
-                  <p className="font-semibold text-sm">
-                    {item.author.toUpperCase()}
-                  </p>
-
-                  <p className="text-xs text-gray-500">
-                    {item.role}
-                  </p>
-                </div>
+                    deleteannouncement(item._id)
+                  }} /></span>
               </div>
 
-              <p className="text-sm text-gray-400">
-                {item.date}
+              <h3 className="mt-4 text-xl font-bold text-[#0B2B57]">
+                {item.title}
+              </h3>
+
+              <p className="text-gray-500 mt-3 leading-relaxed">
+                {item.description?.length > 100 ? `${item.description.slice(0, 100)}...` : item.description}
               </p>
+
+              <div className="flex items-center justify-between mt-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#0B2B57] text-white flex items-center justify-center font-semibold">
+                    {item.author.charAt().toUpperCase()}
+                  </div>
+
+                  <div>
+                    <p className="font-semibold text-sm">
+                      {item.author.toUpperCase()}
+                    </p>
+
+                    <p className="text-xs text-gray-500">
+                      {item.role}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-400">
+                  {item.date}
+                </p>
+              </div>
+            </motion.div>
+          ))) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white border border-dashed border-gray-300 rounded-2xl py-20 px-8 text-center"
+          >
+            <div className="mx-auto w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-5">
+              <Search size={36} className="text-blue-600" />
             </div>
+
+            <h3 className="text-2xl font-bold text-[#0B2B57]">
+              No Announcements Found
+            </h3>
+
+            <p className="mt-3 text-gray-500 max-w-md mx-auto">
+              There are currently no announcements available.
+
+            </p>
+
+
           </motion.div>
-        ))}
+        )}
       </div>
       {showForm &&
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -166,7 +188,7 @@ const CompanyAnnouncements = () => {
 
       }
       {showAnnouncementForm &&
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0  flex items-center justify-center z-50">
           <AnnouncementForm
             onClose={() => setShowAnnouncementForm(false)
             }

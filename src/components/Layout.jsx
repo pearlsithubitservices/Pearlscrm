@@ -24,9 +24,9 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex bg-[#FBFBFA] min-h-screen">
+    <div className="flex bg-[#FBFBFA] min-h-screen h-screen overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-y-auto min-w-0">
         <AnimatePresence mode="wait">
           <motion.div
             initial={{ opacity: 0, y: 10 }}

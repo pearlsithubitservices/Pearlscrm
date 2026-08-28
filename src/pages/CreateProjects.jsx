@@ -19,7 +19,7 @@ import {
 
 import { db } from "../lib/firebase.js";
 
-export default function ProjectForm({ onClose }) {
+export default function ProjectForm({ onClose, fetchProjects }) {
   const [project, setProject] = useState({
     company: "",
     companylocation: "",
@@ -33,7 +33,8 @@ export default function ProjectForm({ onClose }) {
   });
 
   const [employees, setEmployees] = useState([]);
-
+  console.log("first employee:", employees[0]);
+  console.log("name:", employees[0]?.name);
   // FETCH EMPLOYEES
   const fetchEmployees = async () => {
 
@@ -55,6 +56,7 @@ export default function ProjectForm({ onClose }) {
       });
 
       setEmployees(employeeList);
+      console.log("employees:", employeeList);
 
     } catch (error) {
 
@@ -89,7 +91,8 @@ export default function ProjectForm({ onClose }) {
       console.log("Adding project:", project);
 
       const response = await fetch(
-        "http://localhost:5000/api/projects",
+        // "http://localhost:5000/api/projects",
+        "https://pearlscrm.onrender.com/api/projects",
         {
           method: "POST",
           headers: {
@@ -111,6 +114,7 @@ export default function ProjectForm({ onClose }) {
         );
 
         alert("Project Added Successfully");
+        await fetchProjects();
 
         onClose();
 
@@ -272,7 +276,7 @@ export default function ProjectForm({ onClose }) {
                   value={emp.id}
                 >
 
-                  {emp.name}
+                  {JSON.stringify(emp.name)}
 
                 </option>
 

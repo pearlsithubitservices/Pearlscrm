@@ -1,180 +1,336 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+
+
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  LayoutDashboard,
   Users,
-  Target,
-  Clock,
-  XCircle,
-  Bell,
+  CheckSquare,
+  FolderKanban,
+  Settings,
+  LogOut,
   Search,
+  Filter,
+  Bell,
+  Plus,
+  IndianRupee,
+  CheckCircle2,
+  ChartNoAxesCombined,
+  Users2,
+  CheckCircle,
+  Briefcase,
+  ArrowLeft,
+  ArrowLeftCircleIcon,
+  ArrowRightFromLine,
+  ArrowRightCircleIcon,
 } from "lucide-react";
 
-const stats = [
-  { title: "Total Lead", value: "1243", icon: Users, trend: "+8.4%", color: "green" },
-  { title: "Hot Leads", value: "48", icon: Target, trend: "+8.4%", color: "green" },
-  { title: "Pending Leads", value: "24", icon: Clock, trend: "-1.2%", color: "red" },
-  { title: "Closed Leads", value: "20", icon: XCircle, trend: "-1.2%", color: "red" },
-];
+import { motion, AnimatePresence } from "framer-motion";
+import Pagination from "../../components/Pagination";
+import CreateLead from "../../pages/CreateLead";
+import AnimateModals from "../../components/Dashboard/AnimateModals";
+import LoadingPage from "../../components/Dashboard/Loading";
+import useLeadfilter from "../../Hooks/useLeadfilter"
+import { useAuth } from "../../context/AuthContext";
+import { formatCurrency } from "../../Utils/formatNumber";
+export default function LeadManagement() {
 
-const leads = [
-  {
-    name: "Sarah Chen",
-    company: "Nexigen Corp",
-    status: "New",
-    temp: "Warm",
-    source: "LinkedIn",
-    follow: "Today",
-  },
-  {
-    name: "Vishnu",
-    company: "TechFlow Solutions",
-    status: "Pending",
-    temp: "Hot",
-    source: "Referral",
-    follow: "Tomorrow",
-  },
-  {
-    name: "Dhoni",
-    company: "GreenPath Inc.",
-    status: "Scheduled",
-    temp: "Cold",
-    source: "Website",
-    follow: "Feb 14, 2025",
-  },
-  {
-    name: "Ragavi",
-    company: "Baltic Ventures",
-    status: "Scheduled",
-    temp: "Hot",
-    source: "Cold Email",
-    follow: "Feb 14, 2025",
-  },
-];
+  const [leaddetails, setLeaddetails] = useState([]);
+  const [dashboarddata, setDashboardData] = useState();
+  console.log(leaddetails);
+  const { user } = useAuth();
 
-export default function LeadsPage() {
-  const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState("");
+  
 
-  const filteredLeads =
-    filter === "All"
-      ? leads
-      : leads.filter((l) => l.temp.toLowerCase() === filter.toLowerCase());
+  const currentLead = leaddetails?.filter((item) => (
+    item.assignedTo == user.uid
+  ))
+  console.log(currentLead);
+
+  useEffect(() => {
+
+
+    fetchleads();
+    fetchDashboard();
+  }, []);
+  //FETCH DASHBOARD
+  const fetchDashboard =
+    async () => {
+
+      try {
+
+        const response =
+          await fetch(
+            "https://pearlscrm.onrender.com/api/dashboard"
+          );
+
+        const data =
+          await response.json();
+
+        setDashboardData(data);
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
+
+  // Fetch Leads
+
+  const fetchleads =
+    async () => {
+      setLoading(true);
+
+      try {
+
+        const response =
+          await fetch(
+            "https://pearlscrm.onrender.com/api/leads"
+          );
+
+        const data =
+          await response.json();
+
+
+        setLeaddetails(data);
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+      finally {
+        setLoading(false);
+      }
+
+    };
+
+  const [active, setActive] = useState(0);
+
+  const buttons = ["All", "Hot", "Warm", "Cold"];
+  console.log(buttons[active]);
+  const filteredLeads = useLeadfilter(currentLead, search, buttons[active]);
+
+
+  // PAGINATION
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const filesPerPage = 5;
+  const lastIndex = currentPage * filesPerPage;
+  const firstIndex = lastIndex - filesPerPage;
+  const currentFiles = filteredLeads?.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(filteredLeads.length / filesPerPage);
+
+
+  const [openlead, setOpenlead] = useState(false);
+
+
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const convertedLeads = currentLead?.filter((lead) => (lead.status.toLowerCase() === "converted")).length;
+  const convertedPercent = currentLead?.length > 0 ? ((convertedLeads / leaddetails.length) * 100).toFixed(2) : 0;
+  const pipelineValue = currentLead?.reduce((total, lead) => {
+    return total + Number(lead.budget || 0);
+  }, 0);
+
+
+
+  const stats = [
+    { icon: Users2, title: "Total Lead", value: currentLead.length },
+    { icon: Briefcase, title: "Hot Leads", value: currentLead.filter((leads) => (leads.priority?.toLowerCase() === "hot")).length },
+    { icon: ChartNoAxesCombined, title: "Conversion Rate", value: `${convertedPercent}%` },
+    { icon: IndianRupee, title: "Pipeline Value", value:formatCurrency(pipelineValue) },
+  ];
+
+
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      
+    <div className="flex max-h-screen overflow-y-auto no-scrollbar bg-[#f3f0eb]">
 
-      {/* Main */}
-      <div className="flex-1 p-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
+      {/* MAIN */}
+      <div className="flex-1 flex flex-col">
+
+        {/* TOPBAR */}
+        <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
+
           <div>
-            <h1 className="text-2xl font-bold">Leads Center</h1>
-            <p className="text-gray-500">Manage all company leads</p>
+            <h1 className="text-2xl font-bold text-[#023167] p-2">
+              Lead Management
+            </h1>
+            <p className="text-sm text-gray-500">
+              Track and manage your leads
+            </p>
           </div>
-          <Bell className="bg-blue-600 text-white p-2 rounded-lg" />
-        </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mt-6">
-          {stats.map((s, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.03 }}
-              className="bg-white p-4 rounded-xl shadow"
+          <div className="flex items-center gap-4">
+
+
+            <button
+              onClick={() => setOpenlead(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#2563a9] text-white rounded hover:scale-105 transition-transform duration-300"
             >
-              <div className="flex justify-between">
-                <s.icon className="bg-gray-100 p-2 rounded" />
-                <span
-                  className={`text-sm ${
-                    s.color === "green" ? "text-green-500" : "text-red-500"
-                  }`}
-                >
-                  {s.trend}
-                </span>
-              </div>
-              <p className="text-gray-500 mt-2">{s.title}</p>
-              <h2 className="text-2xl font-bold">{s.value}</h2>
-            </motion.div>
-          ))}
+              <Plus size={16} />
+              Add Lead
+            </button>
+
+            <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
+              <Filter size={18} className='text-white' />
+            </button>
+
+            <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
+              <Bell size={18} className='text-white' />
+            </button>
+
+          </div>
+
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center justify-between mt-8 bg-white p-4 rounded-xl shadow">
-          <div className="flex gap-4">
-            {["All", "Hot", "Warm", "Cold"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-1 rounded-full ${
-                  filter === f ? "bg-blue-600 text-white" : "bg-gray-100"
-                }`}
+        {/* CONTENT */}
+        <div className="p-4 md:p-6 lg:p-8 bg-[#f3f0eb]">
+
+          {/* STATS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {stats.map((s, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-6 rounded-xl border"
               >
-                {f}
-              </button>
+                <div className='bg-gray-200  rounded w-8 h-8'>
+                  <s.icon className="w-8 h-8 text-black p-2" />
+                </div>
+                <p className="text-sm text-gray-500">{s.title}</p>
+                <h2 className="text-2xl font-bold text-[#0b2b57]">
+                  {s.value}
+                </h2>
+              </motion.div>
             ))}
+
           </div>
 
-          <div className="flex items-center bg-gray-100 px-3 py-2 rounded-lg">
-            <Search size={16} />
-            <input
-              placeholder="Search Lead.."
-              className="bg-transparent ml-2 outline-none"
-            />
-          </div>
-        </div>
+          {/* FILTER BAR */}
+          <div className="mt-6 bg-white p-3 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className=" font-bold text-xl text-[#0b2b57]"  >
+              <p>Lead List</p>
+            </div>
 
-        {/* Table */}
-        <div className="mt-6 bg-white rounded-xl shadow overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3">Lead</th>
-                <th>Status</th>
-                <th>Lead Temp</th>
-                <th>Source</th>
-                <th>Follow-Up</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredLeads.map((lead, i) => (
-                <motion.tr
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="border-b"
+            <div className="flex gap-3">
+              {buttons.map((btn, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActive(index)}
+                  className={`px-4  rounded-xl font-medium transition-all
+            ${active === index
+                      ? "bg-[#2563a9] text-white"
+                      : "text-gray-400  hover:bg-[#2563a9] hover:text-white"
+                    }`}
                 >
-                  <td className="p-3">
-                    <p className="font-medium">{lead.name}</p>
-                    <p className="text-xs text-gray-500">{lead.company}</p>
-                  </td>
-
-                  <td>
-                    <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs">
-                      {lead.status}
-                    </span>
-                  </td>
-
-                  <td>
-                    <span className="bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full text-xs">
-                      {lead.temp}
-                    </span>
-                  </td>
-
-                  <td>
-                    <span className="bg-gray-100 px-3 py-1 rounded-full text-xs">
-                      {lead.source}
-                    </span>
-                  </td>
-
-                  <td className="text-sm">{lead.follow}</td>
-                </motion.tr>
+                  {btn}
+                </button>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            <div className="flex items-center border bg-gray-200 rounded px-3 py-2 w-full md:w-80">
+              <Search size={16} className="text-black" />
+              <input
+                onChange={(e) => setSearch(e.target.value)}
+                className="ml-2 w-full outline-none text-sm bg-gray-200"
+                placeholder="Search Lead.."
+              />
+            </div>
+
+          </div>
+
+          {/* TABLE */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 bg-white rounded-lg overflow-x-auto border">
+
+            <table className="min-w-[900px] w-full text-sm">
+
+              <thead className="bg-gray-50 text-left text-gray-600">
+                <tr>
+                  <th className="p-3">LEAD</th>
+                  <th>STATUS</th>
+                  <th>TEMP</th>
+                  <th>BUDGET</th>
+                  <th>SOURCE</th>
+                  <th>FOLLOW UP</th>
+                </tr>
+              </thead>
+
+
+              <tbody>
+
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-10">
+                      <LoadingPage />
+                    </td>
+                  </tr>
+                ) : (currentFiles.map((l, i) => (
+                  <tr key={i} className="border-t" onClick={() => navigate(`/leadDetails/${l._id}`)}>
+
+                    <td className="p-3">
+                      <p className="font-medium">{l.name || "John Doe"}</p>
+                      <p className="text-xs text-gray-400">{l.company || "ABC Corp"}</p>
+                    </td>
+
+                    <td>
+                      <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
+                        {l.status || "New"}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded text-xs">
+                        {l.priority || "cold"}
+                      </span>
+                    </td>
+
+                    <td>{l.budget || "1,20,00"}</td>
+
+                    <td>
+                      <span className="bg-gray-100 px-2 py-1 rounded text-xs">
+                        {l.source || "LinkedIn"}
+                      </span>
+                    </td>
+
+                    <td>{l.follow || "Not Set"}</td>
+
+                  </tr>
+                )))}
+
+              </tbody>
+
+            </table>
+
+          </motion.div>
+
+          {/*PAGINATION*/}
+          <Pagination
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            totalPages={totalPages}
+          />
+
         </div>
+
       </div>
+      {/**ADD LEADS */}
+      {openlead && (
+        <AnimateModals>
+          <CreateLead onClose={() => setOpenlead(false)}
+            fetchleads={fetchleads} />
+        </AnimateModals>
+      )}
     </div>
   );
 }
+

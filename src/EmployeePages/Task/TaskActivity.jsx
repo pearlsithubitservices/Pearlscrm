@@ -20,7 +20,7 @@ export default function TaskActivityFeed() {
 
   const [activities, setActivities] = useState([]);
   const [text, setText] = useState("");
-
+  console.log(activities);
   useEffect(() => {
     if (user?.uid) {
       fetchActivities();

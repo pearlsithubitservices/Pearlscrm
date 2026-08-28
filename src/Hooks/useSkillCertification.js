@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-const BASE_URL = "http://localhost:5000/api/skillscertification";
+const BASE_URL = "https://pearlscrm.onrender.com/api/skillscertification";
+// const BASE_URL = "http://localhost:5000/api/skillscertification";
 
 export default function useSkillCertification() {
     const [loading, setLoading] = useState(false);
@@ -73,31 +74,25 @@ export default function useSkillCertification() {
         );
 
     // ================= CERTIFICATIONS =================
-    const addCertification = (payload) =>
+    const addCertification = (formData) =>
         request(() =>
             fetch(`${BASE_URL}/certification`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
+                body: formData,
             })
         );
 
     const updateCertification = (
         employee_uid,
         cert_id,
-        payload
+        formData
     ) =>
         request(() =>
             fetch(
                 `${BASE_URL}/certification/${employee_uid}/${cert_id}`,
                 {
                     method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload),
+                    body: formData,
                 }
             )
         );

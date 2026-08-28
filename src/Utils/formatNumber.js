@@ -6,6 +6,22 @@ export const formatNumber = (num) => {
         .replace(".0", "") + "K";
 };
 
+export const formatCurrency = (value) => {
+    if (value >= 1_000_000_000) {
+        return `₹${(value / 1_000_000_000).toFixed(1)}B`;
+    }
+
+    if (value >= 1_000_000) {
+        return `₹${(value / 1_000_000).toFixed(1)}M`;
+    }
+
+    if (value >= 1_000) {
+        return `₹${(value / 1_000).toFixed(1)}K`;
+    }
+
+    return `₹${value}`;
+};
+
 export const getFinancialYear = () => {
     const today = new Date();
 
