@@ -13,7 +13,8 @@ import {
   RefreshCcw,
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000/api";
+//const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://pearlscrm.onrender.com/api";
 
 const emptyForm = {
   phoneNumberId: "",
@@ -49,15 +50,13 @@ export default function Integrations() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/whatsapp-integration`
-      );
+      const response = await fetch(`${API_BASE_URL}/whatsapp-integration`);
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Failed to load WhatsApp configuration"
+          data.message || "Failed to load WhatsApp configuration",
         );
       }
 
@@ -78,9 +77,7 @@ export default function Integrations() {
     } catch (err) {
       console.error("Load WhatsApp configuration error:", err);
 
-      setError(
-        err.message || "Unable to load WhatsApp configuration"
-      );
+      setError(err.message || "Unable to load WhatsApp configuration");
     } finally {
       setLoading(false);
     }
@@ -112,22 +109,19 @@ export default function Integrations() {
       setMessage("");
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/whatsapp-integration`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/whatsapp-integration`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Failed to save WhatsApp configuration"
+          data.message || "Failed to save WhatsApp configuration",
         );
       }
 
@@ -141,9 +135,7 @@ export default function Integrations() {
     } catch (err) {
       console.error("Save WhatsApp configuration error:", err);
 
-      setError(
-        err.message || "Failed to save WhatsApp configuration"
-      );
+      setError(err.message || "Failed to save WhatsApp configuration");
     } finally {
       setSaving(false);
     }
@@ -166,15 +158,13 @@ export default function Integrations() {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || "Failed to test WhatsApp connection"
-        );
+        throw new Error(data.message || "Failed to test WhatsApp connection");
       }
 
       setConnected(data.connected === true);
@@ -183,9 +173,7 @@ export default function Integrations() {
     } catch (err) {
       console.error("Test WhatsApp connection error:", err);
 
-      setError(
-        err.message || "Failed to test WhatsApp connection"
-      );
+      setError(err.message || "Failed to test WhatsApp connection");
     } finally {
       setTesting(false);
     }
@@ -202,9 +190,7 @@ export default function Integrations() {
      * For now we only clear the frontend state.
      */
     setConnected(false);
-    setMessage(
-      "WhatsApp is currently not connected to Meta."
-    );
+    setMessage("WhatsApp is currently not connected to Meta.");
   };
 
   // =====================================================
@@ -214,9 +200,7 @@ export default function Integrations() {
   if (loading) {
     return (
       <div className="integrations-page">
-        <div className="loading-state">
-          Loading WhatsApp configuration...
-        </div>
+        <div className="loading-state">Loading WhatsApp configuration...</div>
 
         <style>{`
           .integrations-page {
@@ -238,24 +222,19 @@ export default function Integrations() {
 
   return (
     <div className="integrations-page">
-
       {/* Header */}
       <div className="page-header">
         <div>
           <h1>Integrations</h1>
-          <p>
-            Connect your CRM with external communication services.
-          </p>
+          <p>Connect your CRM with external communication services.</p>
         </div>
       </div>
 
       {/* WhatsApp Card */}
       <div className="integration-card">
-
         {/* Card Header */}
         <div className="integration-card-header">
           <div className="integration-title-section">
-
             <div className="whatsapp-icon">
               <MessageCircle size={28} />
             </div>
@@ -264,17 +243,15 @@ export default function Integrations() {
               <h2>WhatsApp Business</h2>
 
               <p>
-                Connect your Meta WhatsApp Business account
-                to receive and send customer messages.
+                Connect your Meta WhatsApp Business account to receive and send
+                customer messages.
               </p>
             </div>
           </div>
 
           <div
             className={`connection-status ${
-              connected
-                ? "connected"
-                : "not-connected"
+              connected ? "connected" : "not-connected"
             }`}
           >
             {connected ? (
@@ -312,7 +289,6 @@ export default function Integrations() {
 
         {/* Information */}
         <div className="integration-info">
-
           <div className="info-box">
             <ShieldCheck size={20} />
 
@@ -320,8 +296,7 @@ export default function Integrations() {
               <strong>Secure connection</strong>
 
               <span>
-                Your WhatsApp credentials are used only
-                for connecting your CRM.
+                Your WhatsApp credentials are used only for connecting your CRM.
               </span>
             </div>
           </div>
@@ -333,24 +308,20 @@ export default function Integrations() {
               <strong>Two-way messaging</strong>
 
               <span>
-                Receive WhatsApp messages and send replies
-                from the Conversations page.
+                Receive WhatsApp messages and send replies from the
+                Conversations page.
               </span>
             </div>
           </div>
-
         </div>
 
         {/* Configuration */}
         <div className="configuration-section">
-
           <h3>WhatsApp Configuration</h3>
 
           <div className="form-grid">
-
             {/* Phone Number ID */}
             <div className="form-group">
-
               <label>
                 <Phone size={15} />
                 Phone Number ID
@@ -363,12 +334,10 @@ export default function Integrations() {
                 onChange={handleChange}
                 placeholder="Enter WhatsApp Phone Number ID"
               />
-
             </div>
 
             {/* Business Account ID */}
             <div className="form-group">
-
               <label>
                 <Building2 size={15} />
                 Business Account ID
@@ -381,50 +350,32 @@ export default function Integrations() {
                 onChange={handleChange}
                 placeholder="Enter WhatsApp Business Account ID"
               />
-
             </div>
 
             {/* Access Token */}
             <div className="form-group full-width">
-
               <label>
                 <KeyRound size={15} />
                 Access Token
               </label>
 
               <div className="password-input">
-
                 <input
-                  type={
-                    showToken
-                      ? "text"
-                      : "password"
-                  }
+                  type={showToken ? "text" : "password"}
                   name="accessToken"
                   value={formData.accessToken}
                   onChange={handleChange}
                   placeholder="Enter Meta WhatsApp access token"
                 />
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowToken(!showToken)
-                  }
-                >
-                  {showToken ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
+                <button type="button" onClick={() => setShowToken(!showToken)}>
+                  {showToken ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
-
               </div>
             </div>
 
             {/* Webhook URL */}
             <div className="form-group">
-
               <label>
                 <Link2 size={15} />
                 Webhook URL
@@ -437,12 +388,10 @@ export default function Integrations() {
                 onChange={handleChange}
                 placeholder="https://your-domain.com/webhook"
               />
-
             </div>
 
             {/* Verify Token */}
             <div className="form-group">
-
               <label>
                 <ShieldCheck size={15} />
                 Verify Token
@@ -455,20 +404,14 @@ export default function Integrations() {
                 onChange={handleChange}
                 placeholder="Enter webhook verify token"
               />
-
             </div>
-
           </div>
         </div>
 
         {/* Actions */}
         <div className="integration-actions">
-
           {connected && (
-            <button
-              className="disconnect-btn"
-              onClick={handleDisconnect}
-            >
+            <button className="disconnect-btn" onClick={handleDisconnect}>
               <XCircle size={17} />
               Disconnect
             </button>
@@ -479,126 +422,71 @@ export default function Integrations() {
             onClick={handleTestConnection}
             disabled={testing}
           >
-            <RefreshCcw
-              size={17}
-              className={testing ? "spin" : ""}
-            />
+            <RefreshCcw size={17} className={testing ? "spin" : ""} />
 
-            {testing
-              ? "Testing..."
-              : "Test Connection"}
+            {testing ? "Testing..." : "Test Connection"}
           </button>
 
-          <button
-            className="save-btn"
-            onClick={handleSave}
-            disabled={saving}
-          >
+          <button className="save-btn" onClick={handleSave} disabled={saving}>
             <CheckCircle size={17} />
 
-            {saving
-              ? "Saving..."
-              : "Save Configuration"}
+            {saving ? "Saving..." : "Save Configuration"}
           </button>
-
         </div>
       </div>
 
       {/* Flow */}
       <div className="integration-flow">
-
         <h3>How WhatsApp Integration Works</h3>
 
         <div className="flow-items">
-
           <div className="flow-item">
-
-            <div className="flow-number">
-              1
-            </div>
+            <div className="flow-number">1</div>
 
             <div>
-              <strong>
-                Customer sends WhatsApp message
-              </strong>
+              <strong>Customer sends WhatsApp message</strong>
 
-              <span>
-                The customer contacts your company
-                through WhatsApp.
-              </span>
+              <span>The customer contacts your company through WhatsApp.</span>
             </div>
-
           </div>
 
-          <div className="flow-arrow">
-            →
-          </div>
+          <div className="flow-arrow">→</div>
 
           <div className="flow-item">
-
-            <div className="flow-number">
-              2
-            </div>
+            <div className="flow-number">2</div>
 
             <div>
-              <strong>
-                Meta WhatsApp API
-              </strong>
+              <strong>Meta WhatsApp API</strong>
 
               <span>
-                Meta receives the message and sends
-                it to your webhook.
+                Meta receives the message and sends it to your webhook.
               </span>
             </div>
-
           </div>
 
-          <div className="flow-arrow">
-            →
-          </div>
+          <div className="flow-arrow">→</div>
 
           <div className="flow-item">
-
-            <div className="flow-number">
-              3
-            </div>
+            <div className="flow-number">3</div>
 
             <div>
-              <strong>
-                Your CRM Backend
-              </strong>
+              <strong>Your CRM Backend</strong>
 
-              <span>
-                The backend stores the conversation
-                in MongoDB.
-              </span>
+              <span>The backend stores the conversation in MongoDB.</span>
             </div>
-
           </div>
 
-          <div className="flow-arrow">
-            →
-          </div>
+          <div className="flow-arrow">→</div>
 
           <div className="flow-item">
-
-            <div className="flow-number">
-              4
-            </div>
+            <div className="flow-number">4</div>
 
             <div>
-              <strong>
-                Conversations
-              </strong>
+              <strong>Conversations</strong>
 
-              <span>
-                Admin can view, reply, take over
-                or resolve the chat.
-              </span>
+              <span>Admin can view, reply, take over or resolve the chat.</span>
             </div>
-
           </div>
-
         </div>
       </div>
 

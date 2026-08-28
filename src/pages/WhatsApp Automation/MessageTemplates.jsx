@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 
-const API_BASE_URL = "http://localhost:5000/api";
+//const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://pearlscrm.onrender.com/api";
 
 const emptyForm = {
   name: "",
@@ -41,14 +42,10 @@ export default function MessageTemplates() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/message-templates`
-      );
+      const response = await fetch(`${API_BASE_URL}/message-templates`);
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to fetch templates (${response.status})`
-        );
+        throw new Error(`Failed to fetch templates (${response.status})`);
       }
 
       const data = await response.json();
@@ -71,16 +68,13 @@ export default function MessageTemplates() {
       const templateData = Array.isArray(data)
         ? data
         : Array.isArray(data.templates)
-        ? data.templates
-        : [];
+          ? data.templates
+          : [];
 
       setTemplates(templateData);
     } catch (err) {
       console.error("Fetch templates error:", err);
-      setError(
-        err.message ||
-          "Unable to load message templates."
-      );
+      setError(err.message || "Unable to load message templates.");
     } finally {
       setLoading(false);
     }
@@ -140,9 +134,7 @@ export default function MessageTemplates() {
     e.preventDefault();
 
     if (!form.name.trim() || !form.message.trim()) {
-      setError(
-        "Template name and message are required."
-      );
+      setError("Template name and message are required.");
       return;
     }
 
@@ -162,8 +154,7 @@ export default function MessageTemplates() {
       /* ================= UPDATE ================= */
 
       if (editingTemplate) {
-        const templateId =
-          editingTemplate._id || editingTemplate.id;
+        const templateId = editingTemplate._id || editingTemplate.id;
 
         response = await fetch(
           `${API_BASE_URL}/message-templates/${templateId}`,
@@ -173,23 +164,18 @@ export default function MessageTemplates() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
-          }
+          },
         );
-      }
+      } else {
 
       /* ================= CREATE ================= */
-
-      else {
-        response = await fetch(
-          `${API_BASE_URL}/message-templates`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          }
-        );
+        response = await fetch(`${API_BASE_URL}/message-templates`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
       }
 
       if (!response.ok) {
@@ -198,10 +184,7 @@ export default function MessageTemplates() {
         try {
           const errorData = await response.json();
 
-          errorMessage =
-            errorData.message ||
-            errorData.error ||
-            errorMessage;
+          errorMessage = errorData.message || errorData.error || errorMessage;
         } catch {
           // Ignore JSON parsing error
         }
@@ -217,10 +200,7 @@ export default function MessageTemplates() {
     } catch (err) {
       console.error("Save template error:", err);
 
-      setError(
-        err.message ||
-          "Unable to save message template."
-      );
+      setError(err.message || "Unable to save message template.");
     } finally {
       setSaving(false);
     }
@@ -232,7 +212,7 @@ export default function MessageTemplates() {
 
   const handleDelete = async (id) => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this message template?"
+      "Are you sure you want to delete this message template?",
     );
 
     if (!confirmed) return;
@@ -240,12 +220,9 @@ export default function MessageTemplates() {
     try {
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/message-templates/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/message-templates/${id}`, {
+        method: "DELETE",
+      });
 
       if (!response.ok) {
         let errorMessage = "Unable to delete template.";
@@ -253,10 +230,7 @@ export default function MessageTemplates() {
         try {
           const errorData = await response.json();
 
-          errorMessage =
-            errorData.message ||
-            errorData.error ||
-            errorMessage;
+          errorMessage = errorData.message || errorData.error || errorMessage;
         } catch {
           // Ignore JSON parsing error
         }
@@ -268,10 +242,7 @@ export default function MessageTemplates() {
     } catch (err) {
       console.error("Delete template error:", err);
 
-      setError(
-        err.message ||
-          "Unable to delete message template."
-      );
+      setError(err.message || "Unable to delete message template.");
     }
   };
 
@@ -280,13 +251,9 @@ export default function MessageTemplates() {
   ========================================================= */
 
   const toggleStatus = async (template) => {
-    const templateId =
-      template._id || template.id;
+    const templateId = template._id || template.id;
 
-    const newStatus =
-      template.status === "Active"
-        ? "Inactive"
-        : "Active";
+    const newStatus = template.status === "Active" ? "Inactive" : "Active";
 
     try {
       setError("");
@@ -301,20 +268,16 @@ export default function MessageTemplates() {
           body: JSON.stringify({
             status: newStatus,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
-        let errorMessage =
-          "Unable to update template status.";
+        let errorMessage = "Unable to update template status.";
 
         try {
           const errorData = await response.json();
 
-          errorMessage =
-            errorData.message ||
-            errorData.error ||
-            errorMessage;
+          errorMessage = errorData.message || errorData.error || errorMessage;
         } catch {
           // Ignore JSON parsing error
         }
@@ -324,15 +287,9 @@ export default function MessageTemplates() {
 
       await fetchTemplates();
     } catch (err) {
-      console.error(
-        "Toggle status error:",
-        err
-      );
+      console.error("Toggle status error:", err);
 
-      setError(
-        err.message ||
-          "Unable to update template status."
-      );
+      setError(err.message || "Unable to update template status.");
     }
   };
 
@@ -351,50 +308,30 @@ export default function MessageTemplates() {
      FILTER
   ========================================================= */
 
-  const filteredTemplates = templates.filter(
-    (template) => {
-      const searchText = search
-        .toLowerCase()
-        .trim();
+  const filteredTemplates = templates.filter((template) => {
+    const searchText = search.toLowerCase().trim();
 
-      const templateName =
-        template.name || "";
+    const templateName = template.name || "";
 
-      const templateCategory =
-        template.category || "";
+    const templateCategory = template.category || "";
 
-      const templateMessage =
-        template.message || "";
+    const templateMessage = template.message || "";
 
-      const templateStatus =
-        template.status || "";
+    const templateStatus = template.status || "";
 
-      const matchesSearch =
-        templateName
-          .toLowerCase()
-          .includes(searchText) ||
-        templateCategory
-          .toLowerCase()
-          .includes(searchText) ||
-        templateMessage
-          .toLowerCase()
-          .includes(searchText);
+    const matchesSearch =
+      templateName.toLowerCase().includes(searchText) ||
+      templateCategory.toLowerCase().includes(searchText) ||
+      templateMessage.toLowerCase().includes(searchText);
 
-      const matchesCategory =
-        categoryFilter === "All" ||
-        templateCategory === categoryFilter;
+    const matchesCategory =
+      categoryFilter === "All" || templateCategory === categoryFilter;
 
-      const matchesStatus =
-        statusFilter === "All" ||
-        templateStatus === statusFilter;
+    const matchesStatus =
+      statusFilter === "All" || templateStatus === statusFilter;
 
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesStatus
-      );
-    }
-  );
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   /* =========================================================
      COUNTS
@@ -403,15 +340,12 @@ export default function MessageTemplates() {
   const totalTemplates = templates.length;
 
   const activeTemplates = templates.filter(
-    (template) =>
-      template.status === "Active"
+    (template) => template.status === "Active",
   ).length;
 
-  const inactiveTemplates =
-    templates.filter(
-      (template) =>
-        template.status === "Inactive"
-    ).length;
+  const inactiveTemplates = templates.filter(
+    (template) => template.status === "Inactive",
+  ).length;
 
   /* =========================================================
      UI
@@ -454,15 +388,12 @@ export default function MessageTemplates() {
               fontSize: 14,
             }}
           >
-            Create and manage predefined WhatsApp
-            messages used by AI automation.
+            Create and manage predefined WhatsApp messages used by AI
+            automation.
           </p>
         </div>
 
-        <button
-          onClick={handleCreate}
-          style={createButton}
-        >
+        <button onClick={handleCreate} style={createButton}>
           <span style={{ fontSize: 20 }}>+</span>
           Create Template
         </button>
@@ -491,8 +422,7 @@ export default function MessageTemplates() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns:
-            "repeat(3, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: 18,
           marginBottom: 24,
         }}
@@ -527,8 +457,7 @@ export default function MessageTemplates() {
           border: "1px solid #e5e7eb",
           borderRadius: 14,
           overflow: "hidden",
-          boxShadow:
-            "0 2px 8px rgba(15, 23, 42, 0.04)",
+          boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
         }}
       >
         {/* ================= FILTER BAR ================= */}
@@ -536,8 +465,7 @@ export default function MessageTemplates() {
         <div
           style={{
             padding: 18,
-            borderBottom:
-              "1px solid #e5e7eb",
+            borderBottom: "1px solid #e5e7eb",
             display: "flex",
             gap: 12,
             alignItems: "center",
@@ -556,8 +484,7 @@ export default function MessageTemplates() {
                 position: "absolute",
                 left: 13,
                 top: "50%",
-                transform:
-                  "translateY(-50%)",
+                transform: "translateY(-50%)",
                 color: "#9ca3af",
                 fontSize: 16,
               }}
@@ -569,9 +496,7 @@ export default function MessageTemplates() {
               type="text"
               placeholder="Search templates..."
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
+              onChange={(e) => setSearch(e.target.value)}
               style={{
                 ...searchInput,
                 paddingLeft: 38,
@@ -581,49 +506,28 @@ export default function MessageTemplates() {
 
           <select
             value={categoryFilter}
-            onChange={(e) =>
-              setCategoryFilter(
-                e.target.value
-              )
-            }
+            onChange={(e) => setCategoryFilter(e.target.value)}
             style={filterSelect}
           >
-            <option value="All">
-              All Categories
-            </option>
+            <option value="All">All Categories</option>
 
-            {categoryOptions.map(
-              (category) => (
-                <option
-                  key={category}
-                  value={category}
-                >
-                  {category}
-                </option>
-              )
-            )}
+            {categoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
           </select>
 
           <select
             value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(
-                e.target.value
-              )
-            }
+            onChange={(e) => setStatusFilter(e.target.value)}
             style={filterSelect}
           >
-            <option value="All">
-              All Status
-            </option>
+            <option value="All">All Status</option>
 
-            <option value="Active">
-              Active
-            </option>
+            <option value="Active">Active</option>
 
-            <option value="Inactive">
-              Inactive
-            </option>
+            <option value="Inactive">Inactive</option>
           </select>
         </div>
 
@@ -650,25 +554,15 @@ export default function MessageTemplates() {
               >
                 <th style={thStyle}>#</th>
 
-                <th style={thStyle}>
-                  Template
-                </th>
+                <th style={thStyle}>Template</th>
 
-                <th style={thStyle}>
-                  Category
-                </th>
+                <th style={thStyle}>Category</th>
 
-                <th style={thStyle}>
-                  Message
-                </th>
+                <th style={thStyle}>Message</th>
 
-                <th style={thStyle}>
-                  Status
-                </th>
+                <th style={thStyle}>Status</th>
 
-                <th style={thStyle}>
-                  Actions
-                </th>
+                <th style={thStyle}>Actions</th>
               </tr>
             </thead>
 
@@ -693,182 +587,142 @@ export default function MessageTemplates() {
               {/* ================= DATA ================= */}
 
               {!loading &&
-                filteredTemplates.map(
-                  (template, index) => (
-                    <tr
-                      key={
-                        template._id ||
-                        template.id
-                      }
-                      style={{
-                        transition:
-                          "background 0.2s",
-                      }}
-                    >
-                      <td style={tdStyle}>
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            color: "#64748b",
-                          }}
-                        >
-                          {index + 1}
-                        </span>
-                      </td>
-
-                      <td style={tdStyle}>
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            color: "#111827",
-                            marginBottom: 4,
-                          }}
-                        >
-                          {template.name}
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: "#94a3b8",
-                          }}
-                        >
-                          WhatsApp Template
-                        </div>
-                      </td>
-
-                      <td style={tdStyle}>
-                        <span
-                          style={categoryBadge}
-                        >
-                          {template.category}
-                        </span>
-                      </td>
-
-                      <td style={tdStyle}>
-                        <div
-                          style={{
-                            maxWidth: 420,
-                            color: "#475569",
-                            lineHeight: 1.5,
-                            fontSize: 13,
-                          }}
-                          title={
-                            template.message
-                          }
-                        >
-                          {template.message}
-                        </div>
-                      </td>
-
-                      <td style={tdStyle}>
-                        <span
-                          style={{
-                            ...statusBadge,
-                            background:
-                              template.status ===
-                              "Active"
-                                ? "#dcfce7"
-                                : "#f1f5f9",
-                            color:
-                              template.status ===
-                              "Active"
-                                ? "#15803d"
-                                : "#64748b",
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius:
-                                "50%",
-                              background:
-                                template.status ===
-                                "Active"
-                                  ? "#22c55e"
-                                  : "#94a3b8",
-                              display:
-                                "inline-block",
-                            }}
-                          />
-
-                          {template.status}
-                        </span>
-                      </td>
-
-                      <td
+                filteredTemplates.map((template, index) => (
+                  <tr
+                    key={template._id || template.id}
+                    style={{
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    <td style={tdStyle}>
+                      <span
                         style={{
-                          ...tdStyle,
-                          whiteSpace:
-                            "nowrap",
+                          fontWeight: 600,
+                          color: "#64748b",
                         }}
                       >
-                        <button
-                          onClick={() =>
-                            handleEdit(
-                              template
-                            )
-                          }
-                          style={editButton}
-                        >
-                          Edit
-                        </button>
+                        {index + 1}
+                      </span>
+                    </td>
 
-                        <button
-                          onClick={() =>
-                            toggleStatus(
-                              template
-                            )
-                          }
-                          style={
-                            secondaryButton
-                          }
-                        >
-                          {template.status ===
-                          "Active"
-                            ? "Disable"
-                            : "Enable"}
-                        </button>
+                    <td style={tdStyle}>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          color: "#111827",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {template.name}
+                      </div>
 
-                        <button
-                          onClick={() =>
-                            handleDelete(
-                              template._id ||
-                                template.id
-                            )
-                          }
-                          style={
-                            deleteButton
-                          }
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                )}
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#94a3b8",
+                        }}
+                      >
+                        WhatsApp Template
+                      </div>
+                    </td>
+
+                    <td style={tdStyle}>
+                      <span style={categoryBadge}>{template.category}</span>
+                    </td>
+
+                    <td style={tdStyle}>
+                      <div
+                        style={{
+                          maxWidth: 420,
+                          color: "#475569",
+                          lineHeight: 1.5,
+                          fontSize: 13,
+                        }}
+                        title={template.message}
+                      >
+                        {template.message}
+                      </div>
+                    </td>
+
+                    <td style={tdStyle}>
+                      <span
+                        style={{
+                          ...statusBadge,
+                          background:
+                            template.status === "Active"
+                              ? "#dcfce7"
+                              : "#f1f5f9",
+                          color:
+                            template.status === "Active"
+                              ? "#15803d"
+                              : "#64748b",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background:
+                              template.status === "Active"
+                                ? "#22c55e"
+                                : "#94a3b8",
+                            display: "inline-block",
+                          }}
+                        />
+
+                        {template.status}
+                      </span>
+                    </td>
+
+                    <td
+                      style={{
+                        ...tdStyle,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <button
+                        onClick={() => handleEdit(template)}
+                        style={editButton}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() => toggleStatus(template)}
+                        style={secondaryButton}
+                      >
+                        {template.status === "Active" ? "Disable" : "Enable"}
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          handleDelete(template._id || template.id)
+                        }
+                        style={deleteButton}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
 
               {/* ================= EMPTY ================= */}
 
-              {!loading &&
-                filteredTemplates.length ===
-                  0 && (
-                  <tr>
-                    <td
-                      colSpan="6"
-                      style={{
-                        padding: 50,
-                        textAlign:
-                          "center",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      No message templates
-                      found.
-                    </td>
-                  </tr>
-                )}
+              {!loading && filteredTemplates.length === 0 && (
+                <tr>
+                  <td
+                    colSpan="6"
+                    style={{
+                      padding: 50,
+                      textAlign: "center",
+                      color: "#94a3b8",
+                    }}
+                  >
+                    No message templates found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -882,10 +736,8 @@ export default function MessageTemplates() {
             <div
               style={{
                 display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems:
-                  "flex-start",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
                 marginBottom: 24,
               }}
             >
@@ -904,29 +756,22 @@ export default function MessageTemplates() {
 
                 <p
                   style={{
-                    margin:
-                      "6px 0 0",
+                    margin: "6px 0 0",
                     color: "#6b7280",
                     fontSize: 13,
                   }}
                 >
-                  Configure the message used by
-                  WhatsApp automation.
+                  Configure the message used by WhatsApp automation.
                 </p>
               </div>
 
-              <button
-                onClick={closeModal}
-                style={closeButton}
-              >
+              <button onClick={closeModal} style={closeButton}>
                 ×
               </button>
             </div>
 
             <form onSubmit={handleSave}>
-              <label style={labelStyle}>
-                Template Name
-              </label>
+              <label style={labelStyle}>Template Name</label>
 
               <input
                 type="text"
@@ -937,9 +782,7 @@ export default function MessageTemplates() {
                 style={modalInput}
               />
 
-              <label style={labelStyle}>
-                Category
-              </label>
+              <label style={labelStyle}>Category</label>
 
               <select
                 name="category"
@@ -947,21 +790,14 @@ export default function MessageTemplates() {
                 onChange={handleChange}
                 style={modalInput}
               >
-                {categoryOptions.map(
-                  (category) => (
-                    <option
-                      key={category}
-                      value={category}
-                    >
-                      {category}
-                    </option>
-                  )
-                )}
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
               </select>
 
-              <label style={labelStyle}>
-                Message
-              </label>
+              <label style={labelStyle}>Message</label>
 
               <textarea
                 name="message"
@@ -980,8 +816,7 @@ export default function MessageTemplates() {
               <div
                 style={{
                   background: "#f8fafc",
-                  border:
-                    "1px solid #e2e8f0",
+                  border: "1px solid #e2e8f0",
                   borderRadius: 8,
                   padding: 12,
                   marginBottom: 16,
@@ -1002,17 +837,12 @@ export default function MessageTemplates() {
                     marginTop: 6,
                   }}
                 >
-                  {"{{employeeName}}"}{" "}
-                  {"{{attendanceStatus}}"}{" "}
-                  {"{{leaveBalance}}"}{" "}
-                  {"{{leaveDate}}"}{" "}
-                  {"{{month}}"}
+                  {"{{employeeName}}"} {"{{attendanceStatus}}"}{" "}
+                  {"{{leaveBalance}}"} {"{{leaveDate}}"} {"{{month}}"}
                 </div>
               </div>
 
-              <label style={labelStyle}>
-                Status
-              </label>
+              <label style={labelStyle}>Status</label>
 
               <select
                 name="status"
@@ -1020,20 +850,15 @@ export default function MessageTemplates() {
                 onChange={handleChange}
                 style={modalInput}
               >
-                <option value="Active">
-                  Active
-                </option>
+                <option value="Active">Active</option>
 
-                <option value="Inactive">
-                  Inactive
-                </option>
+                <option value="Inactive">Inactive</option>
               </select>
 
               <div
                 style={{
                   display: "flex",
-                  justifyContent:
-                    "flex-end",
+                  justifyContent: "flex-end",
                   gap: 10,
                   marginTop: 24,
                 }}
@@ -1051,20 +876,16 @@ export default function MessageTemplates() {
                   type="submit"
                   style={{
                     ...createButton,
-                    opacity: saving
-                      ? 0.7
-                      : 1,
-                    cursor: saving
-                      ? "not-allowed"
-                      : "pointer",
+                    opacity: saving ? 0.7 : 1,
+                    cursor: saving ? "not-allowed" : "pointer",
                   }}
                   disabled={saving}
                 >
                   {saving
                     ? "Saving..."
                     : editingTemplate
-                    ? "Save Changes"
-                    : "Create Template"}
+                      ? "Save Changes"
+                      : "Create Template"}
                 </button>
               </div>
             </form>
@@ -1079,12 +900,7 @@ export default function MessageTemplates() {
    SUMMARY CARD
 ========================================================= */
 
-function SummaryCard({
-  title,
-  value,
-  icon,
-  description,
-}) {
+function SummaryCard({ title, value, icon, description }) {
   return (
     <div
       style={{
@@ -1092,8 +908,7 @@ function SummaryCard({
         border: "1px solid #e5e7eb",
         borderRadius: 14,
         padding: 20,
-        boxShadow:
-          "0 2px 8px rgba(15, 23, 42, 0.04)",
+        boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
         position: "relative",
         overflow: "hidden",
       }}
@@ -1101,10 +916,8 @@ function SummaryCard({
       <div
         style={{
           display: "flex",
-          justifyContent:
-            "space-between",
-          alignItems:
-            "flex-start",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
         }}
       >
         <div>
@@ -1177,8 +990,7 @@ const createButton = {
   display: "flex",
   alignItems: "center",
   gap: 7,
-  boxShadow:
-    "0 3px 8px rgba(37, 99, 235, 0.22)",
+  boxShadow: "0 3px 8px rgba(37, 99, 235, 0.22)",
 };
 
 const searchInput = {
@@ -1212,15 +1024,13 @@ const thStyle = {
   fontSize: 12,
   fontWeight: 700,
   color: "#64748b",
-  borderBottom:
-    "1px solid #e5e7eb",
+  borderBottom: "1px solid #e5e7eb",
   whiteSpace: "nowrap",
 };
 
 const tdStyle = {
   padding: "15px 16px",
-  borderBottom:
-    "1px solid #f1f5f9",
+  borderBottom: "1px solid #f1f5f9",
   fontSize: 13,
   verticalAlign: "middle",
 };
@@ -1283,8 +1093,7 @@ const deleteButton = {
 const overlayStyle = {
   position: "fixed",
   inset: 0,
-  background:
-    "rgba(15, 23, 42, 0.48)",
+  background: "rgba(15, 23, 42, 0.48)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -1301,8 +1110,7 @@ const modalStyle = {
   borderRadius: 15,
   padding: 26,
   boxSizing: "border-box",
-  boxShadow:
-    "0 25px 60px rgba(15, 23, 42, 0.22)",
+  boxShadow: "0 25px 60px rgba(15, 23, 42, 0.22)",
 };
 
 const closeButton = {
