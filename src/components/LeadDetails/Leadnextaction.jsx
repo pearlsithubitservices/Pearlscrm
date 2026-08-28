@@ -1,32 +1,50 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Phone,
-  Mail,
-  MessageSquare,
-  FileText,
-  Pencil,
   CalendarDays,
   Repeat,
 } from "lucide-react";
+import toast from "react-hot-toast";
+import { apiUrl } from "../../config/api.js";
 
-export default function NextActionPage() {
-  const [note, setNote] = useState("");
+export default function NextActionPage({ lead, fetchLead }) {
+  const [nextAction, setNextAction] = useState(lead?.nextAction || "");
+  const [nextActionDate, setNextActionDate] = useState(lead?.nextActionDate ? new Date(lead.nextActionDate).toISOString().slice(0, 10) : "");
+  const [followUpCount, setFollowUpCount] = useState(lead?.followUpCount || 0);
+  const [saving, setSaving] = useState(false);
 
-  const activities = [
-    {
-      title: "Outbound call · 14 min",
-      description:
-        "Discussed requirements for Q3 rollout. Client showed strong interest in enterprise tier features.",
-      date: "Jun 7 · Rohan M",
-    },
-    {
-      title: "Demo meeting · 45 min",
-      description:
-        "Product walkthrough completed. Key stakeholders attended. Very positive response from procurement team.",
-      date: "Jun 3 · Priya S",
-    },
-  ];
+  const saveNextAction = async () => {
+    if (!lead?._id) return;
+    setSaving(true);
+    try {
+      const response = await fetch(apiUrl(`/leads/${lead._id}/next-action`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nextAction, nextActionDate, followUpCount }),
+      });
+      if (!response.ok) throw new Error("Failed to save next action");
+      await fetchLead();
+      toast.success("Next action saved");
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const activities = Array.isArray(lead?.activities) ? lead.activities : [];
+
+  const deleteActivity = async (activityId) => {
+    if (!activityId || !window.confirm("Delete this activity?")) return;
+    try {
+      const response = await fetch(apiUrl(`/leads/${lead._id}/activities/${activityId}`), { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete activity");
+      await fetchLead();
+      toast.success("Activity deleted");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f3f0eb] flex justify-center p-2 md:p-5">
@@ -68,10 +86,12 @@ export default function NextActionPage() {
 
                 <input
                   type="number"
+                  min="0"
+                  value={followUpCount}
+                  onChange={(e) => setFollowUpCount(e.target.value)}
                   placeholder="0"
                   className="outline-none w-full bg-transparent"
                 />
-
               </div>
             </div>
 
@@ -90,7 +110,9 @@ export default function NextActionPage() {
                 />
 
                 <input
-                  placeholder="e.g. Follow-up meeting on Friday"
+                  type="date"
+                  value={nextActionDate}
+                  onChange={(e) => setNextActionDate(e.target.value)}
                   className="outline-none w-full"
                 />
 
@@ -104,9 +126,9 @@ export default function NextActionPage() {
           <div className="mt-6">
 
             <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Add a new note..."
+              value={nextAction}
+              onChange={(e) => setNextAction(e.target.value)}
+              placeholder="Describe the next action..."
               className="
               w-full
               h-[140px]
@@ -122,6 +144,8 @@ export default function NextActionPage() {
             <div className="flex justify-end mt-5">
 
               <button
+                onClick={saveNextAction}
+                disabled={saving}
                 className="
                 bg-blue-600
                 text-white
@@ -133,7 +157,7 @@ export default function NextActionPage() {
                 transition
               "
               >
-                Save
+                {saving ? "Saving..." : "Save"}
               </button>
 
             </div>
@@ -172,8 +196,15 @@ export default function NextActionPage() {
                 </p>
 
                 <p className="text-gray-400 mt-2 text-lg">
-                  {item.date}
+                  {item.date} {item.empName ? `· ${item.empName}` : ""}
                 </p>
+
+                <button
+                  onClick={() => deleteActivity(item._id)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  Delete
+                </button>
 
               </motion.div>
             ))}

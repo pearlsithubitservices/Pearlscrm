@@ -23,6 +23,7 @@ const notificationSchema = new mongoose.Schema(
         "Tax",
         "Reimbursement",
         "Meeting",
+        "Lead",
         "General",
       ],
       default: "General",

@@ -8,7 +8,10 @@ import {
 } from "lucide-react";
 
 export default function LeadDetails({ employees }) {
-  console.log(employees);
+  const profile = employees?.profile || {};
+  const bankDetails = profile.bankDetails || employees?.bankDetails || {};
+  const salary = profile.salary || employees?.salary || {};
+  const description = employees?.description || employees?.notes || profile.description || profile.notes || "No description available.";
 
   const contactInfo = [
     {
@@ -20,21 +23,21 @@ export default function LeadDetails({ employees }) {
     },
     {
       title: "PHONE",
-      value: employees?.phone || employees?.contact || "Not Available",
+      value: profile.phone || employees?.phone || employees?.contact || "Not Available",
       icon: Phone,
       color: "text-green-500",
       bg: "bg-green-100",
     },
     {
       title: "LOCATION",
-      value: employees?.location || employees?.assignedTo || "Not Available",
+      value: profile.workLocation || employees?.location || employees?.assignedTo || "Not Available",
       icon: User,
       color: "text-orange-500",
       bg: "bg-orange-100",
     },
     {
       title: "JOINING DATE",
-      value: employees?.joiningDate || employees?.joinDate || "Not Available",
+      value: profile.joiningDate || employees?.joiningDate || employees?.joinDate || "Not Available",
       icon: CalendarDays,
       color: "text-pink-500",
       bg: "bg-pink-100",
@@ -61,10 +64,16 @@ export default function LeadDetails({ employees }) {
           >
             <div className="min-h-[100px]">
               <h1 className="text-xl text-[#082f57] leading-relaxed">
-                {employees?.notes || "No description available."}
+                {description}
               </h1>
             </div>
           </motion.div>
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <DetailSection title="PERSONAL DETAILS" items={{ "Employee ID": profile.empId || employees?.empId, "Date of Birth": profile.dob, Gender: profile.gender, "Emergency Contact": profile.emergencyNo, Address: profile.address }} />
+          <DetailSection title="BANK DETAILS" items={{ "Account Holder": bankDetails.accountHolderName, "Bank Name": bankDetails.bankName, "Branch Name": bankDetails.branchName, "Account Number": bankDetails.accountNumber, "IFSC Code": bankDetails.ifscCode, "Account Type": bankDetails.accountType }} />
+          <DetailSection title="SALARY DETAILS" items={{ "Basic Salary": salary.basicSalary, "Gross Salary": salary.grossSalary, "Net Salary": salary.netSalary, Allowances: formatSalaryMap(salary.allowances), Deductions: formatSalaryMap(salary.deductions) }} />
         </div>
 
         {/* Employee Information */}
@@ -138,4 +147,13 @@ export default function LeadDetails({ employees }) {
       </div>
     </motion.div>
   );
+}
+
+function formatSalaryMap(value) {
+  if (!value || typeof value !== "object") return value || "Not Available";
+  return Object.entries(value).map(([key, amount]) => `${key}: ${amount}`).join(", ") || "Not Available";
+}
+
+function DetailSection({ title, items }) {
+  return <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"><h3 className="font-bold text-gray-400 mb-4">{title}</h3><dl className="space-y-3">{Object.entries(items).map(([label, value]) => <div key={label} className="flex justify-between gap-4 border-b border-gray-100 pb-2 text-sm"><dt className="text-gray-500">{label}</dt><dd className="text-right font-medium text-[#082f57] break-all">{value || "Not Available"}</dd></div>)}</dl></section>;
 }

@@ -1,70 +1,116 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "../lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "../lib/api";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState(null);
 
+  const setAuthState = (authUser) => {
+    setUser(authUser);
+    setRole(authUser?.role || null);
+  };
 
-  useEffect(() => {
+  const fetchCurrentUser = async () => {
+    const token = localStorage.getItem("token");
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log(currentUser);
-      if (!currentUser) {
-        setUser(null);
-        setUserData(null);
-        setLoading(false);
-        return;
-      }
-
-      setUser(currentUser);
-      const snap = await getDoc(doc(db, "employees", currentUser.uid));
-
-      if (snap.exists()) {
-        setUserData(snap.data());
-      }
-
-
+    if (!token) {
+      setAuthState(null);
       setLoading(false);
-
-    });
-
-    return () => unsubscribe();
-
-  }, []);
-  
-
-  const logout = async () => {
-
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.log(error);
+      return null;
     }
 
+    try {
+      const response = await api.get("/auth/me");
+      const currentUser = response?.data?.user || null;
+
+      if (!currentUser) {
+        localStorage.removeItem("token");
+        setAuthState(null);
+        return null;
+      }
+
+      const profileResponse = await api.get("/profile");
+      const profileUser = profileResponse?.data?.user || currentUser;
+      setAuthState(profileUser);
+      return profileUser;
+    } catch (error) {
+      console.error("Auth fetch error:", error);
+      localStorage.removeItem("token");
+      setAuthState(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  const login = async (email, password) => {
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      const { token, user: authUser } = response.data;
+
+      if (!token || !authUser) {
+        throw new Error("Login response missing token or user");
+      }
+
+      localStorage.setItem("token", token);
+      const profileResponse = await api.get("/profile");
+      const profileUser = profileResponse?.data?.user || authUser;
+      setAuthState(profileUser);
+      return profileUser;
+    } catch (error) {
+      const message = error?.response?.data?.message || "Login failed";
+      throw new Error(message);
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await api.post("/auth/register", userData);
+      const { token, user: authUser } = response.data;
+
+      if (!token || !authUser) {
+        throw new Error("Registration response missing token or user");
+      }
+
+      localStorage.setItem("token", token);
+      setAuthState(authUser);
+      return authUser;
+    } catch (error) {
+      const message = error?.response?.data?.message || "Registration failed";
+      throw new Error(message);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setAuthState(null);
+  };
+
+  const isAdmin = typeof role === "string" && role.trim().toLowerCase() === "admin";
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        userData,
+        role,
+        isAdmin,
         loading,
+        login,
+        register,
         logout,
+        fetchCurrentUser,
       }}
     >
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

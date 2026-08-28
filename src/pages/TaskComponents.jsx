@@ -19,11 +19,9 @@ import TaskOverview from "../components/TaskDetails/TaskOverview";
 import TaskActivity from "../components/TaskDetails/TaskAvctivity";
 import TaskNotes from "../components/TaskDetails/TaskNotes";
 import TaskDocuments from "../components/TaskDetails/TaskDocumentation";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { apiUrl } from "../config/api";
+import { socket } from "../config/socket";
 import useEmployees from "../Hooks/useEmployees";
-
-
 
 export default function TaskComponents() {
     const [activeTab, setActiveTab] = useState("Overview");
@@ -34,127 +32,211 @@ export default function TaskComponents() {
 
     const { lead, loading } = useLead();
     const [tasks, setTasks] = useState([]);
-    console.log(tasks);
-    const task = useMemo(() => {
-        return tasks.find((item) => item.id === id);
-    }, [tasks, id]);
-    console.log(task);
+    
+    const TaskById = tasks.filter((item) =>
+        item.id === id || item._id === id
+    );
+
+    const employeeMap = useMemo(() => {
+        return employees.reduce((map, employee) => {
+            const name = employee.name || employee.employeeName || employee.displayName || employee.email;
+            if (employee._id) map[employee._id] = name;
+            if (employee.uid) map[employee.uid] = name;
+            if (employee.id) map[employee.id] = name;
+            return map;
+        }, {});
+    }, [employees]);
 
     const [isEditing, setIsEditing] = useState(false);
-    const [editData, setEditData] = useState({});
+    const [editData, setEditData] = useState({
+        title: "",
+        assignedTo: "",
+        status: "Pending",
+        priority: "Cold",
+        dueDate: "",
+        description: "",
+        notes: "",
+    });
+
+    const fetchTasks = async () => {
+        try {
+            const res = await fetch(apiUrl('/tasks'));
+            if (res.ok) {
+                const data = await res.json();
+                const taskList = (Array.isArray(data) ? data : []).map((doc) => ({
+                    id: doc._id || doc.id,
+                    _id: doc._id || doc.id,
+                    ...doc,
+                }));
+                setTasks(taskList);
+            }
+        } catch (err) {
+            console.error("Error fetching tasks in TaskComponents:", err);
+        }
+    };
 
     useEffect(() => {
-        if (task) {
-            setEditData(task);
-        }
-    }, [task]);
+        fetchTasks();
 
-    const handleChange = (e) => {
+        if (socket) {
+            const handleTaskUpdated = () => {
+                fetchTasks();
+            };
+            socket.on("taskUpdated", handleTaskUpdated);
+            socket.on("taskActivityAdded", handleTaskUpdated);
+            return () => {
+                socket.off("taskUpdated", handleTaskUpdated);
+                socket.off("taskActivityAdded", handleTaskUpdated);
+            };
+        }
+    }, []);
+
+    const openEditModal = () => {
+        const current = TaskById[0] || {};
+        let assignVal = "";
+        if (typeof current.assignedTo === 'object' && current.assignedTo !== null) {
+            assignVal = current.assignedTo._id || current.assignedTo.id || current.assignedTo.uid || "";
+        } else {
+            assignVal = current.assignedTo || "";
+        }
+
+        let formattedDate = "";
+        if (current.dueDate) {
+            const d = new Date(current.dueDate);
+            if (!isNaN(d.getTime())) {
+                formattedDate = d.toISOString().split('T')[0];
+            } else {
+                formattedDate = current.dueDate;
+            }
+        }
+
+        setEditData({
+            title: current.title || "",
+            assignedTo: assignVal,
+            status: current.status || "Pending",
+            priority: current.priority || "Cold",
+            dueDate: formattedDate,
+            description: current.description || "",
+            notes: current.notes || "",
+        });
+        setIsEditing(true);
+    };
+
+    const handleEditChange = (e) => {
         setEditData({
             ...editData,
             [e.target.name]: e.target.value,
         });
     };
 
-
-    const handleUpdate = async () => {
+    const saveTaskUpdate = async () => {
         try {
-            const taskRef = doc(db, "tasks", task.id);
-
-            await updateDoc(taskRef, {
-                ...editData,
+            const res = await fetch(apiUrl(`/tasks/${id}`), {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(editData),
             });
 
-            setIsEditing(false);
+            if (res.ok) {
+                alert("Task updated successfully!");
+                setIsEditing(false);
+                fetchTasks();
+            } else {
+                alert("Failed to update task.");
+            }
         } catch (err) {
-            console.log(err);
+            console.error("Error updating task:", err);
+            alert("Failed to update task.");
         }
     };
-
-
-    const employeeMap = useMemo(() => {
-        return employees.reduce((map, employee) => {
-            map[employee.uid] = employee.name;
-            return map;
-        }, {});
-    }, [employees]);
-    useEffect(() => {
-
-        // TASKS REALTIME
-
-        const unsubscribe =
-            onSnapshot(
-
-                collection(db, 'tasks'),
-
-                (snapshot) => {
-
-                    const taskList = [];
-
-                    snapshot.forEach((doc) => {
-
-                        taskList.push({
-                            id: doc.id,
-                            ...doc.data(),
-                        });
-
-                    });
-
-                    setTasks(taskList);
-
-                }
-
-            );
-        return () => unsubscribe();
-
-    }, []);
 
     const tabs = [
         "Overview",
         "Activity",
         "Notes",
         "Documents",
-
     ];
-    const buttons = [
-
-        {
-            label: "E-Mail",
-            Icon: Mail
-        },
-
-        {
-            label: "Notes",
-            Icon: NotebookTabs
-        },
-
-    ]
 
     const renderTab = () => {
         switch (activeTab) {
             case "Overview":
                 return <TaskOverview
-                    tasks={task}
+                    tasks={TaskById}
                     isEditing={isEditing}
                     editData={editData}
-                    handleChange={handleChange} />;
+                    handleChange={handleEditChange}
+                />;
 
             case "Activity":
                 return <TaskActivity
-                    tasks={tasks} />
+                    task={TaskById[0]}
+                    tasks={TaskById}
+                    onRefresh={fetchTasks}
+                />;
 
             case "Notes":
-                return <TaskNotes />;
+                return <TaskNotes task={TaskById[0]} tasks={TaskById} onRefresh={fetchTasks} />;
 
             case "Documents":
-                return <TaskDocuments />;
-
-
+                return <TaskDocuments task={TaskById[0]} tasks={TaskById} />;
 
             default:
                 return null;
         }
     };
+
+    const getPersonName = (val, defaultName = "Unassigned") => {
+        if (!val) return defaultName;
+        if (typeof val === 'object' && val !== null) {
+            return val.name || val.employeeName || val.displayName || val.email || defaultName;
+        }
+        const strVal = String(val).trim();
+        if (!strVal) return defaultName;
+        if (strVal.toLowerCase() === "admin") return "Admin";
+
+        if (employeeMap[strVal]) {
+            const matched = employeeMap[strVal];
+            if (typeof matched === 'string' && matched) return matched;
+            if (typeof matched === 'object' && matched !== null) {
+                return matched.name || matched.employeeName || matched.displayName || matched.email || defaultName;
+            }
+        }
+
+        const lowerVal = strVal.toLowerCase();
+        const found = (employees || []).find((emp) => {
+            if (!emp) return false;
+            const eId = String(emp._id || emp.id || emp.uid || "").toLowerCase();
+            const eEmail = String(emp.email || "").toLowerCase();
+            const eName = String(emp.employeeName || emp.name || emp.displayName || "").toLowerCase();
+            return (
+                (eId && eId === lowerVal) ||
+                (eEmail && eEmail === lowerVal) ||
+                (eEmail && lowerVal.includes(eEmail)) ||
+                (eName && eName === lowerVal) ||
+                (eName && lowerVal.includes(eName))
+            );
+        });
+
+        if (found) {
+            return found.employeeName || found.name || found.displayName || (found.email ? found.email.split("@")[0] : strVal);
+        }
+
+        if (strVal.includes("@")) {
+            const prefix = strVal.split("@")[0];
+            return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        }
+
+        const isRawId = /^[0-9a-fA-F]{24}$/.test(strVal) || /^[A-Za-z0-9_-]{20,}$/.test(strVal);
+        if (isRawId) {
+            return defaultName;
+        }
+
+        return strVal;
+    };
+
+    const taskObj = TaskById[0] || {};
+    const assignedToName = getPersonName(taskObj.assignedTo, "Unassigned");
+    const assignedByName = getPersonName(taskObj.assignedBy || taskObj.assignedFrom, "Admin");
 
     return (
         <div className="max-h-screen overflow-y-auto bg-[#f3f0eb] p-2 md:p-6 relative">
@@ -179,32 +261,14 @@ export default function TaskComponents() {
                             <div>
 
                                 <h1 className="font-bold text-xl text-[#082f57]">
-                                    {employeeMap[task?.assignedTo] || "Vishnu"}
+                                    {taskObj.title || taskObj.taskName || "Task Details"}
                                 </h1>
 
-                                <p className="text-gray-400 tracking-tighter">
-                                    Redesign onboarding flow for enterprise clients
+                                <p className="text-xs text-gray-600 mt-1">
+                                    Assigned To: <span className="font-bold text-blue-700">{assignedToName}</span> • Assigned By: <span className="font-bold text-purple-700">{assignedByName}</span>
                                 </p>
 
-                                <div className="flex flex-wrap gap-2 mt-4  ">
-
-                                    {buttons.map((btn, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={(e) => setButton(i)}
-                                            className={`border px-5 py-2 rounded-lg flex items-center gap-2  hover:scale-110 hover:bg-blue-600 transition-transform duration-300
-                                            ${button === i ? "bg-blue-600 text-white" : ""}`}
-
-                                        >
-
-                                            < btn.Icon size={16} />
-                                            {btn.label}
-
-                                        </button>
-                                    ))}
-                                </div>
-
-                            </div>
+                             </div>
 
                         </div>
 
@@ -213,41 +277,21 @@ export default function TaskComponents() {
                             <div className="flex gap-3">
 
                                 <span className="bg-green-100 text-green-600 px-4 py-1 rounded-full">
-                                    {task?.status || "In Progress"}
+                                    {TaskById[0]?.status || "In Progress"}
                                 </span>
 
                                 <span className="bg-red-100 text-red-500 px-4 py-1 rounded-full">
-                                    {task?.priority || "Hot"}
+                                    {TaskById[0]?.priority || "Hot"}
                                 </span>
 
                             </div>
-                            <div className="flex items-center justify-between">
 
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="border px-5 py-2 rounded-lg flex items-center gap-2 hover:scale-110 transition-transform duration-200"
-                                >
-                                    <Pencil size={16} />
-                                    Edit
-                                </button>
-                                {isEditing && (
-                                    <div className="flex gap-3 mt-3">
-                                        <button
-                                            onClick={handleUpdate}
-                                            className="bg-green-600 text-white px-4 py-2 rounded-lg"
-                                        >
-                                            Save
-                                        </button>
-
-                                        <button
-                                            onClick={() => setIsEditing(false)}
-                                            className="bg-gray-300 px-4 py-2 rounded-lg"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                            <button
+                                onClick={openEditModal}
+                                className="border border-[#2563a9] bg-[#2563a9] text-white px-5 py-2 rounded-lg flex items-center gap-2 hover:bg-[#1d4ed8] hover:scale-105 transition-all shadow-xs font-semibold text-xs cursor-pointer">
+                                <Pencil size={16} />
+                                Edit Task
+                            </button>
 
                         </div>
 
@@ -307,6 +351,132 @@ export default function TaskComponents() {
                 </AnimatePresence>
 
             </motion.div>
+
+            {/* EDIT TASK MODAL */}
+            {isEditing && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-2xl border border-gray-200 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar shadow-xl space-y-4"
+                    >
+                        <div className="flex items-center justify-between border-b pb-3">
+                            <h2 className="text-lg font-bold text-[#082f57]">Edit Task Details</h2>
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg cursor-pointer"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            {/* TASK TITLE */}
+                            <div className="md:col-span-2">
+                                <label className="font-semibold text-gray-700 block mb-1">Task Title</label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={editData.title}
+                                    onChange={handleEditChange}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 outline-none text-gray-800 font-medium"
+                                />
+                            </div>
+
+                            {/* ASSIGNED TO */}
+                            <div>
+                                <label className="font-semibold text-gray-700 block mb-1">Assigned To</label>
+                                <select
+                                    name="assignedTo"
+                                    value={editData.assignedTo}
+                                    onChange={handleEditChange}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 outline-none text-gray-800 font-medium cursor-pointer"
+                                >
+                                    <option value="">Select Employee</option>
+                                    {employees.map(emp => (
+                                        <option key={emp._id || emp.id || emp.uid} value={emp._id || emp.id || emp.uid}>
+                                            {emp.name || emp.employeeName || emp.email}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* DUE DATE */}
+                            <div>
+                                <label className="font-semibold text-gray-700 block mb-1">Due Date</label>
+                                <input
+                                    type="date"
+                                    name="dueDate"
+                                    value={editData.dueDate}
+                                    onChange={handleEditChange}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 outline-none text-gray-800 font-medium cursor-pointer"
+                                />
+                            </div>
+
+                            {/* STATUS */}
+                            <div>
+                                <label className="font-semibold text-gray-700 block mb-1">Status</label>
+                                <select
+                                    name="status"
+                                    value={editData.status}
+                                    onChange={handleEditChange}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 outline-none text-gray-800 font-medium cursor-pointer"
+                                >
+                                    <option value="Pending">Pending</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="New">New</option>
+                                </select>
+                            </div>
+
+                            {/* PRIORITY */}
+                            <div>
+                                <label className="font-semibold text-gray-700 block mb-1">Priority</label>
+                                <select
+                                    name="priority"
+                                    value={editData.priority}
+                                    onChange={handleEditChange}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 outline-none text-gray-800 font-medium cursor-pointer"
+                                >
+                                    <option value="Hot">Hot</option>
+                                    <option value="Warm">Warm</option>
+                                    <option value="Cold">Cold</option>
+                                </select>
+                            </div>
+
+                             {/* TASK DESCRIPTION */}
+                            <div className="md:col-span-2">
+                                <label className="font-semibold text-gray-700 block mb-1">Task Description</label>
+                                <textarea
+                                    name="description"
+                                    value={editData.description}
+                                    onChange={handleEditChange}
+                                    rows="3"
+                                    placeholder="Enter task description..."
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 outline-none text-gray-800 font-medium"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-3 border-t">
+                            <button
+                                type="button"
+                                onClick={() => setIsEditing(false)}
+                                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 font-semibold hover:bg-gray-100 text-xs cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={saveTaskUpdate}
+                                className="px-5 py-2 rounded-lg bg-[#2563a9] hover:bg-[#1d4ed8] text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
+                            >
+                                <span>Save Changes</span>
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
 
         </div>
     );

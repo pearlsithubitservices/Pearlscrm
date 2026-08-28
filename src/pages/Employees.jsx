@@ -66,20 +66,31 @@ export default function ClientManagement() {
   const [active, setActive] = useState(0);
   const buttons = ["All", "Sales", "Engineering", "Design"];
   //const [employees, setEmployees] = useState([]);
-  const { employees, deleteEmployee } = useEmployees();
-  console.log(employees);
+  const { employees, deleteEmployee, toggleEmployeeStatus } = useEmployees();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   //PAGINATION
   const [currentPage, setCurrentPage] = useState(1);
   const filesPerPage = 5;
   const lastIndex = currentPage * filesPerPage;
   const firstIndex = lastIndex - filesPerPage;
-  const currentFiles = employees?.slice(firstIndex, lastIndex) || [];
-  const totalPages = Math.ceil((employees?.length || 0) / filesPerPage);
+  const filteredEmployees = (employees || []).filter((employee) => {
+    const profile = employee.profile || {};
+    const name = employee.name || employee.employeeName || "";
+    const employeeId = profile.empId || employee.empId || employee.id || "";
+    const role = employee.role || employee.employeeRole || profile.designation || "";
+    const department = employee.department || profile.department || "";
+    const matchesSearch = [name, employeeId, role, department, employee.email]
+      .join(" ").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = active === 0 || department.toLowerCase() === buttons[active].toLowerCase();
+    return matchesSearch && matchesDepartment;
+  });
+  const currentFiles = filteredEmployees.slice(firstIndex, lastIndex);
+  const totalPages = Math.ceil(filteredEmployees.length / filesPerPage);
 
 
   const stats = [
@@ -140,11 +151,6 @@ export default function ClientManagement() {
   // });
 
   
-  const user = users?.find(
-    (user) => user?.email === "vishnuravichandran007@gmail.com"
-  );
-  console.log(user);
-
   // useEffect(() => {
   //   const deleteUserByEmail = async () => {
   //     try {
@@ -301,20 +307,22 @@ export default function ClientManagement() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 bg-gray-200 border px-3 py-2 rounded w-[300px]">
+          <div className="flex items-center gap-2 bg-gray-200 border px-3 py-2 rounded w-full lg:w-[300px]">
 
             <Search size={16} className="text-black" />
 
             <input
-              placeholder="Search project..."
+              placeholder="Search employees..."
               className="w-full outline-none text-sm bg-gray-200"
+              value={searchTerm}
+              onChange={(event) => { setSearchTerm(event.target.value); setCurrentPage(1); }}
             />
 
           </div>
 
         </div>
 
-        {/* PROJECT CARDS */}
+        {/* EMPLOYEE TABLE */}
 
         {loading ?
           <div className='w-full h-screen items-center'>
@@ -323,120 +331,31 @@ export default function ClientManagement() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-4">
-
-            {currentFiles.map((p) => (
-              <div
-                key={p.id}
-                className="relative bg-white border border-black/10 p-5 rounded " onClick={() => navigate(`/EmployeeDetails/${p.id}`)}
-              >
-
-                <div className="absolute top-2 right-2 bg-red-700 rounded">
-                  <X
-                    className="text-white cursor-pointer"
-                    onClick={async (e) => {
-                      e.stopPropagation(); // Prevent navigation
-
-                      const confirmDelete = window.confirm(
-                        "Are you sure you want to delete this employee?"
-                      );
-
-                      if (!confirmDelete) return;
-
-                      await deleteEmployee(p.id);
-                    }}
-                  />
-                </div>
-
-                {/* HEADER */}
-                <div className="flex justify-between items-center">
-
-                  <div>
-                    <h3 className="text-lg font-bold text-[#0b2b57]">
-                      {p.name || p.employeeName || "No Name"}
-                    </h3>
-                    <p className="text-gray-500 text-sm">
-                      Role: {p.role || p.employeeRole || "No Employee"}
-                    </p>
-                  </div>
-
-                  <div className='flex flex-col items-center'>
-                    <div className="flex gap-2">
-                      <span className="bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded">
-                        {p.status || "Active"}
-                      </span>
-
-                      <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
-                        {p.type || "AtRisk"}
-                      </span>
-                    </div>
-
-                  </div>
-
-                </div>
-
-                {/* DETAILS */}
-                <div className=" flex  gap-8 mt-4 text-sm">
-
-                  <div className="flex flex-col md:flex-row md:items-center gap-5">
-
-                    <h1 className="text-xl text-yellow-600 min-w-fit">
-                      Performance
-                    </h1>
-
-                    <div className="w-[500px] h-2 bg-gray-200 rounded-full overflow-hidden">
-
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{
-                          width: "60%",
-                        }}
-                        transition={{ duration: 1 }}
-                        className="h-full bg-blue-500 rounded-full"
-                      />
-
-                    </div>
-
-                  </div>
-                  <div className='ml-40 flex items-center gap-4'>
-                    <div className='flex items-center gap-2'>
-                      <MessageSquareText size={18} className='text-gray-400' /><p>2</p>
-                    </div>
-                    <div className='flex items-center gap-2'>
-                      <Paperclip size={18} className='text-gray-400' /><p>2</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/** Bottom */}
-
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 ">
-
-                  <div className="flex items-center  flex-wrap gap-3">
-
-                    <h1 className="text-xl font-bold text-black">
-                      Task Score:
-                    </h1>
-
-                    <div className="font-bold  text-[#2563a9]">
-
-                      13/15
-
-                    </div>
-
-                  </div>
-
-                  <h1 className="text-md lg:text-lg">
-
-                    <div className='flex items-center font-bold text-black'><Pin size={20} className='rotate-45' /></div>
-
-                  </h1>
-
-                </div>
-
-              </div>
-            ))}
-
+            className="overflow-x-auto bg-white border border-black/10 rounded">
+            <table className="w-full min-w-[760px] text-left">
+              <thead className="bg-[#082f57] text-white text-xs uppercase tracking-wide">
+                <tr><th className="px-5 py-4">Name</th><th className="px-5 py-4">Emp ID</th><th className="px-5 py-4">Activity</th><th className="px-5 py-4">Role</th><th className="px-5 py-4">SME</th><th className="px-5 py-4 text-right">Action</th></tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {currentFiles.map((employee) => {
+                  const profile = employee.profile || {};
+                  const employeeId = profile.empId || employee.empId || employee.id || employee._id;
+                  const status = employee.status || "Active";
+                  const activity = employee.isOnline ? "Online" : status;
+                  const role = employee.role || employee.employeeRole || profile.designation || "Employee";
+                  const sme = employee.sme || employee.isSME || employee.subjectMatterExpert || profile.sme;
+                  return <tr key={employee.id || employee._id} className="hover:bg-blue-50 cursor-pointer" onClick={() => navigate(`/employeeDetails/${employee.id || employee._id}`)}>
+                    <td className="px-5 py-4 font-semibold text-[#0b2b57]">{employee.name || employee.employeeName || "No Name"}</td>
+                    <td className="px-5 py-4 text-gray-600">{employeeId || "Not assigned"}</td>
+                    <td className="px-5 py-4"><span className={`px-2 py-1 rounded text-xs ${activity === "Online" || activity === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>{activity}</span></td>
+                    <td className="px-5 py-4 text-gray-600">{role}</td>
+                    <td className="px-5 py-4 text-gray-600">{typeof sme === "boolean" ? (sme ? "Yes" : "No") : sme || "Not assigned"}</td>
+                    <td className="px-5 py-4 text-right"><div className="flex justify-end gap-3"><button type="button" className={`text-xs font-semibold ${status === "Suspended" ? "text-green-700" : "text-orange-700"}`} onClick={async (event) => { event.stopPropagation(); if (window.confirm(`${status === "Suspended" ? "Activate" : "Suspend"} this employee?`)) { try { await toggleEmployeeStatus(employee.id || employee._id); } catch (error) { alert(error.message); } } }}>{status === "Suspended" ? "Activate" : "Suspend"}</button><button type="button" className="text-red-600 hover:text-red-800" aria-label={`Delete ${employee.name || "employee"}`} onClick={async (event) => { event.stopPropagation(); if (window.confirm("Are you sure you want to delete this employee?")) await deleteEmployee(employee.id || employee._id); }}><X size={18} /></button></div></td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+            {!currentFiles.length && <p className="p-8 text-center text-gray-500">No employees found.</p>}
           </motion.div>
         }
         <div>

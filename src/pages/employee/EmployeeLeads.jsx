@@ -1,19 +1,5 @@
-import React, {
-  useEffect,
-  useState
-} from 'react';
-
-import {
-  collection,
-  getDocs,
-  doc,
-  updateDoc
-} from 'firebase/firestore';
-
-import {
-  db
-} from '../../lib/firebase';
-
+import React, { useEffect, useState } from "react";
+import { apiUrl } from "../../config/api.js";
 import {
   Search,
   Building2,
@@ -24,620 +10,646 @@ import {
   Save,
   Users,
   Clock3,
-  CircleCheckBig
-} from 'lucide-react';
+  CircleCheckBig,
+  Bell,
+  Filter,
+  ArrowRightCircle,
+  IndianRupee,
+  Trash2,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function EmployeeLeads() {
+  const [leads, setLeads] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("All");
 
-  const [leads, setLeads] =
-    useState([]);
-
-  const [search, setSearch] =
-    useState('');
-
-  const [loading, setLoading] =
-    useState(true);
+  const filterTabs = ["All", "Pending", "Closed"];
 
   useEffect(() => {
-
     fetchLeads();
-
   }, []);
-console.log(leads)
-  // FETCH LEADS
 
-  const fetchLeads =
-    async () => {
-
-      try {
-
-        const snapshot =
-          await getDocs(
-            collection(
-              db,
-              'leads'
-            )
-          );
-
-        const leadList = [];
-
-        snapshot.forEach((doc) => {
-
-          leadList.push({
-            id: doc.id,
-            ...doc.data(),
-          });
-
-        });
-
-        setLeads(leadList);
-
-        setLoading(false);
-
-      } catch (error) {
-
-        console.log(error);
-
+  // FETCH LEADS FROM BACKEND MONGODB API
+  const fetchLeads = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(apiUrl("/leads"));
+      if (res.ok) {
+        const data = await res.json();
+        setLeads(Array.isArray(data) ? data : []);
+      } else {
+        setLeads([]);
       }
+    } catch (error) {
+      console.error("Error fetching employee leads:", error);
+      setLeads([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    };
-
-  // HANDLE CHANGE
-
-  const handleChange = (
-    id,
-    field,
-    value
-  ) => {
-
+  // HANDLE INLINE INPUT CHANGE
+  const handleChange = (id, field, value) => {
     setLeads((prev) =>
-
-      prev.map((lead) =>
-
-        lead.id === id
+      prev.map((lead) => {
+        const currentId = lead._id || lead.id;
+        return currentId === id
           ? {
               ...lead,
               [field]: value,
             }
-          : lead
-      )
+          : lead;
+      })
     );
-
   };
 
-  // UPDATE LEAD
+  // UPDATE LEAD IN BACKEND DATABASE
+  const updateLead = async (lead) => {
+    const leadId = lead._id || lead.id;
+    if (!leadId) return;
 
-  const updateLead =
-    async (lead) => {
+    try {
+      const res = await fetch(apiUrl(`/leads/${leadId}`), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: lead.name || lead.clientName || "",
+          company: lead.company || "",
+          phone: lead.phone || "",
+          email: lead.email || "",
+          website: lead.website || "",
+          source: lead.source || "",
+          budget: lead.budget || "",
+          platform: lead.platform || "",
+          nextAction: lead.nextAction || "",
+          status: lead.status || "new",
+          priority: lead.priority || "cold",
+          notes: lead.notes || "",
+        }),
+      });
 
-      try {
-
-        const leadRef =
-          doc(
-            db,
-            'leads',
-            lead.id
-          );
-
-        await updateDoc(
-          leadRef,
-          {
-
-            clientName:
-              lead.clientName,
-
-            company:
-              lead.company,
-
-            phone:
-              lead.phone,
-
-            email:
-              lead.email,
-
-            website:
-              lead.website,
-
-            status:
-              lead.status,
-
-          }
-        );
-
-        alert(
-          'Lead Updated Successfully'
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
+      if (res.ok) {
+        alert("Lead updated successfully!");
+        fetchLeads();
+      } else {
+        alert("Failed to update lead.");
       }
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      alert("Failed to update lead.");
+    }
+  };
 
-    };
+  const deleteLead = async (leadId) => {
+    if (!leadId || !window.confirm("Delete this lead permanently?")) return;
+    try {
+      const response = await fetch(apiUrl(`/leads/${leadId}`), { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete lead");
+      setLeads((previous) => previous.filter((lead) => (lead._id || lead.id) !== leadId));
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
-  // FILTER LEADS
+  // FILTER LEADS BY SEARCH & TAB
+  const filteredLeads = leads.filter((lead) => {
+    const clientName = lead.name || lead.clientName || "";
+    const company = lead.company || "";
+    const email = lead.email || "";
 
-  const filteredLeads =
-    leads.filter((lead) =>
+    const matchesSearch =
+      company.toLowerCase().includes(search.toLowerCase()) ||
+      clientName.toLowerCase().includes(search.toLowerCase()) ||
+      email.toLowerCase().includes(search.toLowerCase());
 
-      lead.company
-        ?.toLowerCase()
-        .includes(
-          search.toLowerCase()
-        ) ||
+    const isClosed =
+      (lead.status || "").toLowerCase() === "closed" ||
+      (lead.status || "").toLowerCase() === "converted";
 
-      lead.clientName
-        ?.toLowerCase()
-        .includes(
-          search.toLowerCase()
-        )
-    );
+    if (activeTab === "Pending") {
+      return matchesSearch && !isClosed;
+    }
+    if (activeTab === "Closed") {
+      return matchesSearch && isClosed;
+    }
+    return matchesSearch;
+  });
+
+  const pendingCount = leads.filter(
+    (lead) =>
+      (lead.status || "").toLowerCase() !== "closed" &&
+      (lead.status || "").toLowerCase() !== "converted"
+  ).length;
+
+  const closedCount = leads.filter(
+    (lead) =>
+      (lead.status || "").toLowerCase() === "closed" ||
+      (lead.status || "").toLowerCase() === "converted"
+  ).length;
+
+  const stats = [
+    { icon: Users, title: "Total Leads", value: leads.length },
+    { icon: Clock3, title: "Pending Leads", value: pendingCount },
+    { icon: CircleCheckBig, title: "Closed Leads", value: closedCount },
+  ];
 
   return (
-
-    <div className="min-h-screen bg-[#070b14] text-white p-8">
-
-      {/* HEADER */}
-
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
-
+    <div className="flex max-h-screen overflow-y-auto custom-scrollbar bg-[#f3f0eb] min-h-screen flex-col">
+      {/* TOPBAR */}
+      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-
-          <div className="flex items-center gap-4 mb-3">
-
-            <div className="w-16 h-16 rounded-3xl bg-purple-500/10 flex items-center justify-center">
-
-              <Users className="w-8 h-8 text-purple-400" />
-
-            </div>
-
-            <div>
-
-              <h1 className="text-5xl font-black">
-
-                Leads Center
-
-              </h1>
-
-              <p className="text-gray-500 mt-2">
-
-                Manage all company leads
-
-              </p>
-
-            </div>
-
-          </div>
-
+          <h1 className="text-xl md:text-2xl font-bold text-[#023167]">
+            Leads Center
+          </h1>
+          <p className="text-[11px] md:text-xs text-gray-500">
+            Manage and update assigned company leads in real time
+          </p>
         </div>
 
-        {/* SEARCH */}
-
-        <div className="relative w-full lg:w-[380px]">
-
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
-
-          <input
-            type="text"
-            placeholder="Search leads..."
-            value={search}
-            onChange={(e) =>
-              setSearch(
-                e.target.value
-              )
-            }
-            className="w-full bg-[#111827] border border-purple-500/10 rounded-3xl py-5 pl-14 pr-5 outline-none focus:border-purple-500"
-          />
-
+        <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
+          <button aria-label="Filter leads" title="Filter leads" className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
+            <Filter size={16} className="text-white" />
+          </button>
+          <button aria-label="View lead notifications" title="View lead notifications" className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
+            <Bell size={16} className="text-white" />
+          </button>
         </div>
-
       </div>
 
-      {/* STATS */}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-
-        {/* TOTAL */}
-
-        <div className="bg-[#111827] border border-purple-500/10 rounded-3xl p-7">
-
-          <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6">
-
-            <Users className="w-7 h-7 text-purple-400" />
-
-          </div>
-
-          <p className="text-gray-500 mb-2">
-
-            Total Leads
-
-          </p>
-
-          <h2 className="text-5xl font-black">
-
-            {leads.length}
-
-          </h2>
-
+      {/* CONTENT AREA */}
+      <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6 flex-1">
+        {/* STATS CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+          {stats.map((s, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.01 }}
+              className="bg-white p-4 sm:p-5 md:p-6 rounded-xl border border-gray-200 shadow-xs flex items-center justify-between"
+            >
+              <div>
+                <p className="text-[11px] md:text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {s.title}
+                </p>
+                <h2 className="text-2xl md:text-3xl font-bold text-[#0b2b57] mt-0.5">
+                  {s.value}
+                </h2>
+              </div>
+              <div className="bg-gray-100 p-2.5 sm:p-3 rounded-xl border border-gray-200 shrink-0">
+                <s.icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#2563a9]" />
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* PENDING */}
-
-        <div className="bg-[#111827] border border-orange-500/10 rounded-3xl p-7">
-
-          <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-6">
-
-            <Clock3 className="w-7 h-7 text-orange-400" />
-
+        {/* FILTER BAR & SEARCH */}
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-gray-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="font-bold text-base md:text-lg text-[#0b2b57]">
+            <p>Lead List</p>
           </div>
 
-          <p className="text-gray-500 mb-2">
-
-            Pending Leads
-
-          </p>
-
-          <h2 className="text-5xl font-black">
-
-            {
-              leads.filter(
-                (lead) =>
-                  lead.status !==
-                  'Closed'
-              ).length
-            }
-
-          </h2>
-
-        </div>
-
-        {/* CLOSED */}
-
-        <div className="bg-[#111827] border border-green-500/10 rounded-3xl p-7">
-
-          <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center mb-6">
-
-            <CircleCheckBig className="w-7 h-7 text-green-400" />
-
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all text-center ${
+                  activeTab === tab
+                    ? "bg-[#2563a9] text-white shadow-xs"
+                    : "text-gray-600 bg-gray-100 hover:bg-gray-200"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
 
-          <p className="text-gray-500 mb-2">
-
-            Closed Leads
-
-          </p>
-
-          <h2 className="text-5xl font-black">
-
-            {
-              leads.filter(
-                (lead) =>
-                  lead.status ===
-                  'Closed'
-              ).length
-            }
-
-          </h2>
-
+          <div className="flex items-center border border-gray-300 bg-gray-50 rounded-lg px-3 py-2 w-full sm:w-72 md:w-80">
+            <Search size={16} className="text-gray-500 shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="ml-2 w-full outline-none text-xs bg-transparent text-gray-800 placeholder-gray-400"
+              placeholder="Search client, company or email..."
+            />
+          </div>
         </div>
 
-      </div>
+        {/* MOBILE & TABLET CARD VIEW (Visible on small screens < lg) */}
+        <div className="block lg:hidden space-y-3">
+          {loading ? (
+            <div className="bg-white p-8 text-center rounded-xl border border-gray-200 text-gray-500">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-[#2563a9] border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs">Loading leads...</span>
+              </div>
+            </div>
+          ) : filteredLeads.length === 0 ? (
+            <div className="bg-white p-8 text-center rounded-xl border border-gray-200 text-gray-400 italic text-xs">
+              No leads found matching criteria.
+            </div>
+          ) : (
+            filteredLeads.map((lead) => {
+              const leadId = lead._id || lead.id;
+              const name = lead.name || lead.clientName || "";
+              const company = lead.company || "";
+              const phone = lead.phone || "";
+              const email = lead.email || "";
+              const budget = lead.budget || "";
+              const nextAction = lead.nextAction || "";
+              const priority = (lead.priority || "cold").toLowerCase();
+              const status = (lead.status || "new").toLowerCase();
 
-      {/* TABLE */}
-
-      <div className="overflow-x-auto bg-[#111827] border border-white/10 rounded-3xl">
-
-        <table className="w-full min-w-[1500px]">
-
-          <thead>
-
-            <tr className="border-b border-white/10 text-left">
-
-              <th className="p-5">
-
-                Client
-
-              </th>
-
-              <th className="p-5">
-
-                Company
-
-              </th>
-
-              <th className="p-5">
-
-                Phone
-
-              </th>
-
-              <th className="p-5">
-
-                Email
-
-              </th>
-
-              <th className="p-5">
-
-                Website
-
-              </th>
-
-              <th className="p-5">
-
-                Status
-
-              </th>
-
-              <th className="p-5 text-center">
-
-                Action
-
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {loading ? (
-
-              <tr>
-
-                <td
-                  colSpan="7"
-                  className="text-center py-10 text-gray-500"
+              return (
+                <div
+                  key={leadId}
+                  className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-3"
                 >
+                  {/* CARD HEADER */}
+                  <div className="flex items-center justify-between gap-2 border-b pb-2.5">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <UserRound size={16} className="text-purple-600 shrink-0" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) =>
+                          handleChange(leadId, "name", e.target.value)
+                        }
+                        className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 w-full text-xs text-gray-800 font-bold focus:bg-white focus:border-[#2563a9] outline-none truncate"
+                        placeholder="Lead name"
+                      />
+                    </div>
 
-                  Loading...
+                    <select
+                      value={priority}
+                      onChange={(e) =>
+                        handleChange(leadId, "priority", e.target.value)
+                      }
+                      className={`px-2 py-1 rounded-md text-[10px] font-bold border outline-none uppercase shrink-0 ${
+                        priority === "hot"
+                          ? "bg-red-100 text-red-700 border-red-300"
+                          : priority === "warm"
+                          ? "bg-orange-100 text-orange-700 border-orange-300"
+                          : "bg-gray-100 text-gray-700 border-gray-300"
+                      }`}
+                    >
+                      <option value="hot">HOT</option>
+                      <option value="warm">WARM</option>
+                      <option value="cold">COLD</option>
+                      <option value="cool">COOL</option>
+                    </select>
+                  </div>
 
-                </td>
-
-              </tr>
-
-            ) : filteredLeads.length === 0 ? (
-
-              <tr>
-
-                <td
-                  colSpan="7"
-                  className="text-center py-10 text-gray-500"
-                >
-
-                  No Leads Found
-
-                </td>
-
-              </tr>
-
-            ) : (
-
-              filteredLeads.map(
-                (lead) => (
-
-                  <tr
-                    key={lead.id}
-                    className="border-b border-white/5 hover:bg-white/5 transition-all"
-                  >
-
-                    {/* CLIENT */}
-
-                    <td className="p-5">
-
-                      <div className="flex items-center gap-3">
-
-                        <UserRound className="w-5 h-5 text-purple-400" />
-
-                        <input
-                          type="text"
-                          value={
-                            lead.clientName ||
-                            ''
-                          }
-                          onChange={(e) =>
-                            handleChange(
-                              lead.id,
-                              'clientName',
-                              e.target.value
-                            )
-                          }
-                          className="bg-transparent outline-none w-full"
-                        />
-
-                      </div>
-
-                    </td>
-
+                  {/* INPUT FIELDS GRID */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                     {/* COMPANY */}
-
-                    <td className="p-5">
-
-                      <div className="flex items-center gap-3">
-
-                        <Building2 className="w-5 h-5 text-cyan-400" />
-
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-semibold uppercase block mb-1">Company</label>
+                      <div className="flex items-center gap-2">
+                        <Building2 size={14} className="text-blue-600 shrink-0" />
                         <input
                           type="text"
-                          value={
-                            lead.company ||
-                            ''
-                          }
+                          value={company}
                           onChange={(e) =>
-                            handleChange(
-                              lead.id,
-                              'company',
-                              e.target.value
-                            )
+                            handleChange(leadId, "company", e.target.value)
                           }
-                          className="bg-transparent outline-none w-full"
+                          className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 w-full text-xs text-gray-800 focus:bg-white focus:border-[#2563a9] outline-none"
+                          placeholder="Company name"
                         />
-
                       </div>
-
-                    </td>
+                    </div>
 
                     {/* PHONE */}
-
-                    <td className="p-5">
-
-                      <div className="flex items-center gap-3">
-
-                        <Phone className="w-5 h-5 text-orange-400" />
-
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-semibold uppercase block mb-1">Phone</label>
+                      <div className="flex items-center gap-2">
+                        <Phone size={14} className="text-orange-600 shrink-0" />
                         <input
                           type="text"
-                          value={
-                            lead.phone ||
-                            ''
-                          }
+                          value={phone}
                           onChange={(e) =>
-                            handleChange(
-                              lead.id,
-                              'phone',
-                              e.target.value
-                            )
+                            handleChange(leadId, "phone", e.target.value)
                           }
-                          className="bg-transparent outline-none w-full"
+                          className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 w-full text-xs text-gray-800 focus:bg-white focus:border-[#2563a9] outline-none"
+                          placeholder="Phone number"
                         />
-
                       </div>
-
-                    </td>
+                    </div>
 
                     {/* EMAIL */}
-
-                    <td className="p-5">
-
-                      <div className="flex items-center gap-3">
-
-                        <Mail className="w-5 h-5 text-pink-400" />
-
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-semibold uppercase block mb-1">Email</label>
+                      <div className="flex items-center gap-2">
+                        <Mail size={14} className="text-pink-600 shrink-0" />
                         <input
                           type="email"
-                          value={
-                            lead.email ||
-                            ''
-                          }
+                          value={email}
                           onChange={(e) =>
-                            handleChange(
-                              lead.id,
-                              'email',
-                              e.target.value
-                            )
+                            handleChange(leadId, "email", e.target.value)
                           }
-                          className="bg-transparent outline-none w-full"
+                          className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 w-full text-xs text-gray-800 focus:bg-white focus:border-[#2563a9] outline-none"
+                          placeholder="Email address"
                         />
-
                       </div>
+                    </div>
 
-                    </td>
-
-                    {/* WEBSITE */}
-
-                    <td className="p-5">
-
-                      <div className="flex items-center gap-3">
-
-                        <Globe className="w-5 h-5 text-green-400" />
-
+                    {/* BUDGET */}
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-semibold uppercase block mb-1">Budget</label>
+                      <div className="flex items-center gap-2">
+                        <IndianRupee size={14} className="text-emerald-600 shrink-0" />
                         <input
                           type="text"
-                          value={
-                            lead.website ||
-                            ''
-                          }
+                          value={budget}
                           onChange={(e) =>
-                            handleChange(
-                              lead.id,
-                              'website',
-                              e.target.value
-                            )
+                            handleChange(leadId, "budget", e.target.value)
                           }
-                          className="bg-transparent outline-none w-full"
+                          className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 w-full text-xs text-gray-800 focus:bg-white focus:border-[#2563a9] outline-none"
+                          placeholder="Budget"
                         />
-
                       </div>
+                    </div>
 
-                    </td>
+                    {/* NEXT ACTION */}
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] text-gray-500 font-semibold uppercase block mb-1">Next Action</label>
+                      <div className="flex items-center gap-2">
+                        <ArrowRightCircle size={14} className="text-indigo-600 shrink-0" />
+                        <input
+                          type="text"
+                          value={nextAction}
+                          onChange={(e) =>
+                            handleChange(leadId, "nextAction", e.target.value)
+                          }
+                          className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 w-full text-xs text-gray-800 focus:bg-white focus:border-[#2563a9] outline-none"
+                          placeholder="Next action"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-                    {/* STATUS */}
+                  {/* CARD FOOTER */}
+                  <div className="flex items-center justify-between pt-2 border-t gap-2">
+                    <select
+                      value={status}
+                      onChange={(e) =>
+                        handleChange(leadId, "status", e.target.value)
+                      }
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border outline-none cursor-pointer capitalize ${
+                        status === "closed" || status === "converted"
+                          ? "bg-green-100 text-green-700 border-green-300"
+                          : status === "in progress"
+                          ? "bg-blue-100 text-blue-700 border-blue-300"
+                          : "bg-orange-100 text-orange-700 border-orange-300"
+                      }`}
+                    >
+                      <option value="new">New</option>
+                      <option value="pending">Pending</option>
+                      <option value="in progress">In Progress</option>
+                      <option value="closed">Closed</option>
+                      <option value="converted">Converted</option>
+                    </select>
 
-                    <td className="p-5">
+                    <button
+                      onClick={() => updateLead(lead)}
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#2563a9] hover:bg-[#1d4ed8] text-white font-semibold text-xs shadow-xs hover:scale-105 transition-all"
+                    >
+                      <Save size={13} />
+                      <span>Save Lead</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
 
-                      <select
-                        value={
-                          lead.status ||
-                          ''
-                        }
-                        onChange={(e) =>
-                          handleChange(
-                            lead.id,
-                            'status',
-                            e.target.value
-                          )
-                        }
-                        className={`px-4 py-3 rounded-2xl outline-none ${
-                          lead.status ===
-                          'Closed'
-                            ? 'bg-green-500/10 text-green-400'
-                            : 'bg-orange-500/10 text-orange-400'
-                        }`}
-                      >
+        {/* DESKTOP TABLE VIEW (Visible on large screens >= lg) */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="hidden lg:block bg-white rounded-xl overflow-x-auto custom-scrollbar border border-gray-200 shadow-xs"
+        >
+          <table className="w-full text-xs text-left min-w-[1200px]">
+            <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-200 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="p-3.5">Name</th>
+                <th className="p-3.5">Company</th>
+                <th className="p-3.5">Phone</th>
+                <th className="p-3.5">Email</th>
+                <th className="p-3.5">Budget</th>
+                <th className="p-3.5">Next Action</th>
+                <th className="p-3.5">Priority</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-center">Action</th>
+              </tr>
+            </thead>
 
-                        <option>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="9" className="text-center py-12 text-gray-500">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-[#2563a9] border-t-transparent rounded-full animate-spin" />
+                      <span>Loading leads...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredLeads.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="text-center py-12 text-gray-400 italic">
+                    No leads found matching criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredLeads.map((lead) => {
+                  const leadId = lead._id || lead.id;
+                  const name = lead.name || lead.clientName || "";
+                  const company = lead.company || "";
+                  const phone = lead.phone || "";
+                  const email = lead.email || "";
+                  const budget = lead.budget || "";
+                  const nextAction = lead.nextAction || "";
+                  const priority = (lead.priority || "cold").toLowerCase();
+                  const status = (lead.status || "new").toLowerCase();
 
-                          Pending
+                  return (
+                    <tr
+                      key={leadId}
+                      className="hover:bg-blue-50/30 transition-colors"
+                    >
+                      {/* NAME */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <UserRound size={15} className="text-purple-600 shrink-0" />
+                          <input
+                            type="text"
+                            value={name}
+                            onChange={(e) =>
+                              handleChange(leadId, "name", e.target.value)
+                            }
+                            className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 w-full text-xs text-gray-800 font-medium focus:bg-white focus:border-[#2563a9] outline-none"
+                            placeholder="Lead name"
+                          />
+                        </div>
+                      </td>
 
-                        </option>
+                      {/* COMPANY */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <Building2 size={15} className="text-blue-600 shrink-0" />
+                          <input
+                            type="text"
+                            value={company}
+                            onChange={(e) =>
+                              handleChange(leadId, "company", e.target.value)
+                            }
+                            className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 w-full text-xs text-gray-800 font-medium focus:bg-white focus:border-[#2563a9] outline-none"
+                            placeholder="Company"
+                          />
+                        </div>
+                      </td>
 
-                        <option>
+                      {/* PHONE */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <Phone size={15} className="text-orange-600 shrink-0" />
+                          <input
+                            type="text"
+                            value={phone}
+                            onChange={(e) =>
+                              handleChange(leadId, "phone", e.target.value)
+                            }
+                            className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 w-full text-xs text-gray-800 font-medium focus:bg-white focus:border-[#2563a9] outline-none"
+                            placeholder="Phone number"
+                          />
+                        </div>
+                      </td>
 
-                          Closed
+                      {/* EMAIL */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <Mail size={15} className="text-pink-600 shrink-0" />
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(e) =>
+                              handleChange(leadId, "email", e.target.value)
+                            }
+                            className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 w-full text-xs text-gray-800 font-medium focus:bg-white focus:border-[#2563a9] outline-none"
+                            placeholder="Email address"
+                          />
+                        </div>
+                      </td>
 
-                        </option>
+                      {/* BUDGET */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <IndianRupee size={15} className="text-emerald-600 shrink-0" />
+                          <input
+                            type="text"
+                            value={budget}
+                            onChange={(e) =>
+                              handleChange(leadId, "budget", e.target.value)
+                            }
+                            className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 w-full text-xs text-gray-800 font-medium focus:bg-white focus:border-[#2563a9] outline-none"
+                            placeholder="Budget"
+                          />
+                        </div>
+                      </td>
 
-                      </select>
+                      {/* NEXT ACTION */}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <ArrowRightCircle size={15} className="text-indigo-600 shrink-0" />
+                          <input
+                            type="text"
+                            value={nextAction}
+                            onChange={(e) =>
+                              handleChange(leadId, "nextAction", e.target.value)
+                            }
+                            className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 w-full text-xs text-gray-800 font-medium focus:bg-white focus:border-[#2563a9] outline-none"
+                            placeholder="Next action"
+                          />
+                        </div>
+                      </td>
 
-                    </td>
+                      {/* PRIORITY */}
+                      <td className="p-3">
+                        <select
+                          value={priority}
+                          onChange={(e) =>
+                            handleChange(leadId, "priority", e.target.value)
+                          }
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border outline-none cursor-pointer uppercase ${
+                            priority === "hot"
+                              ? "bg-red-100 text-red-700 border-red-300"
+                              : priority === "warm"
+                              ? "bg-orange-100 text-orange-700 border-orange-300"
+                              : "bg-gray-100 text-gray-700 border-gray-300"
+                          }`}
+                        >
+                          <option value="hot">HOT</option>
+                          <option value="warm">WARM</option>
+                          <option value="cold">COLD</option>
+                          <option value="cool">COOL</option>
+                        </select>
+                      </td>
 
-                    {/* ACTION */}
+                      {/* STATUS */}
+                      <td className="p-3">
+                        <select
+                          value={status}
+                          onChange={(e) =>
+                            handleChange(leadId, "status", e.target.value)
+                          }
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border outline-none cursor-pointer capitalize ${
+                            status === "closed" || status === "converted"
+                              ? "bg-green-100 text-green-700 border-green-300"
+                              : status === "in progress"
+                              ? "bg-blue-100 text-blue-700 border-blue-300"
+                              : "bg-orange-100 text-orange-700 border-orange-300"
+                          }`}
+                        >
+                          <option value="new">New</option>
+                          <option value="pending">Pending</option>
+                          <option value="in progress">In Progress</option>
+                          <option value="closed">Closed</option>
+                          <option value="converted">Converted</option>
+                        </select>
+                      </td>
 
-                    <td className="p-5 text-center">
-
-                      <button
-                        onClick={() =>
-                          updateLead(
-                            lead
-                          )
-                        }
-                        className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 transition-all"
-                      >
-
-                        <Save className="w-4 h-4" />
-
-                        Save
-
-                      </button>
-
-                    </td>
-
-                  </tr>
-
-                )
-              )
-
-            )}
-
-          </tbody>
-
-        </table>
-
+                      {/* ACTION */}
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => updateLead(lead)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563a9] hover:bg-[#1d4ed8] text-white font-semibold text-xs shadow-xs hover:scale-105 transition-all"
+                        >
+                          <Save size={13} />
+                          <span>Save</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteLead(leadId)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-600 text-red-700 hover:text-white font-semibold text-xs shadow-xs transition-all"
+                          aria-label="Delete lead"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </motion.div>
       </div>
-
     </div>
-
   );
-
 }

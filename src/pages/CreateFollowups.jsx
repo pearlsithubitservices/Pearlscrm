@@ -19,7 +19,7 @@ import useEmployees from "../Hooks/useEmployees";
 
 export default function CreateFollowups({ onClose, fetchdata }) {
   const { createFollowup } = useFollowups();
-  const [loading, setLoading] = useState();
+  const [loading, setLoading] = useState(false);
   const { employees } = useEmployees();
 
   const [formData, setFormData] = useState({
@@ -27,11 +27,12 @@ export default function CreateFollowups({ onClose, fetchdata }) {
     companyName: "",
     phone: "",
     email: "",
-    status: "",
+    status: "Pending",
     leadSchedule: "",
-    type: "",
+    type: "Call",
     assignedTo: "",
-    followupCount: "",
+    followupCount: "1",
+    followupTime: "",
   });
 
   const handleChange = (e) => {
@@ -58,7 +59,7 @@ export default function CreateFollowups({ onClose, fetchdata }) {
       label: "Phone Number",
       Icon: Phone,
       name: "phone",
-      placeholder: "+1(555) 000-0000",
+      placeholder: "+91 98765 43210",
     },
     {
       label: "Email",
@@ -79,6 +80,7 @@ export default function CreateFollowups({ onClose, fetchdata }) {
       options: [
         { label: "New", value: "New" },
         { label: "Pending", value: "Pending" },
+        { label: "In Progress", value: "In Progress" },
         { label: "Completed", value: "Completed" },
       ],
     },
@@ -93,7 +95,7 @@ export default function CreateFollowups({ onClose, fetchdata }) {
       Icon: Activity,
       name: "type",
       type: "select",
-      placeholder: "e.g. call, email, website",
+      placeholder: "Select Type",
       options: [
         { label: "Call", value: "Call" },
         { label: "Email", value: "Email" },
@@ -108,43 +110,47 @@ export default function CreateFollowups({ onClose, fetchdata }) {
       type: "select",
       placeholder: "Select Employee",
       options: employees.map((emp) => ({
-        label: emp.name, // Change to emp.employeeName if your employee object uses a different field
-        value: emp.uid,
+        label: emp.name || emp.employeeName,
+        value: emp.uid || emp._id || emp.name,
       })),
     },
     {
       label: "Follow-ups Count",
       Icon: Repeat2,
       name: "followupCount",
-      placeholder: "0",
+      placeholder: "1",
       type: "number",
     },
     {
       label: "Follow-ups Time",
       Icon: Clock2,
       name: "followupTime",
-      placeholder: "5:56 pm",
-      type: "time",
+      placeholder: "e.g. 10:30 AM",
+      type: "text",
     },
   ];
 
   const SectionTitle = ({ title }) => (
-    <div className="flex items-center gap-5 mb-10">
-      <p className="text-[13px] tracking-[3px] text-[#8c8c8c] whitespace-nowrap">
+    <div className="flex items-center gap-4 mb-6 md:mb-8">
+      <p className="text-[11px] md:text-[13px] font-bold tracking-[3px] text-[#8c8c8c] whitespace-nowrap uppercase">
         {title}
       </p>
-
       <div className="w-full h-[1px] bg-[#a8a29e]" />
     </div>
   );
-  const handleSubmit = async () => {
-    try {
-      const res = await createFollowup({
-        ...formData,
-        followupCount: Number(formData.followupCount),
-      });
 
-      console.log(res);
+  const handleSubmit = async () => {
+    if (!formData.clientName.trim()) {
+      alert("Client Name is required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await createFollowup({
+        ...formData,
+        followupCount: Number(formData.followupCount) || 1,
+      });
 
       alert("Follow-up added successfully");
 
@@ -153,18 +159,21 @@ export default function CreateFollowups({ onClose, fetchdata }) {
         companyName: "",
         phone: "",
         email: "",
-        status: "",
+        status: "Pending",
         leadSchedule: "",
-        type: "",
+        type: "Call",
         assignedTo: "",
-        followupCount: "",
+        followupCount: "1",
         followupTime: "",
       });
-      await fetchdata();
+
+      if (fetchdata) await fetchdata();
       onClose();
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      alert(err.message || "Failed to create followup");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,20 +181,20 @@ export default function CreateFollowups({ onClose, fetchdata }) {
     <motion.div
       initial={{ opacity: 0, y: 25 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className=" relative w-full max-w-6xl bg-[#f3f0ea] rounded-[40px] p-10 shadow-sm"
+      transition={{ duration: 0.3 }}
+      className="relative w-full max-w-5xl bg-[#f3f0ea] rounded-[24px] md:rounded-[36px] p-6 md:p-10 shadow-2xl max-h-[90vh] overflow-y-auto modal-scrollbar border border-white/50"
     >
-      <X size={18} className=" absolute top-4 right-7 w-6 h-6 bg-red-500 text-white hover:bg-white hover:text-red-700 hover:scale-110
-      transition-transform duration-200" onClick={() => onClose()} />
+      <button
+        onClick={() => onClose()}
+        className="absolute top-4 right-5 md:top-6 md:right-8 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-transform hover:scale-110 cursor-pointer shadow-md"
+      >
+        <X size={18} />
+      </button>
 
       {/* CONTACT INFO */}
-
       <SectionTitle title="CONTACT INFO" />
-
-      <div className="grid grid-cols-2 gap-8">
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {contactFields.map((field, i) => (
-
           <InputField
             key={i}
             {...field}
@@ -193,24 +202,18 @@ export default function CreateFollowups({ onClose, fetchdata }) {
             onChange={handleChange}
             className="w-full"
           />
-
         ))}
-
       </div>
 
       {/* LEAD DETAILS */}
-
-      <div className="mt-14">
-
+      <div className="mt-10">
         <SectionTitle title="LEAD DETAILS" />
-
-        <div className="grid grid-cols-2 gap-8">
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {leadFields.map((field, i) => {
             if (field.name === "assignedTo") {
               return (
                 <div key={i} className="flex flex-col">
-                  <label className="mb-2 text-sm font-medium text-gray-700">
+                  <label className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-700">
                     {field.label}
                   </label>
 
@@ -218,13 +221,15 @@ export default function CreateFollowups({ onClose, fetchdata }) {
                     name="assignedTo"
                     value={formData.assignedTo}
                     onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-gray-300 rounded-2xl px-4 py-3.5 outline-none focus:border-blue-500 text-sm font-medium text-gray-800"
                   >
                     <option value="">Select Employee</option>
-
                     {employees.map((employee) => (
-                      <option key={employee.uid} value={employee.uid}>
-                        {employee.name}
+                      <option
+                        key={employee.uid || employee._id}
+                        value={employee.uid || employee._id || employee.name}
+                      >
+                        {employee.name || employee.employeeName}
                       </option>
                     ))}
                   </select>
@@ -242,39 +247,27 @@ export default function CreateFollowups({ onClose, fetchdata }) {
               />
             );
           })}
-
         </div>
-
       </div>
 
       {/* BUTTONS */}
-
-      <div className="flex items-center gap-5 mt-10">
-
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+      <div className="flex flex-col-reverse sm:flex-row items-center gap-4 mt-10">
+        <button
           onClick={onClose}
-          className="w-[170px] h-[62px] rounded-2xl border border-[#8f8f8f] text-[#8f8f8f] text-[20px]"
+          className="w-full sm:w-44 h-14 rounded-2xl border border-gray-400 text-gray-700 text-base font-bold hover:bg-gray-200/50 transition cursor-pointer"
         >
           Cancel
-        </motion.button>
+        </button>
 
-        <motion.button
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex-1 h-[62px] rounded-2xl bg-[#165da8] text-white text-[22px] font-semibold flex items-center justify-center gap-4"
+        <button
+          disabled={loading}
           onClick={handleSubmit}
+          className="w-full flex-1 h-14 rounded-2xl bg-[#165da8] hover:bg-[#124d8c] text-white text-lg font-semibold flex items-center justify-center gap-3 transition cursor-pointer shadow-md disabled:opacity-50"
         >
-
-          <Plus size={24} />
-
-          {loading ? "Saving..." : "Add Follow-Ups"}
-
-        </motion.button>
-
+          <Plus size={20} />
+          {loading ? "Saving..." : "Add Follow-Up"}
+        </button>
       </div>
-
     </motion.div>
   );
 }

@@ -28,6 +28,34 @@ const memberSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const milestoneSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    date: { type: String, default: "" },
+    completed: { type: Boolean, default: false },
+  },
+  { _id: true, timestamps: true }
+);
+
+const noteSchema = new mongoose.Schema(
+  {
+    title: { type: String, default: "" },
+    description: { type: String, default: "" },
+    date: { type: String, default: "" },
+  },
+  { _id: true, timestamps: true }
+);
+
+const activitySchema = new mongoose.Schema(
+  {
+    title: { type: String, default: "" },
+    desc: { type: String, default: "" },
+    time: { type: String, default: "" },
+    iconType: { type: String, default: "default" },
+  },
+  { _id: true, timestamps: true }
+);
+
 const projectSchema = new mongoose.Schema(
   {
     company: {
@@ -54,6 +82,9 @@ const projectSchema = new mongoose.Schema(
     },
 
     members: [memberSchema],
+    notes: [noteSchema],
+    activities: [activitySchema],
+    milestones: [milestoneSchema],
 
     assignedDate: {
       type: Date,
@@ -82,6 +113,11 @@ const projectSchema = new mongoose.Schema(
         "On Hold",
       ],
       default: "Pending",
+    },
+
+    priority: {
+      type: String,
+      default: "Medium",
     },
 
     progress: {

@@ -1,14 +1,14 @@
 // EnrollmentModal.jsx
 
-import React from "react";
-import { motion, AnimatePresence, time } from "framer-motion";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     Calendar,
     ChevronDown,
     X,
 } from "lucide-react";
 import useEnrollment from "../../../Hooks/useEnrollment";
-import { useAuth } from '../../../context/AuthContext'
+import { useAuth } from '../../../context/AuthContext';
 
 export default function EnrollmentModal({
     isOpen,
@@ -16,21 +16,31 @@ export default function EnrollmentModal({
     data,
 }) {
     if (!isOpen) return null;
-    console.log(data)
     const { user } = useAuth();
-    console.log(user.uid);
     const { createEnrollment } = useEnrollment();
+    const [loading, setLoading] = useState(false);
 
     const handleEnroll = async () => {
+        if (!user?.uid) {
+            alert("User authentication required");
+            return;
+        }
+        setLoading(true);
         try {
+            const courseId = data?.id || data?._id;
             const res = await createEnrollment({
                 employee_uid: user.uid,
-                courseId: "sdm",
+                courseId: courseId,
             });
 
-            console.log(res);
+            console.log("Enrolled successfully:", res);
+            alert("Enrolled successfully!");
+            if (onClose) onClose();
         } catch (error) {
             console.error(error);
+            alert(error.message || "Failed to enroll");
+        } finally {
+            setLoading(false);
         }
     };
     return (
@@ -191,10 +201,12 @@ export default function EnrollmentModal({
                                                 Cancel
                                             </button>
 
-                                            <button className="h-10 flex-1 rounded-xl bg-[#2565A8] text-sm font-semibold text-white hover:bg-[#1F5B99]"
+                                            <button 
+                                                className="h-10 flex-1 rounded-xl bg-[#2565A8] text-sm font-semibold text-white hover:bg-[#1F5B99] disabled:opacity-50"
                                                 onClick={handleEnroll}
+                                                disabled={loading}
                                             >
-                                                Confirm Enrollment
+                                                {loading ? "Enrolling..." : "Confirm Enrollment"}
                                             </button>
                                         </div>
                                     </div>

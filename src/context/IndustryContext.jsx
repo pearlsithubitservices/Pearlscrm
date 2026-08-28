@@ -12,7 +12,7 @@ export function IndustryProvider({ children }) {
     localStorage.setItem('crm_industry', industry);
   }, [industry]);
 
-  const config = INDUSTRY_CONFIGS[industry];
+  const config = INDUSTRY_CONFIGS[industry] || INDUSTRY_CONFIGS['IT'];
 
   return (
     <IndustryContext.Provider value={{ industry, config, setIndustry }}>

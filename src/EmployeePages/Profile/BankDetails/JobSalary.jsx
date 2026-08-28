@@ -1,22 +1,15 @@
-import React from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from "framer-motion";
+import { getProfile } from '../../../services/profileApi';
 
 const JobSalary = () => {
+  const [salary, setSalary] = useState(null);
+  useEffect(() => { getProfile().then(({ data }) => setSalary(data.user?.profile?.salary || null)).catch(() => undefined); }, []);
 
-  const salaryData = [
-    { label: "Basic salary", amount: "₹50,000" },
-    { label: "HRA", amount: "₹20,000" },
-    { label: "Special allowance", amount: "₹20,000" },
-    { label: "Travel allowance", amount: "₹15,000" },
-    { label: "Medical allowance", amount: "₹5,000" },
-    { label: "Performance bonus", amount: "₹2,500" },
-  ];
-
-  const deductions = [
-    { label: "PF deduction", amount: "- ₹6,000" },
-    { label: "Professional tax", amount: "- ₹200" },
-    { label: "TDS (income tax)", amount: "- ₹8,500" },
-  ];
+  const formatAmount = (amount) => amount == null ? "Not available" : `₹${Number(amount).toLocaleString("en-IN")}`;
+  const salaryData = salary ? [{ label: "Basic salary", amount: formatAmount(salary.basicSalary) }] : [];
+  const allowances = salary?.allowances && typeof salary.allowances === "object" ? Object.entries(salary.allowances).map(([label, amount]) => ({ label, amount: formatAmount(amount) })) : [];
+  const deductions = salary?.deductions && typeof salary.deductions === "object" ? Object.entries(salary.deductions).map(([label, amount]) => ({ label, amount: `- ${formatAmount(amount)}` })) : [];
 
   return (
     <motion.div
@@ -31,10 +24,11 @@ const JobSalary = () => {
       <p className="text-gray-500 mt-1">
         Monthly compensation breakdown and components
       </p>
+      {!salary && <p className="text-gray-500 mt-6">Salary details are managed by Admin / HR.</p>}
 
       <div className="mt-6 space-y-4">
 
-        {salaryData.map((item) => (
+        {[...salaryData, ...allowances].map((item) => (
           <div
             key={item.label}
             className="flex justify-between border-b pb-4"
@@ -53,7 +47,7 @@ const JobSalary = () => {
           </span>
 
           <span className="font-bold text-2xl text-green-600">
-            ₹1,00,000
+            {formatAmount(salary?.grossSalary)}
           </span>
         </div>
 
@@ -78,7 +72,7 @@ const JobSalary = () => {
           </span>
 
           <span className="font-bold text-3xl text-green-600">
-            ₹85,300
+            {formatAmount(salary?.netSalary)}
           </span>
         </div>
 

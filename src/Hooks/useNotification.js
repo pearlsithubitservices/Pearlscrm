@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 // const API_URL = "https://pearlscrm.onrender.com/api/notification";
 const API_URL = "https://pearlscrm.onrender.com/api/notification";
 
-const useNotification = () => {
+const useNotification = (employeeId = "") => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,17 +11,17 @@ const useNotification = () => {
   // GET Notifications
   const fetchNotification = async () => {
     try {
-      setLoading(true);
-
-      const res = await fetch(API_URL);
+      const url = employeeId
+        ? `${API_URL}?employeeId=${encodeURIComponent(employeeId)}`
+        : API_URL;
+      const res = await fetch(url);
 
       if (!res.ok) {
         throw new Error("Failed to fetch notifications");
       }
 
       const data = await res.json();
-
-      setNotifications(data);
+      setNotifications(Array.isArray(data) ? data : []);
       setError(null);
     } catch (error) {
       console.error(error.message);
@@ -93,7 +93,7 @@ const useNotification = () => {
 
   useEffect(() => {
     fetchNotification();
-  }, []);
+  }, [employeeId]);
 
   return {
     notifications,

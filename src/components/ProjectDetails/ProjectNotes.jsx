@@ -1,37 +1,16 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { apiUrl } from "../../config/api";
 
-export default function ClientNotes() {
+export default function ClientNotes({ projects, project, fetchProjects }) {
+  const currentProject = project || (projects && projects[0]) || {};
+  const notes = currentProject.notes || [];
 
-  // Existing notes list
-  const [notes, setNotes] = useState([
-    {
-      title: "Budget confirmed verbally — $120K range",
-      description:
-        "Client confirmed budget in phone conversation. Wants implementation in 6 weeks post-signing.",
-      date: "Jun 7 · Rohan M",
-    },
-    {
-      title: "Competitor comparison requested",
-      description:
-        "Evaluating 2 other vendors. We're in the final 2. Need to highlight data security certifications.",
-      date: "Jun 3 · Priya S.",
-    },
-    {
-      title: "Budget confirmed verbally — $130K range",
-      description:
-        "Client confirmed budget in phone conversation. Wants implementation in 6 weeks post-signing.",
-      date: "Jun 8 · Priya S.",
-    },
-  ]);
-
-  // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
   });
 
-  // Handle input change
   function handleChange(e) {
     setFormData({
       ...formData,
@@ -39,16 +18,13 @@ export default function ClientNotes() {
     });
   }
 
-  // Add note
-  function handleNote() {
-
-    if (
-      formData.title.trim() === "" ||
-      formData.description.trim() === ""
-    ) {
-      alert("Fill all fields");
+  async function handleNote() {
+    if (!formData.title.trim() || !formData.description.trim()) {
+      alert("Please fill all fields");
       return;
     }
+
+    if (!currentProject._id) return;
 
     const newNote = {
       title: formData.title,
@@ -56,14 +32,24 @@ export default function ClientNotes() {
       date: new Date().toLocaleString(),
     };
 
-    // add new note to top
-    setNotes([newNote, ...notes]);
+    const updatedNotes = [newNote, ...notes];
 
-    // clear inputs
-    setFormData({
-      title: "",
-      description: "",
-    });
+    try {
+      const res = await fetch(apiUrl(`/projects/${currentProject._id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: updatedNotes }),
+      });
+
+      if (res.ok) {
+        setFormData({ title: "", description: "" });
+        if (fetchProjects) fetchProjects();
+      } else {
+        alert("Failed to add note");
+      }
+    } catch (err) {
+      console.error("Error saving note to project:", err);
+    }
   }
 
   return (

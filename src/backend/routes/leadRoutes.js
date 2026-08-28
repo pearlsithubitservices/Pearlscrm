@@ -6,6 +6,18 @@ const router =
 
 const Lead =
   require("../models/Leads");
+const Notification = require("../models/CommunicationModels/Notifications");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+const leadUploadDirectory = path.join(__dirname, "../uploads/leads");
+fs.mkdirSync(leadUploadDirectory, { recursive: true });
+
+const upload = multer({
+  dest: leadUploadDirectory,
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 
 
@@ -39,6 +51,81 @@ router.post(
 
   }
 );
+
+// SAVE A LEAD NEXT ACTION AND ALERT THE ASSIGNED EMPLOYEE
+router.put("/:id/next-action", async (req, res) => {
+  try {
+    const { nextAction, nextActionDate, followUpCount } = req.body;
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      {
+        nextAction: nextAction || "",
+        nextActionDate: nextActionDate || null,
+        followUpCount: Number.isFinite(Number(followUpCount)) ? Number(followUpCount) : 0,
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+
+    if (lead.assignedTo) {
+      await Notification.create({
+        title: `Next action updated for ${lead.name || "lead"}`,
+        sub: nextAction || "Follow-up required",
+        notificationType: "Lead",
+        employeeId: lead.assignedTo,
+        isImportant: true,
+      });
+    }
+
+    return res.json(lead);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// UPLOAD AND SAVE LEAD DOCUMENT METADATA
+router.post("/:id/documents", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "A file is required" });
+
+    const document = {
+      name: req.file.originalname,
+      type: path.extname(req.file.originalname).slice(1).toUpperCase() || "FILE",
+      size: req.file.size,
+      url: `/uploads/leads/${req.file.filename}`,
+    };
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      { $push: { documents: { $each: [document], $position: 0 } } },
+      { new: true, runValidators: true }
+    );
+
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+    return res.status(201).json(lead);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE A LEAD DOCUMENT AND ITS STORED FILE
+router.delete("/:leadId/documents/:documentId", async (req, res) => {
+  try {
+    const lead = await Lead.findById(req.params.leadId);
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+
+    const document = lead.documents.id(req.params.documentId);
+    if (!document) return res.status(404).json({ message: "Document not found" });
+
+    const filePath = path.join(__dirname, "..", document.url.replace(/^\//, ""));
+    await fs.promises.unlink(filePath).catch(() => {});
+    document.deleteOne();
+    await lead.save();
+    return res.json(lead);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
 
 
 // GET ALL LEADS
@@ -179,6 +266,23 @@ router.post("/:id/notes", async (req, res) => {
   }
 });
 
+// DELETE A LEAD ACTIVITY
+router.delete("/:leadId/activities/:activityId", async (req, res) => {
+  try {
+    const lead = await Lead.findById(req.params.leadId);
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+
+    const activity = lead.activities.id(req.params.activityId);
+    if (!activity) return res.status(404).json({ message: "Activity not found" });
+
+    activity.deleteOne();
+    await lead.save();
+    return res.json(lead);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
 // DELETE LEAD
 
 router.delete("/:id", async (req, res) => {
@@ -190,6 +294,13 @@ router.delete("/:id", async (req, res) => {
         message: "Lead not found",
       });
     }
+
+    await Promise.all(
+      (deletedLead.documents || []).map((document) => {
+        const filePath = path.join(__dirname, "..", document.url.replace(/^\//, ""));
+        return fs.promises.unlink(filePath).catch(() => {});
+      })
+    );
 
     return res.status(200).json({
       message: "Lead deleted successfully",

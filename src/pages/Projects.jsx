@@ -1,7 +1,8 @@
 
 import React, {
   useState,
-  useEffect
+  useEffect,
+  useMemo
 } from 'react';
 
 
@@ -27,7 +28,9 @@ import {
   AlertTriangle,
   LoaderCircle,
   Paperclip,
-  MessageSquareText
+  MessageSquareText,
+  Trash2,
+  Clock
 } from 'lucide-react';
 
 import { useIndustry } from '../context/IndustryContext';
@@ -42,82 +45,133 @@ import * as XLSX from 'xlsx';
 import CreateProjects from './CreateProjects.jsx'
 import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
 import LoadingPage from '../components/Dashboard/Loading.jsx';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import useProjectFilter from '../Hooks/useProjectfilter.js';
 import Pagination from '../components/Pagination.jsx';
 
+import { apiUrl } from '../config/api.js';
+import { socket } from '../config/socket.js';
 
 export default function ProjectManagement() {
+  const [project, setProject] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [search, setSearch] = useState("");
+  const [active, setActive] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
+  const fetchProjects = async (isBackground = false) => {
+    try {
+      if (!isBackground) setLoading(true);
+      const response = await fetch(apiUrl("/projects"));
+      if (response.ok) {
+        const data = await response.json();
+        setProject(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error("Error fetching admin projects:", error);
+    } finally {
+      if (!isBackground) setLoading(false);
+    }
+  };
 
-  //GET ALL PROJECTS
+  const fetchEmployees = async () => {
+    try {
+      const res = await fetch(apiUrl('/employees'));
+      let empList = [];
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) empList = data;
+      }
+
+      const resUsers = await fetch(apiUrl('/auth/users'));
+      if (resUsers.ok) {
+        const userData = await resUsers.json();
+        if (Array.isArray(userData)) {
+          userData.forEach(u => {
+            const uId = u._id || u.uid;
+            if (!empList.some(e => (e._id || e.uid) === uId)) {
+              empList.push({
+                _id: uId,
+                id: uId,
+                uid: uId,
+                name: u.displayName || u.name || u.email,
+                employeeName: u.name || u.displayName,
+                email: u.email,
+              });
+            }
+          });
+        }
+      }
+
+      setEmployees(empList);
+    } catch (error) {
+      console.error("Error fetching employees for projects:", error);
+    }
+  };
 
   useEffect(() => {
     fetchProjects();
     fetchEmployees();
+
+    if (socket) {
+      const handleSync = () => fetchProjects(true);
+      socket.on("projectCreated", handleSync);
+      socket.on("projectUpdated", handleSync);
+      socket.on("projectDeleted", handleSync);
+
+      return () => {
+        socket.off("projectCreated", handleSync);
+        socket.off("projectUpdated", handleSync);
+        socket.off("projectDeleted", handleSync);
+      };
+    }
   }, []);
 
-  const fetchProjects = async () => {
-    setLoading(true);
+  const employeeMap = useMemo(() => {
+    const map = {};
+    employees.forEach((emp) => {
+      const eKey = emp._id || emp.id || emp.uid;
+      if (eKey) map[eKey] = emp.name || emp.employeeName || emp.email;
+    });
+    return map;
+  }, [employees]);
+
+  const handleDeleteProject = async (e, projectId) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this project?")) return;
+
     try {
-      // const response = await fetch("http://localhost:5000/api/projects");
-      const response = await fetch("https://pearlscrm.onrender.com/api/projects");
-      const data = await response.json();
-      setProject(data);
-    } catch (error) {
-      console.log(error);
-    }
-    finally {
-      setLoading(false);
+      const res = await fetch(apiUrl(`/projects/${projectId}`), {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        fetchProjects(true);
+      } else {
+        alert("Failed to delete project");
+      }
+    } catch (err) {
+      console.error("Error deleting project:", err);
     }
   };
-  const fetchEmployees =
-    async () => {
 
-      try {
-
-        const snapshot =
-          await getDocs(
-            collection(db, 'employees')
-          );
-
-        const employeeList = [];
-
-        snapshot.forEach((doc) => {
-
-          employeeList.push({
-            id: doc.id,
-            ...doc.data(),
-          });
-
-        });
-
-        setEmployees(employeeList);
-        console.log("employees:", employeeList);
-
-      } catch (error) {
-
-        console.log(error);
-
+  const handlePriorityChange = async (e, projectId, newPriority) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch(apiUrl(`/projects/${projectId}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: newPriority }),
+      });
+      if (res.ok) {
+        fetchProjects(true);
       }
+    } catch (err) {
+      console.error("Error updating project priority:", err);
+    }
+  };
 
-
-
-
-    };
-
-
-
-  const [project, setProject] = useState([]);
-  console.log(project);
-  console.log(project[0]?.members);
-  const [employees, setEmployees] = useState([]);
-  const [search, setSearch] = useState("");
-  const [active, setActive] = useState(0);
-  const navigate = useNavigate();
-
-  const buttons = ["All", "on Track", "At Risk"];
+  const buttons = ["All", "Pending", "on Track", "At Risk", "Completed"];
 
   const projectfilter = useProjectFilter(project, search, buttons[active]);
 
@@ -127,13 +181,20 @@ export default function ProjectManagement() {
   const lastIndex = currentPage * filesPerPage;
   const firstIndex = lastIndex - filesPerPage;
   const currentFiles = projectfilter?.slice(firstIndex, lastIndex);
-  const totalPages = Math.ceil(projectfilter?.length / filesPerPage);
+  const totalPages = Math.ceil(projectfilter?.length / filesPerPage) || 1;
 
+  const pendingCount = project.filter((p) => {
+    const st = (p.status || "").toLowerCase();
+    return st === "pending" || st === "in progress" || st === "planning" || (st !== "completed" && (Number(p.progress) || 0) < 100);
+  }).length;
 
+  const onTrackCount = project.filter(
+    (p) => new Date(p.dueDate) >= new Date() && (p.status || "").toLowerCase() !== "completed"
+  ).length;
 
-
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const atRiskCount = project.filter(
+    (p) => new Date(p.dueDate) < new Date() && (p.status || "").toLowerCase() !== "completed"
+  ).length;
 
   const stats = [
     {
@@ -144,29 +205,25 @@ export default function ProjectManagement() {
       bg: "bg-blue-50"
     },
     {
+      title: "Pending Projects",
+      value: pendingCount,
+      icon: Clock,
+      color: "text-amber-600",
+      bg: "bg-amber-50"
+    },
+    {
       title: "onTrack",
-      value: project.filter((p) => new Date(p.dueDate) > new Date()).length,
+      value: onTrackCount,
       icon: TrendingUp,
       color: "text-green-600",
       bg: "bg-green-50"
     },
     {
       title: "At Risk",
-      value: project.filter((p) => new Date(p.dueDate) <= new Date()).length,
+      value: atRiskCount,
       icon: AlertTriangle,
       color: "text-red-600",
       bg: "bg-red-50"
-    },
-    {
-      title: "Avg Progress",
-      value:
-        (
-          project.filter(
-            (p) => p.status?.toLowerCase() === "completed"
-          ).length / project.length
-        ) * 100, icon: LoaderCircle,
-      color: "text-purple-600",
-      bg: "bg-purple-50"
     }
   ];
 
@@ -300,13 +357,13 @@ export default function ProjectManagement() {
           className="space-y-4">
 
           {currentFiles.length > 0 ? (currentFiles.map((p) => {
-
+            const isOverdue = p.dueDate && new Date(p.dueDate) <= new Date();
 
             return (
               <div
-                key={p.id}
-                className="bg-white border border-black/10 p-5 rounded"
-                onClick={() => navigate(`/projectDetails/${p._id}`)}
+                key={p._id || p.id}
+                className="bg-white border border-black/10 p-5 rounded hover:shadow-md transition cursor-pointer"
+                onClick={() => navigate(`/projectDetails/${p._id || p.id}`)}
               >
 
                 {/* HEADER */}
@@ -314,113 +371,137 @@ export default function ProjectManagement() {
 
                   <div>
                     <h3 className="text-lg font-bold text-[#0b2b57]">
-                      Company Title: {p.title}
+                      {p.title}
                     </h3>
                     <p className="text-gray-500 text-sm">
-                      Company Name: {p.company || "No Company"}
+                      Company: {p.company || "Pearls Client"}
                     </p>
                   </div>
 
-                  <div className='flex flex-col items-center'>
-                    <div className="flex gap-2">
-                      <span className={`bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded ${p.status?.toLowerCase() === "pending" ? "bg-yellow-100 text-yellow-600" : p.status?.toLowerCase() === "in progress" ? "bg-blue-100 text-blue-600" : p.status?.toLowerCase() === "completed" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600"}`} >
-                        {p.status}
+                  <div className='flex items-center gap-3'>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={p.priority || "Medium"}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => handlePriorityChange(e, p._id || p.id, e.target.value)}
+                        className={`text-xs px-2.5 py-1 rounded-full font-bold border-none outline-none cursor-pointer ${
+                          (p.priority || "").toLowerCase() === "urgent" || (p.priority || "").toLowerCase() === "hot"
+                            ? "bg-rose-100 text-rose-700"
+                            : (p.priority || "").toLowerCase() === "high" || (p.priority || "").toLowerCase() === "warm"
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        <option value="Urgent">🔥 Urgent</option>
+                        <option value="Hot">🔥 Hot</option>
+                        <option value="High">⚡ High</option>
+                        <option value="Medium">⚡ Medium</option>
+                        <option value="Warm">⚡ Warm</option>
+                        <option value="Low">🌱 Low</option>
+                        <option value="Cold">❄️ Cold</option>
+                      </select>
+
+                      <span className={`text-xs px-3 py-1 rounded font-semibold ${p.status?.toLowerCase() === "completed" ? "bg-green-100 text-green-700" : p.status?.toLowerCase() === "in progress" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`}>
+                        {p.status || "Active"}
                       </span>
 
-                      <span className={` ${new Date(p.dueDate) <= new Date() ? "text-red-600  bg-red-100" : "text-green-600 bg-green-100"}  text-xs px-3 py-1 rounded`}>
-                        {p.dueDate ? new Date(p.dueDate) <= new Date() ? "At Risk" : "On Track" : "No"}
+                      <span className={`text-xs px-3 py-1 rounded font-semibold ${isOverdue ? "text-red-600 bg-red-100" : "text-green-600 bg-green-100"}`}>
+                        {isOverdue ? "At Risk" : "On Track"}
                       </span>
                     </div>
-                    <div className='text-sm text-gray-400 '><p>Assigned by: Ragavi</p></div>
+
+                    <button
+                      onClick={(e) => handleDeleteProject(e, p._id || p.id)}
+                      className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded transition"
+                      title="Delete Project"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
 
                 </div>
 
                 {/* DETAILS */}
-                <div className=" flex  gap-14 mt-4 text-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mt-4 text-sm">
 
-                  <div className="flex flex-col md:flex-row md:items-center gap-5">
+                  <div className="flex items-center gap-5 flex-1 max-w-xl">
 
-                    <h1 className="text-xl text-yellow-600 min-w-fit">
-                      Overall progress
+                    <h1 className="text-sm font-bold text-yellow-600 min-w-fit">
+                      Progress: {p.progress || 0}%
                     </h1>
 
-                    <div className="w-[500px] h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
 
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{
-                          width: `${p.progress}%`,
+                          width: `${p.progress || 0}%`,
                         }}
-                        transition={{ duration: 1 }}
+                        transition={{ duration: 0.8 }}
                         className="h-full bg-blue-500 rounded-full"
                       />
 
                     </div>
 
                   </div>
-                  <div className='ml-40 flex items-center gap-4'>
-                    <div className='flex items-center gap-2'>
-                      <MessageSquareText size={18} className='text-gray-400' /><p>2</p>
+
+                  <div className='flex items-center gap-4 text-xs text-gray-400'>
+                    <div className='flex items-center gap-1'>
+                      <MessageSquareText size={16} /><p>{p.notes?.length || 0}</p>
                     </div>
-                    <div className='flex items-center gap-2'>
-                      <Paperclip size={18} className='text-gray-400' /><p>2</p>
+                    <div className='flex items-center gap-1'>
+                      <Paperclip size={16} /><p>{p.documents?.length || 0}</p>
                     </div>
                   </div>
                 </div>
 
                 {/** Bottom */}
 
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 ">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mt-4">
 
-                  <div className="flex items-center  flex-wrap">
+                  <div className="flex items-center flex-wrap gap-2">
 
-                    <h1 className="text-xl font-bold text-[#2563a9]">
-                      Project Members :
+                    <h1 className="text-sm font-bold text-[#2563a9]">
+                      Project Members:
                     </h1>
 
                     <div className="flex -space-x-3">
 
-                      {p.members?.map((item, index) => {
+                      {Array.isArray(p.members) && p.members.length > 0 ? (
+                        p.members.map((item, index) => {
+                          const mUid = typeof item === 'object' ? (item.uid || item._id || item.id) : item;
+                          const mName = typeof item === 'object' ? (item.name || item.employeeName) : (employeeMap[mUid] || String(item));
+                          const initial = (mName || 'M').charAt(0).toUpperCase();
 
-                        const member =
-                          employees.find((emp) => emp.id === item);
-
-                        return (
-
-                          <div
-                            key={item}
-                            className={` relative  group w-14  h-14 rounded-full  flex items-center justify-center text-[12px] text-white          font-bold border-4          border-white cursor-pointer ${index === 0 ? "bg-purple-800"
-                              : index === 1 ? "bg-green-500" : "bg-purple-600"}`}>
-
-                            {/* FIRST LETTER */}
-                            {member?.name
-                              ? member.name.charAt(0).toUpperCase()
-                              : item?.name.charAt(0)?.toUpperCase()
-                            }
-
-                            {/* TOOLTIP */}
+                          return (
                             <div
-                              className="absolute -top-10 left-1/2  -translate-x-1/2 bg-black text-white   text-xs px-3 py-1 rounded-md  opacity-0            group-hover:opacity-100
-            transition-all  duration-300 whitespace-nowrap  pointer-events-none z-50  shadow-lg ">                              {member?.name || "Unknown Member"}
+                              key={index}
+                              className={`relative group w-9 h-9 rounded-full flex items-center justify-center text-xs text-white font-bold border-2 border-white cursor-pointer ${
+                                index % 3 === 0 ? "bg-purple-800" : index % 3 === 1 ? "bg-green-600" : "bg-blue-600"
+                              }`}
+                            >
+                              {initial}
 
+                              <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                {mName || "Member"}
+                              </div>
                             </div>
-
-                          </div>
-
-                        );
-
-                      })}
+                          );
+                        })
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">No assigned members</span>
+                      )}
 
                     </div>
 
                   </div>
 
-                  <h1 className="text-md lg:text-lg">
-
-                    <div className={`flex items-center font-bold ${new Date(p.dueDate) > new Date() ? "text-[#2563a9]" : "text-red-600"} `}><Calendar size={18} className='text-[#0b2b57]' /><p>{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "NO DueDate"}</p></div>
-
-                  </h1>
+                  <div className="text-xs font-bold">
+                    <div className={`flex items-center gap-1.5 ${isOverdue ? "text-red-600" : "text-[#2563a9]"}`}>
+                      <Calendar size={16} className='text-[#0b2b57]' />
+                      <p>{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "No Due Date"}</p>
+                    </div>
+                  </div>
 
                 </div>
 
