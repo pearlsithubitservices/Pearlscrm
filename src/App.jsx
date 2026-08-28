@@ -34,6 +34,7 @@ import TaskDetails from './pages/TaskDetails';
 import Login from './pages/Login';
 import ClientManagement from './pages/ClientManagement';
 import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx';
+import Messenger from './pages/Messager.jsx';
 import ProtectedRoutes from './components/ProtectedRoutes.jsx';
 
 // ============================================================
@@ -330,6 +331,11 @@ export default function App() {
                 element={<AdminCommunication />}
               />
 
+              <Route
+                path="/collaboration"
+                element={<Messenger />}
+              />
+
               {/* LEAVE */}
 
               <Route
@@ -527,6 +533,11 @@ export default function App() {
               <Route
                 path="/employee/communication"
                 element={<EmpCommunication />}
+              />
+
+              <Route
+                path="/employee/collaboration"
+                element={<Messenger />}
               />
 
               <Route

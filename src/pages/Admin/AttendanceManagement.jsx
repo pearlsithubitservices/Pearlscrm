@@ -371,10 +371,10 @@ export default function AttendanceManagement() {
 
               <tbody>
 
-                {employeesdetails.map((employee) => (
+                {employeesdetails.map((employee, index) => (
 
                   <tr
-                    key={employee._id}
+                    key={employee._id || employee.employee_uid || `attendance-${index}`}
                     className="border-b border-gray-50 hover:bg-gray-50 transition-all"
                   >
 
@@ -582,11 +582,14 @@ export default function AttendanceManagement() {
 
             <div className="space-y-5">
 
-              {holidays.map((item, i) => (
+              {holidays.map((item, index) => (
 
-                <div className="flex items-center justify-between">
+                <div
+                  key={item?._id || item?.id || `holiday-${index}`}
+                  className="flex items-center justify-between"
+                >
 
-                  <div key={i}>
+                  <div>
 
                     <h3 className="font-bold text-[#0f172a]">
 

@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "../../lib/firebase";
 import useAttendance from '../../Hooks/useAttendance';
+import useEmployees from '../../Hooks/useEmployees';
 import { apiUrl } from '../../config/api';
 
 const Employeecomp = ({ leadcounts }) => {
-    const [employees, setEmployees] = useState([]);
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(false);
     const [attendance, setAttendance] = useState([]);
     const { getAttendance } = useAttendance();
+    const { employees } = useEmployees();
 
     const isToday = (isoDate) => {
         if (!isoDate) return false;
@@ -74,29 +73,6 @@ const Employeecomp = ({ leadcounts }) => {
             setLoading(false);
         }
     };
-
-    // FETCH EMPLOYEES FROM FIRESTORE
-    useEffect(() => {
-        const unsubscribe = onSnapshot(
-            collection(db, 'employees'),
-            (snapshot) => {
-                const employeeList = [];
-                snapshot.forEach((docItem) => {
-                    employeeList.push({
-                        id: docItem.id,
-                        _id: docItem.id,
-                        ...docItem.data(),
-                    });
-                });
-                setEmployees(employeeList);
-            },
-            (err) => {
-                console.log("Firestore employees snapshot error:", err);
-            }
-        );
-
-        return () => unsubscribe();
-    }, []);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#f3f0eb] px-4 sm:px-8 py-2">

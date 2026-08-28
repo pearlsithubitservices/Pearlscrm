@@ -4,14 +4,6 @@ import React, {
   useEffect,
 
 } from 'react';
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
 
 import {
   Plus,
@@ -58,7 +50,6 @@ import LoadingPage from '../components/Dashboard/Loading';
 import Createemployee from './Createemployee';
 import AnimateModals from '../components/Dashboard/AnimateModals';
 import useEmployees from '../Hooks/useEmployees';
-import { db } from '../lib/firebase';
 
 
 export default function ClientManagement() {
@@ -140,68 +131,6 @@ export default function ClientManagement() {
 
     }
   ];
-  const [users, setUsers] = useState();
-  
-
-  // const sortedUsers = [...users]?.sort((a, b) => {
-  //   const aTime = a.createdAt?.seconds || 0;
-  //   const bTime = b.createdAt?.seconds || 0;
-
-  //   return bTime - aTime; // Newest first
-  // });
-
-  
-  // useEffect(() => {
-  //   const deleteUserByEmail = async () => {
-  //     try {
-  //       const snapshot = await getDocs(collection(db, "users"));
-
-  //       const userDoc = snapshot.docs.find(
-  //         (doc) => doc.data().email === "vishnuravichandran007@gmail.com"
-  //       );
-
-  //       if (!userDoc) {
-  //         console.log("User not found");
-  //         return;
-  //       }
-
-  //       await deleteDoc(doc(db, "users", userDoc.id));
-
-  //       console.log("User deleted successfully");
-  //     } catch (error) {
-  //       console.error("Error deleting user:", error);
-  //     }
-  //   };
-
-  //   deleteUserByEmail();
-  // }, []);
-
-
-  const fetchUsers = async () => {
-    setLoading(true);
-
-    try {
-      const snapshot = await getDocs(collection(db, "users"));
-
-      const usersData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setUsers(usersData);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers()
-
-  }, []);
-
-
   return (
     <div className="text-black max-h-screen overflow-y-auto no-scrollbar">
 

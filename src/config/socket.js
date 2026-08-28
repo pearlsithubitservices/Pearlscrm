@@ -8,7 +8,8 @@ let socketInstance = null;
 try {
   socketInstance = io(SOCKET_URL, {
     autoConnect: true,
-    transports: ["websocket", "polling"],
+    transports: ["polling"],
+    reconnection: true,
   });
 } catch (error) {
   console.warn("Socket.io client initialization error:", error);

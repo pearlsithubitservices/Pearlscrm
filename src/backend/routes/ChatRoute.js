@@ -17,10 +17,6 @@ router.get("/", async (req, res) => {
         $or: [
           { participants: { $in: [userId, new RegExp(userId, "i")] } },
           { createdBy: userId },
-          { isGroup: true },
-          { chatType: "collab" },
-          { chatType: "task" },
-          { chatType: "direct" },
         ],
       }).sort({ lastMessageAt: -1 });
     }

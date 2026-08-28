@@ -27,11 +27,24 @@ import {
   Star,
   FileText,
   ChevronRight,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import useChat from "../Hooks/chat.js";
 import { apiUrl } from "../config/api.js";
 
-import { requestNotificationPermission } from "../Utils/notificationResolver.js";
+const requestNotificationPermission = async () => {
+  if (!("Notification" in window)) {
+    return { status: "unsupported", message: "Browser notifications are not supported." };
+  }
+
+  const permission = await Notification.requestPermission();
+  return {
+    status: permission,
+    message: permission === "granted"
+      ? "Browser notifications enabled."
+      : "Browser notifications were not enabled.",
+  };
+};
 
 const TABS = ["Chats", "Task Chats", "Collabs"];
 
@@ -661,11 +674,13 @@ export default function Messenger() {
                 className="bg-transparent outline-none text-sm flex-1"
               />
             </div>
-            <button
-              onClick={() => setShowAddMenu((s) => !s)}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 relative"
-            >
-              <Plus size={18} />
+            <div className="relative">
+              <button
+                onClick={() => setShowAddMenu((s) => !s)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+              >
+                <Plus size={18} />
+              </button>
 
               {showAddMenu && (
                 <div className="absolute right-0 top-10 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20 text-left">
@@ -686,7 +701,7 @@ export default function Messenger() {
                   ))}
                 </div>
               )}
-            </button>
+            </div>
           </div>
 
           {/* Quick Create Task Chat button for Admin */}

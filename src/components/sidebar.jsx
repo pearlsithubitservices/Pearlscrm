@@ -88,6 +88,11 @@ export default function Sidebar() {
       path: "/communication",
     },
     {
+      name: "Collaboration",
+      icon: MessageSquare,
+      path: "/collaboration",
+    },
+    {
       name: "LeaveManagement",
       icon: NotebookPenIcon,
       path: "/leave",
