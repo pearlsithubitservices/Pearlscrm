@@ -85,6 +85,8 @@ import EmpSettings from './EmployeePages/Settings/settings.jsx';
 import EmpDashboard from './EmployeePages/Dashboard/Dashboard.jsx';
 
 import EmpFollowUps from './EmployeePages/FollowUps/FollowUps.jsx';
+import EmpProjects from './EmployeePages/Projects/EmpProjects.jsx';
+import EmployeeOverview from './pages/employee/EmployeeOverview.jsx';
 import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.jsx';
 import EmpLead from './EmployeePages/Leads/Lead.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx';
@@ -501,6 +503,11 @@ export default function App() {
               />
 
               <Route
+                path="/employee/projects"
+                element={<EmpProjects />}
+              />
+
+              <Route
                 path="/employee/marketing-activities"
                 element={<MarketingActivities />}
               />
@@ -573,6 +580,11 @@ export default function App() {
               <Route
                 path="/employee/dashboard"
                 element={<EmpDashboard />}
+              />
+
+              <Route
+                path="/employee/overview"
+                element={<EmployeeOverview />}
               />
 
               <Route

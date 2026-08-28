@@ -18,18 +18,17 @@ import {
   Trash2,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "../../context/AuthContext";
 
 export default function EmployeeLeads() {
   const [leads, setLeads] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
+  const { user } = useAuth();
+  const employeeId = user?.uid || user?.id || user?._id;
 
   const filterTabs = ["All", "Pending", "Closed"];
-
-  useEffect(() => {
-    fetchLeads();
-  }, []);
 
   // FETCH LEADS FROM BACKEND MONGODB API
   const fetchLeads = async () => {
@@ -38,7 +37,10 @@ export default function EmployeeLeads() {
       const res = await fetch(apiUrl("/leads"));
       if (res.ok) {
         const data = await res.json();
-        setLeads(Array.isArray(data) ? data : []);
+        const assignedLeads = Array.isArray(data)
+          ? data.filter((lead) => String(lead.assignedTo) === String(employeeId))
+          : [];
+        setLeads(assignedLeads);
       } else {
         setLeads([]);
       }
@@ -49,6 +51,15 @@ export default function EmployeeLeads() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (employeeId) {
+      fetchLeads();
+    } else {
+      setLeads([]);
+      setLoading(false);
+    }
+  }, [employeeId]);
 
   // HANDLE INLINE INPUT CHANGE
   const handleChange = (id, field, value) => {

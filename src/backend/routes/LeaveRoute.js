@@ -29,12 +29,24 @@ router.post("/", async (req, res) => {
       leaveType,
     } = req.body;
 
+    if (!leaveTitle || !leaveReason || !leaveFrom || !leaveTo || !employeeId || !employeeName || !department || !leaveType) {
+      return res.status(400).json({ success: false, message: "All required leave fields must be provided" });
+    }
+
+    const startDate = new Date(leaveFrom);
+    const endDate = new Date(leaveTo);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate) {
+      return res.status(400).json({ success: false, message: "Invalid leave date range" });
+    }
+
+    const calculatedLeaveDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
     const leave = await Leave.create({
       leaveTitle,
       leaveReason,
       leaveFrom,
       leaveTo,
-      leaveDays,
+      leaveDays: calculatedLeaveDays,
       employeeName,
       employeeId,
       managerName,
@@ -109,7 +121,9 @@ router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
 
-   
+    if (!["Pending", "Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid leave status" });
+    }
 
     const updatedLeave = await Leave.findByIdAndUpdate(
       req.params.id,
@@ -166,6 +180,21 @@ router.put("/:id", async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+});
+
+// =====================
+// DELETE LEAVE REQUEST
+// =====================
+router.delete("/:id", async (req, res) => {
+  try {
+    const deletedLeave = await Leave.findByIdAndDelete(req.params.id);
+    if (!deletedLeave) {
+      return res.status(404).json({ success: false, message: "Leave request not found" });
+    }
+    res.status(200).json({ success: true, leave: deletedLeave });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

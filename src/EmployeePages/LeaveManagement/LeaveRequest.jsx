@@ -4,10 +4,9 @@ import useLeave from "../../Hooks/useLeave";
 import { useAuth } from "../../context/AuthContext";
 
 const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
-    const { getLeaves, getLeavesByEmployee, leavesbyId, leaves, updateLeaveStatus } = useLeave();
+    const { getLeaves, leaves, updateLeaveStatus, deleteLeave } = useLeave();
 
     const { user } = useAuth();
-    console.log(user.uid);
     const handleApprove = async (id) => {
 
         try {
@@ -25,16 +24,15 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
     };
 
 
-    const currentUser = leaves.filter((item) => (item.employeeId == user.uid));
-    console.log(currentUser)
+    const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
+    const currentUser = leaves.filter((item) => String(item.employeeId) === String(employeeId));
     const approvedleaves = currentUser?.filter((item) => (item.status?.toLowerCase() == "pending"));
-    console.log(approvedleaves);
     const latestRequest = Array.isArray(approvedleaves) && approvedleaves.length > 0
         ? approvedleaves[0]
         : {
         };
 
-    const pendingCount = approvedleaves.length > 0 ? approvedleaves.length : '1';
+    const pendingCount = approvedleaves.length;
 
 
     const handleEdit = () => {
@@ -42,9 +40,10 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
 
     };
 
-    const handleCancel = () => {
-        if (onCancel && latestRequest._id) {
-            onCancel(latestRequest._id);
+    const handleCancel = async () => {
+        if (latestRequest._id) {
+            const result = await deleteLeave(latestRequest._id);
+            if (result.success && onCancel) onCancel(latestRequest._id);
         }
     };
 
@@ -80,68 +79,50 @@ const LeaveRequest = ({ formDetails, onEdit, onCancel }) => {
             {/* Request List */}
 
             <div className="space-y-4">
-                <motion.div
-                    key={latestRequest._id || latestRequest.empId || 0}
-                    whileHover={{ y: -2 }}
-                    className="border border-gray-200 rounded-2xl p-5"
-                >
-                    <div className="flex items-start gap-3">
-                        {/* Status Dot */}
+                {approvedleaves.length === 0 ? (
+                    <div className="border border-gray-200 rounded-2xl p-8 text-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#2F6CC5] mx-auto mb-3" />
+                        <h3 className="font-bold text-lg text-[#0B2B57]">No Pending Requests</h3>
+                        <p className="text-gray-500 text-sm mt-1">Your leave requests will appear here.</p>
+                    </div>
+                ) : (
+                    <motion.div
+                        key={latestRequest._id}
+                        whileHover={{ y: -2 }}
+                        className="border border-gray-200 rounded-2xl p-5"
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#2F6CC5] mt-2" />
 
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#2F6CC5] mt-2" />
-
-                        <div className="flex-1">
-                            <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
                                 <h3 className="font-bold text-lg text-[#0B2B57]">
-                                    {latestRequest.leaveTitle || "No Leave"}
+                                    {latestRequest.leaveTitle}
                                 </h3>
 
-                            </div>
+                                <p className="text-gray-500 text-sm mt-1">
+                                    {new Date(latestRequest.leaveFrom).toLocaleDateString("en-GB")} -{" "}
+                                    {new Date(latestRequest.leaveTo).toLocaleDateString("en-GB")} (
+                                    {calculateLeaveDays(latestRequest.leaveFrom, latestRequest.leaveTo)} days)
+                                </p>
 
-                            <p className="text-gray-500 text-sm mt-1">
-                                {approvedleaves?.length > 0 ? (
-                                    <>
-                                        {new Date(latestRequest.leaveFrom).toLocaleDateString("en-GB")} -{" "}
-                                        {new Date(latestRequest.leaveTo).toLocaleDateString("en-GB")} (
-                                        {calculateLeaveDays(
-                                            latestRequest.leaveFrom,
-                                            latestRequest.leaveTo
-                                        )}{" "}
-                                        days)
-                                    </>
-                                ) : (
-                                    "No approved leaves"
-                                )}
-                            </p>
-
-                            {/* Actions */}
-
-                            <div className="flex gap-3 mt-5">
-                                <button
-                                    onClick={handleEdit}
-                                    className="bg-[#2F6CC5] hover:bg-[#2458a8] text-white px-5 py-2 rounded-full text-sm font-medium transition"
-                                    disabled={approvedleaves.length === 0}
-                                >
-                                    Edit
-                                </button>
-
-                                <button
-                                    onClick={handleCancel}
-                                    className="border border-gray-300 hover:bg-gray-50 px-5 py-2 rounded-full text-sm font-medium text-gray-700 transition"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => handleApprove(latestRequest._id)}
-                                    className="bg-green-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-green-700"
-                                    disabled={!latestRequest._id}
-                                >
-                                    Approve
-                                </button>
+                                <div className="flex gap-3 mt-5">
+                                    <button
+                                        onClick={handleEdit}
+                                        className="bg-[#2F6CC5] hover:bg-[#2458a8] text-white px-5 py-2 rounded-full text-sm font-medium transition"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={handleCancel}
+                                        className="border border-gray-300 hover:bg-gray-50 px-5 py-2 rounded-full text-sm font-medium text-gray-700 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </motion.div>
+                    </motion.div>
+                )}
             </div>
         </motion.div>
     );

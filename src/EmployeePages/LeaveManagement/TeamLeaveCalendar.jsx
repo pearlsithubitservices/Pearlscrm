@@ -13,6 +13,7 @@ const TeamLeaveCalendar = () => {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
 
   const teamLeavesToday = leaves.filter((item) => {
     const leaveFrom = new Date(item.leaveFrom);
@@ -22,56 +23,12 @@ const TeamLeaveCalendar = () => {
     leaveTo.setHours(0, 0, 0, 0);
 
     return (
-      item.employeeId !== user.uid &&
+      String(item.employeeId) !== String(employeeId) &&
       item.status?.toLowerCase() === "approved" &&
       today >= leaveFrom &&
       today <= leaveTo
     );
   });
-
-  console.log(teamLeavesToday);
-  const teamLeaves = [
-    {
-      id: 1,
-      name: "Suhail Ahmed",
-      role: "Frontend Developer",
-      avatar: "https://i.pravatar.cc/150?img=11",
-      from: "Aug 12",
-      to: "Aug 13",
-      year: "2024",
-      days: "1 Day",
-    },
-    {
-      id: 2,
-      name: "Abu Bakar",
-      role: "UI/UX Designer",
-      avatar: "https://i.pravatar.cc/150?img=12",
-      from: "Aug 15",
-      to: "Aug 16",
-      year: "2024",
-      days: "2 Days",
-    },
-    {
-      id: 3,
-      name: "Zara Khan",
-      role: "Marketing Executive",
-      avatar: "https://i.pravatar.cc/150?img=13",
-      from: "Aug 18",
-      to: "Aug 20",
-      year: "2024",
-      days: "3 Days",
-    },
-    {
-      id: 4,
-      name: "Rahul Sharma",
-      role: "Backend Developer",
-      avatar: "https://i.pravatar.cc/150?img=14",
-      from: "Aug 25",
-      to: "Aug 26",
-      year: "2024",
-      days: "2 Days",
-    },
-  ];
 
   return (
     <motion.div
@@ -142,7 +99,7 @@ const TeamLeaveCalendar = () => {
                 </p>
 
                 <p className="text-[#2F6CC5] font-semibold mt-1">
-                  {employee.leaveDays}
+                  {employee.leaveDays} {employee.leaveDays === 1 ? "day" : "days"}
                 </p>
               </div>
             </div>

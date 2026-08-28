@@ -1,43 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  GitPullRequest,
-  CheckCircle,
-  MessageSquare,
-  FolderPlus,
-  Circle,
-} from "lucide-react";
-
-const activities = [
-  {
-    title: "Merged PR #312 – auth module refactor",
-    desc: "Discussed requirements for Q3 rollout. Client showed strong interest in enterprise tier features.",
-    time: "Today 10:01 am",
-    icon: GitPullRequest,
-    color: "text-blue-600",
-  },
-  {
-    title: "Approved Alex L. leave request",
-    desc: "Discussed requirements for Q3 rollout. Client showed strong interest in enterprise tier features.",
-    time: "Today 8:30 am",
-    icon: CheckCircle,
-    color: "text-green-600",
-  },
-  {
-    title: "Left a comment on Stripe Integration task",
-    desc: "Discussed requirements for Q3 rollout. Client showed strong interest in enterprise tier features.",
-    time: "Today 10:01 am",
-    icon: MessageSquare,
-    color: "text-purple-600",
-  },
-  {
-    title: "Created project: Customer Success Portal",
-    desc: "Discussed requirements for Q3 rollout. Client showed strong interest in enterprise tier features.",
-    time: "May 8",
-    icon: FolderPlus,
-    color: "text-orange-600",
-  },
-];
+import { apiUrl } from "../../config/api";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,7 +15,36 @@ const itemVariants = {
   show: { opacity: 1, x: 0 },
 };
 
-export default function ActivityTimeline() {
+export default function ActivityTimeline({ employee }) {
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const employeeId = employee?.uid || employee?._id || employee?.id;
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (!employeeId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await fetch(apiUrl(`/activity/${encodeURIComponent(employeeId)}`));
+        if (!response.ok) throw new Error("Unable to load employee activity");
+
+        const result = await response.json();
+        setActivities(Array.isArray(result) ? result : result.data || []);
+      } catch (error) {
+        console.error("Error loading employee activity:", error);
+        setActivities([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, [employeeId]);
+
   return (
     <div className="w-full bg-white rounded-2xl p-6 shadow-sm">
       <h2 className="text-gray-500 font-semibold tracking-wide mb-6">
@@ -65,12 +57,14 @@ export default function ActivityTimeline() {
         animate="show"
         className="relative border-l border-gray-200 ml-3"
       >
-        {activities.map((item, index) => {
-          const Icon = item.icon;
-
+        {loading && <p className="ml-3.5 text-sm text-gray-500">Loading activity...</p>}
+        {!loading && activities.length === 0 && (
+          <p className="ml-3.5 text-sm text-gray-500">No activity recorded yet.</p>
+        )}
+        {!loading && activities.map((item, index) => {
           return (
             <motion.div
-              key={index}
+              key={item._id || index}
               variants={itemVariants}
               className="mb-10 ml-3.5 relative"
             >
@@ -82,13 +76,13 @@ export default function ActivityTimeline() {
               {/* Content */}
               <div className="ml-2">
                 <h3 className="text-gray-900 font-semibold text-sm">
-                  {item.title}
+                  {item.name || "Employee activity"}
                 </h3>
                 <p className="text-gray-500 text-sm mt-1 leading-relaxed">
-                  {item.desc}
+                  {item.text}
                 </p>
                 <span className="text-xs text-gray-400 mt-2 inline-block">
-                  {item.time}
+                  {item.time || (item.createdAt && new Date(item.createdAt).toLocaleString())}
                 </span>
               </div>
             </motion.div>

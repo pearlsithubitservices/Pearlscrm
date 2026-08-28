@@ -9,15 +9,22 @@ import { Bell, Clock10Icon, UserCheck, UserMinus, Users } from 'lucide-react';
 const LeaveManagement = () => {
     const { getLeaves, leaves, updateLeaveStatus } = useLeave();
 
-    const pendingleave = leaves.filter((item) => (
-        item.status.toLowerCase() == "pending"
-    ));
-    console.log(pendingleave);
+    const pendingLeave = leaves.filter((item) => item.status?.toLowerCase() === "pending");
+    const approvedLeave = leaves.filter((item) => item.status?.toLowerCase() === "approved");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const onLeaveToday = approvedLeave.filter((item) => {
+        const from = new Date(item.leaveFrom);
+        const to = new Date(item.leaveTo);
+        from.setHours(0, 0, 0, 0);
+        to.setHours(23, 59, 59, 999);
+        return today >= from && today <= to;
+    });
     const stats = [
-        { icon: Clock10Icon, title: "Pending Request", value: "4" },
-        { icon: UserMinus, title: "ON Leave Employees", value: "4" },
-        { icon: UserCheck, title: "Approved Leave Request", value: "8%" },
-        { icon: Users, title: "Company Holidays", value: "₹4.2M" },
+        { icon: Clock10Icon, title: "Pending Request", value: pendingLeave.length },
+        { icon: UserMinus, title: "ON Leave Employees", value: onLeaveToday.length },
+        { icon: UserCheck, title: "Approved Leave Request", value: approvedLeave.length },
+        { icon: Users, title: "Total Leave Requests", value: leaves.length },
     ];
 
 
@@ -74,7 +81,7 @@ const LeaveManagement = () => {
 
                     {/* Leave Table */}
                     <LeaveApprovals
-                        leaves={pendingleave}
+                        leaves={pendingLeave}
                         updateLeaveStatus={updateLeaveStatus} />
 
                     {/* Bottom Section */}
@@ -83,7 +90,7 @@ const LeaveManagement = () => {
                         {/* Calendar */}
                         <div className="xl:col-span-2">
                             <LeaveCalendar
-                                leaves={pendingleave} />
+                                leaves={approvedLeave} />
                         </div>
 
                         {/* Holidays */}

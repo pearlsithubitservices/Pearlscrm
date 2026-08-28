@@ -9,6 +9,7 @@ import {
 
 import InputField from "../../components/InputField.jsx";
 import useLeave from '../../Hooks/useLeave.js'
+import { useAuth } from "../../context/AuthContext";
 
 
 const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
@@ -27,6 +28,7 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
             ? { ...editingRequest }
             : {
                   employeeName: "",
+                  employeeId: "",
                   department: "",
                   managerId: "",
                   managerName: "",
@@ -38,6 +40,18 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
               };
 
     const [formdetails, setFormdetails] = useState(initialDetails);
+    const { user } = useAuth();
+
+    useEffect(() => {
+        if (!editingRequest && user) {
+            setFormdetails((previous) => ({
+                ...previous,
+                employeeId: user.profile?.empId || user.empId || user.id || user.uid || user._id || "",
+                employeeName: user.name || "",
+                department: user.industry || "General",
+            }));
+        }
+    }, [editingRequest, user]);
 
     useEffect(() => {
         if (editingRequest && typeof editingRequest === "object") {
@@ -51,7 +65,7 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
 
     const { submitLeave, updateLeave, loading, error, leaves, getLeaves } = useLeave();
     const isViewOnly = editingRequest === true;
-    const isEditing = editingRequest && typeof editingRequest === "object" && editingRequest.id;
+    const isEditing = editingRequest && typeof editingRequest === "object" && (editingRequest.id || editingRequest._id);
     const formChange = (name, value) => {
         setFormdetails((prev) => ({
             ...prev,
@@ -62,7 +76,7 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
         try {
             let result;
             if (isEditing) {
-                result = await updateLeave(editingRequest.id, formdetails);
+                result = await updateLeave(editingRequest.id || editingRequest._id, formdetails);
             } else {
                 result = await submitLeave(formdetails);
             }
@@ -71,13 +85,13 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                 throw new Error(result.error);
             }
 
-            alert("Leave Request Submitted Successfully");
+            alert(isEditing ? "Leave Request Updated Successfully" : "Leave Request Submitted Successfully");
             getLeaves();
 
             if (isEditing) {
                 // update local list
                 onSave((prev) =>
-                    prev.map((req) => (req.id === editingRequest.id ? { ...formdetails, id: editingRequest.id } : req))
+                    prev.map((req) => ((req.id || req._id) === (editingRequest.id || editingRequest._id) ? { ...formdetails, id: editingRequest.id || editingRequest._id } : req))
                 );
             } else {
                 onSave((prev) => [
@@ -129,7 +143,6 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         value={formdetails.employeeId}
                         //onChange={(e) => formChange("employeeId", e.target.value)}
                         disabled={isViewOnly}
-                        placeholder="HRMS-7829-X"
                         Icon={BadgeCheck}
                     />
 
@@ -139,7 +152,6 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         value={formdetails.employeeName}
                         onChange={(e) => formChange('employeeName', e.target.value)}
                         disabled={isViewOnly}
-                        placeholder="Alexander Mitchell"
                         Icon={User}
                     />
 
@@ -149,7 +161,6 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         value={formdetails.department}
                         onChange={(e) => formChange("department", e.target.value)}
                         disabled={isViewOnly}
-                        placeholder="Digital Marketing"
                         Icon={Building2}
                     />
 
@@ -159,7 +170,6 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         value={formdetails.managerId}
                         onChange={(e) => formChange("managerId", e.target.value)}
                         disabled={isViewOnly}
-                        placeholder="HRMS-7829990-X"
                         Icon={BadgeCheck}
                     />
 
@@ -169,7 +179,6 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         value={formdetails.managerName}
                         onChange={(e) => formChange("managerName", e.target.value)}
                         disabled={isViewOnly}
-                        placeholder="Senthil Kumar"
                         Icon={User}
                     />
 
@@ -189,7 +198,6 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
 
                     <InputField
                         label="Leave Title"
-                        placeholder="Leave Title"
                         name="leaveTitle"
                         value={formdetails.leaveTitle}
                         onChange={(e) => formChange("leaveTitle", e.target.value)}
@@ -200,7 +208,6 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                     <InputField
                         label="Leave Type"
                         name="leaveType"
-                        placeholder="Select Leave Type"
                         value={formdetails.leaveType}
                         onChange={(e) => formChange("leaveType", e.target.value)}
                         disabled={isViewOnly}
@@ -257,7 +264,6 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         value={formdetails.leaveReason}
                         onChange={(e) => formChange("leaveReason", e.target.value)}
                         disabled={isViewOnly}
-                        placeholder="Please explain the reason for your leave request..."
                         className="w-full bg-white rounded-2xl border border-gray-200 p-5 resize-none outline-none"
                     />
                 </div>

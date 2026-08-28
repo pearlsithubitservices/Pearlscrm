@@ -1,21 +1,54 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Phone,
-  Mail,
-  FileText,
-  Pencil,
-  User,
-  CheckCircle2,
-} from "lucide-react";
+import { apiUrl } from "../../config/api";
 
-export default function EmployeePerformancePage() {
-  const scores = [
-    { label: "Quality", value: 95, color: "bg-green-500" },
-    { label: "Delivery", value: 78, color: "bg-violet-500" },
-    { label: "Collaboration", value: 55, color: "bg-yellow-400" },
-    { label: "Initiative", value: 65, color: "bg-orange-500" },
-  ];
+export default function EmployeePerformancePage({ employee }) {
+  const [review, setReview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const employeeId = employee?.uid || employee?._id || employee?.id;
+
+  useEffect(() => {
+    const fetchReview = async () => {
+      if (!employeeId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await fetch(apiUrl(`/review/${encodeURIComponent(employeeId)}`));
+        if (response.status === 404) {
+          setReview(null);
+          return;
+        }
+        if (!response.ok) throw new Error("Unable to load employee performance");
+
+        const result = await response.json();
+        setReview(result.data || null);
+      } catch (error) {
+        console.error("Error loading employee performance:", error);
+        setReview(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReview();
+  }, [employeeId]);
+
+  const scores = review?.metrics?.length
+    ? review.metrics.map((metric, index) => ({
+      label: metric.title,
+      value: Math.round((metric.score / 5) * 100),
+      color: ["bg-green-500", "bg-blue-500", "bg-yellow-400", "bg-orange-500"][index % 4],
+    }))
+    : review
+      ? [{
+        label: "Overall Rating",
+        value: Math.round((review.overallRating / 5) * 100),
+        color: "bg-blue-500",
+      }]
+      : [];
 
   return (
     <div className="min-h-screen bg-[#efede8] flex  p-6">
@@ -30,7 +63,11 @@ export default function EmployeePerformancePage() {
             SCORE BREAKDOWN
           </h2>
 
-          <div className="space-y-6">
+          {loading && <p className="text-sm text-gray-500">Loading performance...</p>}
+          {!loading && scores.length === 0 && (
+            <p className="text-sm text-gray-500">No performance review recorded yet.</p>
+          )}
+          {!loading && <div className="space-y-6">
             {scores.map((item, i) => (
               <div key={i}>
                 <div className="flex justify-between mb-2">
@@ -52,7 +89,7 @@ export default function EmployeePerformancePage() {
                 </div>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       </motion.div>
     </div>

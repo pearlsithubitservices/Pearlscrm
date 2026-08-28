@@ -136,7 +136,6 @@ const HolidayForm = ({ onClose, getholidays, editData, updateHoliday, addHoliday
                             name="holidayName"
                             value={holidayData.holidayName}
                             onChange={handleChange}
-                            placeholder="Enter holiday name"
                             className="w-full border rounded-xl px-4 py-3 outline-none"
                             required
                         />
@@ -185,7 +184,6 @@ const HolidayForm = ({ onClose, getholidays, editData, updateHoliday, addHoliday
                             name="description"
                             value={holidayData.description}
                             onChange={handleChange}
-                            placeholder="Description"
                             className="w-full border rounded-xl px-4 py-3"
                         />
                     </div>

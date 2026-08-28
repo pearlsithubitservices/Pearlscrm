@@ -17,52 +17,23 @@ const LeaveHistory = () => {
   const { user } = useAuth();
   console.log(leaves);
 
+  const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
   const currentUser = leaves.filter(
-    (item) => item.employeeId === user.uid
+    (item) => String(item.employeeId) === String(employeeId)
   );
-  console.log(currentUser);
-  const today = new Date().toDateString()
 
   const approvedLeaves = currentUser.filter((item) => {
     return (
       item.status?.toLowerCase() === "approved" );
   });
 
-  console.log(approvedLeaves);
-
-
-  const leaveHistoryData = [
-    {
-      id: 1,
-      title: "Summer Vacation",
-      date: "Aug 12 - Aug 18, 2024",
-      days: "5 Days",
-      status: "APPROVED",
-      icon: Plane,
-      bg: "bg-green-100",
-      color: "text-green-600",
-    },
-    {
-      id: 2,
-      title: "Medical Checkup",
-      date: "Jul 04, 2024",
-      days: "1 Day",
-      status: "APPROVED",
-      icon: BriefcaseMedical,
-      bg: "bg-orange-100",
-      color: "text-orange-600",
-    },
-    {
-      id: 3,
-      title: "Family Wedding",
-      date: "Jul 04, 2024",
-      days: "1 Day",
-      status: "APPROVED",
-      icon: PartyPopper,
-      bg: "bg-purple-100",
-      color: "text-purple-600",
-    },
-  ];
+  const leaveHistoryData = approvedLeaves.map((item) => ({
+    id: item._id,
+    title: item.leaveTitle,
+    date: `${new Date(item.leaveFrom).toLocaleDateString("en-GB")} - ${new Date(item.leaveTo).toLocaleDateString("en-GB")}`,
+    days: `${item.leaveDays} Days`,
+    status: item.status.toUpperCase(),
+  }));
 
   return (
     <motion.div
@@ -79,7 +50,7 @@ const LeaveHistory = () => {
         </h2>
 
         <button className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 transition-all px-4 py-2 rounded-full text-sm font-medium text-[#0B2B57]"
-          onClick={() => exportLeaveHistoryPDF(approvedLeaves?.length ? leaveHistoryData : "")}
+          onClick={() => exportLeaveHistoryPDF(leaveHistoryData)}
         >
 
           <Download size={16} />
