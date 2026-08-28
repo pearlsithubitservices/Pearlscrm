@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://pearlscrm.onrender.com/api";
+//const API_BASE_URL = "http://localhost:5000/api";
 
 /* =========================================================
    FETCH DASHBOARD STATS
@@ -6,14 +7,10 @@ const API_BASE_URL = "http://localhost:5000/api";
 
 export async function fetchStats() {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/conversations`
-    );
+    const response = await fetch(`${API_BASE_URL}/conversations`);
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch conversations: ${response.status}`
-      );
+      throw new Error(`Failed to fetch conversations: ${response.status}`);
     }
 
     const data = await response.json();
@@ -31,19 +28,15 @@ export async function fetchStats() {
       total: data.length,
 
       completed: data.filter(
-        (conversation) =>
-          conversation.status === "Completed"
+        (conversation) => conversation.status === "Completed",
       ).length,
 
       inProgress: data.filter(
-        (conversation) =>
-          conversation.status === "In Progress"
+        (conversation) => conversation.status === "In Progress",
       ).length,
 
-      pending: data.filter(
-        (conversation) =>
-          conversation.status === "Pending"
-      ).length,
+      pending: data.filter((conversation) => conversation.status === "Pending")
+        .length,
     };
   } catch (error) {
     console.error("fetchStats error:", error);
@@ -51,43 +44,30 @@ export async function fetchStats() {
   }
 }
 
-
 /* =========================================================
    FETCH REAL CONVERSATIONS FROM CRM
    ========================================================= */
 
 export async function fetchConversations() {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/conversations`
-    );
+    const response = await fetch(`${API_BASE_URL}/conversations`);
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch conversations: ${response.status}`
-      );
+      throw new Error(`Failed to fetch conversations: ${response.status}`);
     }
 
     const data = await response.json();
 
-    console.log(
-      "REAL CONVERSATIONS FROM CRM:",
-      data
-    );
+    console.log("REAL CONVERSATIONS FROM CRM:", data);
 
     if (!Array.isArray(data)) {
-      console.error(
-        "Expected conversations array:",
-        data
-      );
+      console.error("Expected conversations array:", data);
 
       return [];
     }
 
     return data.map((conversation) => {
-      const messages = Array.isArray(
-        conversation.messages
-      )
+      const messages = Array.isArray(conversation.messages)
         ? conversation.messages
         : [];
 
@@ -109,13 +89,10 @@ export async function fetchConversations() {
 
         // Latest message
         message:
-          messages.length > 0
-            ? messages[messages.length - 1].message
-            : "",
+          messages.length > 0 ? messages[messages.length - 1].message : "",
 
         // Who handled the conversation
-        handledBy:
-           conversation.handledBy || "AI",
+        handledBy: conversation.handledBy || "AI",
 
         // All messages
         messages: messages.map((msg) => ({
@@ -123,17 +100,15 @@ export async function fetchConversations() {
             msg.sender === "customer"
               ? "user"
               : msg.sender === "agent"
-              ? "human"
-              : "ai",
+                ? "human"
+                : "ai",
 
           text: msg.message,
 
           timestamp: msg.timestamp,
 
           time: msg.timestamp
-            ? new Date(
-                msg.timestamp
-              ).toLocaleTimeString([], {
+            ? new Date(msg.timestamp).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
               })
@@ -142,10 +117,7 @@ export async function fetchConversations() {
       };
     });
   } catch (error) {
-    console.error(
-      "fetchConversations error:",
-      error
-    );
+    console.error("fetchConversations error:", error);
 
     throw error;
   }
@@ -155,10 +127,7 @@ export async function fetchConversations() {
    SEND ADMIN MESSAGE
    ========================================================= */
 
-export async function sendAdminMessage(
-  conversationId,
-  message
-) {
+export async function sendAdminMessage(conversationId, message) {
   try {
     const response = await fetch(
       `${API_BASE_URL}/conversations/${conversationId}/messages`,
@@ -173,28 +142,20 @@ export async function sendAdminMessage(
           sender: "agent",
           message: message,
         }),
-      }
+      },
     );
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to send admin message: ${response.status}`
-      );
+      throw new Error(`Failed to send admin message: ${response.status}`);
     }
 
     const data = await response.json();
 
-    console.log(
-      "ADMIN MESSAGE SENT:",
-      data
-    );
+    console.log("ADMIN MESSAGE SENT:", data);
 
     return data;
   } catch (error) {
-    console.error(
-      "sendAdminMessage error:",
-      error
-    );
+    console.error("sendAdminMessage error:", error);
 
     throw error;
   }
@@ -203,9 +164,7 @@ export async function sendAdminMessage(
    TAKE OVER CONVERSATION
    ========================================================= */
 
-export async function takeOverConversation(
-  conversationId
-) {
+export async function takeOverConversation(conversationId) {
   try {
     const response = await fetch(
       `${API_BASE_URL}/conversations/${conversationId}/take-over`,
@@ -214,28 +173,20 @@ export async function takeOverConversation(
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to take over conversation: ${response.status}`
-      );
+      throw new Error(`Failed to take over conversation: ${response.status}`);
     }
 
     const data = await response.json();
 
-    console.log(
-      "CONVERSATION TAKEN OVER:",
-      data
-    );
+    console.log("CONVERSATION TAKEN OVER:", data);
 
     return data;
   } catch (error) {
-    console.error(
-      "takeOverConversation error:",
-      error
-    );
+    console.error("takeOverConversation error:", error);
 
     throw error;
   }
@@ -244,11 +195,8 @@ export async function takeOverConversation(
    RESOLVE CONVERSATION
    ========================================================= */
 
-export async function resolveConversation(
-  conversationId
-) {
+export async function resolveConversation(conversationId) {
   try {
-
     const response = await fetch(
       `${API_BASE_URL}/conversations/${conversationId}/resolve`,
       {
@@ -257,48 +205,31 @@ export async function resolveConversation(
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
-
-      throw new Error(
-        `Failed to resolve conversation: ${response.status}`
-      );
-
+      throw new Error(`Failed to resolve conversation: ${response.status}`);
     }
 
-    const data =
-      await response.json();
+    const data = await response.json();
 
-    console.log(
-      "CONVERSATION RESOLVED:",
-      data
-    );
+    console.log("CONVERSATION RESOLVED:", data);
 
     return data;
-
   } catch (error) {
-
-    console.error(
-      "resolveConversation error:",
-      error
-    );
+    console.error("resolveConversation error:", error);
 
     throw error;
   }
 }
 
-
 /* =========================================================
    BLOCK CONVERSATION
    ========================================================= */
 
-export async function blockConversation(
-  conversationId
-) {
+export async function blockConversation(conversationId) {
   try {
-
     const response = await fetch(
       `${API_BASE_URL}/conversations/${conversationId}/block`,
       {
@@ -307,33 +238,20 @@ export async function blockConversation(
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
-
-      throw new Error(
-        `Failed to block conversation: ${response.status}`
-      );
-
+      throw new Error(`Failed to block conversation: ${response.status}`);
     }
 
-    const data =
-      await response.json();
+    const data = await response.json();
 
-    console.log(
-      "CONVERSATION BLOCKED:",
-      data
-    );
+    console.log("CONVERSATION BLOCKED:", data);
 
     return data;
-
   } catch (error) {
-
-    console.error(
-      "blockConversation error:",
-      error
-    );
+    console.error("blockConversation error:", error);
 
     throw error;
   }
@@ -344,14 +262,10 @@ export async function blockConversation(
 
 export async function fetchContactById(employeeId) {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/employees/${employeeId}`
-    );
+    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}`);
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch contact: ${response.status}`
-      );
+      throw new Error(`Failed to fetch contact: ${response.status}`);
     }
 
     const data = await response.json();
@@ -360,10 +274,7 @@ export async function fetchContactById(employeeId) {
 
     return data;
   } catch (error) {
-    console.error(
-      "fetchContactById error:",
-      error
-    );
+    console.error("fetchContactById error:", error);
 
     throw error;
   }
@@ -374,29 +285,19 @@ export async function fetchContactById(employeeId) {
 
 export async function fetchContacts() {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/employees`
-    );
+    const response = await fetch(`${API_BASE_URL}/employees`);
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch contacts: ${response.status}`
-      );
+      throw new Error(`Failed to fetch contacts: ${response.status}`);
     }
 
     const data = await response.json();
 
-    console.log(
-      "REAL CONTACTS FROM CRM:",
-      data
-    );
+    console.log("REAL CONTACTS FROM CRM:", data);
 
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error(
-      "fetchContacts error:",
-      error
-    );
+    console.error("fetchContacts error:", error);
 
     throw error;
   }
@@ -405,43 +306,29 @@ export async function fetchContacts() {
    UPDATE CONTACT
    ========================================================= */
 
-export async function updateContact(
-  employeeId,
-  contactData
-) {
+export async function updateContact(employeeId, contactData) {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/employees/${employeeId}`,
-      {
-        method: "PUT",
+    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}`, {
+      method: "PUT",
 
-        headers: {
-          "Content-Type": "application/json",
-        },
+      headers: {
+        "Content-Type": "application/json",
+      },
 
-        body: JSON.stringify(contactData),
-      }
-    );
+      body: JSON.stringify(contactData),
+    });
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to update contact: ${response.status}`
-      );
+      throw new Error(`Failed to update contact: ${response.status}`);
     }
 
     const data = await response.json();
 
-    console.log(
-      "CONTACT UPDATED:",
-      data
-    );
+    console.log("CONTACT UPDATED:", data);
 
     return data;
   } catch (error) {
-    console.error(
-      "updateContact error:",
-      error
-    );
+    console.error("updateContact error:", error);
 
     throw error;
   }
@@ -452,38 +339,27 @@ export async function updateContact(
 
 export async function createContact(contactData) {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/employees`,
-      {
-        method: "POST",
+    const response = await fetch(`${API_BASE_URL}/employees`, {
+      method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-        },
+      headers: {
+        "Content-Type": "application/json",
+      },
 
-        body: JSON.stringify(contactData),
-      }
-    );
+      body: JSON.stringify(contactData),
+    });
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to create contact: ${response.status}`
-      );
+      throw new Error(`Failed to create contact: ${response.status}`);
     }
 
     const data = await response.json();
 
-    console.log(
-      "CONTACT CREATED:",
-      data
-    );
+    console.log("CONTACT CREATED:", data);
 
     return data;
   } catch (error) {
-    console.error(
-      "createContact error:",
-      error
-    );
+    console.error("createContact error:", error);
 
     throw error;
   }
@@ -494,32 +370,21 @@ export async function createContact(contactData) {
 
 export async function deleteContact(contactId) {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/employees/${contactId}`,
-      {
-        method: "DELETE",
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/employees/${contactId}`, {
+      method: "DELETE",
+    });
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to delete contact: ${response.status}`
-      );
+      throw new Error(`Failed to delete contact: ${response.status}`);
     }
 
     const data = await response.json();
 
-    console.log(
-      "CONTACT DELETED:",
-      data
-    );
+    console.log("CONTACT DELETED:", data);
 
     return data;
   } catch (error) {
-    console.error(
-      "deleteContact error:",
-      error
-    );
+    console.error("deleteContact error:", error);
 
     throw error;
   }
