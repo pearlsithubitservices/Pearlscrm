@@ -89,6 +89,13 @@ const login = async (req, res) => {
       });
     }
 
+    if (user.status === "Suspended") {
+      return res.status(403).json({
+        success: false,
+        message: "This employee account is suspended",
+      });
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({
@@ -168,9 +175,49 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+const toggleUserStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: "Employee not found" });
+    if (user.role === "Admin") return res.status(400).json({ success: false, message: "Admin accounts cannot be suspended" });
+    user.status = user.status === "Suspended" ? "Active" : "Suspended";
+    await user.save();
+    return res.status(200).json({ success: true, status: user.status, message: `Employee ${user.status.toLowerCase()}` });
+  } catch (error) {
+    console.error("Toggle employee status error:", error);
+    return res.status(500).json({ success: false, message: "Unable to update employee status" });
+  }
+};
+
+const updateUserSalary = async (req, res) => {
+  try {
+    const { basicSalary, grossSalary, netSalary, allowances, deductions } = req.body;
+    const salary = {
+      basicSalary: Number(basicSalary) || 0,
+      grossSalary: Number(grossSalary) || 0,
+      netSalary: Number(netSalary) || 0,
+      allowances: allowances || {},
+      deductions: deductions || {},
+    };
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: { "profile.salary": salary } },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) return res.status(404).json({ success: false, message: "Employee not found" });
+    return res.status(200).json({ success: true, message: "Salary updated successfully", user });
+  } catch (error) {
+    console.error("Update employee salary error:", error);
+    return res.status(500).json({ success: false, message: "Unable to update salary" });
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
   getAllUsers,
+  updateUserSalary,
+  toggleUserStatus,
 };

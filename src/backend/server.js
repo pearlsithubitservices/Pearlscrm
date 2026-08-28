@@ -39,14 +39,27 @@ const EmpEnrollment = require("./routes/EnrollmentRoutes");
 const EmpCourse = require("./routes/EmpCourseRoutes");
 const EmpSkillCertification = require("./routes/SkillCertificationRoutes");
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
-const EmpActivityRoutes= require("./routes/TaskActivityRoute");
-const EmpTotalLeave=require('./routes/TotalLeaveRoutes');
+const EmpActivityRoutes = require("./routes/TaskActivityRoute");
+const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
 const TaskDocumentRoutes = require("./routes/TaskDocumentRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
 const { initSocket } = require("./Socket");
 
+const whatsappCampaignRoutes = require('./routes/WhatsAppCampaign/campaignRoutes');
+const whatsappTemplateRoutes = require('./routes/WhatsAppCampaign/templateRoutes');
+const whatsappBroadcastRoutes = require('./routes/WhatsAppCampaign/broadcastRoutes');
+const whatsappQueueRoutes = require('./routes/WhatsAppCampaign/queueRoutes');
+const whatsappAnalyticsRoutes = require('./routes/WhatsAppCampaign/analyticsRoutes');
+const whatsappConnectionRoutes = require('./routes/WhatsAppCampaign/connectionRoutes');
+const whatsappWebhookRoutes = require('./routes/WhatsAppCampaign/webhookRoutes');
+
+const whatsappConversationRoutes = require('./routes/Whatsapp Automation/ConversationRoute');
+const automationRuleRoutes = require("./routes/Whatsapp Automation/AutomationRuleRoutes");
+const messageTemplateRoutes = require("./routes/Whatsapp Automation/messageTemplates");
+const aiConfigRoutes = require("./routes/Whatsapp Automation/aiConfig");
+const reportRoutes = require("./routes/Whatsapp Automation/report");
 connectDB();
 
 const app = express();
@@ -76,6 +89,7 @@ app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
 app.use("/api/payment", PaymentRoutes);
+// app.use("/api/marketing-leads",MarketingLeadRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
@@ -101,6 +115,12 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
 const { startFollowupReminderScheduler } = require("./services/followupReminderScheduler");
+
+app.use('/api/conversations', whatsappConversationRoutes);
+app.use("/api/automation-rules", automationRuleRoutes);
+app.use("/api/message-templates", messageTemplateRoutes);
+app.use("/api/ai-config", aiConfigRoutes);
+app.use("/api/reports", reportRoutes);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# WhatsApp AI Automation secrets
+src/backend/whatsapp Automation backend/.env
+
+# Python generated files
+__pycache__/
+*.pyc
