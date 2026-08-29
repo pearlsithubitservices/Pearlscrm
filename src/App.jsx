@@ -34,7 +34,6 @@ import TaskDetails from './pages/TaskDetails';
 import Login from './pages/Login';
 import ClientManagement from './pages/ClientManagement';
 import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx';
-import Collaboration from './pages/Collaboration.jsx';
 import ProtectedRoutes from './components/ProtectedRoutes.jsx';
 
 // ============================================================
@@ -339,7 +338,7 @@ export default function App() {
 
               <Route
                 path="/collaboration"
-                element={<Collaboration />}
+                element={<Messager />}
               />
 
               {/* LEAVE */}
