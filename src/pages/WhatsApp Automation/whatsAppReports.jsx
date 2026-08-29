@@ -12,7 +12,8 @@ import {
   Users,
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000/api";
+//const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://pearlscrm.onrender.com/api";
 
 /* =====================================================
    PERCENTAGE HELPER
@@ -30,7 +31,6 @@ const getPercentage = (value, total) => {
 
   return Math.round((numericValue / numericTotal) * 100);
 };
-
 
 /* =====================================================
    MAIN REPORT COMPONENT
@@ -58,7 +58,6 @@ export default function WhatsAppReports() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-
   /* =====================================================
      FETCH REPORT SUMMARY
   ===================================================== */
@@ -67,14 +66,10 @@ export default function WhatsAppReports() {
     try {
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/reports/summary`
-      );
+      const response = await fetch(`${API_BASE_URL}/reports/summary`);
 
       if (!response.ok) {
-        throw new Error(
-          `Request failed: ${response.status}`
-        );
+        throw new Error(`Request failed: ${response.status}`);
       }
 
       const data = await response.json();
@@ -82,26 +77,19 @@ export default function WhatsAppReports() {
       console.log("WhatsApp Reports:", data);
 
       setSummary({
-        totalConversations:
-          Number(data.totalConversations) || 0,
+        totalConversations: Number(data.totalConversations) || 0,
 
-        aiHandled:
-          Number(data.aiHandled) || 0,
+        aiHandled: Number(data.aiHandled) || 0,
 
-        humanHandled:
-          Number(data.humanHandled) || 0,
+        humanHandled: Number(data.humanHandled) || 0,
 
-        completed:
-          Number(data.completed) || 0,
+        completed: Number(data.completed) || 0,
 
-        inProgress:
-          Number(data.inProgress) || 0,
+        inProgress: Number(data.inProgress) || 0,
 
-        blocked:
-          Number(data.blocked) || 0,
+        blocked: Number(data.blocked) || 0,
 
-        totalMessages:
-          Number(data.totalMessages) || 0,
+        totalMessages: Number(data.totalMessages) || 0,
 
         /*
           Support both names temporarily:
@@ -110,34 +98,23 @@ export default function WhatsAppReports() {
         */
 
         employeeMessages:
-          Number(
-            data.employeeMessages ??
-            data.customerMessages
-          ) || 0,
+          Number(data.employeeMessages ?? data.customerMessages) || 0,
 
-        aiMessages:
-          Number(data.aiMessages) || 0,
+        aiMessages: Number(data.aiMessages) || 0,
 
-        agentMessages:
-          Number(data.agentMessages) || 0,
+        agentMessages: Number(data.agentMessages) || 0,
       });
-
     } catch (err) {
-      console.error(
-        "WhatsApp analytics error:",
-        err
-      );
+      console.error("WhatsApp analytics error:", err);
 
       setError(
-        "Unable to load WhatsApp analytics. Make sure the backend server is running."
+        "Unable to load WhatsApp analytics. Make sure the backend server is running.",
       );
-
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
-
 
   /* =====================================================
      INITIAL LOAD
@@ -146,7 +123,6 @@ export default function WhatsAppReports() {
   useEffect(() => {
     fetchSummary();
   }, []);
-
 
   /* =====================================================
      REFRESH
@@ -158,7 +134,6 @@ export default function WhatsAppReports() {
     await fetchSummary();
   };
 
-
   /* =====================================================
      LOADING
   ===================================================== */
@@ -166,15 +141,10 @@ export default function WhatsAppReports() {
   if (loading) {
     return (
       <div style={pageStyle}>
-
         <div style={loadingBox}>
-
           <div style={spinner}></div>
 
-          <p>
-            Loading WhatsApp analytics...
-          </p>
-
+          <p>Loading WhatsApp analytics...</p>
         </div>
 
         <style>
@@ -190,11 +160,9 @@ export default function WhatsAppReports() {
             }
           `}
         </style>
-
       </div>
     );
   }
-
 
   /* =====================================================
      PAGE
@@ -202,58 +170,41 @@ export default function WhatsAppReports() {
 
   return (
     <div style={pageStyle}>
-
       {/* =================================================
           HEADER
       ================================================= */}
 
       <div style={header}>
-
         <div>
-
           <div style={titleRow}>
-
             <div style={titleIcon}>
               <MessageSquare size={22} />
             </div>
 
-            <h1 style={title}>
-              WhatsApp Reports & Analytics
-            </h1>
-
+            <h1 style={title}>WhatsApp Reports & Analytics</h1>
           </div>
 
           <p style={subtitle}>
-            Monitor employee WhatsApp conversations,
-            AI handling and admin activity.
+            Monitor employee WhatsApp conversations, AI handling and admin
+            activity.
           </p>
-
         </div>
-
 
         <button
           onClick={handleRefresh}
           disabled={refreshing}
           style={refreshButton}
         >
-
           <RefreshCcw
             size={16}
             style={{
-              animation: refreshing
-                ? "spin 1s linear infinite"
-                : "none",
+              animation: refreshing ? "spin 1s linear infinite" : "none",
             }}
           />
 
-          {refreshing
-            ? "Refreshing..."
-            : "Refresh"}
-
+          {refreshing ? "Refreshing..." : "Refresh"}
         </button>
-
       </div>
-
 
       {/* =================================================
           ERROR
@@ -261,35 +212,23 @@ export default function WhatsAppReports() {
 
       {error && (
         <div style={errorBox}>
+          <strong>Analytics unavailable</strong>
 
-          <strong>
-            Analytics unavailable
-          </strong>
-
-          <span>
-            {error}
-          </span>
-
+          <span>{error}</span>
         </div>
       )}
-
 
       {/* =================================================
           CONVERSATION OVERVIEW
       ================================================= */}
 
-      <h2 style={sectionTitle}>
-        Conversation Overview
-      </h2>
+      <h2 style={sectionTitle}>Conversation Overview</h2>
 
       <p style={sectionSubtitle}>
-        Employee WhatsApp conversations handled by AI
-        and human admins.
+        Employee WhatsApp conversations handled by AI and human admins.
       </p>
 
-
       <div style={grid}>
-
         {/* TOTAL */}
 
         <StatCard
@@ -301,7 +240,6 @@ export default function WhatsAppReports() {
           description="All employee conversations"
         />
 
-
         {/* AI */}
 
         <StatCard
@@ -312,10 +250,9 @@ export default function WhatsAppReports() {
           color="#16a34a"
           description={`${getPercentage(
             summary.aiHandled,
-            summary.totalConversations
+            summary.totalConversations,
           )}% of conversations`}
         />
-
 
         {/* ADMIN */}
 
@@ -327,10 +264,9 @@ export default function WhatsAppReports() {
           color="#ea580c"
           description={`${getPercentage(
             summary.humanHandled,
-            summary.totalConversations
+            summary.totalConversations,
           )}% of conversations`}
         />
-
 
         {/* COMPLETED */}
 
@@ -343,7 +279,6 @@ export default function WhatsAppReports() {
           description="Resolved conversations"
         />
 
-
         {/* IN PROGRESS */}
 
         <StatCard
@@ -355,7 +290,6 @@ export default function WhatsAppReports() {
           description="Currently active"
         />
 
-
         {/* BLOCKED */}
 
         <StatCard
@@ -366,75 +300,46 @@ export default function WhatsAppReports() {
           color="#dc2626"
           description="Blocked conversations"
         />
-
       </div>
-
 
       {/* =================================================
           MESSAGE ANALYTICS
       ================================================= */}
 
       <div style={section}>
-
-        <h2 style={sectionTitle}>
-          Message Analytics
-        </h2>
+        <h2 style={sectionTitle}>Message Analytics</h2>
 
         <p style={sectionSubtitle}>
           Breakdown of employee, AI and admin messages.
         </p>
 
-
         <div style={messageGrid}>
-
           {/* TOTAL MESSAGES */}
 
           <div style={bigCard}>
-
             <div style={bigIcon}>
               <MessagesSquare size={25} />
             </div>
 
-            <p style={label}>
-              Total Messages
-            </p>
+            <p style={label}>Total Messages</p>
 
-            <h2 style={bigNumber}>
-              {summary.totalMessages}
-            </h2>
+            <h2 style={bigNumber}>{summary.totalMessages}</h2>
 
-            <p style={muted}>
-              All messages exchanged
-            </p>
-
+            <p style={muted}>All messages exchanged</p>
           </div>
-
 
           {/* MESSAGE BREAKDOWN */}
 
           <div style={bigCard}>
-
             <div style={breakdownHeader}>
-
               <div>
+                <h3 style={cardTitle}>Message Breakdown</h3>
 
-                <h3 style={cardTitle}>
-                  Message Breakdown
-                </h3>
-
-                <p style={muted}>
-                  Employee, AI and admin activity
-                </p>
-
+                <p style={muted}>Employee, AI and admin activity</p>
               </div>
 
-              <Users
-                size={20}
-                color="#64748b"
-              />
-
+              <Users size={20} color="#64748b" />
             </div>
-
 
             {/* EMPLOYEE */}
 
@@ -445,7 +350,6 @@ export default function WhatsAppReports() {
               color="#2563eb"
             />
 
-
             {/* AI */}
 
             <MessageProgress
@@ -455,7 +359,6 @@ export default function WhatsAppReports() {
               color="#16a34a"
             />
 
-
             {/* ADMIN */}
 
             <MessageProgress
@@ -464,32 +367,22 @@ export default function WhatsAppReports() {
               total={summary.totalMessages}
               color="#ea580c"
             />
-
           </div>
-
         </div>
-
       </div>
-
 
       {/* =================================================
           AI VS ADMIN
       ================================================= */}
 
       <div style={section}>
-
-        <h2 style={sectionTitle}>
-          AI vs Admin Handling
-        </h2>
+        <h2 style={sectionTitle}>AI vs Admin Handling</h2>
 
         <p style={sectionSubtitle}>
-          Distribution of employee conversations handled
-          by AI and human admins.
+          Distribution of employee conversations handled by AI and human admins.
         </p>
 
-
         <div style={bigCard}>
-
           <HandlingRow
             label="AI Handled"
             value={summary.aiHandled}
@@ -498,7 +391,6 @@ export default function WhatsAppReports() {
             icon={Bot}
           />
 
-
           <HandlingRow
             label="Admin Handled"
             value={summary.humanHandled}
@@ -506,11 +398,8 @@ export default function WhatsAppReports() {
             color="#ea580c"
             icon={User}
           />
-
         </div>
-
       </div>
-
 
       {/* =================================================
           FOOTER
@@ -519,7 +408,6 @@ export default function WhatsAppReports() {
       <div style={footer}>
         Data source: CRM MongoDB • Employee WhatsApp AI Automation
       </div>
-
 
       <style>
         {`
@@ -534,11 +422,9 @@ export default function WhatsAppReports() {
           }
         `}
       </style>
-
     </div>
   );
 }
-
 
 /* =====================================================
    STAT CARD
@@ -554,7 +440,6 @@ function StatCard({
 }) {
   return (
     <div style={statCard}>
-
       <div
         style={{
           ...statIcon,
@@ -565,63 +450,38 @@ function StatCard({
         <Icon size={21} />
       </div>
 
-      <p style={statTitle}>
-        {title}
-      </p>
+      <p style={statTitle}>{title}</p>
 
-      <h2 style={statValue}>
-        {value}
-      </h2>
+      <h2 style={statValue}>{value}</h2>
 
-      <p style={statDescription}>
-        {description}
-      </p>
-
+      <p style={statDescription}>{description}</p>
     </div>
   );
 }
-
 
 /* =====================================================
    MESSAGE PROGRESS
 ===================================================== */
 
-function MessageProgress({
-  label,
-  value,
-  total,
-  color,
-}) {
-
+function MessageProgress({ label, value, total, color }) {
   /*
     IMPORTANT:
     Use getPercentage(), which is defined globally.
   */
 
-  const percent = getPercentage(
-    value,
-    total
-  );
-
+  const percent = getPercentage(value, total);
 
   return (
     <div style={messageProgress}>
-
       <div style={progressHeader}>
-
-        <span style={progressLabel}>
-          {label}
-        </span>
+        <span style={progressLabel}>{label}</span>
 
         <span style={progressValue}>
           {Number(value) || 0} ({percent}%)
         </span>
-
       </div>
 
-
       <div style={progressTrack}>
-
         <div
           style={{
             ...progressBar,
@@ -629,42 +489,26 @@ function MessageProgress({
             background: color,
           }}
         />
-
       </div>
-
     </div>
   );
 }
-
 
 /* =====================================================
    HANDLING ROW
 ===================================================== */
 
-function HandlingRow({
-  label,
-  value,
-  total,
-  color,
-  icon: Icon,
-}) {
-
+function HandlingRow({ label, value, total, color, icon: Icon }) {
   /*
     IMPORTANT:
     Use getPercentage(), NOT percentage().
   */
 
-  const percent = getPercentage(
-    value,
-    total
-  );
-
+  const percent = getPercentage(value, total);
 
   return (
     <div style={handlingRow}>
-
       <div style={handlingLeft}>
-
         <div
           style={{
             ...handlingIcon,
@@ -672,36 +516,22 @@ function HandlingRow({
             background: "#f8fafc",
           }}
         >
-
           <Icon size={20} />
-
         </div>
 
-
         <div>
-
-          <strong>
-            {label}
-          </strong>
+          <strong>{label}</strong>
 
           <p style={muted}>
             {value} of {total} conversations
           </p>
-
         </div>
-
       </div>
 
-
       <div style={handlingRight}>
-
-        <strong>
-          {percent}%
-        </strong>
-
+        <strong>{percent}%</strong>
 
         <div style={handlingTrack}>
-
           <div
             style={{
               ...handlingBar,
@@ -709,15 +539,11 @@ function HandlingRow({
               background: color,
             }}
           />
-
         </div>
-
       </div>
-
     </div>
   );
 }
-
 
 /* =====================================================
    STYLES
@@ -731,7 +557,6 @@ const pageStyle = {
   boxSizing: "border-box",
 };
 
-
 const header = {
   display: "flex",
   justifyContent: "space-between",
@@ -739,13 +564,11 @@ const header = {
   marginBottom: "30px",
 };
 
-
 const titleRow = {
   display: "flex",
   alignItems: "center",
   gap: "12px",
 };
-
 
 const titleIcon = {
   width: "44px",
@@ -758,20 +581,17 @@ const titleIcon = {
   justifyContent: "center",
 };
 
-
 const title = {
   margin: 0,
   fontSize: "27px",
   fontWeight: 700,
 };
 
-
 const subtitle = {
   margin: "8px 0 0 56px",
   color: "#64748b",
   fontSize: "14px",
 };
-
 
 const refreshButton = {
   border: "1px solid #dbe3ef",
@@ -785,11 +605,9 @@ const refreshButton = {
   fontWeight: 600,
 };
 
-
 const section = {
   marginTop: "32px",
 };
-
 
 const sectionTitle = {
   margin: 0,
@@ -797,31 +615,25 @@ const sectionTitle = {
   fontWeight: 700,
 };
 
-
 const sectionSubtitle = {
   margin: "5px 0 16px",
   color: "#64748b",
   fontSize: "13px",
 };
 
-
 const grid = {
   display: "grid",
-  gridTemplateColumns:
-    "repeat(auto-fit, minmax(190px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
   gap: "16px",
 };
-
 
 const statCard = {
   background: "#fff",
   border: "1px solid #e5e7eb",
   borderRadius: "14px",
   padding: "20px",
-  boxShadow:
-    "0 2px 8px rgba(15,23,42,0.04)",
+  boxShadow: "0 2px 8px rgba(15,23,42,0.04)",
 };
-
 
 const statIcon = {
   width: "42px",
@@ -832,7 +644,6 @@ const statIcon = {
   justifyContent: "center",
 };
 
-
 const statTitle = {
   marginTop: "15px",
   marginBottom: "0",
@@ -841,12 +652,10 @@ const statTitle = {
   fontWeight: 600,
 };
 
-
 const statValue = {
   margin: "6px 0",
   fontSize: "29px",
 };
-
 
 const statDescription = {
   margin: 0,
@@ -854,24 +663,19 @@ const statDescription = {
   fontSize: "11px",
 };
 
-
 const messageGrid = {
   display: "grid",
-  gridTemplateColumns:
-    "minmax(220px, 0.7fr) minmax(400px, 1.5fr)",
+  gridTemplateColumns: "minmax(220px, 0.7fr) minmax(400px, 1.5fr)",
   gap: "18px",
 };
-
 
 const bigCard = {
   background: "#fff",
   border: "1px solid #e5e7eb",
   borderRadius: "14px",
   padding: "24px",
-  boxShadow:
-    "0 2px 8px rgba(15,23,42,0.04)",
+  boxShadow: "0 2px 8px rgba(15,23,42,0.04)",
 };
-
 
 const bigIcon = {
   width: "48px",
@@ -884,19 +688,16 @@ const bigIcon = {
   justifyContent: "center",
 };
 
-
 const label = {
   marginTop: "18px",
   color: "#64748b",
   fontSize: "13px",
 };
 
-
 const bigNumber = {
   fontSize: "38px",
   margin: "6px 0",
 };
-
 
 const muted = {
   margin: "4px 0",
@@ -904,23 +705,19 @@ const muted = {
   fontSize: "12px",
 };
 
-
 const breakdownHeader = {
   display: "flex",
   justifyContent: "space-between",
 };
-
 
 const cardTitle = {
   margin: 0,
   fontSize: "15px",
 };
 
-
 const messageProgress = {
   marginTop: "22px",
 };
-
 
 const progressHeader = {
   display: "flex",
@@ -929,18 +726,15 @@ const progressHeader = {
   fontSize: "12px",
 };
 
-
 const progressLabel = {
   fontWeight: 600,
   color: "#334155",
 };
 
-
 const progressValue = {
   fontWeight: 700,
   color: "#0f172a",
 };
-
 
 const progressTrack = {
   height: "8px",
@@ -950,13 +744,11 @@ const progressTrack = {
   overflow: "hidden",
 };
 
-
 const progressBar = {
   height: "100%",
   borderRadius: "10px",
   transition: "width .4s ease",
 };
-
 
 const handlingRow = {
   display: "flex",
@@ -966,14 +758,12 @@ const handlingRow = {
   padding: "16px 0",
 };
 
-
 const handlingLeft = {
   display: "flex",
   alignItems: "center",
   gap: "12px",
   minWidth: "220px",
 };
-
 
 const handlingIcon = {
   width: "42px",
@@ -984,7 +774,6 @@ const handlingIcon = {
   justifyContent: "center",
 };
 
-
 const handlingRight = {
   display: "flex",
   alignItems: "center",
@@ -992,7 +781,6 @@ const handlingRight = {
   flex: 1,
   maxWidth: "600px",
 };
-
 
 const handlingTrack = {
   flex: 1,
@@ -1002,13 +790,11 @@ const handlingTrack = {
   overflow: "hidden",
 };
 
-
 const handlingBar = {
   height: "100%",
   borderRadius: "10px",
   transition: "width .4s ease",
 };
-
 
 const footer = {
   textAlign: "center",
@@ -1016,7 +802,6 @@ const footer = {
   color: "#94a3b8",
   fontSize: "11px",
 };
-
 
 const loadingBox = {
   minHeight: "400px",
@@ -1028,7 +813,6 @@ const loadingBox = {
   justifyContent: "center",
 };
 
-
 const spinner = {
   width: "32px",
   height: "32px",
@@ -1037,7 +821,6 @@ const spinner = {
   borderRadius: "50%",
   animation: "spin 1s linear infinite",
 };
-
 
 const errorBox = {
   background: "#fff7ed",

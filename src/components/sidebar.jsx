@@ -252,11 +252,11 @@ export default function Sidebar() {
   // ACTIVE STATES
   // ============================================================
 
-  const isWhatsAppActive =
-    location.pathname.startsWith("/whatsapp");
+  const isWhatsAppActive = location.pathname.startsWith("/whatsapp");
 
-  const isWhatsAppAutomationActive =
-    location.pathname.startsWith("/whatsapp-automation");
+  const isWhatsAppAutomationActive = location.pathname.startsWith(
+    "/whatsapp-automation",
+  );
 
   // ============================================================
   // NAVIGATION STYLES
@@ -282,29 +282,21 @@ export default function Sidebar() {
 
   return (
     <aside className="w-[250px] h-screen sticky top-0 shrink-0 bg-[#0b2b57] text-white flex flex-col">
-
       {/* ======================================================
           SCROLLABLE CONTENT
       ====================================================== */}
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-8 min-h-0">
-
         {/* ====================================================
             LOGO
         ==================================================== */}
 
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shrink-0">
-            <img
-              src={logo}
-              alt="logo"
-              className="w-full h-full rounded-full"
-            />
+            <img src={logo} alt="logo" className="w-full h-full rounded-full" />
           </div>
 
-          <h1 className="font-bold text-l tracking-wide">
-            PEARLS IT HUB
-          </h1>
+          <h1 className="font-bold text-l tracking-wide">PEARLS IT HUB</h1>
         </div>
 
         {/* ====================================================
@@ -315,15 +307,12 @@ export default function Sidebar() {
           <p className="text-gray-500 text-xs uppercase tracking-[0.2em] mb-4">
             Main
           </p>
-
           <div className="space-y-1">
             {mainItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) =>
-                  navLinkClass(isActive)
-                }
+                className={({ isActive }) => navLinkClass(isActive)}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
                 {item.name}
@@ -339,9 +328,7 @@ export default function Sidebar() {
         <div className="mb-8">
           <p
             className={`text-xs uppercase tracking-[0.2em] mb-4 ${
-              isWhatsAppActive
-                ? "text-blue-300"
-                : "text-gray-500"
+              isWhatsAppActive ? "text-blue-300" : "text-gray-500"
             }`}
           >
             WhatsApp Business
@@ -352,15 +339,11 @@ export default function Sidebar() {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) =>
-                  subNavLinkClass(isActive)
-                }
+                className={({ isActive }) => subNavLinkClass(isActive)}
               >
                 <item.icon className="w-3.5 h-3.5 shrink-0" />
 
-                <span className="flex-1">
-                  {item.name}
-                </span>
+                <span className="flex-1">{item.name}</span>
 
                 {item.badge && broadcastCount > 0 && (
                   <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
@@ -379,9 +362,7 @@ export default function Sidebar() {
         <div className="mb-8">
           <p
             className={`text-xs uppercase tracking-[0.2em] mb-4 ${
-              isWhatsAppAutomationActive
-                ? "text-blue-300"
-                : "text-gray-500"
+              isWhatsAppAutomationActive ? "text-blue-300" : "text-gray-500"
             }`}
           >
             WhatsApp AI Automation
@@ -392,15 +373,11 @@ export default function Sidebar() {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) =>
-                  subNavLinkClass(isActive)
-                }
+                className={({ isActive }) => subNavLinkClass(isActive)}
               >
                 <item.icon className="w-3.5 h-3.5 shrink-0" />
 
-                <span className="flex-1">
-                  {item.name}
-                </span>
+                <span className="flex-1">{item.name}</span>
               </NavLink>
             ))}
           </div>
@@ -414,15 +391,12 @@ export default function Sidebar() {
           <p className="text-gray-500 text-xs uppercase tracking-[0.2em] mb-4">
             Manage
           </p>
-
           <div className="space-y-1">
             {manageItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) =>
-                  navLinkClass(isActive)
-                }
+                className={({ isActive }) => navLinkClass(isActive)}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
                 {item.name}
@@ -441,9 +415,7 @@ export default function Sidebar() {
         >
           <LogOut className="w-4 h-4" />
 
-          <span className="text-sm">
-            Log out
-          </span>
+          <span className="text-sm">Log out</span>
         </button>
       </div>
 
@@ -453,29 +425,21 @@ export default function Sidebar() {
 
       <div className="shrink-0 px-6 pb-6 pt-4 border-t border-white/10 bg-[#0b2b57]">
         <div className="bg-[#2563a9] rounded-lg px-3 py-3 flex items-center gap-3">
-
           <img
-            src={
-              user?.photoURL ||
-              "https://i.pravatar.cc/100"
-            }
+            src={user?.photoURL || "https://i.pravatar.cc/100"}
             alt=""
             className="w-10 h-10 rounded-full object-cover shrink-0"
           />
 
           <div className="min-w-0">
             <h3 className="font-semibold text-sm truncate">
-              {employeeMap[user?.uid]?.name ||
-                user?.displayName ||
-                "User"}
+              {employeeMap[user?.uid]?.name || user?.displayName || "User"}
             </h3>
 
             <p className="text-xs text-white/80 truncate">
-              {employeeMap[user?.uid]?.role ||
-                "Admin"}
+              {employeeMap[user?.uid]?.role || "Admin"}
             </p>
           </div>
-
         </div>
       </div>
     </aside>

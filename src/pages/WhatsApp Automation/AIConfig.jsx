@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 
-const API_BASE_URL = "http://localhost:5000/api";
+//const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://pearlscrm.onrender.com/api";
 
 const defaultConfig = {
   enabled: true,
@@ -29,14 +30,10 @@ export default function AIConfig() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/ai-config`
-      );
+      const response = await fetch(`${API_BASE_URL}/ai-config`);
 
       if (!response.ok) {
-        throw new Error(
-          "Failed to load AI configuration"
-        );
+        throw new Error("Failed to load AI configuration");
       }
 
       const data = await response.json();
@@ -44,23 +41,15 @@ export default function AIConfig() {
       setConfig({
         enabled: data.enabled ?? true,
         provider: data.provider ?? "Gemini",
-        model:
-          data.model ?? "gemini-2.5-flash",
-        systemInstructions:
-          data.systemInstructions ?? "",
-        temperature:
-          data.temperature ?? 0.8,
-        maxTokens:
-          data.maxTokens ?? 600,
-        humanHandoff:
-          data.humanHandoff ?? true,
+        model: data.model ?? "gemini-2.5-flash",
+        systemInstructions: data.systemInstructions ?? "",
+        temperature: data.temperature ?? 0.8,
+        maxTokens: data.maxTokens ?? 600,
+        humanHandoff: data.humanHandoff ?? true,
       });
     } catch (err) {
       console.error(err);
-      setError(
-        err.message ||
-          "Unable to load configuration."
-      );
+      setError(err.message || "Unable to load configuration.");
     } finally {
       setLoading(false);
     }
@@ -80,10 +69,7 @@ export default function AIConfig() {
     setConfig((prev) => ({
       ...prev,
       [name]:
-        name === "temperature" ||
-        name === "maxTokens"
-          ? Number(value)
-          : value,
+        name === "temperature" || name === "maxTokens" ? Number(value) : value,
     }));
 
     setSuccess("");
@@ -114,58 +100,37 @@ export default function AIConfig() {
       setSuccess("");
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/ai-config`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(config),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/ai-config`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(config),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to save configuration"
-        );
+        throw new Error(data.message || "Failed to save configuration");
       }
 
       if (data.config) {
         setConfig({
-          enabled:
-            data.config.enabled ?? true,
-          provider:
-            data.config.provider ??
-            "Gemini",
-          model:
-            data.config.model ??
-            "gemini-2.5-flash",
-          systemInstructions:
-            data.config.systemInstructions ??
-            "",
-          temperature:
-            data.config.temperature ?? 0.8,
-          maxTokens:
-            data.config.maxTokens ?? 600,
-          humanHandoff:
-            data.config.humanHandoff ?? true,
+          enabled: data.config.enabled ?? true,
+          provider: data.config.provider ?? "Gemini",
+          model: data.config.model ?? "gemini-2.5-flash",
+          systemInstructions: data.config.systemInstructions ?? "",
+          temperature: data.config.temperature ?? 0.8,
+          maxTokens: data.config.maxTokens ?? 600,
+          humanHandoff: data.config.humanHandoff ?? true,
         });
       }
 
-      setSuccess(
-        "AI configuration saved successfully."
-      );
+      setSuccess("AI configuration saved successfully.");
     } catch (err) {
       console.error(err);
 
-      setError(
-        err.message ||
-          "Unable to save configuration."
-      );
+      setError(err.message || "Unable to save configuration.");
     } finally {
       setSaving(false);
     }
@@ -178,27 +143,21 @@ export default function AIConfig() {
   if (loading) {
     return (
       <div style={pageStyle}>
-        <div style={loadingStyle}>
-          Loading AI configuration...
-        </div>
+        <div style={loadingStyle}>Loading AI configuration...</div>
       </div>
     );
   }
 
   return (
     <div style={pageStyle}>
-
       {/* HEADER */}
 
       <div style={headerStyle}>
         <div>
-          <h2 style={titleStyle}>
-            AI Configuration
-          </h2>
+          <h2 style={titleStyle}>AI Configuration</h2>
 
           <p style={subtitleStyle}>
-            Configure AI provider, model and
-            assistant behavior for WhatsApp
+            Configure AI provider, model and assistant behavior for WhatsApp
             automation.
           </p>
         </div>
@@ -206,12 +165,8 @@ export default function AIConfig() {
         <div
           style={{
             ...connectionBadge,
-            background: config.enabled
-              ? "#dcfce7"
-              : "#f1f5f9",
-            color: config.enabled
-              ? "#15803d"
-              : "#64748b",
+            background: config.enabled ? "#dcfce7" : "#f1f5f9",
+            color: config.enabled ? "#15803d" : "#64748b",
           }}
         >
           <span
@@ -219,55 +174,38 @@ export default function AIConfig() {
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: config.enabled
-                ? "#22c55e"
-                : "#94a3b8",
+              background: config.enabled ? "#22c55e" : "#94a3b8",
             }}
           />
 
-          {config.enabled
-            ? "AI Enabled"
-            : "AI Disabled"}
+          {config.enabled ? "AI Enabled" : "AI Disabled"}
         </div>
       </div>
 
       {/* SUCCESS */}
 
-      {success && (
-        <div style={successStyle}>
-          ✓ {success}
-        </div>
-      )}
+      {success && <div style={successStyle}>✓ {success}</div>}
 
       {/* ERROR */}
 
-      {error && (
-        <div style={errorStyle}>
-          ⚠ {error}
-        </div>
-      )}
+      {error && <div style={errorStyle}>⚠ {error}</div>}
 
       {/* AI AUTOMATION */}
 
       <div style={cardStyle}>
         <div style={cardHeaderStyle}>
           <div>
-            <h3 style={cardTitleStyle}>
-              AI Automation
-            </h3>
+            <h3 style={cardTitleStyle}>AI Automation</h3>
 
             <p style={cardDescriptionStyle}>
-              Control whether AI automatically
-              responds to incoming WhatsApp
+              Control whether AI automatically responds to incoming WhatsApp
               conversations.
             </p>
           </div>
 
           <Toggle
             enabled={config.enabled}
-            onClick={() =>
-              toggleValue("enabled")
-            }
+            onClick={() => toggleValue("enabled")}
           />
         </div>
       </div>
@@ -275,20 +213,14 @@ export default function AIConfig() {
       {/* PROVIDER / MODEL */}
 
       <div style={twoColumnStyle}>
-
         <div style={cardStyle}>
-          <h3 style={cardTitleStyle}>
-            AI Provider
-          </h3>
+          <h3 style={cardTitleStyle}>AI Provider</h3>
 
           <p style={cardDescriptionStyle}>
-            Select the AI service used by the
-            automation.
+            Select the AI service used by the automation.
           </p>
 
-          <label style={labelStyle}>
-            Provider
-          </label>
+          <label style={labelStyle}>Provider</label>
 
           <select
             name="provider"
@@ -296,25 +228,18 @@ export default function AIConfig() {
             onChange={handleChange}
             style={inputStyle}
           >
-            <option value="Gemini">
-              Gemini
-            </option>
+            <option value="Gemini">Gemini</option>
           </select>
         </div>
 
         <div style={cardStyle}>
-          <h3 style={cardTitleStyle}>
-            AI Model
-          </h3>
+          <h3 style={cardTitleStyle}>AI Model</h3>
 
           <p style={cardDescriptionStyle}>
-            Select the model used to generate
-            responses.
+            Select the model used to generate responses.
           </p>
 
-          <label style={labelStyle}>
-            Model
-          </label>
+          <label style={labelStyle}>Model</label>
 
           <select
             name="model"
@@ -322,35 +247,25 @@ export default function AIConfig() {
             onChange={handleChange}
             style={inputStyle}
           >
-            <option value="gemini-2.5-flash">
-              Gemini 2.5 Flash
-            </option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
 
-            <option value="gemini-2.5-pro">
-              Gemini 2.5 Pro
-            </option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
           </select>
         </div>
-
       </div>
 
       {/* SYSTEM INSTRUCTIONS */}
 
       <div style={cardStyle}>
-        <h3 style={cardTitleStyle}>
-          System Instructions
-        </h3>
+        <h3 style={cardTitleStyle}>System Instructions</h3>
 
         <p style={cardDescriptionStyle}>
-          Define the role, behavior and rules
-          that the AI should follow.
+          Define the role, behavior and rules that the AI should follow.
         </p>
 
         <textarea
           name="systemInstructions"
-          value={
-            config.systemInstructions
-          }
+          value={config.systemInstructions}
           onChange={handleChange}
           rows={7}
           style={{
@@ -362,34 +277,24 @@ export default function AIConfig() {
         />
 
         <div style={infoBoxStyle}>
-          <strong>
-            Tip:
-          </strong>{" "}
-          Give the AI clear instructions about
-          how it should answer employees and
-          when it should transfer a conversation
-          to HR.
+          <strong>Tip:</strong> Give the AI clear instructions about how it
+          should answer employees and when it should transfer a conversation to
+          HR.
         </div>
       </div>
 
       {/* PARAMETERS */}
 
       <div style={cardStyle}>
-        <h3 style={cardTitleStyle}>
-          AI Parameters
-        </h3>
+        <h3 style={cardTitleStyle}>AI Parameters</h3>
 
         <p style={cardDescriptionStyle}>
-          Control response creativity and
-          maximum response length.
+          Control response creativity and maximum response length.
         </p>
 
         <div style={twoColumnStyle}>
-
           <div>
-            <label style={labelStyle}>
-              Temperature
-            </label>
+            <label style={labelStyle}>Temperature</label>
 
             <input
               type="number"
@@ -403,15 +308,12 @@ export default function AIConfig() {
             />
 
             <p style={helperTextStyle}>
-              Range: 0 - 2. Lower values give
-              more consistent answers.
+              Range: 0 - 2. Lower values give more consistent answers.
             </p>
           </div>
 
           <div>
-            <label style={labelStyle}>
-              Maximum Response Tokens
-            </label>
+            <label style={labelStyle}>Maximum Response Tokens</label>
 
             <input
               type="number"
@@ -423,11 +325,9 @@ export default function AIConfig() {
             />
 
             <p style={helperTextStyle}>
-              Controls the maximum length of
-              the AI response.
+              Controls the maximum length of the AI response.
             </p>
           </div>
-
         </div>
       </div>
 
@@ -436,25 +336,17 @@ export default function AIConfig() {
       <div style={cardStyle}>
         <div style={cardHeaderStyle}>
           <div>
-            <h3 style={cardTitleStyle}>
-              Human Handoff
-            </h3>
+            <h3 style={cardTitleStyle}>Human Handoff</h3>
 
             <p style={cardDescriptionStyle}>
-              Automatically allow conversations
-              to be transferred to an HR
-              representative when AI cannot
-              handle the request.
+              Automatically allow conversations to be transferred to an HR
+              representative when AI cannot handle the request.
             </p>
           </div>
 
           <Toggle
             enabled={config.humanHandoff}
-            onClick={() =>
-              toggleValue(
-                "humanHandoff"
-              )
-            }
+            onClick={() => toggleValue("humanHandoff")}
           />
         </div>
       </div>
@@ -490,17 +382,12 @@ export default function AIConfig() {
           style={{
             ...saveButton,
             opacity: saving ? 0.7 : 1,
-            cursor: saving
-              ? "not-allowed"
-              : "pointer",
+            cursor: saving ? "not-allowed" : "pointer",
           }}
         >
-          {saving
-            ? "Saving..."
-            : "Save Configuration"}
+          {saving ? "Saving..." : "Save Configuration"}
         </button>
       </div>
-
     </div>
   );
 }
@@ -522,11 +409,8 @@ function Toggle({ enabled, onClick }) {
         padding: 0,
         cursor: "pointer",
         position: "relative",
-        background: enabled
-          ? "#2563eb"
-          : "#cbd5e1",
-        transition:
-          "background 0.2s",
+        background: enabled ? "#2563eb" : "#cbd5e1",
+        transition: "background 0.2s",
         flexShrink: 0,
       }}
     >
@@ -539,10 +423,8 @@ function Toggle({ enabled, onClick }) {
           height: 21,
           borderRadius: "50%",
           background: "#ffffff",
-          boxShadow:
-            "0 1px 4px rgba(0,0,0,0.25)",
-          transition:
-            "left 0.2s",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+          transition: "left 0.2s",
         }}
       />
     </button>
@@ -598,8 +480,7 @@ const cardStyle = {
   borderRadius: 14,
   padding: 22,
   marginBottom: 18,
-  boxShadow:
-    "0 2px 8px rgba(15, 23, 42, 0.04)",
+  boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
 };
 
 const cardHeaderStyle = {
@@ -625,8 +506,7 @@ const cardDescriptionStyle = {
 
 const twoColumnStyle = {
   display: "grid",
-  gridTemplateColumns:
-    "repeat(2, minmax(0, 1fr))",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
   gap: 18,
 };
 
@@ -708,8 +588,7 @@ const saveBarStyle = {
   justifyContent: "space-between",
   alignItems: "center",
   gap: 20,
-  boxShadow:
-    "0 2px 8px rgba(15, 23, 42, 0.04)",
+  boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
 };
 
 const saveButton = {
@@ -720,6 +599,5 @@ const saveButton = {
   color: "#ffffff",
   fontWeight: 600,
   fontSize: 13,
-  boxShadow:
-    "0 3px 8px rgba(37, 99, 235, 0.22)",
+  boxShadow: "0 3px 8px rgba(37, 99, 235, 0.22)",
 };

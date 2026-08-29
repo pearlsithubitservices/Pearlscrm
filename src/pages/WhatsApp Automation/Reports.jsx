@@ -16,7 +16,8 @@ import {
   Legend,
 } from "recharts";
 
-const API_BASE_URL = "http://localhost:5000/api";
+//const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://pearlscrm.onrender.com/api";
 
 // =========================================================
 // COLORS
@@ -38,34 +39,17 @@ const COLORS = {
 // CHART COLORS
 // =========================================================
 
-const STATUS_COLORS = [
-  COLORS.green,
-  COLORS.orange,
-  COLORS.red,
-];
+const STATUS_COLORS = [COLORS.green, COLORS.orange, COLORS.red];
 
-const HANDLER_COLORS = [
-  COLORS.purple,
-  COLORS.blue,
-];
+const HANDLER_COLORS = [COLORS.purple, COLORS.blue];
 
-const MESSAGE_COLORS = [
-  COLORS.cyan,
-  COLORS.purple,
-  COLORS.orange,
-];
-
+const MESSAGE_COLORS = [COLORS.cyan, COLORS.purple, COLORS.orange];
 
 // =========================================================
 // REPORT CARD
 // =========================================================
 
-function ReportCard({
-  title,
-  value,
-  subtitle,
-  color = COLORS.primary,
-}) {
+function ReportCard({ title, value, subtitle, color = COLORS.primary }) {
   return (
     <div
       style={{
@@ -125,16 +109,11 @@ function ReportCard({
   );
 }
 
-
 // =========================================================
 // SECTION CARD
 // =========================================================
 
-function SectionCard({
-  title,
-  subtitle,
-  children,
-}) {
+function SectionCard({ title, subtitle, children }) {
   return (
     <div
       style={{
@@ -174,7 +153,6 @@ function SectionCard({
     </div>
   );
 }
-
 
 // =========================================================
 // CUSTOM TOOLTIP
@@ -219,60 +197,41 @@ function CustomTooltip({ active, payload, label }) {
             marginTop: 4,
           }}
         >
-          <span style={{ color: "#64748b" }}>
-            {item.name}
-          </span>
+          <span style={{ color: "#64748b" }}>{item.name}</span>
 
-          <strong style={{ color: "#0f172a" }}>
-            {item.value}
-          </strong>
+          <strong style={{ color: "#0f172a" }}>{item.value}</strong>
         </div>
       ))}
     </div>
   );
 }
 
-
 // =========================================================
 // MAIN COMPONENT
 // =========================================================
 
 export default function Reports() {
-
   // =======================================================
   // STATE
   // =======================================================
 
   const [summary, setSummary] = useState(null);
 
-  const [
-    conversationAnalytics,
-    setConversationAnalytics,
-  ] = useState(null);
+  const [conversationAnalytics, setConversationAnalytics] = useState(null);
 
-  const [
-    messageAnalytics,
-    setMessageAnalytics,
-  ] = useState(null);
+  const [messageAnalytics, setMessageAnalytics] = useState(null);
 
-  const [conversations, setConversations] =
-    useState([]);
+  const [conversations, setConversations] = useState([]);
 
-  const [trends, setTrends] =
-    useState([]);
+  const [trends, setTrends] = useState([]);
 
-  const [period, setPeriod] =
-    useState("all");
+  const [period, setPeriod] = useState("all");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
-  const [refreshing, setRefreshing] =
-    useState(false);
-
+  const [refreshing, setRefreshing] = useState(false);
 
   // =======================================================
   // INITIAL LOAD
@@ -282,17 +241,12 @@ export default function Reports() {
     loadReports("all");
   }, []);
 
-
   // =======================================================
   // LOAD REPORTS
   // =======================================================
 
-  const loadReports = async (
-    selectedPeriod = period
-  ) => {
-
+  const loadReports = async (selectedPeriod = period) => {
     try {
-
       setError("");
 
       if (summary) {
@@ -305,11 +259,7 @@ export default function Reports() {
       // PERIOD QUERY
       // ---------------------------------------------------
 
-      const query =
-        selectedPeriod === "all"
-          ? ""
-          : `?period=${selectedPeriod}`;
-
+      const query = selectedPeriod === "all" ? "" : `?period=${selectedPeriod}`;
 
       // ---------------------------------------------------
       // TREND QUERY
@@ -319,7 +269,6 @@ export default function Reports() {
         selectedPeriod === "all"
           ? "?period=30days"
           : `?period=${selectedPeriod}`;
-
 
       // ---------------------------------------------------
       // API REQUESTS
@@ -332,29 +281,16 @@ export default function Reports() {
         conversationsResponse,
         trendsResponse,
       ] = await Promise.all([
+        fetch(`${API_BASE_URL}/reports/summary${query}`),
 
-        fetch(
-          `${API_BASE_URL}/reports/summary${query}`
-        ),
+        fetch(`${API_BASE_URL}/reports/conversations${query}`),
 
-        fetch(
-          `${API_BASE_URL}/reports/conversations${query}`
-        ),
+        fetch(`${API_BASE_URL}/reports/messages${query}`),
 
-        fetch(
-          `${API_BASE_URL}/reports/messages${query}`
-        ),
+        fetch(`${API_BASE_URL}/conversations${query}`),
 
-        fetch(
-          `${API_BASE_URL}/conversations${query}`
-        ),
-
-        fetch(
-          `${API_BASE_URL}/reports/trends${trendQuery}`
-        ),
-
+        fetch(`${API_BASE_URL}/reports/trends${trendQuery}`),
       ]);
-
 
       // ---------------------------------------------------
       // VALIDATION
@@ -367,54 +303,34 @@ export default function Reports() {
         !conversationsResponse.ok ||
         !trendsResponse.ok
       ) {
-        throw new Error(
-          "Failed to load reports data"
-        );
+        throw new Error("Failed to load reports data");
       }
-
 
       // ---------------------------------------------------
       // JSON
       // ---------------------------------------------------
 
-      const summaryData =
-        await summaryResponse.json();
+      const summaryData = await summaryResponse.json();
 
-      const conversationData =
-        await conversationResponse.json();
+      const conversationData = await conversationResponse.json();
 
-      const messageData =
-        await messageResponse.json();
+      const messageData = await messageResponse.json();
 
-      const conversationsData =
-        await conversationsResponse.json();
+      const conversationsData = await conversationsResponse.json();
 
-      const trendsData =
-        await trendsResponse.json();
-
+      const trendsData = await trendsResponse.json();
 
       // ---------------------------------------------------
       // SET DATA
       // ---------------------------------------------------
 
-      setSummary(
-        summaryData.data || {}
-      );
+      setSummary(summaryData.data || {});
 
-      setConversationAnalytics(
-        conversationData.data || {}
-      );
+      setConversationAnalytics(conversationData.data || {});
 
-      setMessageAnalytics(
-        messageData.data || {}
-      );
+      setMessageAnalytics(messageData.data || {});
 
-      setTrends(
-        Array.isArray(trendsData.data)
-          ? trendsData.data
-          : []
-      );
-
+      setTrends(Array.isArray(trendsData.data) ? trendsData.data : []);
 
       // ---------------------------------------------------
       // CONVERSATIONS
@@ -424,51 +340,36 @@ export default function Reports() {
         Array.isArray(conversationsData)
           ? conversationsData
           : Array.isArray(conversationsData.data)
-          ? conversationsData.data
-          : []
+            ? conversationsData.data
+            : [],
       );
-
     } catch (err) {
-
-      console.error(
-        "Reports Load Error:",
-        err
-      );
+      console.error("Reports Load Error:", err);
 
       setError(
-        "Unable to load reports. Please check that the CRM backend is running."
+        "Unable to load reports. Please check that the CRM backend is running.",
       );
-
     } finally {
-
       setLoading(false);
       setRefreshing(false);
-
     }
   };
-
 
   // =======================================================
   // PERIOD CHANGE
   // =======================================================
 
-  const handlePeriodChange = (
-    newPeriod
-  ) => {
-
+  const handlePeriodChange = (newPeriod) => {
     setPeriod(newPeriod);
 
     loadReports(newPeriod);
-
   };
-
 
   // =======================================================
   // LOADING
   // =======================================================
 
   if (loading) {
-
     return (
       <div
         className="reports-page"
@@ -489,28 +390,23 @@ export default function Reports() {
           style={{
             marginTop: 20,
             background: "var(--card-bg, #ffffff)",
-            border:
-              "1px solid var(--border-color, #e5e7eb)",
+            border: "1px solid var(--border-color, #e5e7eb)",
             borderRadius: 16,
             padding: 30,
             textAlign: "center",
           }}
         >
-          <p className="muted">
-            Loading reports...
-          </p>
+          <p className="muted">Loading reports...</p>
         </div>
       </div>
     );
   }
-
 
   // =======================================================
   // ERROR
   // =======================================================
 
   if (error) {
-
     return (
       <div
         className="reports-page"
@@ -531,8 +427,7 @@ export default function Reports() {
           style={{
             marginTop: 20,
             background: "var(--card-bg, #ffffff)",
-            border:
-              "1px solid var(--border-color, #e5e7eb)",
+            border: "1px solid var(--border-color, #e5e7eb)",
             borderRadius: 16,
             padding: 30,
           }}
@@ -548,9 +443,7 @@ export default function Reports() {
           </div>
 
           <button
-            onClick={() =>
-              loadReports(period)
-            }
+            onClick={() => loadReports(period)}
             style={{
               border: "none",
               borderRadius: 8,
@@ -568,52 +461,37 @@ export default function Reports() {
     );
   }
 
-
   // =======================================================
   // SAFE DATA
   // =======================================================
 
-  const reportConversations =
-    summary?.conversations || {};
+  const reportConversations = summary?.conversations || {};
 
-  const messages =
-    summary?.messages || {};
+  const messages = summary?.messages || {};
 
-  const status =
-    conversationAnalytics?.status || {};
+  const status = conversationAnalytics?.status || {};
 
-  const handledBy =
-    conversationAnalytics?.handledBy || {};
+  const handledBy = conversationAnalytics?.handledBy || {};
 
-  const intents =
-    conversationAnalytics?.intents || {};
-
+  const intents = conversationAnalytics?.intents || {};
 
   // =======================================================
   // BASIC METRICS
   // =======================================================
 
-  const totalConversations =
-    reportConversations.total || 0;
+  const totalConversations = reportConversations.total || 0;
 
-  const completed =
-    reportConversations.completed || 0;
+  const completed = reportConversations.completed || 0;
 
-  const aiHandled =
-    reportConversations.aiHandled || 0;
+  const aiHandled = reportConversations.aiHandled || 0;
 
-  const humanHandled =
-    reportConversations.humanHandled || 0;
+  const humanHandled = reportConversations.humanHandled || 0;
 
-  const inProgress =
-    reportConversations.inProgress || 0;
+  const inProgress = reportConversations.inProgress || 0;
 
-  const blocked =
-    reportConversations.blocked || 0;
+  const blocked = reportConversations.blocked || 0;
 
-  const totalMessages =
-    messages.total || 0;
-
+  const totalMessages = messages.total || 0;
 
   // =======================================================
   // RATES
@@ -621,31 +499,18 @@ export default function Reports() {
 
   const resolutionRate =
     totalConversations > 0
-      ? Math.round(
-          (completed /
-            totalConversations) *
-            100
-        )
+      ? Math.round((completed / totalConversations) * 100)
       : 0;
 
   const aiAutomationRate =
     totalConversations > 0
-      ? Math.round(
-          (aiHandled /
-            totalConversations) *
-            100
-        )
+      ? Math.round((aiHandled / totalConversations) * 100)
       : 0;
 
   const humanTakeoverRate =
     totalConversations > 0
-      ? Math.round(
-          (humanHandled /
-            totalConversations) *
-            100
-        )
+      ? Math.round((humanHandled / totalConversations) * 100)
       : 0;
-
 
   // =======================================================
   // CHART DATA
@@ -666,7 +531,6 @@ export default function Reports() {
     },
   ];
 
-
   const handlingChartData = [
     {
       name: "AI",
@@ -677,7 +541,6 @@ export default function Reports() {
       value: handledBy.human || 0,
     },
   ];
-
 
   const messageChartData = [
     {
@@ -694,56 +557,35 @@ export default function Reports() {
     },
   ];
 
-
-  const intentChartData =
-    Object.entries(intents).map(
-      ([name, value]) => ({
-        name,
-        value,
-      })
-    );
-
+  const intentChartData = Object.entries(intents).map(([name, value]) => ({
+    name,
+    value,
+  }));
 
   // =======================================================
   // TREND DATA
   // =======================================================
 
-  const trendChartData =
-    trends.map((item) => {
+  const trendChartData = trends.map((item) => {
+    const date = new Date(`${item.date}T00:00:00`);
 
-      const date = new Date(
-        `${item.date}T00:00:00`
-      );
+    return {
+      ...item,
 
-      return {
-        ...item,
+      displayDate: date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+      }),
 
-        displayDate:
-          date.toLocaleDateString(
-            "en-IN",
-            {
-              day: "2-digit",
-              month: "short",
-            }
-          ),
+      conversations: Number(item.conversations || 0),
 
-        conversations:
-          Number(
-            item.conversations || 0
-          ),
+      employee: Number(item.employee || 0),
 
-        employee:
-          Number(item.employee || 0),
+      ai: Number(item.ai || 0),
 
-        ai:
-          Number(item.ai || 0),
-
-        agent:
-          Number(item.agent || 0),
-      };
-
-    });
-
+      agent: Number(item.agent || 0),
+    };
+  });
 
   // =======================================================
   // PERIOD LABEL
@@ -758,23 +600,19 @@ export default function Reports() {
     "30days": "Last 30 Days",
   };
 
-
   // =======================================================
   // MAIN UI
   // =======================================================
 
   return (
-
     <div
       className="reports-page"
       style={{
         padding: 24,
         paddingBottom: 50,
-        background:
-          "var(--page-bg, transparent)",
+        background: "var(--page-bg, transparent)",
       }}
     >
-
       {/* ================================================= */}
       {/* HEADER */}
       {/* ================================================= */}
@@ -789,16 +627,13 @@ export default function Reports() {
           marginBottom: 26,
         }}
       >
-
         <div>
-
           <h2
             style={{
               margin: 0,
               fontSize: 26,
               fontWeight: 750,
-              color:
-                "var(--text-color, #0f172a)",
+              color: "var(--text-color, #0f172a)",
             }}
           >
             Reports & Analytics
@@ -806,20 +641,15 @@ export default function Reports() {
 
           <p
             style={{
-              margin:
-                "7px 0 0",
+              margin: "7px 0 0",
               fontSize: 13,
-              color:
-                "var(--muted-color, #64748b)",
+              color: "var(--muted-color, #64748b)",
             }}
           >
-            Monitor conversations, AI
-            performance, messages and
-            employee activity.
+            Monitor conversations, AI performance, messages and employee
+            activity.
           </p>
-
         </div>
-
 
         {/* PERIOD FILTER */}
 
@@ -831,7 +661,6 @@ export default function Reports() {
             flexWrap: "wrap",
           }}
         >
-
           {[
             {
               label: "All",
@@ -858,14 +687,9 @@ export default function Reports() {
               value: "30days",
             },
           ].map((item) => (
-
             <button
               key={item.value}
-              onClick={() =>
-                handlePeriodChange(
-                  item.value
-                )
-              }
+              onClick={() => handlePeriodChange(item.value)}
               style={{
                 border:
                   period === item.value
@@ -873,17 +697,14 @@ export default function Reports() {
                     : "1px solid var(--border-color, #e2e8f0)",
 
                 background:
-                  period === item.value
-                    ? "#6366f1"
-                    : "var(--card-bg, #ffffff)",
+                  period === item.value ? "#6366f1" : "var(--card-bg, #ffffff)",
 
                 color:
                   period === item.value
                     ? "#ffffff"
                     : "var(--text-color, #334155)",
 
-                padding:
-                  "8px 13px",
+                padding: "8px 13px",
 
                 borderRadius: 8,
 
@@ -891,59 +712,36 @@ export default function Reports() {
 
                 fontSize: 12,
 
-                fontWeight:
-                  period === item.value
-                    ? 700
-                    : 500,
+                fontWeight: period === item.value ? 700 : 500,
 
-                transition:
-                  "all 0.2s ease",
+                transition: "all 0.2s ease",
               }}
             >
               {item.label}
             </button>
-
           ))}
-
 
           {/* REFRESH */}
 
           <button
-            onClick={() =>
-              loadReports(period)
-            }
+            onClick={() => loadReports(period)}
             disabled={refreshing}
             style={{
-              border:
-                "1px solid var(--border-color, #e2e8f0)",
-              background:
-                "var(--card-bg, #ffffff)",
-              color:
-                "var(--text-color, #334155)",
-              padding:
-                "8px 14px",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              background: "var(--card-bg, #ffffff)",
+              color: "var(--text-color, #334155)",
+              padding: "8px 14px",
               borderRadius: 8,
-              cursor:
-                refreshing
-                  ? "not-allowed"
-                  : "pointer",
+              cursor: refreshing ? "not-allowed" : "pointer",
               fontSize: 12,
               fontWeight: 600,
-              opacity:
-                refreshing
-                  ? 0.6
-                  : 1,
+              opacity: refreshing ? 0.6 : 1,
             }}
           >
-            {refreshing
-              ? "Refreshing..."
-              : "Refresh"}
+            {refreshing ? "Refreshing..." : "Refresh"}
           </button>
-
         </div>
-
       </div>
-
 
       {/* ================================================= */}
       {/* ACTIVE PERIOD */}
@@ -954,8 +752,7 @@ export default function Reports() {
           display: "inline-flex",
           alignItems: "center",
           gap: 8,
-          padding:
-            "7px 12px",
+          padding: "7px 12px",
           borderRadius: 20,
           background: "#eef2ff",
           color: "#4f46e5",
@@ -972,12 +769,8 @@ export default function Reports() {
             background: "#6366f1",
           }}
         />
-
-        Showing:
-        {" "}
-        {periodLabels[period]}
+        Showing: {periodLabels[period]}
       </div>
-
 
       {/* ================================================= */}
       {/* PERFORMANCE OVERVIEW */}
@@ -988,28 +781,23 @@ export default function Reports() {
           marginBottom: 26,
         }}
       >
-
         <h3
           style={{
             fontSize: 18,
-            margin:
-              "0 0 14px",
+            margin: "0 0 14px",
             fontWeight: 700,
           }}
         >
           Performance Overview
         </h3>
 
-
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(190px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
             gap: 15,
           }}
         >
-
           <ReportCard
             title="Total Conversations"
             value={totalConversations}
@@ -1037,11 +825,8 @@ export default function Reports() {
             subtitle="Human handled conversations"
             color={COLORS.orange}
           />
-
         </div>
-
       </div>
-
 
       {/* ================================================= */}
       {/* CONVERSATION SUMMARY */}
@@ -1052,28 +837,23 @@ export default function Reports() {
           marginBottom: 26,
         }}
       >
-
         <h3
           style={{
             fontSize: 18,
-            margin:
-              "0 0 14px",
+            margin: "0 0 14px",
             fontWeight: 700,
           }}
         >
           Conversation Summary
         </h3>
 
-
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(180px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: 15,
           }}
         >
-
           <ReportCard
             title="Completed"
             value={completed}
@@ -1101,11 +881,8 @@ export default function Reports() {
             subtitle="All messages"
             color={COLORS.cyan}
           />
-
         </div>
-
       </div>
-
 
       {/* ================================================= */}
       {/* TRENDS */}
@@ -1114,37 +891,26 @@ export default function Reports() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fit, minmax(350px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
           gap: 20,
           marginBottom: 26,
         }}
       >
-
         {/* CONVERSATION TREND */}
 
         <SectionCard
           title="Conversation Trends"
           subtitle="Daily conversation activity"
         >
-
           <div
             style={{
               height: 300,
             }}
           >
-
             {trendChartData.length === 0 ? (
-
               <EmptyState text="No conversation trend data available." />
-
             ) : (
-
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={trendChartData}
                   margin={{
@@ -1154,11 +920,7 @@ export default function Reports() {
                     bottom: 5,
                   }}
                 >
-
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#e2e8f0"
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
 
                   <XAxis
                     dataKey="displayDate"
@@ -1174,35 +936,23 @@ export default function Reports() {
                     }}
                   />
 
-                  <Tooltip
-                    content={
-                      <CustomTooltip />
-                    }
-                  />
+                  <Tooltip content={<CustomTooltip />} />
 
                   <Line
                     type="monotone"
                     dataKey="conversations"
                     name="Conversations"
-                    stroke={
-                      COLORS.primary
-                    }
+                    stroke={COLORS.primary}
                     strokeWidth={3}
                     dot={{
                       r: 4,
                     }}
                   />
-
                 </LineChart>
-
               </ResponsiveContainer>
-
             )}
-
           </div>
-
         </SectionCard>
-
 
         {/* MESSAGE TREND */}
 
@@ -1210,24 +960,15 @@ export default function Reports() {
           title="Message Trends"
           subtitle="Employee, AI and agent activity"
         >
-
           <div
             style={{
               height: 300,
             }}
           >
-
             {trendChartData.length === 0 ? (
-
               <EmptyState text="No message trend data available." />
-
             ) : (
-
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={trendChartData}
                   margin={{
@@ -1237,11 +978,7 @@ export default function Reports() {
                     bottom: 5,
                   }}
                 >
-
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#e2e8f0"
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
 
                   <XAxis
                     dataKey="displayDate"
@@ -1257,11 +994,7 @@ export default function Reports() {
                     }}
                   />
 
-                  <Tooltip
-                    content={
-                      <CustomTooltip />
-                    }
-                  />
+                  <Tooltip content={<CustomTooltip />} />
 
                   <Legend />
 
@@ -1269,9 +1002,7 @@ export default function Reports() {
                     type="monotone"
                     dataKey="employee"
                     name="Employee"
-                    stroke={
-                      COLORS.cyan
-                    }
+                    stroke={COLORS.cyan}
                     strokeWidth={2.5}
                   />
 
@@ -1279,9 +1010,7 @@ export default function Reports() {
                     type="monotone"
                     dataKey="ai"
                     name="AI"
-                    stroke={
-                      COLORS.purple
-                    }
+                    stroke={COLORS.purple}
                     strokeWidth={2.5}
                   />
 
@@ -1289,24 +1018,15 @@ export default function Reports() {
                     type="monotone"
                     dataKey="agent"
                     name="Agent"
-                    stroke={
-                      COLORS.orange
-                    }
+                    stroke={COLORS.orange}
                     strokeWidth={2.5}
                   />
-
                 </LineChart>
-
               </ResponsiveContainer>
-
             )}
-
           </div>
-
         </SectionCard>
-
       </div>
-
 
       {/* ================================================= */}
       {/* AI PERFORMANCE */}
@@ -1316,39 +1036,30 @@ export default function Reports() {
         title="AI Performance"
         subtitle="Overview of automation effectiveness"
       >
-
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(190px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
             gap: 15,
           }}
         >
-
           <ReportCard
             title="AI Conversations"
-            value={
-              handledBy.ai || 0
-            }
+            value={handledBy.ai || 0}
             subtitle="Handled by AI"
             color={COLORS.purple}
           />
 
           <ReportCard
             title="AI Messages"
-            value={
-              messages.ai || 0
-            }
+            value={messages.ai || 0}
             subtitle="Automated replies"
             color={COLORS.cyan}
           />
 
           <ReportCard
             title="Human Takeovers"
-            value={
-              handledBy.human || 0
-            }
+            value={handledBy.human || 0}
             subtitle="Handled by humans"
             color={COLORS.orange}
           />
@@ -1359,14 +1070,10 @@ export default function Reports() {
             subtitle="Overall AI automation"
             color={COLORS.green}
           />
-
         </div>
-
       </SectionCard>
 
-
       <div style={{ height: 26 }} />
-
 
       {/* ================================================= */}
       {/* TOP INTENTS */}
@@ -1376,197 +1083,126 @@ export default function Reports() {
         title="Top Employee Intents"
         subtitle="Most frequently detected employee requests"
       >
-
         {Object.entries(intents).length === 0 ? (
-
-          <p className="muted">
-            No intent data available.
-          </p>
-
+          <p className="muted">No intent data available.</p>
         ) : (
-
           <div>
-
             {Object.entries(intents)
-              .sort(
-                ([, a], [, b]) =>
-                  b - a
-              )
-              .map(
-                (
-                  [intent, count],
-                  index
-                ) => {
+              .sort(([, a], [, b]) => b - a)
+              .map(([intent, count], index) => {
+                const percentage =
+                  totalConversations > 0
+                    ? Math.round((count / totalConversations) * 100)
+                    : 0;
 
-                  const percentage =
-                    totalConversations > 0
-                      ? Math.round(
-                          (count /
-                            totalConversations) *
-                            100
-                        )
-                      : 0;
-
-                  return (
-
+                return (
+                  <div
+                    key={intent}
+                    style={{
+                      padding: "14px 0",
+                      borderBottom:
+                        index === Object.entries(intents).length - 1
+                          ? "none"
+                          : "1px solid var(--border-color, #e5e7eb)",
+                    }}
+                  >
                     <div
-                      key={intent}
                       style={{
-                        padding:
-                          "14px 0",
-                        borderBottom:
-                          index ===
-                          Object.entries(
-                            intents
-                          ).length -
-                            1
-                            ? "none"
-                            : "1px solid var(--border-color, #e5e7eb)",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 8,
                       }}
                     >
-
-                      <div
+                      <span
                         style={{
-                          display: "flex",
-                          justifyContent:
-                            "space-between",
-                          alignItems:
-                            "center",
-                          marginBottom: 8,
+                          fontSize: 13,
+                          fontWeight: 600,
                         }}
                       >
+                        {intent}
+                      </span>
 
-                        <span
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {intent}
-                        </span>
-
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color:
-                              COLORS.primary,
-                          }}
-                        >
-                          {count}
-                        </span>
-
-                      </div>
-
-
-                      <div
+                      <span
                         style={{
-                          height: 7,
-                          background:
-                            "#eef2f7",
-                          borderRadius:
-                            10,
-                          overflow:
-                            "hidden",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: COLORS.primary,
                         }}
                       >
-
-                        <div
-                          style={{
-                            width:
-                              `${Math.min(
-                                percentage,
-                                100
-                              )}%`,
-                            height:
-                              "100%",
-                            background:
-                              `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.purple})`,
-                            borderRadius:
-                              10,
-                          }}
-                        />
-
-                      </div>
-
+                        {count}
+                      </span>
                     </div>
 
-                  );
-
-                }
-              )}
-
+                    <div
+                      style={{
+                        height: 7,
+                        background: "#eef2f7",
+                        borderRadius: 10,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${Math.min(percentage, 100)}%`,
+                          height: "100%",
+                          background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.purple})`,
+                          borderRadius: 10,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
           </div>
-
         )}
-
       </SectionCard>
 
-
       <div style={{ height: 26 }} />
-
 
       {/* ================================================= */}
       {/* MESSAGE SUMMARY */}
       {/* ================================================= */}
 
-      <SectionCard
-        title="Message Summary"
-        subtitle="Detailed message activity"
-      >
-
+      <SectionCard title="Message Summary" subtitle="Detailed message activity">
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(190px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
             gap: 15,
           }}
         >
-
           <ReportCard
             title="Employee Messages"
-            value={
-              messages.employee || 0
-            }
+            value={messages.employee || 0}
             subtitle="Incoming messages"
             color={COLORS.cyan}
           />
 
           <ReportCard
             title="AI Replies"
-            value={
-              messages.ai || 0
-            }
+            value={messages.ai || 0}
             subtitle="Automated replies"
             color={COLORS.purple}
           />
 
           <ReportCard
             title="Agent Replies"
-            value={
-              messages.agent || 0
-            }
+            value={messages.agent || 0}
             subtitle="Human replies"
             color={COLORS.orange}
           />
 
           <ReportCard
             title="Total Messages"
-            value={
-              messages.total || 0
-            }
+            value={messages.total || 0}
             subtitle="All messages"
             color={COLORS.primary}
           />
-
         </div>
-
       </SectionCard>
 
-
       <div style={{ height: 26 }} />
-
 
       {/* ================================================= */}
       {/* CHANNEL OVERVIEW */}
@@ -1576,21 +1212,16 @@ export default function Reports() {
         title="Channel Overview"
         subtitle="Communication channel activity"
       >
-
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(200px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: 15,
           }}
         >
-
           <ReportCard
             title="WhatsApp Conversations"
-            value={
-              totalConversations
-            }
+            value={totalConversations}
             subtitle="Selected period"
             color={COLORS.green}
           />
@@ -1601,14 +1232,10 @@ export default function Reports() {
             subtitle="Employee communication"
             color={COLORS.primary}
           />
-
         </div>
-
       </SectionCard>
 
-
       <div style={{ height: 26 }} />
-
 
       {/* ================================================= */}
       {/* RECENT CONVERSATIONS */}
@@ -1618,321 +1245,202 @@ export default function Reports() {
         title="Recent Conversations"
         subtitle={`Conversations from ${periodLabels[period].toLowerCase()}`}
       >
-
         <div
           style={{
             display: "flex",
-            justifyContent:
-              "space-between",
+            justifyContent: "space-between",
             alignItems: "center",
             marginBottom: 16,
           }}
         >
-
           <span
             style={{
               fontSize: 12,
-              color:
-                "var(--muted-color, #64748b)",
+              color: "var(--muted-color, #64748b)",
             }}
           >
             {conversations.length} conversations
           </span>
-
         </div>
 
-
         {conversations.length === 0 ? (
-
-          <EmptyState
-            text="No conversations available for this period."
-          />
-
+          <EmptyState text="No conversations available for this period." />
         ) : (
-
           <div
             style={{
               width: "100%",
               overflowX: "auto",
             }}
           >
-
             <table
               style={{
                 width: "100%",
-                borderCollapse:
-                  "collapse",
+                borderCollapse: "collapse",
                 minWidth: 650,
               }}
             >
-
               <thead>
-
                 <tr>
-
-                  {[
-                    "Contact",
-                    "Intent",
-                    "Handler",
-                    "Status",
-                    "Messages",
-                  ].map(
+                  {["Contact", "Intent", "Handler", "Status", "Messages"].map(
                     (heading) => (
-
                       <th
                         key={heading}
                         style={{
-                          textAlign:
-                            "left",
-                          padding:
-                            "12px 10px",
+                          textAlign: "left",
+                          padding: "12px 10px",
                           fontSize: 11,
                           fontWeight: 700,
-                          color:
-                            "var(--muted-color, #64748b)",
+                          color: "var(--muted-color, #64748b)",
                           borderBottom:
                             "1px solid var(--border-color, #e5e7eb)",
-                          textTransform:
-                            "uppercase",
-                          letterSpacing:
-                            "0.04em",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
                         }}
                       >
                         {heading}
                       </th>
-
-                    )
+                    ),
                   )}
-
                 </tr>
-
               </thead>
 
-
               <tbody>
+                {conversations.slice(0, 10).map((conversation, index) => (
+                  <tr key={conversation._id || index}>
+                    {/* CONTACT */}
 
-                {conversations
-                  .slice(0, 10)
-                  .map(
-                    (
-                      conversation,
-                      index
-                    ) => (
-
-                      <tr
-                        key={
-                          conversation._id ||
-                          index
-                        }
+                    <td
+                      style={{
+                        padding: "14px 10px",
+                        borderBottom: "1px solid var(--border-color, #e5e7eb)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 13,
+                        }}
                       >
+                        {conversation.contactName || "Unknown"}
+                      </div>
 
-                        {/* CONTACT */}
+                      <div
+                        style={{
+                          marginTop: 3,
+                          fontSize: 11,
+                          color: "var(--muted-color, #64748b)",
+                        }}
+                      >
+                        {conversation.phone || "-"}
+                      </div>
+                    </td>
 
-                        <td
-                          style={{
-                            padding:
-                              "14px 10px",
-                            borderBottom:
-                              "1px solid var(--border-color, #e5e7eb)",
-                          }}
-                        >
+                    {/* INTENT */}
 
-                          <div
-                            style={{
-                              fontWeight:
-                                700,
-                              fontSize: 13,
-                            }}
-                          >
-                            {
-                              conversation.contactName ||
-                              "Unknown"
-                            }
-                          </div>
+                    <td
+                      style={{
+                        padding: "14px 10px",
+                        borderBottom: "1px solid var(--border-color, #e5e7eb)",
+                        fontSize: 12,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "5px 8px",
+                          borderRadius: 6,
+                          background: "#eef2ff",
+                          color: "#4f46e5",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {conversation.intent || "General Query"}
+                      </span>
+                    </td>
 
-                          <div
-                            style={{
-                              marginTop: 3,
-                              fontSize: 11,
-                              color:
-                                "var(--muted-color, #64748b)",
-                            }}
-                          >
-                            {
-                              conversation.phone ||
-                              "-"
-                            }
-                          </div>
+                    {/* HANDLER */}
 
-                        </td>
+                    <td
+                      style={{
+                        padding: "14px 10px",
+                        borderBottom: "1px solid var(--border-color, #e5e7eb)",
+                        fontSize: 12,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color:
+                            conversation.handledBy === "Human"
+                              ? COLORS.blue
+                              : COLORS.purple,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {conversation.handledBy || "AI"}
+                      </span>
+                    </td>
 
+                    {/* STATUS */}
 
-                        {/* INTENT */}
+                    <td
+                      style={{
+                        padding: "14px 10px",
+                        borderBottom: "1px solid var(--border-color, #e5e7eb)",
+                        fontSize: 12,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          padding: "5px 9px",
+                          borderRadius: 20,
+                          fontWeight: 600,
+                          background:
+                            conversation.status === "Completed"
+                              ? "#ecfdf5"
+                              : conversation.status === "Blocked"
+                                ? "#fef2f2"
+                                : "#fff7ed",
+                          color:
+                            conversation.status === "Completed"
+                              ? "#059669"
+                              : conversation.status === "Blocked"
+                                ? "#dc2626"
+                                : "#ea580c",
+                        }}
+                      >
+                        {conversation.status || "In Progress"}
+                      </span>
+                    </td>
 
-                        <td
-                          style={{
-                            padding:
-                              "14px 10px",
-                            borderBottom:
-                              "1px solid var(--border-color, #e5e7eb)",
-                            fontSize: 12,
-                          }}
-                        >
+                    {/* MESSAGES */}
 
-                          <span
-                            style={{
-                              display:
-                                "inline-block",
-                              padding:
-                                "5px 8px",
-                              borderRadius:
-                                6,
-                              background:
-                                "#eef2ff",
-                              color:
-                                "#4f46e5",
-                              fontWeight:
-                                600,
-                            }}
-                          >
-                            {
-                              conversation.intent ||
-                              "General Query"
-                            }
-                          </span>
-
-                        </td>
-
-
-                        {/* HANDLER */}
-
-                        <td
-                          style={{
-                            padding:
-                              "14px 10px",
-                            borderBottom:
-                              "1px solid var(--border-color, #e5e7eb)",
-                            fontSize: 12,
-                          }}
-                        >
-
-                          <span
-                            style={{
-                              color:
-                                conversation.handledBy ===
-                                "Human"
-                                  ? COLORS.blue
-                                  : COLORS.purple,
-                              fontWeight:
-                                700,
-                            }}
-                          >
-                            {
-                              conversation.handledBy ||
-                              "AI"
-                            }
-                          </span>
-
-                        </td>
-
-
-                        {/* STATUS */}
-
-                        <td
-                          style={{
-                            padding:
-                              "14px 10px",
-                            borderBottom:
-                              "1px solid var(--border-color, #e5e7eb)",
-                            fontSize: 12,
-                          }}
-                        >
-
-                          <span
-                            style={{
-                              display:
-                                "inline-flex",
-                              padding:
-                                "5px 9px",
-                              borderRadius:
-                                20,
-                              fontWeight:
-                                600,
-                              background:
-                                conversation.status ===
-                                "Completed"
-                                  ? "#ecfdf5"
-                                  : conversation.status ===
-                                    "Blocked"
-                                  ? "#fef2f2"
-                                  : "#fff7ed",
-                              color:
-                                conversation.status ===
-                                "Completed"
-                                  ? "#059669"
-                                  : conversation.status ===
-                                    "Blocked"
-                                  ? "#dc2626"
-                                  : "#ea580c",
-                            }}
-                          >
-                            {
-                              conversation.status ||
-                              "In Progress"
-                            }
-                          </span>
-
-                        </td>
-
-
-                        {/* MESSAGES */}
-
-                        <td
-                          style={{
-                            padding:
-                              "14px 10px",
-                            borderBottom:
-                              "1px solid var(--border-color, #e5e7eb)",
-                            fontSize: 13,
-                            fontWeight:
-                              700,
-                          }}
-                        >
-                          {
-                            conversation
-                              .messages
-                              ?.length ||
-                            0
-                          }
-                        </td>
-
-                      </tr>
-
-                    )
-                  )}
-
+                    <td
+                      style={{
+                        padding: "14px 10px",
+                        borderBottom: "1px solid var(--border-color, #e5e7eb)",
+                        fontSize: 13,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {conversation.messages?.length || 0}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
-
             </table>
-
           </div>
-
         )}
-
       </SectionCard>
-
     </div>
   );
 }
-
 
 // =========================================================
 // EMPTY STATE
 // =========================================================
 
-function EmptyState({
-  text,
-}) {
+function EmptyState({ text }) {
   return (
     <div
       style={{
@@ -1943,8 +1451,7 @@ function EmptyState({
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        color:
-          "var(--muted-color, #64748b)",
+        color: "var(--muted-color, #64748b)",
         fontSize: 13,
       }}
     >
