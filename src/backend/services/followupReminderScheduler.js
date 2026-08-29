@@ -1,13 +1,24 @@
 const Followup = require("../models/Followup");
 const Notification = require("../models/CommunicationModels/Notifications");
 const { getIO } = require("../Socket");
+const mongoose = require("mongoose");
 
 let schedulerStarted = false;
+let schedulerRunning = false;
 
 /**
  * Checks for follow-ups due for reminder every 60 seconds
  */
 const checkFollowupReminders = async () => {
+  // Skip if already running or database not connected
+  if (schedulerRunning) return;
+  if (mongoose.connection.readyState !== 1) {
+    console.warn("[FollowupScheduler] Database not connected, skipping check");
+    return;
+  }
+
+  schedulerRunning = true;
+
   try {
     const io = getIO();
     const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
@@ -18,7 +29,7 @@ const checkFollowupReminders = async () => {
       status: { $ne: "Completed" },
       isCompleted: { $ne: true },
       reminderSent: { $ne: true },
-    });
+    }).maxTimeMS(5000); // 5 second timeout instead of default 10
 
     for (const item of pendingFollowups) {
       let isDue = false;
@@ -73,6 +84,8 @@ const checkFollowupReminders = async () => {
     }
   } catch (error) {
     console.error("[FollowupScheduler] Error in checkFollowupReminders:", error.message);
+  } finally {
+    schedulerRunning = false;
   }
 };
 
@@ -83,10 +96,11 @@ const startFollowupReminderScheduler = () => {
 
   schedulerStarted = true;
   console.log("⏰ [FollowupScheduler] Starting automated follow-up reminder service...");
+  
   // Initial check after 10 seconds
   setTimeout(async function runReminderCheck() {
     await checkFollowupReminders();
-    setTimeout(runReminderCheck, 60000);
+    setTimeout(runReminderCheck, 60000); // Every 60 seconds
   }, 10000);
 };
 

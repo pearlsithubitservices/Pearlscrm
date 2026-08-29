@@ -89,8 +89,6 @@ import EmployeeOverview from './pages/employee/EmployeeOverview.jsx';
 import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.jsx';
 import EmpLead from './EmployeePages/Leads/Lead.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx';
-
-import EmpProjects from './EmployeePages/Projects/EmpProjects.jsx';
 import EmpProjectDetails from './EmployeePages/Projects/EmpProjectDetails.jsx';
 
 // ============================================================
