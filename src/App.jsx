@@ -34,6 +34,7 @@ import TaskDetails from './pages/TaskDetails';
 import Login from './pages/Login';
 import ClientManagement from './pages/ClientManagement';
 import AdminCommunication from './pages/CommunicationsAdmin/communication.jsx';
+import Collaboration from './pages/Collaboration.jsx';
 import ProtectedRoutes from './components/ProtectedRoutes.jsx';
 
 // ============================================================
@@ -90,6 +91,7 @@ import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.js
 import EmpLead from './EmployeePages/Leads/Lead.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx';
 import EmpProjectDetails from './EmployeePages/Projects/EmpProjectDetails.jsx';
+import Messager from './pages/Messager.jsx';
 
 // ============================================================
 // EXISTING WHATSAPP CAMPAIGN
@@ -333,6 +335,13 @@ export default function App() {
                 element={<AdminCommunication />}
               />
 
+              {/* COLLABORATION */}
+
+              <Route
+                path="/collaboration"
+                element={<Collaboration />}
+              />
+
               {/* LEAVE */}
 
               <Route
@@ -535,6 +544,11 @@ export default function App() {
               <Route
                 path="/employee/communication"
                 element={<EmpCommunication />}
+              />
+
+              <Route
+                path="/employee/collaboration"
+                element={<Messager />}
               />
 
               <Route
