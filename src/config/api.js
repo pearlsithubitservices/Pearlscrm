@@ -17,7 +17,13 @@ export const apiUrl = (path = "") => {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  let cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+  const baseEndsWithApi = BASE_URL.replace(/\/+$/, "").endsWith("/api");
+  if (baseEndsWithApi && cleanPath.startsWith("/api/")) {
+    cleanPath = cleanPath.substring(4);
+  }
+
   return `${BASE_URL.replace(/\/+$/, "")}${cleanPath}`;
 };
 

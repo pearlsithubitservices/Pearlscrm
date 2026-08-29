@@ -6,9 +6,29 @@ const AttendanceCorrection = require("../models/EmpAttendanceCorrection");
 // CREATE Attendance Correction
 router.post("/", async (req, res) => {
   try {
-    const data = req.body;
+    const data = req.body || {};
 
-    const newRequest = await AttendanceCorrection.create(data);
+    const payload = {
+      employeeId: data.employeeId || "EMP-001",
+      fullName: data.fullName || "Employee",
+      department: data.department || "General",
+      managerId: data.managerId || "ADMIN-01",
+      managerName: data.managerName || "Admin",
+      correctionType: data.correctionType || "Missed Check-In",
+      date: data.date ? new Date(data.date) : new Date(),
+      correctCheckIn: data.correctCheckIn || "09:00",
+      correctCheckOut: data.correctCheckOut || "18:00",
+      workMode: data.workMode || "In Office",
+      reason: data.reason || "Attendance Correction Request",
+      status: "Pending",
+    };
+
+    const newRequest = await AttendanceCorrection.create(payload);
+
+    try {
+      const { getIO } = require("../Socket");
+      getIO()?.emit("correctionStatusUpdated", { newRequest });
+    } catch (e) {}
 
     res.status(201).json({
       success: true,
@@ -16,6 +36,7 @@ router.post("/", async (req, res) => {
       data: newRequest,
     });
   } catch (error) {
+    console.error("Attendance correction create error:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -58,20 +79,45 @@ router.patch("/:id/status", async (req, res) => {
       });
     }
 
-    // If Approved, update or create the employee's attendance record for that date
-    if (status === "Approved" && updated.employeeId && updated.date) {
+    // If Approved, update the existing employee's attendance record for that date in-place
+    if (status === "Approved" && updated.date) {
       try {
         const EmpAttendanceModel = require("../models/EmpAttendanceModel");
+        const { calculateAttendanceStatus } = require("../../Utils/formatNumber");
         
         const reqDate = new Date(updated.date);
-        const startOfDay = new Date(reqDate.getFullYear(), reqDate.getMonth(), reqDate.getDate());
-        const endOfDay = new Date(startOfDay);
-        endOfDay.setDate(endOfDay.getDate() + 1);
+        const startOfDay = new Date(reqDate.getFullYear(), reqDate.getMonth(), reqDate.getDate(), 0, 0, 0, 0);
+        const endOfDay = new Date(reqDate.getFullYear(), reqDate.getMonth(), reqDate.getDate(), 23, 59, 59, 999);
 
+        // 1. Try finding existing attendance record by employee_uid/name AND date range
         let attendance = await EmpAttendanceModel.findOne({
-          employee_uid: updated.employeeId,
-          date: { $gte: startOfDay, $lt: endOfDay },
+          $or: [
+            { employee_uid: updated.employeeId },
+            { employee_uid: new RegExp(`^${updated.employeeId}$`, "i") },
+            { employee_name: new RegExp(`^${updated.fullName}$`, "i") }
+          ],
+          $or: [
+            { date: { $gte: startOfDay, $lte: endOfDay } },
+            { clockIn: { $gte: startOfDay, $lte: endOfDay } }
+          ]
         });
+
+        // 2. If not found by date range, try finding any record for that employee on that same calendar day
+        if (!attendance && updated.employeeId) {
+          const allRecords = await EmpAttendanceModel.find({
+            $or: [
+              { employee_uid: updated.employeeId },
+              { employee_uid: new RegExp(`^${updated.employeeId}$`, "i") },
+              { employee_name: new RegExp(`^${updated.fullName}$`, "i") }
+            ]
+          });
+
+          attendance = allRecords.find((rec) => {
+            const rDate = rec.clockIn || rec.date;
+            if (!rDate) return false;
+            return new Date(rDate).toDateString() === reqDate.toDateString();
+          });
+        }
 
         const parseTimeToDate = (timeStr, baseDate) => {
           if (!timeStr) return null;
@@ -89,8 +135,21 @@ router.patch("/:id/status", async (req, res) => {
           workingSecs = Math.floor((cOut.getTime() - cIn.getTime()) / 1000);
         }
 
-        if (!attendance) {
-          attendance = new EmpAttendanceModel({
+        const calculatedStatus = calculateAttendanceStatus ? calculateAttendanceStatus(cIn, cOut, workingSecs) : "present";
+
+        if (attendance) {
+          // UPDATE EXISTING RECORD IN-PLACE
+          if (cIn) attendance.clockIn = cIn;
+          if (cOut) attendance.clockOut = cOut;
+          attendance.workingHours = workingSecs;
+          attendance.attendanceState = "clocked_out";
+          attendance.isOnline = false;
+          attendance.status = calculatedStatus || "present";
+          if (updated.workMode) attendance.location = updated.workMode;
+          await attendance.save();
+        } else {
+          // ONLY CREATE IF ABSOLUTELY NO RECORD EXISTED FOR THAT DAY
+          attendance = await EmpAttendanceModel.create({
             employee_uid: updated.employeeId,
             employee_name: updated.fullName,
             department: updated.department,
@@ -98,21 +157,12 @@ router.patch("/:id/status", async (req, res) => {
             clockIn: cIn,
             clockOut: cOut,
             isOnline: false,
-            status: "present",
+            status: calculatedStatus || "present",
             attendanceState: "clocked_out",
             workingHours: workingSecs,
             location: updated.workMode || "Office",
           });
-        } else {
-          if (cIn) attendance.clockIn = cIn;
-          if (cOut) attendance.clockOut = cOut;
-          attendance.workingHours = workingSecs;
-          attendance.attendanceState = "clocked_out";
-          attendance.isOnline = false;
-          attendance.status = "present";
         }
-
-        await attendance.save();
 
         try {
           const { getIO } = require("../Socket");

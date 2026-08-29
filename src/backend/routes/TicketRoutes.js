@@ -71,4 +71,35 @@ router.post("/", upload.single("attachment"), async (req, res) => {
     }
 });
 
+// UPDATE TICKET STATUS / ASSIGNED
+router.put("/:id", async (req, res) => {
+    try {
+        const { status, assignedTo } = req.body;
+        const updateData = {};
+        if (status) updateData.status = status;
+        if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
+
+        const updated = await ticketSchema.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ success: false, message: "Ticket not found" });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: updated,
+        });
+    } catch (error) {
+        console.error("UPDATE TICKET ERROR:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+});
+
 module.exports = router;

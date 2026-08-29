@@ -21,6 +21,7 @@ import {
   Check,
   X,
   FileText,
+  Camera,
 } from 'lucide-react';
 import useAttendance from '../../Hooks/useAttendance';
 import { useAuth } from '../../context/AuthContext';
@@ -36,6 +37,7 @@ export default function AttendanceManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const { employees } = useEmployees();
 
+  const [selectedSelfie, setSelectedSelfie] = useState(null);
   const { user } = useAuth();
 
   const { getHolidays, holidays } = useLeave();
@@ -233,11 +235,51 @@ export default function AttendanceManagement() {
     return Math.min(100, Math.round((presentCount / totalEmployeesCount) * 100));
   }, [employeesdetails, employees]);
 
+  const [timeFilter, setTimeFilter] = useState("month");
+  const [customStartDate, setCustomStartDate] = useState(
+    new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split("T")[0]
+  );
+  const [customEndDate, setCustomEndDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+
   const filteredEmployees = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return employeesdetails || [];
+    const query = searchQuery.toLowerCase().trim();
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     return (employeesdetails || []).filter((emp) => {
+      const empDateRaw = emp.clockIn || emp.date;
+      if (empDateRaw) {
+        const empDate = new Date(empDateRaw);
+        if (!isNaN(empDate.getTime())) {
+          if (timeFilter === "week") {
+            const weekAgo = new Date(startOfToday);
+            weekAgo.setDate(weekAgo.getDate() - 6);
+            if (empDate < weekAgo) return false;
+          } else if (timeFilter === "month") {
+            if (empDate.getMonth() !== now.getMonth() || empDate.getFullYear() !== now.getFullYear()) {
+              return false;
+            }
+          } else if (timeFilter === "year") {
+            if (empDate.getFullYear() !== now.getFullYear()) return false;
+          } else if (timeFilter === "custom") {
+            if (customStartDate) {
+              const start = new Date(customStartDate);
+              start.setHours(0, 0, 0, 0);
+              if (empDate < start) return false;
+            }
+            if (customEndDate) {
+              const end = new Date(customEndDate);
+              end.setHours(23, 59, 59, 999);
+              if (empDate > end) return false;
+            }
+          }
+        }
+      }
+
+      if (!query) return true;
+
       const name = (emp.employee_name || employeeMap[emp.employee_uid] || "").toLowerCase();
       const dept = (emp.department || "").toLowerCase();
       const loc = (emp.location || "").toLowerCase();
@@ -252,18 +294,19 @@ export default function AttendanceManagement() {
         uid.includes(query)
       );
     });
-  }, [employeesdetails, employeeMap, searchQuery]);
+  }, [employeesdetails, employeeMap, searchQuery, timeFilter, customStartDate, customEndDate]);
 
   const exportOverallSheet = () => {
-    if (!employeesdetails || employeesdetails.length === 0) {
-      alert("No attendance records available to export!");
+    const listToExport = filteredEmployees.length > 0 ? filteredEmployees : employeesdetails;
+    if (!listToExport || listToExport.length === 0) {
+      alert("No attendance records available to export for the selected filter!");
       return;
     }
 
     const now = Date.now();
     const headers = ["Employee Name", "Department", "Status", "Clock In Time", "Location", "Working Time"];
 
-    const rows = employeesdetails.map((emp) => {
+    const rows = listToExport.map((emp) => {
       const name = emp.employee_name || employeeMap[emp.employee_uid] || "Employee";
       const dept = emp.department || "Employee";
       const status = emp.attendanceState || emp.status || "N/A";
@@ -308,19 +351,215 @@ export default function AttendanceManagement() {
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    const dateStr = new Date().toISOString().split("T")[0];
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Overall_Attendance_Report_${dateStr}.csv`);
+    link.setAttribute("download", `Attendance_Report_${new Date().toISOString().split("T")[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const downloadSingleEmployeePDF = (employee) => {
+    const empUid = employee.employee_uid || employee.uid || employee._id;
+    const empName = employee.employee_name || employeeMap[empUid] || "Employee";
+    const dept = employee.department || "Operations";
+
+    // Gather all historical records for this employee
+    let employeeRecords = (employeesdetails || []).filter((rec) => {
+      const matchUid = rec.employee_uid && String(rec.employee_uid) === String(empUid);
+      const matchName = rec.employee_name && rec.employee_name.toLowerCase().trim() === empName.toLowerCase().trim();
+      return matchUid || matchName;
+    });
+
+    if (employeeRecords.length === 0) {
+      employeeRecords = [employee];
+    }
+
+    // Sort by Date (newest first)
+    employeeRecords.sort((a, b) => {
+      const dateA = a.clockIn ? new Date(a.clockIn) : new Date(a.date || 0);
+      const dateB = b.clockIn ? new Date(b.clockIn) : new Date(b.date || 0);
+      return dateB - dateA;
+    });
+
+    // Monthly summary calculation
+    const totalDaysLogged = employeeRecords.length;
+    let totalSecondsSum = 0;
+    const nowTs = Date.now();
+
+    const tableRowsHtml = employeeRecords.map((rec) => {
+      const dateFormatted = rec.clockIn ? new Date(rec.clockIn).toLocaleDateString('en-GB') : (rec.date ? new Date(rec.date).toLocaleDateString('en-GB') : 'N/A');
+      const inTime = rec.clockIn ? new Date(rec.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--';
+      const outTime = rec.clockOut ? new Date(rec.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : (rec.attendanceState === 'working' ? 'Active' : '--:--');
+      const loc = rec.location || 'Office';
+
+      let secs = Number(rec.workingHours || 0);
+      if (rec.attendanceState === "working" && rec.clockIn) {
+        const cIn = new Date(rec.clockIn).getTime();
+        if (!isNaN(cIn) && cIn <= nowTs) {
+          let breakDuration = 0;
+          (rec.breaks || []).forEach((b) => {
+            if (b.start) {
+              const bStart = new Date(b.start).getTime();
+              const bEnd = b.end ? new Date(b.end).getTime() : nowTs;
+              if (!isNaN(bStart) && !isNaN(bEnd) && bEnd >= bStart) {
+                breakDuration += Math.floor((bEnd - bStart) / 1000);
+              }
+            }
+          });
+          secs = Math.max(0, Math.floor((nowTs - cIn) / 1000) - breakDuration);
+        }
+      }
+      totalSecondsSum += secs;
+
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      const rowWorkTime = `${h}h ${m}m`;
+
+      const st = rec.attendanceState === 'working' ? 'Present' : (rec.status || 'Completed');
+      const badgeClass = rec.attendanceState === 'working' ? 'badge-online' : (rec.status === 'break' ? 'badge-break' : 'badge-completed');
+
+      return `
+        <tr>
+          <td><strong>${dateFormatted}</strong></td>
+          <td>${inTime}</td>
+          <td>${outTime}</td>
+          <td>${loc}</td>
+          <td>${rowWorkTime}</td>
+          <td><span class="badge ${badgeClass}">${st}</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    const totalHrsSum = Math.floor(totalSecondsSum / 3600);
+    const totalMinsSum = Math.floor((totalSecondsSum % 3600) / 60);
+    const totalWorkFormatted = `${totalHrsSum}h ${totalMinsSum}m`;
+    const activeMonthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const printWin = window.open("", "_blank", "width=950,height=1000");
+    if (!printWin) {
+      alert("Please allow popups to download the PDF statement!");
+      return;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Monthly Attendance Statement - ${empName}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; background: #fff; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+          .logo { font-size: 24px; font-weight: 900; color: #0b2b57; letter-spacing: -0.5px; }
+          .logo span { color: #2563eb; }
+          .title { font-size: 14px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin-bottom: 30px; }
+          .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+          .field-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+          .field-value { font-size: 15px; font-weight: 800; color: #0f172a; }
+          .kpi-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
+          .kpi-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; text-align: center; }
+          .kpi-val { font-size: 22px; font-weight: 900; color: #1d4ed8; }
+          .kpi-lbl { font-size: 11px; font-weight: 700; color: #3b82f6; text-transform: uppercase; margin-top: 4px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th { background: #0b2b57; color: #fff; text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+          td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: 500; color: #334155; }
+          tr:nth-child(even) { background: #f8fafc; }
+          .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+          .badge-online { background: #dcfce7; color: #15803d; }
+          .badge-completed { background: #f1f5f9; color: #475569; }
+          .badge-break { background: #fef3c7; color: #b45309; }
+          .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 20px; }
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="logo">PEARLS <span>CRM</span></div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Monthly Employee Attendance Statement</div>
+          </div>
+          <div style="text-align: right;">
+            <div class="title">Statement Period</div>
+            <div style="font-size: 14px; font-weight: 800; color: #2563eb; margin-top: 4px;">${activeMonthName}</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-grid">
+            <div>
+              <div class="field-label">Employee Name</div>
+              <div class="field-value">${empName}</div>
+            </div>
+            <div>
+              <div class="field-label">Employee UID</div>
+              <div class="field-value">${empUid}</div>
+            </div>
+            <div>
+              <div class="field-label">Department</div>
+              <div class="field-value">${dept}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-container">
+          <div class="kpi-box">
+            <div class="kpi-val">${totalDaysLogged} Days</div>
+            <div class="kpi-lbl">Total Days Logged</div>
+          </div>
+          <div class="kpi-box" style="background: #faf5ff; border-color: #e9d5ff;">
+            <div class="kpi-val" style="color: #7e22ce;">${totalWorkFormatted}</div>
+            <div class="kpi-lbl" style="color: #9333ea;">Total Monthly Work Hours</div>
+          </div>
+          <div class="kpi-box" style="background: #f0fdf4; border-color: #bbf7d0;">
+            <div class="kpi-val" style="color: #15803d;">${employee.attendanceState === 'working' ? 'Present Today' : 'Clocked Out'}</div>
+            <div class="kpi-lbl" style="color: #16a34a;">Current Status</div>
+          </div>
+        </div>
+
+        <div style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">Monthly Attendance Logs (${employeeRecords.length} Records)</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Clock In</th>
+              <th>Clock Out</th>
+              <th>Location</th>
+              <th>Working Hours</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          This is an official computer-generated monthly statement from Pearls CRM Attendance Management System.
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
   };
 
   return (
 
     <div className="max-h-screen overflow-y-auto no-scrollbar bg-[#f1f5f9] p-8">
 
-      {/* TOP */}
 
       <div className="flex items-center justify-between mb-10">
 
@@ -344,6 +583,17 @@ export default function AttendanceManagement() {
         {/* SEARCH & EXPORT */}
 
         <div className="flex items-center gap-4">
+
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            className="bg-white border border-gray-200 rounded-2xl px-5 py-4 font-bold text-[#0f172a] outline-none shadow-sm cursor-pointer"
+          >
+            <option value="month">This Month</option>
+            <option value="week">This Week</option>
+            <option value="year">This Year</option>
+            <option value="all">All Time</option>
+          </select>
 
           <div className="relative w-[300px]">
 
@@ -506,13 +756,13 @@ export default function AttendanceManagement() {
 
       {/* MAIN GRID */}
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
 
         {/* EMPLOYEE TABLE */}
 
-        <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-sm border border-gray-100 h-[800px] overflow-y-auto no-scrollbar">
+        <div className="xl:col-span-8 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-[800px] overflow-y-auto no-scrollbar">
 
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
 
             <div>
 
@@ -522,11 +772,71 @@ export default function AttendanceManagement() {
 
               </h2>
 
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 text-xs mt-0.5">
 
-                Realtime employee monitoring
+                Realtime employee monitoring & status
 
               </p>
+
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+
+              {/* SEARCH */}
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search employee..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-blue-500 w-44"
+                />
+              </div>
+
+              {/* PERIOD FILTER */}
+              <select
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">All Records</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+                <option value="custom">📅 Custom Date Range</option>
+              </select>
+
+              {/* CUSTOM DATE RANGE PICKERS */}
+              {timeFilter === "custom" && (
+                <div className="flex items-center gap-2 bg-blue-50/60 p-1 rounded-xl border border-blue-100">
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700"
+                    title="From Date"
+                  />
+                  <span className="text-xs text-gray-400 font-bold">to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700"
+                    title="To Date"
+                  />
+                </div>
+              )}
+
+              {/* EXPORT BUTTON */}
+              <button
+                onClick={exportOverallSheet}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-[#0b2b57] text-white rounded-xl text-xs font-bold hover:bg-[#081f40] transition shadow-sm"
+                title="Export CSV Sheet for selected filter"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export CSV
+              </button>
 
             </div>
 
@@ -534,41 +844,47 @@ export default function AttendanceManagement() {
 
           {/* TABLE */}
 
-          <div className="overflow-x-auto ">
+          <div className="overflow-x-auto no-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
 
-            <table className="w-full ">
+            <table className="w-full min-w-[650px]">
 
               <thead>
 
-                <tr className="border-b border-gray-100 text-left text-gray-500 text-sm">
+                <tr className="border-b border-gray-100 text-left text-gray-400 text-xs font-bold uppercase tracking-wider whitespace-nowrap">
 
-                  <th className="pb-4 font-semibold">
+                  <th className="pb-3 px-3 font-bold">
 
                     Employee
 
                   </th>
 
-                  <th className="pb-4 font-semibold">
+                  <th className="pb-3 px-3 font-bold">
 
                     Status
 
                   </th>
 
-                  <th className="pb-4 font-semibold">
+                  <th className="pb-3 px-3 font-bold">
 
                     Login Time
 
                   </th>
 
-                  <th className="pb-4 font-semibold">
+                  <th className="pb-3 px-3 font-bold">
 
                     Location
 
                   </th>
 
-                  <th className="pb-4 font-semibold">
+                  <th className="pb-3 px-3 font-bold">
 
                     Photo
+
+                  </th>
+
+                  <th className="pb-3 px-3 font-bold text-center">
+
+                    Report PDF
 
                   </th>
 
@@ -580,7 +896,7 @@ export default function AttendanceManagement() {
 
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="py-10 text-center text-gray-400">
+                    <td colSpan="6" className="py-10 text-center text-gray-400">
                       No matching employee records found
                     </td>
                   </tr>
@@ -591,16 +907,16 @@ export default function AttendanceManagement() {
 
                   <tr
                     key={employee._id || employee.employee_uid || `attendance-${index}`}
-                    className="border-b border-gray-50 hover:bg-gray-50 transition-all"
+                    className="border-b border-gray-50 hover:bg-slate-50/70 transition-all"
                   >
 
                     {/* EMPLOYEE */}
 
-                    <td className="py-5">
+                    <td className="py-3 px-3">
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
 
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm">
 
                           {
                             empName.charAt(0).toUpperCase()
@@ -608,15 +924,15 @@ export default function AttendanceManagement() {
 
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
 
-                          <h3 className="font-bold text-[#0f172a]">
+                          <h3 className="font-bold text-[#0f172a] text-sm truncate">
 
                             {empName}
 
                           </h3>
 
-                          <p className="text-gray-500 text-sm">
+                          <p className="text-gray-400 text-xs truncate">
 
                             {employee.department || "Employee"}
 
@@ -630,19 +946,21 @@ export default function AttendanceManagement() {
 
                     {/* STATUS */}
 
-                    <td className="py-5">
+                    <td className="py-3 px-3 whitespace-nowrap">
 
                       <span className={`
-                        px-4 py-2 rounded-2xl text-sm font-semibold
+                        px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5
                         ${employee.attendanceState === 'working'
-                          ? 'bg-green-100 text-green-600'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                           : employee.status === 'break'
-                            ? 'bg-yellow-100 text-yellow-600'
-                            : 'bg-red-100 text-red-500'
+                            ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                            : 'bg-rose-50 text-rose-500 border border-rose-200'
                         }
                       `}>
-
-                        {employee.attendanceState.toLowerCase() == "working" ? "online" : employee.attendanceState.toLowerCase() == "break" ? "Break" : "Offline"}
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          employee.attendanceState === 'working' ? 'bg-emerald-500 animate-pulse' : employee.status === 'break' ? 'bg-amber-500' : 'bg-rose-400'
+                        }`}></span>
+                        {employee.attendanceState.toLowerCase() == "working" ? "Online" : employee.attendanceState.toLowerCase() == "break" ? "Break" : "Offline"}
 
                       </span>
 
@@ -650,52 +968,89 @@ export default function AttendanceManagement() {
 
                     {/* LOGIN */}
 
-                    <td className="py-5 font-semibold text-[#0f172a]">
+                    <td className="py-3 px-3 font-semibold text-[#0f172a] text-xs whitespace-nowrap">
 
                       {
                         new Date(
                           employee.clockIn
 
-                        ).toLocaleTimeString()
+                        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
                       }
 
                     </td>
 
                     {/* LOCATION */}
 
-                    <td className="py-5">
+                    <td className="py-3 px-3 whitespace-nowrap">
 
-                      <div className="flex items-center gap-2 text-gray-600">
-
-                        <MapPin className="w-4 h-4 text-blue-500" />
-
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                        <MapPin className="w-3.5 h-3.5 text-blue-500" />
                         {employee.location || "Office"}
-
-                      </div>
+                      </span>
 
                     </td>
 
                     {/* PHOTO */}
 
-                    <td className="py-5">
+                    <td className="py-3 px-3 whitespace-nowrap">
 
-                      <img
-                        src={
-                          employee.photo ||
-                          employee.login_photo ||
-                          'https://i.pravatar.cc/100'
-                        }
-                        alt="Employee Selfie"
-                        className="w-12 h-12 rounded-2xl object-cover border cursor-pointer hover:scale-105 transition"
-                        title="Click to view full selfie"
-                        onClick={() => {
-                          const imgSrc = employee.photo || employee.login_photo;
-                          if (imgSrc) {
-                            const win = window.open();
-                            win.document.write(`<img src="${imgSrc}" style="max-width:100%;height:auto;display:block;margin:auto;" />`);
+                      <div className="relative group inline-block">
+                        <img
+                          src={
+                            employee.photo ||
+                            employee.login_photo ||
+                            'https://i.pravatar.cc/100'
                           }
-                        }}
-                      />
+                          alt="Employee Selfie"
+                          className="w-10 h-10 rounded-xl object-cover border border-gray-200 cursor-pointer hover:scale-105 transition shadow-sm"
+                          title="Click to view full selfie"
+                          onClick={() => {
+                            const imgSrc = employee.photo || employee.login_photo || 'https://i.pravatar.cc/300';
+                            const empInfo = employeeMap[employee.employee_uid] || {};
+                            setSelectedSelfie({
+                              photo: imgSrc,
+                              name: employee.employee_name || empInfo?.name || "Employee",
+                              id: employee.employee_uid || "N/A",
+                              department: employee.department || empInfo?.department || "Operations",
+                              time: employee.clockIn ? new Date(employee.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : "--:--",
+                              location: employee.location || "Office",
+                            });
+                          }}
+                        />
+                        <div
+                          onClick={() => {
+                            const imgSrc = employee.photo || employee.login_photo || 'https://i.pravatar.cc/300';
+                            const empInfo = employeeMap[employee.employee_uid] || {};
+                            setSelectedSelfie({
+                              photo: imgSrc,
+                              name: employee.employee_name || empInfo?.name || "Employee",
+                              id: employee.employee_uid || "N/A",
+                              department: employee.department || empInfo?.department || "Operations",
+                              time: employee.clockIn ? new Date(employee.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : "--:--",
+                              location: employee.location || "Office",
+                            });
+                          }}
+                          className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-1 rounded-full text-[10px] cursor-pointer hover:bg-indigo-700 transition shadow"
+                          title="View Selfie"
+                        >
+                          <Camera className="w-3 h-3" />
+                        </div>
+                      </div>
+
+                    </td>
+
+                    {/* ACTION PDF */}
+
+                    <td className="py-3 px-3 whitespace-nowrap text-center">
+
+                      <button
+                        onClick={() => downloadSingleEmployeePDF(employee)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-bold transition border border-blue-100 shadow-sm"
+                        title="Download Monthly Attendance Statement PDF"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Report PDF
+                      </button>
 
                     </td>
 
@@ -714,7 +1069,7 @@ export default function AttendanceManagement() {
 
         {/* RIGHT PANEL */}
 
-        <div className="space-y-8">
+        <div className="xl:col-span-4 space-y-8">
 
           {/* TIMESHEET */}
 
@@ -796,82 +1151,35 @@ export default function AttendanceManagement() {
 
           </div>
 
-          {/* HOLIDAYS */}
-
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100  h-[400px] overflow-y-auto no-scrollbar">
-
-            <div className="flex items-center justify-between mb-6 ">
-
-              <h2 className="text-2xl font-black text-[#0f172a]">
-
-                Upcoming Holidays
-
-              </h2>
-
-              <Bell className="w-6 h-6 text-orange-500" />
-
-            </div>
-
-            <div className="space-y-5">
-
-              {(() => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const upcoming = (holidays || [])
-                  .filter((item) => item?.holidayDate && new Date(item.holidayDate) >= today)
-                  .sort((a, b) => new Date(a.holidayDate) - new Date(b.holidayDate));
-
-                if (upcoming.length === 0) {
-                  return (
-                    <div className="text-center text-gray-400 py-8">
-                      No upcoming holidays found
-                    </div>
-                  );
-                }
-
-                return upcoming.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between border-b pb-3 last:border-b-0">
-                    <div>
-
-                      <h3 className="font-bold text-[#0f172a]">
-
-                        {item?.holidayName || "Leave"}
-
-                      </h3>
-
-                      <p className="text-gray-500 text-sm">
-
-                        {new Date(item?.holidayDate).toLocaleDateString('en-GB')}
-
-                      </p>
-
-                    </div>
-
-                    <span className="px-4 py-2 rounded-2xl bg-purple-100 text-purple-600 text-sm font-semibold">
-
-                      {item?.holidayType || "Public"}
-
-                    </span>
-
-                  </div>
-                ));
-              })()}
-
-            </div>
-
-          </div>
-
           {/* CORRECTION REQUESTS */}
 
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 max-h-[450px] overflow-y-auto no-scrollbar">
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 max-h-[480px] overflow-y-auto no-scrollbar">
 
             <div className="flex items-center justify-between mb-6">
 
-              <h2 className="text-2xl font-black text-[#0f172a]">
+              <div className="flex items-center gap-3">
 
-                Correction Requests
+                <h2 className="text-2xl font-black text-[#0f172a]">
 
-              </h2>
+                  Correction Requests
+
+                </h2>
+
+                {(() => {
+                  const pendingCount = corrections.filter(c => !c.status || c.status === "Pending").length;
+                  if (pendingCount > 0) {
+                    return (
+                      <span className="bg-red-500 text-white text-xs font-black px-2.5 py-1 rounded-full animate-pulse">
+
+                        {pendingCount} Pending
+
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+
+              </div>
 
               <FileText className="w-6 h-6 text-indigo-500" />
 
@@ -956,16 +1264,145 @@ export default function AttendanceManagement() {
                 ))
               )}
 
+            </div>
+
+          </div>
+
+          {/* HOLIDAYS */}
+
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100  h-[350px] overflow-y-auto no-scrollbar">
+
+            <div className="flex items-center justify-between mb-6 ">
+
+              <h2 className="text-2xl font-black text-[#0f172a]">
+
+                Upcoming Holidays
+
+              </h2>
+
+              <Bell className="w-6 h-6 text-orange-500" />
+
+            </div>
+
+            <div className="space-y-5">
+
+              {(() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const upcoming = (holidays || [])
+                  .filter((item) => item?.holidayDate && new Date(item.holidayDate) >= today)
+                  .sort((a, b) => new Date(a.holidayDate) - new Date(b.holidayDate));
+
+                if (upcoming.length === 0) {
+                  return (
+                    <div className="text-center text-gray-400 py-8">
+                      No upcoming holidays found
+                    </div>
+                  );
+                }
+
+                return upcoming.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between border-b pb-3 last:border-b-0">
+                    <div>
+
+                      <h3 className="font-bold text-[#0f172a]">
+
+                        {item?.holidayName || "Leave"}
+
+                      </h3>
+
+                      <p className="text-gray-500 text-sm">
+
+                        {new Date(item?.holidayDate).toLocaleDateString('en-GB')}
+
+                      </p>
+
+                    </div>
+
+                    <span className="px-4 py-2 rounded-2xl bg-purple-100 text-purple-600 text-sm font-semibold">
+
+                      {item?.holidayType || "Public"}
+
+                    </span>
+
+                  </div>
+                ));
+              })()}
+
+            </div>
+
           </div>
 
         </div>
 
       </div>
 
+      {/* SELFIE PREVIEW MODAL */}
+      {selectedSelfie && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 relative overflow-hidden">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-[#0f172a] text-lg">Clock-In Selfie</h3>
+                  <p className="text-xs text-gray-500 font-medium">{selectedSelfie.name} ({selectedSelfie.id})</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedSelfie(null)}
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Selfie Image */}
+            <div className="my-5 rounded-2xl overflow-hidden border border-gray-200 bg-gray-900 flex items-center justify-center max-h-[360px] relative group">
+              <img
+                src={selectedSelfie.photo}
+                alt="Selfie Preview"
+                className="w-full h-auto max-h-[360px] object-contain"
+              />
+              <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 font-semibold">
+                <Camera className="w-3.5 h-3.5 text-green-400" /> Captured at {selectedSelfie.time}
+              </div>
+            </div>
+
+            {/* Details Footer */}
+            <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between text-xs text-gray-600 mb-5 border border-gray-100">
+              <div>
+                <span className="text-gray-400 block font-medium">Department</span>
+                <span className="font-bold text-[#0f172a] text-sm">{selectedSelfie.department}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-gray-400 block font-medium">Location</span>
+                <span className="font-bold text-blue-600 flex items-center gap-1 justify-end text-sm">
+                  <MapPin className="w-3.5 h-3.5" /> {selectedSelfie.location}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex">
+              <button
+                onClick={() => setSelectedSelfie(null)}
+                className="w-full py-3.5 bg-gray-900 text-white rounded-xl font-bold text-xs hover:bg-gray-800 transition"
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
 
-  </div>
-
-);
+  );
 
 }
