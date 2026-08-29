@@ -113,6 +113,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
 const { startFollowupReminderScheduler } = require("./services/followupReminderScheduler");
+const { startAttendancePhotoCleanupScheduler } = require("./services/attendancePhotoCleanupScheduler");
 
 app.use('/api/conversations', whatsappConversationRoutes);
 app.use("/api/automation-rules", automationRuleRoutes);
@@ -121,18 +122,9 @@ app.use("/api/ai-config", aiConfigRoutes);
 app.use("/api/reports", reportRoutes);
 
 const PORT = process.env.PORT || 5000;
-
-const startServer = async () => {
-  await connectDB();
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log("Connected to database with WebSocket support");
-    startFollowupReminderScheduler();
-  });
-};
-
-startServer().catch((error) => {
-  console.error("Server startup error:", error.message);
-  process.exit(1);
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log("Connected to database with WebSocket support");
+  startFollowupReminderScheduler();
 });
 

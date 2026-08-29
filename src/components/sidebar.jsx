@@ -28,6 +28,7 @@ import {
   UserCheck,
   Link,
   Settings,
+  Share2,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -89,7 +90,7 @@ export default function Sidebar() {
     },
     {
       name: "Collaboration",
-      icon: MessageSquare,
+      icon: Share2,
       path: "/collaboration",
     },
     {

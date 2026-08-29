@@ -1,5 +1,5 @@
-// hooks/useAttendanceCorrection.js
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import apiUrl from "../config/api";
 
 const useAttendanceCorrection = () => {
     const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ const useAttendanceCorrection = () => {
 
         try {
             const res = await fetch(
-                "https://pearlscrm.onrender.com/api/empAttendanceCorrection",
+                apiUrl("/api/empAttendanceCorrection"),
                 {
                     method: "POST",
                     headers: {
@@ -38,11 +38,25 @@ const useAttendanceCorrection = () => {
         }
     };
 
+    const getCorrections = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(apiUrl("/api/empAttendanceCorrection"));
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed to fetch corrections");
+            return data.data || [];
+        } catch (err) {
+            setError(err.message);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     const updateStatus = async (id, status) => {
         try {
             const res = await fetch(
-                // `http://localhost:5000/api/empAttendanceCorrection/${id}/status`,
-                `https://pearlscrm.onrender.com/api/empAttendanceCorrection/${id}/status`,
+                apiUrl(`/api/empAttendanceCorrection/${id}/status`),
                 {
                     method: "PATCH",
                     headers: {
@@ -60,12 +74,13 @@ const useAttendanceCorrection = () => {
 
             return data;
         } catch (err) {
-            throw err.message;
+            throw typeof err === "string" ? err : err.message;
         }
     };
 
     return {
         submitCorrection,
+        getCorrections,
         updateStatus,
         loading,
         error,

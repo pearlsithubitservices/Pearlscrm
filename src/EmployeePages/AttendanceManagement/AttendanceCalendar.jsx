@@ -14,34 +14,36 @@ import AttendanceEdit from "./AttendanceEdit";
 import { calculateAttendanceStatus } from "../../Utils/formatNumber";
 import { useAuth } from "../../context/AuthContext";
 
-const AttendanceCalendar = () => {
-  const [filter, setFilter] =
-    useState("week");
-
-  const [search, setSearch] =
-    useState("");
-
+const AttendanceCalendar = ({ refreshTrigger }) => {
+  const [filter, setFilter] = useState("week");
+  const [search, setSearch] = useState("");
 
   const [attendance, setAttendances] = useState([]);
-  console.log(attendance);
   const [selectedattendance, setSelectedAttendances] = useState();
   const [showForm, setShowform] = useState(false);
   const { getAttendanceById } = useEmpAttendance();
   const [showEdit, setShowEdit] = useState(false);
   const { user } = useAuth();
-  console.log(user.uid);
-  
+  const userId = user?.uid || user?._id || user?.id || "";
 
   useEffect(() => {
-    
-    fetchAttendancebyId();
-  }, []);
+    if (userId) {
+      fetchAttendancebyId();
 
- 
+      // Auto-refresh every 30 seconds in background
+      const interval = setInterval(() => {
+        fetchAttendancebyId();
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }
+  }, [userId, refreshTrigger]);
+
   const fetchAttendancebyId = async () => {
+    if (!userId) return;
     try {
-      const res = await getAttendanceById(user.uid);
-       setAttendances(res.data || []);
+      const res = await getAttendanceById(userId);
+      setAttendances(res?.data || []);
       console.log(res);
     } catch (err) {
       console.error("Error fetching attendances:", err.message);
@@ -52,58 +54,66 @@ const AttendanceCalendar = () => {
 
   const filteredData = useMemo(() => {
     const now = new Date();
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
 
-    // Remove time from today's date
-    now.setHours(0, 0, 0, 0);
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
 
-    return attendance.filter((item) => {
+    const sorted = [...(attendance || [])].sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    );
+
+    return sorted.filter((item) => {
+      if (!item.date) return false;
       const attendanceDate = new Date(item.date);
-
-      // Remove time portion
-      attendanceDate.setHours(0, 0, 0, 0);
 
       let matchPeriod = true;
 
       if (filter === "week") {
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 6);
-
-        matchPeriod =
-          attendanceDate >= weekAgo &&
-          attendanceDate <= now;
-      }
-
-      if (filter === "month") {
+        const weekAgo = new Date(startOfToday);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        matchPeriod = attendanceDate >= weekAgo && attendanceDate <= endOfToday;
+      } else if (filter === "month") {
         matchPeriod =
           attendanceDate.getMonth() === now.getMonth() &&
           attendanceDate.getFullYear() === now.getFullYear();
-      }
-
-      if (filter === "year") {
-        matchPeriod =
-          attendanceDate.getFullYear() === now.getFullYear();
+      } else if (filter === "year") {
+        matchPeriod = attendanceDate.getFullYear() === now.getFullYear();
+      } else if (filter === "all") {
+        matchPeriod = true;
       }
 
       const formattedDate = attendanceDate
         .toLocaleDateString("en-GB")
-        .replace(/\//g, "-"); // DD-MM-YYYY
+        .replace(/\//g, "-");
 
       const matchSearch =
         !search.trim() ||
-        formattedDate.includes(search.trim());
+        formattedDate.includes(search.trim()) ||
+        (item.status && item.status.toLowerCase().includes(search.trim().toLowerCase())) ||
+        (item.location && item.location.toLowerCase().includes(search.trim().toLowerCase()));
 
       return matchPeriod && matchSearch;
     });
   }, [attendance, filter, search]);
+
   const formatDuration = (seconds) => {
-    if (!seconds || isNaN(seconds)) {
-      return "0h 0m";
+    if (!seconds || isNaN(seconds) || seconds <= 0) {
+      return "0m";
     }
 
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
 
-    return `${hours}h ${minutes}m`;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    }
+    return `${secs}s`;
   };
 
   const statusStyle = {
@@ -180,6 +190,10 @@ const AttendanceCalendar = () => {
                 }
                 className=" bg-gray-100 rounded-xl px-5 py-3 pr-10 outline-none"
               >
+                <option value="all">
+                  All Time
+                </option>
+
                 <option value="week">
                   This Week
                 </option>
@@ -266,7 +280,7 @@ const AttendanceCalendar = () => {
                   No attendance records found
                 </td>
               </tr>
-                : filteredData.slice(0, 7).map(
+                : filteredData.map(
                   (row, index) => (
                     <tr
                       key={index}
@@ -279,22 +293,39 @@ const AttendanceCalendar = () => {
                       {(() => {
                         const clockInDate = row.clockIn ? new Date(row.clockIn) : null;
                         const clockOutDate = row.clockOut ? new Date(row.clockOut) : null;
-                        const totalBreakSeconds = row.breaks?.reduce(
-                          (sum, breakItem) => sum + (breakItem?.duration || 0),
-                          0
-                        );
+                        const totalBreakSeconds = (row.breaks || []).reduce((sum, breakItem) => {
+                          if (typeof breakItem?.duration === "number" && breakItem.duration > 0 && breakItem.duration < 86400) {
+                            return sum + breakItem.duration;
+                          }
+                          const startMs = breakItem?.start ? new Date(breakItem.start).getTime() : NaN;
+                          const endMs = breakItem?.end ? new Date(breakItem.end).getTime() : Date.now();
+
+                          if (!isNaN(startMs) && startMs > 100000000000 && !isNaN(endMs) && endMs >= startMs) {
+                            const diffSecs = Math.floor((endMs - startMs) / 1000);
+                            return sum + Math.min(86400, Math.max(0, diffSecs));
+                          }
+                          return sum;
+                        }, 0);
+                        const nowMs = Date.now();
+                        const clockInMs = clockInDate ? clockInDate.getTime() : null;
+                        const clockOutMs = clockOutDate
+                          ? clockOutDate.getTime()
+                          : (row.attendanceState === "working" || row.attendanceState === "break" ? nowMs : null);
+
                         const totalDurationSeconds =
-                          clockInDate && clockOutDate
-                            ? Math.max(0, (clockOutDate - clockInDate) / 1000)
+                          clockInMs && clockOutMs && clockOutMs >= clockInMs
+                            ? Math.min(86400, Math.max(0, Math.floor((clockOutMs - clockInMs) / 1000)))
                             : 0;
-                        const workingSeconds =
-                          typeof row.workingHours === "number"
-                            ? row.workingHours
-                            : Math.max(0, totalDurationSeconds - totalBreakSeconds);
+
+                        const workingSeconds = Math.max(0, totalDurationSeconds - totalBreakSeconds);
 
                         const displayHours = formatDuration(totalDurationSeconds);
                         const displayBreakHours = formatDuration(totalBreakSeconds);
                         const displayWorkingHours = formatDuration(workingSeconds);
+
+                        const isToday =
+                          row.date &&
+                          new Date(row.date).toDateString() === new Date().toDateString();
 
                         return (
                           <>
@@ -308,7 +339,7 @@ const AttendanceCalendar = () => {
                             </td>
 
                             <td className="text-center">
-                              {clockOutDate
+                              {clockOutDate && (!isToday || row.attendanceState === "clocked_out")
                                 ? clockOutDate.toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
@@ -392,7 +423,7 @@ const AttendanceCalendar = () => {
           >
             <AttendanceEdit
               attendance={selectedattendance}
-              onSuccess={fetchAttendances}
+              onSuccess={fetchAttendancebyId}
               onClose={() => setShowEdit(false)}
             />
           </motion.div>

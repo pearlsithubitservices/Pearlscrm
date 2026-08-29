@@ -1,10 +1,10 @@
 import { useState } from "react";
-
-const API_URL = "https://pearlscrm.onrender.com/api/empattendancenew";
+import { apiUrl } from "../config/api";
 
 export default function useEmpAttendance() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const API_URL = apiUrl("/empattendancenew");
 
   const request = async (endpoint, method = "GET", body = null) => {
     try {
@@ -43,6 +43,8 @@ export default function useEmpAttendance() {
     department,
     date,
     photoStatus,
+    location,
+    photo,
   }) => {
     return request("/clock-in", "POST", {
       employee_uid,
@@ -50,6 +52,8 @@ export default function useEmpAttendance() {
       department,
       date,
       photoStatus,
+      location,
+      photo,
     });
   };
 
