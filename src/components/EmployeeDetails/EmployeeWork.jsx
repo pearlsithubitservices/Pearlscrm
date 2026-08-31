@@ -10,10 +10,55 @@ export default function AssignedWork({ employee, canManage = true }) {
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+
   const employeeId = employee?._id || employee?.uid || employee?.id;
+  const employeeIdentifiers = Array.from(
+    new Set(
+      [
+        employeeId,
+        employee?.uid,
+        employee?._id,
+        employee?.id,
+        employee?.email,
+        employee?.employeeEmail,
+        employee?.name,
+        employee?.employeeName,
+      ]
+        .filter(Boolean)
+        .map((value) => String(value).trim())
+        .map((value) => value.toLowerCase())
+    )
+  );
+
+  const matchesEmployee = (task) => {
+    if (!task || !Array.isArray(employeeIdentifiers) || employeeIdentifiers.length === 0) return false;
+
+    const possibleValues = [];
+    const assignedTo = task.assignedTo;
+
+    if (assignedTo && typeof assignedTo === "object") {
+      possibleValues.push(
+        assignedTo._id,
+        assignedTo.uid,
+        assignedTo.id,
+        assignedTo.email,
+        assignedTo.name,
+        assignedTo.employeeName,
+        assignedTo.username
+      );
+    } else if (assignedTo) {
+      possibleValues.push(assignedTo);
+    }
+
+    const normalized = possibleValues
+      .filter(Boolean)
+      .map((value) => String(value).trim().toLowerCase());
+
+    return normalized.some((value) => employeeIdentifiers.includes(value));
+  };
 
   const fetchTasks = async () => {
-    if (!employeeId) return;
+    if (!employeeId && employeeIdentifiers.length === 0) return;
 
     try {
       setLoading(true);
@@ -21,21 +66,11 @@ export default function AssignedWork({ employee, canManage = true }) {
       if (!response.ok) throw new Error("Unable to load assigned tasks");
 
       const data = await response.json();
-      const employeeKeys = [
-        String(employeeId).toLowerCase(),
-        String(employee.email || "").toLowerCase(),
-        String(employee.name || employee.employeeName || "").toLowerCase(),
-      ].filter(Boolean);
-
-      setTasks((Array.isArray(data) ? data : []).filter((task) => {
-        const assignedTo = task.assignedTo;
-        const assignedKey = typeof assignedTo === "object"
-          ? assignedTo?._id || assignedTo?.uid || assignedTo?.id || assignedTo?.email || assignedTo?.name
-          : assignedTo;
-        return employeeKeys.includes(String(assignedKey || "").toLowerCase());
-      }));
+      const taskList = Array.isArray(data) ? data : data?.data || [];
+      setTasks(taskList.filter(matchesEmployee));
     } catch (error) {
       console.error("Error loading assigned tasks:", error);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -43,11 +78,12 @@ export default function AssignedWork({ employee, canManage = true }) {
 
   useEffect(() => {
     fetchTasks();
-  }, [employeeId]);
+  }, [employeeId, employee?.uid, employee?._id, employee?.id, employee?.email, employee?.name, employee?.employeeName]);
 
   const addTask = async () => {
     const taskTitle = title.trim();
-    if (!taskTitle || !employeeId) return;
+    const assignee = employeeId || employee?.uid || employee?._id || employee?.id || employee?.email;
+    if (!taskTitle || !assignee) return;
 
     try {
       setAdding(true);
@@ -56,7 +92,7 @@ export default function AssignedWork({ employee, canManage = true }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: taskTitle,
-          assignedTo: employeeId,
+          assignedTo: assignee,
           assignedBy: user?._id || user?.uid || user?.id || user?.email,
           priority: "Medium",
           status: "Pending",

@@ -24,10 +24,14 @@ export default function ReviewHistory() {
   const fetchReviews = async () => {
     try {
       const res = await getReviews();
-
-      setReview(res.data); // assuming API returns { success, data }
+      if (res && res.data) {
+        setReview(Array.isArray(res.data) ? res.data : []);
+      } else {
+        setReview([]);
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching reviews:", error);
+      setReview([]);
     }
   };
 
