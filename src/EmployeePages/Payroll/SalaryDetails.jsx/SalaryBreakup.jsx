@@ -23,22 +23,38 @@ import { useAuth } from "../../../context/AuthContext";
 const SalaryBreakup = () => {
     const { payslips, loading } = usePayslip();
     const { user } = useAuth();
-    const payslipById = payslips.filter((item) =>
-        item.employeeId == user?.uid);
-    const payslip = payslipById[0];
+    const userUid = user?.uid || user?.id || user?._id;
+    const userEmpId = user?.profile?.empId || user?.empId;
+
+    const empPayslips = (payslips || []).filter((item) =>
+        item.employeeId == userUid ||
+        item.employeeId == userEmpId ||
+        item.employeeId?.toLowerCase() == user?.email?.toLowerCase() ||
+        item.employeeName == user?.name ||
+        item.employeeName == user?.profile?.name
+    );
+
+    const payslipById = empPayslips;
+    const payslip = payslipById[0] || {};
     const financialYear = getFinancialYear();
-    console.log(financialYear);
+
     if (loading) {
         return <SalaryBreakupSkeleton />
     }
 
+    if (!empPayslips || empPayslips.length === 0) {
+        return (
+            <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center text-gray-500 shadow-sm my-6">
+                <p className="text-lg font-bold text-gray-700">No salary breakup details found.</p>
+                <p className="text-xs text-gray-400 mt-1">Component and deduction breakup will be generated when your first payslip is issued.</p>
+            </div>
+        );
+    }
 
     const annualSummary = payslipById.reduce(
         (totals, slip) => {
             totals.basicSalary += Number(slip.basicSalary || 0);
-            totals.medical += Number(slip.medical || 0);
-            totals.performanceBonus += Number(slip.performanceBonus || 0);
-            totals.conveyance += Number(slip.conveyance || 0);
+            totals.conveyance += Number(slip.conveyance || slip.convayance || 0);
             totals.medical += Number(slip.medical || 0);
             totals.performanceBonus += Number(slip.performanceBonus || 0);
 
@@ -54,8 +70,6 @@ const SalaryBreakup = () => {
         },
         {
             basicSalary: 0,
-            medical: 0,
-            performanceBonus: 0,
             conveyance: 0,
             medical: 0,
             performanceBonus: 0,

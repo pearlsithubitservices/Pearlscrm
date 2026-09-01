@@ -1,13 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { BadgeCheck, Clock, AlertCircle, Search, Paperclip, User } from "lucide-react";
 import useTicket from "../../../Hooks/useTicket";
+import useEmployees from "../../../Hooks/useEmployees";
 import apiUrl from "../../../config/api";
 
 export default function SupportTickets() {
   const { fetchTickets, tickets, updateTicketStatus } = useTicket();
+  const { employees } = useEmployees();
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const employeeMap = useMemo(() => {
+    const map = {};
+    (employees || []).forEach((emp) => {
+      const name = emp.name || emp.employeeName || (emp.email ? emp.email.split('@')[0] : "Employee");
+      if (emp.uid) map[emp.uid] = name;
+      if (emp._id) map[emp._id] = name;
+      if (emp.id) map[emp.id] = name;
+    });
+    return map;
+  }, [employees]);
 
   const handleStatusChange = async (ticketId, newStatus) => {
     const updated = await updateTicketStatus(ticketId, { status: newStatus });
@@ -132,7 +145,7 @@ export default function SupportTickets() {
                   <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-1">
                     <span className="flex items-center gap-1 font-semibold text-gray-700">
                       <User className="w-3.5 h-3.5 text-blue-500" />
-                      {item.employeeName || "Employee"}
+                      {employeeMap[item.employeeId] || item.employeeName || "Employee"}
                     </span>
                     <span>•</span>
                     <span>Created: {new Date(item.createdAt).toLocaleDateString("en-GB")}</span>

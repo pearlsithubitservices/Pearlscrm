@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users,  } from "lucide-react";
+import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users, } from "lucide-react";
 
 
 import CompanyAnnouncements from "./Announcements/CompanyAnnouncements";
@@ -56,8 +56,8 @@ const Communication = () => {
   const avgMyRating = myFeedbacks.length > 0
     ? (myFeedbacks.reduce((acc, curr) => acc + (Number(curr.rating) || 5), 0) / myFeedbacks.length).toFixed(1)
     : (feedbacks || []).length > 0
-    ? ((feedbacks.reduce((acc, curr) => acc + (Number(curr.rating) || 5), 0) / feedbacks.length)).toFixed(1)
-    : "0.0";
+      ? ((feedbacks.reduce((acc, curr) => acc + (Number(curr.rating) || 5), 0) / feedbacks.length)).toFixed(1)
+      : "0.0";
 
   const stats = [
     {
@@ -119,8 +119,8 @@ const Communication = () => {
 
 
             {/* <PayslipsTable /> */}
-            <CompanyAnnouncements/>
-            <Notification/>
+            <CompanyAnnouncements />
+            <Notification />
           </motion.div>
         );
 
@@ -133,7 +133,7 @@ const Communication = () => {
             className=" rounded-xl  p-1"
           >
 
-            <HelpDesk/>
+            <HelpDesk />
           </motion.div>
         );
 
@@ -145,7 +145,7 @@ const Communication = () => {
             animate={{ opacity: 1, y: 0 }}
             className=" rounded-xl p-2 "
           >
-            <CompanyDirectory/>
+            <CompanyDirectory />
           </motion.div>
         );
 
@@ -158,7 +158,7 @@ const Communication = () => {
             className=" rounded-xl "
           >
             <div className="">
-              <FeedbackPage/>
+              <FeedbackPage />
             </div>
           </motion.div>
         );
@@ -245,7 +245,7 @@ const Communication = () => {
             onClick={() => setForm((prev) => (!prev))}
           >
             <FileText size={16} />
-           Raise Tickets
+            Raise Tickets
           </button>
         </div>
       </div>

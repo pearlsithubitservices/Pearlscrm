@@ -12,13 +12,18 @@ export default function AddSkill({ onClose, fetchskills }) {
     const levels = ["Beginner", "Intermediate", "Advanced", "Expert"];
 
     const { addSkill, loading } = useSkillCertification();
+    const employeeUid = user?.uid || user?._id || user?.id || user?.email || "";
 
     // ✅ submit handler
     const handleSubmit = async () => {
         if (!skill.trim()) return;
+        if (!employeeUid) {
+            alert("User session is missing. Please login again.");
+            return;
+        }
 
         const payload = {
-            employee_uid: user?.uid, // 👉 replace with real user id
+            employee_uid: employeeUid,
             name: skill,
             level: level,
             progress:

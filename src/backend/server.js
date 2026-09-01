@@ -42,6 +42,7 @@ const EmpContributionRoutes = require("./routes/ContributionRoutes");
 const EmpActivityRoutes = require("./routes/TaskActivityRoute");
 const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
 const TaskDocumentRoutes = require("./routes/TaskDocumentRoutes");
+const BenefitRoutes = require("./routes/BenefitRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
@@ -86,19 +87,27 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
+const ReimbursementPolicyroutes = require("./routes/ReimbursementPolicyroutes");
+const TaxDocumentsRoutes = require("./routes/TaxDocumentsRoutes");
+
 app.use("/api/payment", PaymentRoutes);
 // app.use("/api/marketing-leads",MarketingLeadRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
+app.use("/api/reimbursementpolicy", ReimbursementPolicyroutes);
+app.use("/api/taxdocuments", TaxDocumentsRoutes);
 app.use("/api/empattendancenew", EmpAttendanceRoutes);
 app.use("/api/announcement", AnnouncementSchema);
 app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
+
+
 app.use("/api/feedback", FeedbackRoutes);
 app.use("/api/payslip", PayslipRoutes);
+app.use("/api/benefits", BenefitRoutes);
 app.use("/api/empAttendanceCorrection", EmpAttendanceCorrectionRoutes);
 app.use("/api/mygoal", EmpMyGoal);
 app.use("/api/review", EmpReview);
@@ -106,7 +115,7 @@ app.use("/api/empenrollment", EmpEnrollment);
 app.use("/api/empCourse", EmpCourse);
 app.use("/api/skillscertification", EmpSkillCertification);
 app.use("/api/contribution", EmpContributionRoutes);
-app.use("/api/activity",EmpActivityRoutes);
+app.use("/api/activity", EmpActivityRoutes);
 app.use('/api/totalLeave', EmpTotalLeave);
 
 app.use("/api/chat", chatRoutes);
@@ -127,7 +136,7 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
-    
+
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log("Connected to database with WebSocket support");

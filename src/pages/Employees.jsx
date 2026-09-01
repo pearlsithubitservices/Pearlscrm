@@ -261,9 +261,9 @@ export default function ClientManagement() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="overflow-x-auto bg-white border border-black/10 rounded">
-            <table className="w-full min-w-[760px] text-left">
-              <thead className="bg-[#082f57] text-white text-xs uppercase tracking-wide">
-                <tr><th className="px-5 py-4">Name</th><th className="px-5 py-4">Emp ID</th><th className="px-5 py-4">Activity</th><th className="px-5 py-4">Role</th><th className="px-5 py-4">SME</th><th className="px-5 py-4 text-right">Action</th></tr>
+            <table className="w-full min-w-[760px] text-left text-white">
+              <thead className="bg-[#2563a9] text-white text-xs uppercase tracking-wide">
+                <tr><th className="px-5 text-white py-4">Name</th><th className="px-5 py-4 text-white">Emp ID</th><th className="px-5 py-4 text-white">Activity</th><th className="px-5 py-4 text-white">Role</th><th className="px-5 py-4 text-white">SME</th><th className="px-5 py-4 text-right text-white ">Action</th></tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {currentFiles.map((employee) => {

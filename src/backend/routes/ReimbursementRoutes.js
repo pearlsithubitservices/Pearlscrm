@@ -94,7 +94,10 @@ router.get("/:employee_uid", async (req, res) => {
         });
     }
 });
-//UPDATE sTATUS
+const Notification = require("../models/CommunicationModels/Notifications");
+const { getIO } = require("../Socket");
+
+//UPDATE STATUS
 router.patch("/:id/status", async (req, res) => {
     try {
         const { status, remarks } = req.body;
@@ -116,6 +119,24 @@ router.patch("/:id/status", async (req, res) => {
                 success: false,
                 message: "Claim not found",
             });
+        }
+
+        // Create notification for employee
+        const empId = claim.employee_uid || claim.employeeId;
+        if (empId) {
+            const notifData = {
+                title: `Reimbursement Claim ${status}`,
+                sub: `Your ${claim.claimType || 'reimbursement'} claim of ₹${claim.amount} was ${status.toLowerCase()}.${remarks ? ` Remarks: ${remarks}` : ''}`,
+                notificationType: "Reimbursement",
+                employeeId: empId,
+            };
+            await Notification.create(notifData).catch(err => console.error("Notification creation error:", err));
+
+            const io = getIO();
+            if (io) {
+                io.to("user_" + empId).emit("newNotification", notifData);
+                io.emit("newNotification", notifData);
+            }
         }
 
         res.json({
@@ -145,16 +166,18 @@ router.post(
                 description,
             } = req.body;
 
+            const cleanAmount = Number(String(amount || "").replace(/[^0-9.]/g, "")) || 0;
+
             const claim =
                 await ReimbursementClaim.create({
                     employee_uid,
                     employee_name,
                     claimType,
-                    amount,
+                    amount: cleanAmount,
                     expenseDate,
                     description,
                     receipt: req.file
-                        ? req.file.path
+                        ? `uploads/reimbursements/${req.file.filename}`
                         : null,
                 });
 
