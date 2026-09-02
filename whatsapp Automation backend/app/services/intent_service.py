@@ -1,40 +1,10 @@
-"""
-Intent detection for the AI CRM assistant.
 
-The chatbot supports:
-
-    Employees
-    Attendance
-    Tasks
-    Leave
-
-It also separates:
-
-    1. Unwanted / casual conversation
-       -> fixed response
-       -> NO HR handoff
-
-    2. Work-related questions that cannot be answered
-       -> Gemini fallback
-       -> possible human handoff
-
-The intent service does NOT call CRM or Gemini.
-It only understands what the user is asking for.
-"""
 
 import re
 from enum import Enum
 
 
-# =========================================================
-# INTENT
-# =========================================================
-
 class Intent(str, Enum):
-
-    # -----------------------------------------------------
-    # EMPLOYEES
-    # -----------------------------------------------------
 
     GET_EMPLOYEES = "get_employees"
 
@@ -46,10 +16,6 @@ class Intent(str, Enum):
 
     GET_MY_DETAILS = "get_my_details"
 
-    # -----------------------------------------------------
-    # ATTENDANCE
-    # -----------------------------------------------------
-
     GET_ATTENDANCE = "get_attendance"
 
     GET_ATTENDANCE_FIELD = "get_attendance_field"
@@ -57,10 +23,6 @@ class Intent(str, Enum):
     GET_ACTIVE_ATTENDANCE = "get_active_attendance"
 
     GET_ATTENDANCE_HISTORY = "get_attendance_history"
-
-    # -----------------------------------------------------
-    # TASKS
-    # -----------------------------------------------------
 
     GET_TASKS = "get_tasks"
 
@@ -72,13 +34,14 @@ class Intent(str, Enum):
 
     UPDATE_TASK = "update_task"
 
-    # -----------------------------------------------------
-    # LEAVE
-    # -----------------------------------------------------
-
     GET_LEAVES = "get_leaves"
 
     GET_LEAVES_BY_EMPLOYEE = "get_leaves_by_employee"
+    GET_APPROVED_LEAVES = "get_approved_leaves"
+
+    GET_PENDING_LEAVES = "get_pending_leaves"
+
+    GET_REJECTED_LEAVES = "get_rejected_leaves"
 
     CREATE_LEAVE = "create_leave"
 
@@ -86,20 +49,11 @@ class Intent(str, Enum):
 
     UPDATE_LEAVE_STATUS = "update_leave_status"
 
-    # -----------------------------------------------------
-    # SPECIAL
-    # -----------------------------------------------------
-
     UNWANTED_TALK = "unwanted_talk"
 
     HUMAN_HELP = "human_help"
 
     GENERAL_CHAT = "general_chat"
-
-
-# =========================================================
-# COMMON WORDS
-# =========================================================
 
 def _contains_any(
     text: str,
@@ -120,47 +74,28 @@ def _normalize(text: str) -> str:
         text.strip().lower(),
     )
 
-
-# =========================================================
-# UNWANTED / CASUAL TALK
-# =========================================================
-
 UNWANTED_PATTERNS = [
 
-    # -----------------------------------------------------
-    # Jokes
-    # -----------------------------------------------------
 
     r"\btell me a joke\b",
     r"\bmake me laugh\b",
     r"\bdo you know any jokes\b",
     r"\bsay a joke\b",
 
-    # -----------------------------------------------------
-    # Songs / singing
-    # -----------------------------------------------------
-
+   
     r"\bsing a song\b",
     r"\bsing for me\b",
     r"\bsing something\b",
 
-    # -----------------------------------------------------
-    # Stories
-    # -----------------------------------------------------
 
     r"\btell me a story\b",
     r"\btell me a funny story\b",
 
-    # -----------------------------------------------------
-    # Games
-    # -----------------------------------------------------
+
 
     r"\bplay a game\b",
     r"\bplay with me\b",
 
-    # -----------------------------------------------------
-    # Personal / entertainment
-    # -----------------------------------------------------
 
     r"\bwho is your boyfriend\b",
     r"\bwho is your girlfriend\b",
@@ -169,9 +104,6 @@ UNWANTED_PATTERNS = [
     r"\bwhat is your favorite movie\b",
     r"\bwhat is your favorite song\b",
 
-    # -----------------------------------------------------
-    # Random AI requests
-    # -----------------------------------------------------
 
     r"\bwrite me a poem\b",
     r"\bwrite a poem\b",
@@ -198,10 +130,6 @@ def is_unwanted_talk(
         for pattern in UNWANTED_PATTERNS
     )
 
-
-# =========================================================
-# HUMAN HELP / HR REQUEST
-# =========================================================
 
 HUMAN_HELP_PATTERNS = [
 
@@ -238,9 +166,7 @@ def is_human_help_request(
     )
 
 
-# =========================================================
-# EMPLOYEE NAME EXTRACTION
-# =========================================================
+
 
 def extract_employee_name(
     message: str,
@@ -276,11 +202,22 @@ def extract_employee_name(
                 return name
 
     return None
+def extract_task_id(
+    message: str,
+) -> str | None:
 
+    match = re.search(
+        r"(?:task\s*(?:id)?|task)\s*[:#]?\s*"
+        r"([a-zA-Z0-9_-]{4,})",
+        message,
+        flags=re.IGNORECASE,
+    )
 
-# =========================================================
-# EMPLOYEE FIELD EXTRACTION
-# =========================================================
+    if match:
+
+        return match.group(1).strip()
+
+    return None
 
 def extract_employee_field(
     message: str,
@@ -329,10 +266,6 @@ def extract_employee_field(
 
     return None
 
-
-# =========================================================
-# EMPLOYEE LIST FIELD
-# =========================================================
 
 def extract_employee_list_field(
     message: str,
@@ -392,11 +325,6 @@ def extract_employee_list_field(
 
     return None
 
-
-# =========================================================
-# ATTENDANCE EMPLOYEE NAME
-# =========================================================
-
 def extract_attendance_employee_name(
     message: str,
 ) -> str | None:
@@ -431,11 +359,6 @@ def extract_attendance_employee_name(
                 return name
 
     return None
-
-
-# =========================================================
-# ATTENDANCE FIELD
-# =========================================================
 
 def extract_attendance_field(
     message: str,
@@ -520,10 +443,6 @@ def extract_attendance_field(
     return None
 
 
-# =========================================================
-# TASK EMPLOYEE NAME
-# =========================================================
-
 def extract_task_employee_name(
     message: str,
 ) -> str | None:
@@ -532,12 +451,16 @@ def extract_task_employee_name(
 
     patterns = [
 
-        r"(?:show|get|find|give|display)\s+(.+?)\s+"
-        r"(?:tasks|task)",
-
+        
         r"(?:tasks|task)\s+(?:for|of)\s+(.+?)(?:\?|$)",
 
-        r"(?:show|get)\s+(.+?)\s+recent tasks",
+        
+        r"(?:show|get|find|give|display)\s+(.+?)\s+"
+        r"(?:tasks|task)$",
+
+        
+        r"(?:show|get|find|give|display)\s+(.+?)\s+"
+        r"recent\s+tasks$",
 
     ]
 
@@ -553,37 +476,26 @@ def extract_task_employee_name(
 
             name = match.group(1).strip()
 
-            if name:
+            # These are NOT employee names
+            invalid_names = [
+                "all",
+                "all employees",
+                "employees",
+                "recent",
+                "my",
+            ]
+
+            if (
+                name
+                and name.lower()
+                not in invalid_names
+            ):
+
                 return name
 
     return None
 
 
-# =========================================================
-# TASK ID
-# =========================================================
-
-def extract_task_id(
-    message: str,
-) -> str | None:
-
-    match = re.search(
-        r"(?:task\s*(?:id)?|task)\s*[:#]?\s*"
-        r"([a-zA-Z0-9_-]{4,})",
-        message,
-        flags=re.IGNORECASE,
-    )
-
-    if match:
-
-        return match.group(1).strip()
-
-    return None
-
-
-# =========================================================
-# LEAVE EMPLOYEE NAME
-# =========================================================
 
 def extract_leave_employee_name(
     message: str,
@@ -618,10 +530,6 @@ def extract_leave_employee_name(
     return None
 
 
-# =========================================================
-# LEAVE ID
-# =========================================================
-
 def extract_leave_id(
     message: str,
 ) -> str | None:
@@ -640,9 +548,6 @@ def extract_leave_id(
     return None
 
 
-# =========================================================
-# LEAVE STATUS
-# =========================================================
 
 def extract_leave_status(
     message: str,
@@ -673,9 +578,7 @@ def extract_leave_status(
     return None
 
 
-# =========================================================
-# INTENT DETECTION
-# =========================================================
+
 
 def detect_intent(
     message: str,
@@ -683,29 +586,17 @@ def detect_intent(
 
     text = _normalize(message)
 
-    # =====================================================
-    # SPECIAL CASE 1
-    # UNWANTED TALK
-    #
-    # MUST COME BEFORE GENERAL CHAT.
-    # =====================================================
 
     if is_unwanted_talk(text):
 
         return Intent.UNWANTED_TALK
 
-    # =====================================================
-    # SPECIAL CASE 2
-    # EXPLICIT HUMAN HELP
-    # =====================================================
+    
 
     if is_human_help_request(text):
 
         return Intent.HUMAN_HELP
 
-    # =====================================================
-    # ATTENDANCE
-    # =====================================================
 
     if _contains_any(
         text,
@@ -760,9 +651,7 @@ def detect_intent(
 
             return Intent.GET_ATTENDANCE
 
-    # =====================================================
-    # TASKS
-    # =====================================================
+ 
 
     if _contains_any(
         text,
@@ -836,9 +725,46 @@ def detect_intent(
 
         return Intent.GET_TASKS
 
-    # =====================================================
-    # LEAVE
-    # =====================================================
+    if _contains_any(
+         text,
+         [
+           "approved leaves",
+           "approved leave",
+           "show approved leaves",
+           "show approved leave",
+           "list approved leaves",
+         ],
+    ):
+
+         return Intent.GET_APPROVED_LEAVES
+
+
+    if _contains_any(
+        text,
+        [
+           "pending leaves",
+           "pending leave",
+           "show pending leaves",
+           "show pending leave",
+           "list pending leaves",
+        ],
+    ):
+
+        return Intent.GET_PENDING_LEAVES
+
+
+    if _contains_any(
+        text,
+        [
+           "rejected leaves",
+           "rejected leave",
+           "show rejected leaves",
+           "show rejected leave",
+           "list rejected leaves",
+         ],
+    ):
+
+        return Intent.GET_REJECTED_LEAVES
 
     if _contains_any(
         text,
@@ -906,11 +832,16 @@ def detect_intent(
         text,
         [
             "leave history",
+            "leave records",
+            "all leave records",
+            "show leave records",
+            "show all leaves"
             "all leaves",
             "all leave",
             "show leaves",
             "show all leaves",
             "list leaves",
+            "list leaves records"
         ],
     ):
 
@@ -924,10 +855,7 @@ def detect_intent(
 
         return Intent.GET_LEAVES
 
-    # =====================================================
-    # EMPLOYEES
-    # =====================================================
-
+   
     if _contains_any(
         text,
         [
@@ -941,9 +869,7 @@ def detect_intent(
 
         return Intent.GET_EMPLOYEES
 
-    # -----------------------------------------------------
-    # All employee field list
-    # -----------------------------------------------------
+
 
     employee_list_field = (
         extract_employee_list_field(text)
@@ -953,9 +879,7 @@ def detect_intent(
 
         return Intent.GET_EMPLOYEE_FIELD_LIST
 
-    # -----------------------------------------------------
-    # My details
-    # -----------------------------------------------------
+ 
 
     if _contains_any(
         text,
@@ -969,9 +893,7 @@ def detect_intent(
 
         return Intent.GET_MY_DETAILS
 
-    # -----------------------------------------------------
-    # Specific employee field
-    # -----------------------------------------------------
+
 
     employee_field = (
         extract_employee_field(text)
@@ -985,10 +907,7 @@ def detect_intent(
 
         return Intent.GET_EMPLOYEE_FIELD
 
-    # -----------------------------------------------------
-    # Specific employee details
-    # -----------------------------------------------------
-
+    
     if _contains_any(
         text,
         [
@@ -1002,8 +921,5 @@ def detect_intent(
 
             return Intent.GET_EMPLOYEE_DETAILS
 
-    # =====================================================
-    # GEMINI FALLBACK
-    # =====================================================
-
+   
     return Intent.GENERAL_CHAT

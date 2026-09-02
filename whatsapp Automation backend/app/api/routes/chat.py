@@ -38,9 +38,7 @@ router = APIRouter(
 )
 
 
-# =========================================================
-# CHAT SERVICE DEPENDENCY
-# =========================================================
+
 
 def get_chat_service(
     ai: AiService = Depends(get_ai_service),
@@ -57,9 +55,6 @@ def get_chat_service(
     )
 
 
-# =========================================================
-# CHAT
-# =========================================================
 
 @router.post(
     "/chat",
@@ -89,7 +84,7 @@ async def chat(
         )
 
     logger.info(
-        "chat request received "
+        "employee whatsapp chat request received "
         "request_id=%s message_length=%d",
         request_id,
         len(message),
@@ -99,6 +94,9 @@ async def chat(
         message=message,
         source="admin",
         request_id=request_id,
+        conversation_id=payload.conversation_id,
+        employee_name=payload.employee_name,
+      
     )
 
     elapsed_ms = (
@@ -107,7 +105,7 @@ async def chat(
     ) * 1000
 
     logger.info(
-        "chat request completed "
+        "employee whatsapp chat request completed "
         "request_id=%s elapsed_ms=%.1f",
         request_id,
         elapsed_ms,

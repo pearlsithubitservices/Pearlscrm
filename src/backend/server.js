@@ -61,6 +61,7 @@ const messageTemplateRoutes = require("./routes/Whatsapp Automation/messageTempl
 const aiConfigRoutes = require("./routes/Whatsapp Automation/aiConfig");
 const reportRoutes = require("./routes/Whatsapp Automation/report");
 const whatsappConfigRoutes = require("./routes/Whatsapp Automation/whatsappIntegration");
+const humanHandoffRoutes = require("./routes/Whatsapp Automation/HumanHandoffRoutes");
 connectDB();
 
 const app = express();
@@ -123,7 +124,7 @@ app.use("/api/message-templates", messageTemplateRoutes);
 app.use("/api/ai-config", aiConfigRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/whatsapp-integration", whatsappConfigRoutes);
-
+app.use( "/api/handoff", humanHandoffRoutes);
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {

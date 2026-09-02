@@ -47,10 +47,6 @@ logger = logging.getLogger(
 )
 
 
-# =========================================================
-# FIXED RESPONSES
-# =========================================================
-
 UNWANTED_RESPONSE = (
     "Sorry, I can only assist with company-related questions "
     "such as employees, attendance, tasks, leave, and "
@@ -64,9 +60,24 @@ HR_HANDOFF_RESPONSE = (
 )
 
 
-# =========================================================
-# FIND EMPLOYEE
-# =========================================================
+WHATSAPP_PRIVACY_RESPONSE = (
+    "For privacy reasons, I can only provide information "
+    "related to your own employee account."
+)
+
+
+WHATSAPP_NOT_LINKED_RESPONSE = (
+    "Your WhatsApp number is not linked to an employee "
+    "account in the CRM."
+)
+
+
+def is_whatsapp_employee(
+    source: str,
+) -> bool:
+
+    return source == "whatsapp"
+
 
 def find_employee(
     employees: list[dict],
@@ -113,10 +124,6 @@ def find_employee(
     return None
 
 
-# =========================================================
-# FIND EMPLOYEE BY PHONE
-# =========================================================
-
 def find_employee_by_phone(
     employees: list[dict],
     phone: str,
@@ -159,10 +166,6 @@ def find_employee_by_phone(
 
     return None
 
-
-# =========================================================
-# FORMAT ATTENDANCE FIELD
-# =========================================================
 
 def format_attendance_field_response(
     employee: dict,
@@ -321,10 +324,6 @@ def format_attendance_field_response(
     )
 
 
-# =========================================================
-# CRM ERROR HELPER
-# =========================================================
-
 def crm_http_exception(
     exc: CrmServiceError,
 ) -> HTTPException:
@@ -334,10 +333,6 @@ def crm_http_exception(
         detail=exc.message,
     )
 
-
-# =========================================================
-# FORMAT TASKS
-# =========================================================
 
 def format_tasks(
     tasks: list[dict],
@@ -380,10 +375,6 @@ def format_tasks(
         lines
     )
 
-
-# =========================================================
-# FORMAT LEAVES
-# =========================================================
 
 def format_leaves(
     leaves: list[dict],
@@ -453,20 +444,38 @@ def format_leaves(
     )
 
 
-# =========================================================
-# CHAT SERVICE
-# =========================================================
+def filter_leaves_by_status(
+    leaves: list[dict],
+    status: str,
+) -> list[dict]:
+
+    normalized_status = (
+        status
+        .strip()
+        .lower()
+    )
+
+    filtered_leaves = []
+
+    for leave in leaves:
+
+        leave_status = str(
+            leave.get(
+                "status",
+                ""
+            )
+        ).strip().lower()
+
+        if leave_status == normalized_status:
+
+            filtered_leaves.append(
+                leave
+            )
+
+    return filtered_leaves
+
 
 class ChatService:
-
-    """
-    Shared message-processing service.
-
-    Used by:
-
-    - Admin chat
-    - WhatsApp webhook
-    """
 
     def __init__(
         self,
@@ -480,22 +489,15 @@ class ChatService:
         self.handoff = handoff
 
 
-    # =====================================================
-    # PROCESS MESSAGE
-    # =====================================================
-
     async def process_message(
         self,
         message: str,
         source: str = "admin",
         conversation_id: str | None = None,
+        employee_name: str | None = None,
         request_id: str | None = None,
         employee_phone: str | None = None,
     ) -> str:
-
-        # =================================================
-        # REQUEST ID
-        # =================================================
 
         if request_id is None:
 
@@ -504,11 +506,6 @@ class ChatService:
             )
 
         started_at = time.monotonic()
-
-
-        # =================================================
-        # VALIDATE MESSAGE
-        # =================================================
 
         message = message.strip()
 
@@ -519,14 +516,10 @@ class ChatService:
             )
 
 
-        # =================================================
-        # IDENTIFY WHATSAPP EMPLOYEE BY PHONE
-        # =================================================
-
         current_employee = None
 
         if (
-            source == "whatsapp"
+            is_whatsapp_employee(source)
             and employee_phone
         ):
 
@@ -573,10 +566,6 @@ class ChatService:
                 )
 
 
-        # =================================================
-        # START LOG
-        # =================================================
-
         logger.info(
             "message processing started "
             "request_id=%s source=%s message_length=%d",
@@ -585,10 +574,6 @@ class ChatService:
             len(message),
         )
 
-
-        # =================================================
-        # DETECT INTENT
-        # =================================================
 
         intent = detect_intent(
             message
@@ -603,26 +588,13 @@ class ChatService:
         )
 
 
-        # =================================================
-        # MESSAGE LOWER
-        # =================================================
-
-        message_lower = message.lower()
-
-
-        # =================================================
-        # 0. UNWANTED TALK
-        # =================================================
-
+        # UNWANTED TALK
         if intent is Intent.UNWANTED_TALK:
 
             return UNWANTED_RESPONSE
 
 
-        # =================================================
-        # 1. EXPLICIT HUMAN HELP
-        # =================================================
-
+        # HUMAN HELP
         if intent is Intent.HUMAN_HELP:
 
             try:
@@ -632,6 +604,13 @@ class ChatService:
                         message=message,
                         source=source,
                         conversation_id=conversation_id,
+                        employee_name=(
+                            current_employee.get(
+                                "employeeName"
+                            )
+                            if current_employee
+                            else employee_name
+                        ),
                     )
                 )
 
@@ -639,7 +618,7 @@ class ChatService:
                     "explicit human handoff created "
                     "request_id=%s handoff_id=%s",
                     request_id,
-                    handoff_request["id"],
+                    handoff_request.get("_id"),
                 )
 
             except Exception:
@@ -662,29 +641,12 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 2. ATTENDANCE FIELD
-        # =================================================
-
+        # ATTENDANCE FIELD
         if intent is Intent.GET_ATTENDANCE_FIELD:
 
-            employee_name = (
-                extract_attendance_employee_name(
-                    message
-                )
+            field = extract_attendance_field(
+                message
             )
-
-            field = (
-                extract_attendance_field(
-                    message
-                )
-            )
-
-            if not employee_name:
-
-                return (
-                    "Please provide the employee name."
-                )
 
             if not field:
 
@@ -693,34 +655,54 @@ class ChatService:
                     "information you want."
                 )
 
-            try:
+            if is_whatsapp_employee(source):
 
-                employees = (
-                    await self.crm.get_employees()
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
+
+                employee = current_employee
+
+            else:
+
+                requested_employee_name = (
+                    extract_attendance_employee_name(
+                        message
+                    )
                 )
 
-            except CrmServiceError as exc:
+                if not requested_employee_name:
 
-                raise crm_http_exception(
-                    exc
+                    return (
+                        "Please provide the employee name."
+                    )
+
+                try:
+
+                    employees = (
+                        await self.crm.get_employees()
+                    )
+
+                except CrmServiceError as exc:
+
+                    raise crm_http_exception(
+                        exc
+                    )
+
+                employee = find_employee(
+                    employees,
+                    requested_employee_name,
                 )
 
-            employee = find_employee(
-                employees,
-                employee_name,
-            )
+                if employee is None:
 
-            if employee is None:
+                    return (
+                        f"I could not find an employee "
+                        f"named '{requested_employee_name}' "
+                        f"in the CRM."
+                    )
 
-                return (
-                    f"I could not find an employee "
-                    f"named '{employee_name}' "
-                    f"in the CRM."
-                )
-
-            employee_id = employee.get(
-                "_id"
-            )
+            employee_id = employee.get("_id")
 
             try:
 
@@ -746,30 +728,26 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 3. EMPLOYEE ATTENDANCE
-        # =================================================
-
+        # ATTENDANCE
         if intent is Intent.GET_ATTENDANCE:
 
-            # WhatsApp "my attendance"
-            if (
-                source == "whatsapp"
-                and current_employee is not None
-                and "my attendance" in message_lower
-            ):
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
 
                 employee = current_employee
 
             else:
 
-                employee_name = (
+                requested_employee_name = (
                     extract_attendance_employee_name(
                         message
                     )
                 )
 
-                if not employee_name:
+                if not requested_employee_name:
 
                     return (
                         "Please provide the employee name."
@@ -789,20 +767,18 @@ class ChatService:
 
                 employee = find_employee(
                     employees,
-                    employee_name,
+                    requested_employee_name,
                 )
 
                 if employee is None:
 
                     return (
                         f"I could not find an employee "
-                        f"named '{employee_name}' "
+                        f"named '{requested_employee_name}' "
                         f"in the CRM."
                     )
 
-            employee_id = employee.get(
-                "_id"
-            )
+            employee_id = employee.get("_id")
 
             try:
 
@@ -827,11 +803,12 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 4. ACTIVE ATTENDANCE
-        # =================================================
-
+        # ACTIVE ATTENDANCE
         if intent is Intent.GET_ACTIVE_ATTENDANCE:
+
+            if is_whatsapp_employee(source):
+
+                return WHATSAPP_PRIVACY_RESPONSE
 
             try:
 
@@ -850,11 +827,15 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 5. ATTENDANCE HISTORY
-        # =================================================
-
+        # ATTENDANCE HISTORY
         if intent is Intent.GET_ATTENDANCE_HISTORY:
+
+            if is_whatsapp_employee(source):
+
+                return (
+                    "I can only provide your own attendance "
+                    "information through WhatsApp."
+                )
 
             try:
 
@@ -873,11 +854,12 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 6. ALL EMPLOYEES
-        # =================================================
-
+        # EMPLOYEES
         if intent is Intent.GET_EMPLOYEES:
+
+            if is_whatsapp_employee(source):
+
+                return WHATSAPP_PRIVACY_RESPONSE
 
             try:
 
@@ -896,11 +878,12 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 7. EMPLOYEE FIELD LIST
-        # =================================================
-
+        # EMPLOYEE FIELD LIST
         if intent is Intent.GET_EMPLOYEE_FIELD_LIST:
+
+            if is_whatsapp_employee(source):
+
+                return WHATSAPP_PRIVACY_RESPONSE
 
             try:
 
@@ -914,10 +897,8 @@ class ChatService:
                     exc
                 )
 
-            field = (
-                extract_employee_list_field(
-                    message
-                )
+            field = extract_employee_list_field(
+                message
             )
 
             if not field:
@@ -932,25 +913,42 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 8. SPECIFIC EMPLOYEE FIELD
-        # =================================================
-
+        # EMPLOYEE FIELD
         if intent is Intent.GET_EMPLOYEE_FIELD:
 
-            employee_name = (
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
+
+                field = extract_employee_field(
+                    message
+                )
+
+                if not field:
+
+                    return (
+                        "Please specify which employee "
+                        "information you want."
+                    )
+
+                return format_employee_field(
+                    current_employee,
+                    field,
+                )
+
+            employee_name_requested = (
                 extract_employee_name(
                     message
                 )
             )
 
-            field = (
-                extract_employee_field(
-                    message
-                )
+            field = extract_employee_field(
+                message
             )
 
-            if not employee_name:
+            if not employee_name_requested:
 
                 return (
                     "Please provide the employee name."
@@ -977,14 +975,14 @@ class ChatService:
 
             employee = find_employee(
                 employees,
-                employee_name,
+                employee_name_requested,
             )
 
             if employee is None:
 
                 return (
                     f"I could not find an employee "
-                    f"named '{employee_name}' "
+                    f"named '{employee_name_requested}' "
                     f"in the CRM."
                 )
 
@@ -994,19 +992,26 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 9. EMPLOYEE DETAILS
-        # =================================================
-
+        # EMPLOYEE DETAILS
         if intent is Intent.GET_EMPLOYEE_DETAILS:
 
-            employee_name = (
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
+
+                return format_employee_details(
+                    current_employee
+                )
+
+            requested_employee_name = (
                 extract_employee_name(
                     message
                 )
             )
 
-            if not employee_name:
+            if not requested_employee_name:
 
                 return (
                     "Please provide the employee name."
@@ -1026,14 +1031,14 @@ class ChatService:
 
             employee = find_employee(
                 employees,
-                employee_name,
+                requested_employee_name,
             )
 
             if employee is None:
 
                 return (
                     f"I could not find an employee "
-                    f"named '{employee_name}' "
+                    f"named '{requested_employee_name}' "
                     f"in the CRM."
                 )
 
@@ -1042,11 +1047,40 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 10. ALL TASKS
-        # =================================================
-
+        # ALL TASKS
         if intent is Intent.GET_TASKS:
+
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
+
+                employee_id = (
+                    current_employee.get("_id")
+                )
+
+                try:
+
+                    tasks = (
+                        await self.crm.get_recent_tasks(
+                            employee_id
+                        )
+                    )
+
+                except CrmServiceError as exc:
+
+                    raise crm_http_exception(
+                        exc
+                    )
+
+                return format_tasks(
+                    tasks,
+                    title=(
+                        f"My Tasks - "
+                        f"{current_employee.get('employeeName')}"
+                    ),
+                )
 
             try:
 
@@ -1065,47 +1099,26 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 11. TASKS BY EMPLOYEE
-        # =================================================
-
+        # TASKS BY EMPLOYEE
         if intent is Intent.GET_TASKS_BY_EMPLOYEE:
 
-            # =============================================
-            # WHATSAPP "MY TASKS"
-            # =============================================
+            if is_whatsapp_employee(source):
 
-            if (
-                source == "whatsapp"
-                and current_employee is not None
-                and (
-                    "my task" in message_lower
-                    or "my tasks" in message_lower
-                    or "my recent task" in message_lower
-                    or "my recent tasks" in message_lower
-                )
-            ):
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
 
                 employee = current_employee
 
-                logger.info(
-                    "Using WhatsApp identified employee "
-                    "for tasks request_id=%s employee=%s",
-                    request_id,
-                    employee.get(
-                        "employeeName"
-                    ),
-                )
-
             else:
 
-                employee_name = (
+                requested_employee_name = (
                     extract_task_employee_name(
                         message
                     )
                 )
 
-                if not employee_name:
+                if not requested_employee_name:
 
                     return (
                         "Please provide the employee name "
@@ -1126,21 +1139,16 @@ class ChatService:
 
                 employee = find_employee(
                     employees,
-                    employee_name,
+                    requested_employee_name,
                 )
 
                 if employee is None:
 
                     return (
                         f"I could not find an employee "
-                        f"named '{employee_name}' "
+                        f"named '{requested_employee_name}' "
                         f"in the CRM."
                     )
-
-
-            # =============================================
-            # GET EMPLOYEE ID
-            # =============================================
 
             employee_id = employee.get(
                 "_id"
@@ -1154,11 +1162,6 @@ class ChatService:
                     f"does not have a valid employee ID."
                 )
 
-
-            # =============================================
-            # GET EMPLOYEE TASKS
-            # =============================================
-
             try:
 
                 tasks = (
@@ -1169,21 +1172,9 @@ class ChatService:
 
             except CrmServiceError as exc:
 
-                logger.exception(
-                    "failed to get employee tasks "
-                    "request_id=%s employee_id=%s",
-                    request_id,
-                    employee_id,
-                )
-
                 raise crm_http_exception(
                     exc
                 )
-
-
-            # =============================================
-            # RESPONSE
-            # =============================================
 
             return format_tasks(
                 tasks,
@@ -1194,16 +1185,15 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 12. TASK BY ID
-        # =================================================
-
+        # TASK DETAILS
         if intent is Intent.GET_TASK:
 
-            task_id = (
-                extract_task_id(
-                    message
-                )
+            if is_whatsapp_employee(source):
+
+                return WHATSAPP_PRIVACY_RESPONSE
+
+            task_id = extract_task_id(
+                message
             )
 
             if not task_id:
@@ -1258,11 +1248,15 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 13. CREATE TASK
-        # =================================================
-
+        # CREATE TASK
         if intent is Intent.CREATE_TASK:
+
+            if is_whatsapp_employee(source):
+
+                return (
+                    "Task creation is not available "
+                    "through the employee WhatsApp assistant."
+                )
 
             return (
                 "I can help create a task, but I need "
@@ -1271,11 +1265,15 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 14. UPDATE TASK
-        # =================================================
-
+        # UPDATE TASK
         if intent is Intent.UPDATE_TASK:
+
+            if is_whatsapp_employee(source):
+
+                return (
+                    "Task updates are not available "
+                    "through the employee WhatsApp assistant."
+                )
 
             return (
                 "I can help update a task, but I need "
@@ -1284,11 +1282,108 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 15. ALL LEAVES
-        # =================================================
+        # APPROVED LEAVES
+        if intent is Intent.GET_APPROVED_LEAVES:
 
+            if is_whatsapp_employee(source):
+
+                return WHATSAPP_PRIVACY_RESPONSE
+
+            try:
+
+                leaves = (
+                    await self.crm.get_leaves()
+                )
+
+            except CrmServiceError as exc:
+
+                raise crm_http_exception(
+                    exc
+                )
+
+            approved_leaves = (
+                filter_leaves_by_status(
+                    leaves,
+                    "approved",
+                )
+            )
+
+            return format_leaves(
+                approved_leaves,
+                title="Approved Leave Records",
+            )
+
+
+        # PENDING LEAVES
+        if intent is Intent.GET_PENDING_LEAVES:
+
+            if is_whatsapp_employee(source):
+
+                return WHATSAPP_PRIVACY_RESPONSE
+
+            try:
+
+                leaves = (
+                    await self.crm.get_leaves()
+                )
+
+            except CrmServiceError as exc:
+
+                raise crm_http_exception(
+                    exc
+                )
+
+            pending_leaves = (
+                filter_leaves_by_status(
+                    leaves,
+                    "pending",
+                )
+            )
+
+            return format_leaves(
+                pending_leaves,
+                title="Pending Leave Records",
+            )
+
+
+        # REJECTED LEAVES
+        if intent is Intent.GET_REJECTED_LEAVES:
+
+            if is_whatsapp_employee(source):
+
+                return WHATSAPP_PRIVACY_RESPONSE
+
+            try:
+
+                leaves = (
+                    await self.crm.get_leaves()
+                )
+
+            except CrmServiceError as exc:
+
+                raise crm_http_exception(
+                    exc
+                )
+
+            rejected_leaves = (
+                filter_leaves_by_status(
+                    leaves,
+                    "rejected",
+                )
+            )
+
+            return format_leaves(
+                rejected_leaves,
+                title="Rejected Leave Records",
+            )
+
+
+        # ALL LEAVES
         if intent is Intent.GET_LEAVES:
+
+            if is_whatsapp_employee(source):
+
+                return WHATSAPP_PRIVACY_RESPONSE
 
             try:
 
@@ -1307,19 +1402,48 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 16. LEAVES BY EMPLOYEE
-        # =================================================
-
+        # LEAVES BY EMPLOYEE
         if intent is Intent.GET_LEAVES_BY_EMPLOYEE:
 
-            employee_name = (
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
+
+                employee_id = (
+                    current_employee.get("_id")
+                )
+
+                try:
+
+                    leaves = (
+                        await self.crm.get_leaves_by_employee(
+                            employee_id
+                        )
+                    )
+
+                except CrmServiceError as exc:
+
+                    raise crm_http_exception(
+                        exc
+                    )
+
+                return format_leaves(
+                    leaves,
+                    title=(
+                        f"My Leave Records - "
+                        f"{current_employee.get('employeeName')}"
+                    ),
+                )
+
+            requested_employee_name = (
                 extract_leave_employee_name(
                     message
                 )
             )
 
-            if not employee_name:
+            if not requested_employee_name:
 
                 return (
                     "Please provide the employee name "
@@ -1340,14 +1464,14 @@ class ChatService:
 
             employee = find_employee(
                 employees,
-                employee_name,
+                requested_employee_name,
             )
 
             if employee is None:
 
                 return (
                     f"I could not find an employee "
-                    f"named '{employee_name}' "
+                    f"named '{requested_employee_name}' "
                     f"in the CRM."
                 )
 
@@ -1378,10 +1502,7 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 17. CREATE LEAVE
-        # =================================================
-
+        # CREATE LEAVE
         if intent is Intent.CREATE_LEAVE:
 
             return (
@@ -1391,11 +1512,15 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 18. UPDATE LEAVE
-        # =================================================
-
+        # UPDATE LEAVE
         if intent is Intent.UPDATE_LEAVE:
+
+            if is_whatsapp_employee(source):
+
+                return (
+                    "Leave updates are not available "
+                    "through the employee WhatsApp assistant."
+                )
 
             return (
                 "I can help update a leave request, but "
@@ -1404,11 +1529,15 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 19. UPDATE LEAVE STATUS
-        # =================================================
-
+        # UPDATE LEAVE STATUS
         if intent is Intent.UPDATE_LEAVE_STATUS:
+
+            if is_whatsapp_employee(source):
+
+                return (
+                    "Leave status changes are handled "
+                    "by the authorized company team."
+                )
 
             return (
                 "Leave status changes require the leave "
@@ -1416,31 +1545,26 @@ class ChatService:
             )
 
 
-        # =================================================
-        # 20. MY DETAILS
-        # =================================================
-
+        # MY DETAILS
         if intent is Intent.GET_MY_DETAILS:
 
-            if (
-                source == "whatsapp"
-                and current_employee is not None
-            ):
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
 
                 return format_employee_details(
                     current_employee
                 )
 
             return (
-                "Your employee identity is not connected "
-                "to the chatbot yet."
+                "Please specify the employee name "
+                "you want to view."
             )
 
 
-        # =================================================
-        # 21. GENERAL CHAT -> GEMINI
-        # =================================================
-
+        # AI FALLBACK
         try:
 
             answer = (
@@ -1465,6 +1589,13 @@ class ChatService:
                     message=message,
                     source=source,
                     conversation_id=conversation_id,
+                    employee_name=(
+                        current_employee.get(
+                            "employeeName"
+                        )
+                        if current_employee
+                        else employee_name
+                    ),
                 )
 
             except Exception:
@@ -1475,10 +1606,6 @@ class ChatService:
 
             return HR_HANDOFF_RESPONSE
 
-
-        # =================================================
-        # GEMINI UNKNOWN -> HUMAN HANDOFF
-        # =================================================
 
         if (
             "I don't have enough information to answer that"
@@ -1491,6 +1618,13 @@ class ChatService:
                     message=message,
                     source=source,
                     conversation_id=conversation_id,
+                    employee_name=(
+                        current_employee.get(
+                            "employeeName"
+                        )
+                        if current_employee
+                        else employee_name
+                    ),
                 )
 
             except Exception:
@@ -1502,8 +1636,17 @@ class ChatService:
             return HR_HANDOFF_RESPONSE
 
 
-        # =================================================
-        # FINAL RESPONSE
-        # =================================================
+        elapsed_ms = (
+            time.monotonic()
+            - started_at
+        ) * 1000
+
+        logger.info(
+            "message processing completed "
+            "request_id=%s source=%s elapsed_ms=%.1f",
+            request_id,
+            source,
+            elapsed_ms,
+        )
 
         return answer

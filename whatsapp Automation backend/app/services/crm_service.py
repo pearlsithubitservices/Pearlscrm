@@ -852,9 +852,226 @@ class CrmService:
 
             if isinstance(data, list):
                 return data
+                raise CrmServiceError(
+            "The CRM returned an unexpected employee leave response.",
+            status_code=502,
+        )
+
+    # =====================================================
+    # CONVERSATIONS - GET ALL
+    # =====================================================
+
+    async def get_conversations(
+        self,
+    ) -> list[dict]:
+
+        response = await self._get(
+            "/api/conversations"
+        )
+
+        try:
+            result = response.json()
+
+        except ValueError as exc:
+
+            raise CrmServiceError(
+                "The CRM returned an invalid conversations response.",
+                status_code=502,
+            ) from exc
+
+        if not isinstance(result, list):
+
+            raise CrmServiceError(
+                "The CRM returned an unexpected conversations response.",
+                status_code=502,
+            )
+
+        return result
+
+
+    # =====================================================
+    # CONVERSATION - GET BY ID
+    # =====================================================
+
+    async def get_conversation(
+        self,
+        conversation_id: str,
+    ) -> dict:
+
+        response = await self._get(
+            f"/api/conversations/{conversation_id}"
+        )
+
+        try:
+            result = response.json()
+
+        except ValueError as exc:
+
+            raise CrmServiceError(
+                "The CRM returned an invalid conversation response.",
+                status_code=502,
+            ) from exc
+
+        if isinstance(result, dict):
+
+            data = result.get("data")
+
+            if isinstance(data, dict):
+                return data
 
         raise CrmServiceError(
-            "The CRM returned an unexpected employee leave response.",
+            "The CRM returned an unexpected conversation response.",
+            status_code=502,
+        )
+
+
+    # =====================================================
+    # CONVERSATION - CREATE
+    # =====================================================
+
+    async def create_conversation(
+        self,
+        conversation_data: dict[str, Any],
+    ) -> dict:
+
+        response = await self._post(
+            "/api/conversations",
+            conversation_data,
+        )
+
+        try:
+            result = response.json()
+
+        except ValueError as exc:
+
+            raise CrmServiceError(
+                "The CRM returned an invalid conversation creation response.",
+                status_code=502,
+            ) from exc
+
+        if isinstance(result, dict):
+
+            data = result.get("data")
+
+            if isinstance(data, dict):
+                return data
+
+        raise CrmServiceError(
+            "The CRM returned an unexpected conversation creation response.",
+            status_code=502,
+        )
+
+
+    # =====================================================
+    # CONVERSATION - ADD MESSAGE
+    # =====================================================
+
+    async def add_conversation_message(
+        self,
+        conversation_id: str,
+        sender: str,
+        message: str,
+    ) -> dict:
+
+        response = await self._post(
+            f"/api/conversations/{conversation_id}/messages",
+            {
+                "sender": sender,
+                "message": message,
+            },
+        )
+
+        try:
+            result = response.json()
+
+        except ValueError as exc:
+
+            raise CrmServiceError(
+                "The CRM returned an invalid conversation message response.",
+                status_code=502,
+            ) from exc
+
+        if isinstance(result, dict):
+
+            data = result.get("data")
+
+            if isinstance(data, dict):
+                return data
+
+        raise CrmServiceError(
+            "The CRM returned an unexpected conversation message response.",
+            status_code=502,
+        )
+
+
+    # =====================================================
+    # CONVERSATION - TAKE OVER
+    # =====================================================
+
+    async def take_over_conversation(
+        self,
+        conversation_id: str,
+    ) -> dict:
+
+        response = await self._put(
+            f"/api/conversations/{conversation_id}/take-over"
+        )
+
+        try:
+            result = response.json()
+
+        except ValueError as exc:
+
+            raise CrmServiceError(
+                "The CRM returned an invalid take-over response.",
+                status_code=502,
+            ) from exc
+
+        if isinstance(result, dict):
+
+            data = result.get("data")
+
+            if isinstance(data, dict):
+                return data
+
+        raise CrmServiceError(
+            "The CRM returned an unexpected take-over response.",
+            status_code=502,
+        )
+
+
+    # =====================================================
+    # CONVERSATION - RESOLVE
+    # =====================================================
+
+    async def resolve_conversation(
+        self,
+        conversation_id: str,
+    ) -> dict:
+
+        response = await self._put(
+            f"/api/conversations/{conversation_id}/resolve"
+        )
+
+        try:
+            result = response.json()
+
+        except ValueError as exc:
+
+            raise CrmServiceError(
+                "The CRM returned an invalid resolve response.",
+                status_code=502,
+            ) from exc
+
+        if isinstance(result, dict):
+
+            data = result.get("data")
+
+            if isinstance(data, dict):
+                return data
+
+        raise CrmServiceError(
+            "The CRM returned an unexpected resolve response.",
             status_code=502,
         )
 

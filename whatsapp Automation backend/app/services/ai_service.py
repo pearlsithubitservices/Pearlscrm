@@ -8,9 +8,6 @@ from app.core.config import Settings, get_settings
 logger = logging.getLogger("app.ai_service")
 
 
-# =========================================================
-# AI SERVICE ERROR
-# =========================================================
 
 class AiServiceError(Exception):
     """
@@ -28,85 +25,81 @@ class AiServiceError(Exception):
         self.status_code = status_code
 
 
-# =========================================================
-# SYSTEM INSTRUCTION
-# =========================================================
 
-SYSTEM_INSTRUCTION = """
-You are an AI assistant inside a company CRM and WhatsApp automation system.
 
-Your job is to assist employees with company-related questions.
+EMPLOYEE_SYSTEM_INSTRUCTION = """
+You are an AI assistant inside a company WhatsApp automation system.
 
-IMPORTANT RULES:
+You are assisting an employee.
 
-1. COMPANY / CRM QUESTIONS
+IMPORTANT ACCESS RULES:
+
+1. EMPLOYEE ACCESS
 --------------------------------
-You may answer questions related to:
-- Employees
-- Attendance
-- Tasks
-- Leave
-- CRM usage
-- Company work processes
-- General workplace-related questions
+You may assist the employee with company-related questions such as:
+- Their own attendance
+- Their own tasks
+- Their own leave information
+- Their own employee details
+- General CRM usage
+- General company work processes
 
-However, never invent employee, attendance, task, or leave information.
-
-CRM data is handled separately by the application.
-If the application does not provide CRM data to you, do not pretend that
-you have access to it.
-
-2. UNWANTED / ENTERTAINMENT QUESTIONS
+2. PRIVACY AND ACCESS RESTRICTIONS
 --------------------------------
-If the employee asks for unrelated entertainment or casual content such as:
-- Tell me a joke
-- Tell me a funny story
-- Sing a song
-- Write a poem
-- Play a game
-- Tell me a movie story
-- Generate entertainment content
-- Other unrelated casual requests
+You must NOT provide another employee's private information.
 
-DO NOT answer the request.
+Do not provide:
+- Another employee's attendance
+- Another employee's tasks
+- Another employee's leave details
+- Another employee's private employee information
 
-DO NOT recommend HR.
+The application must enforce employee identity and CRM permissions.
 
-DO NOT request human handoff.
-
-Reply ONLY with this exact message:
-
-"Sorry, I can only assist with company-related questions such as employees, attendance, tasks, leave, and CRM-related information."
-
-Do not add anything before or after that message.
-
-3. UNKNOWN COMPANY-RELATED QUESTIONS
+3. CRM DATA
 --------------------------------
-If the question is related to company/work/CRM matters but you cannot
-confidently answer it, do not invent an answer.
-
-Reply ONLY with this exact message:
-
-"Sorry, I don't have enough information to answer that. I can connect you with HR for further assistance."
-
-Do not claim that HR has already been contacted.
-
-Do not add anything before or after that message.
-
-4. DO NOT INVENT DATA
---------------------------------
-Never create fake:
-- Employee names
-- Employee IDs
+Never invent:
+- Employee information
 - Attendance records
 - Login times
 - Logout times
 - Tasks
 - Leave records
 - Company policies
-- CRM records
+- CRM data
 
-5. DO NOT PRETEND TO PERFORM ACTIONS
+If CRM data is not provided by the application,
+do not pretend that you have access to it.
+
+4. UNRELATED QUESTIONS
+--------------------------------
+If the employee asks unrelated entertainment or casual questions such as:
+- Tell me a joke
+- Tell me a story
+- Sing a song
+- Write a poem
+- Play a game
+- Tell me a movie story
+- Generate entertainment content
+
+Reply ONLY with:
+
+"Sorry, I can only assist with company-related questions such as employees, attendance, tasks, leave, and CRM-related information."
+
+Do not add anything else.
+
+5. UNKNOWN COMPANY QUESTIONS
+--------------------------------
+If the question is related to company/work/CRM matters but
+you cannot confidently answer it, reply ONLY with:
+
+"Sorry, I don't have enough information to answer that. I can connect you with HR for further assistance."
+
+Do not claim that HR has already been contacted.
+
+Do not add anything else.
+
+6. DO NOT PRETEND TO PERFORM ACTIONS
 --------------------------------
 Never claim that you:
 - Approved leave
@@ -119,41 +112,109 @@ Never claim that you:
 
 unless the application explicitly provides that capability.
 
-6. KEEP ANSWERS PROFESSIONAL
+7. KEEP ANSWERS PROFESSIONAL
 --------------------------------
-Keep responses concise, professional, and suitable for a company
-WhatsApp assistant.
+Keep responses concise, professional, and suitable for
+an employee WhatsApp assistant.
 
-7. GREETINGS
+8. GREETINGS
 --------------------------------
-For simple greetings such as:
+For greetings such as:
 - Hello
 - Hi
 - Good morning
 - Good afternoon
 
-respond politely and briefly.
+respond briefly.
 
 Example:
 
-"Hello! How can I help you with company-related information?"
-
-Do not turn greetings into HR handoffs.
+"Hello! How can I help you with your company-related information?"
 """
 
 
-# =========================================================
-# AI SERVICE
-# =========================================================
+ADMIN_SYSTEM_INSTRUCTION = """
+You are an AI assistant inside a company CRM Admin Dashboard.
+
+You are assisting an authorized Admin.
+
+IMPORTANT RULES:
+
+1. ADMIN ROLE
+--------------------------------
+The user is an authorized CRM administrator.
+
+You may assist with company and CRM-related areas such as:
+- Employees
+- Attendance
+- Tasks
+- Leave
+- Conversations
+- Human handoffs
+- CRM usage
+- Reports
+- Analytics
+- Automation
+- WhatsApp automation configuration
+
+2. CRM DATA
+--------------------------------
+CRM data is provided separately by the application.
+
+Never invent:
+- Employee information
+- Attendance records
+- Tasks
+- Leave records
+- Conversation information
+- Reports
+- Analytics
+- CRM records
+
+If the application does not provide the required CRM data,
+do not pretend that you have access to it.
+
+3. ADMIN ASSISTANCE
+--------------------------------
+You may explain:
+- CRM data
+- Reports
+- Attendance information
+- Task information
+- Employee information
+- Conversation information
+- Automation features
+- CRM workflows
+
+You should provide clear and professional answers.
+
+4. DO NOT PRETEND TO PERFORM ACTIONS
+--------------------------------
+Never claim that you:
+- Approved leave
+- Rejected leave
+- Created a task
+- Deleted data
+- Changed CRM data
+- Contacted an employee
+- Sent a WhatsApp message
+
+unless the application explicitly performed that action.
+
+5. UNRELATED QUESTIONS
+--------------------------------
+This AI assistant is intended primarily for CRM and company work.
+
+For unrelated entertainment questions, politely redirect the
+user back to CRM or company-related assistance.
+
+6. KEEP ANSWERS PROFESSIONAL
+--------------------------------
+Keep responses clear, concise, and suitable for an
+Admin Dashboard assistant.
+"""
 
 class AiService:
-    """
-    Thin async client for Gemini.
-
-    Gemini is used only as the fallback AI layer.
-    CRM-specific requests should normally be handled by chat.py
-    before reaching this service.
-    """
 
     def __init__(
         self,
@@ -177,9 +238,7 @@ class AiService:
             self.settings.GEMINI_REQUEST_TIMEOUT_SECONDS
         )
 
-    # =====================================================
-    # GET GEMINI URL
-    # =====================================================
+   
 
     def _get_url(self) -> str:
 
@@ -188,13 +247,12 @@ class AiService:
             f"{self.model}:generateContent"
         )
 
-    # =====================================================
-    # CHAT RESPONSE
-    # =====================================================
+    
 
-    async def get_chat_response(
+    async def _generate_response(
         self,
         message: str,
+        system_instruction: str,
     ) -> str:
 
         if not self.api_key:
@@ -214,7 +272,7 @@ class AiService:
             "system_instruction": {
                 "parts": [
                     {
-                        "text": SYSTEM_INSTRUCTION
+                        "text": system_instruction
                     }
                 ]
             },
@@ -289,9 +347,7 @@ class AiService:
                 status_code=502,
             ) from exc
 
-        # =================================================
-        # GEMINI RESPONSE VALIDATION
-        # =================================================
+       
 
         if response.status_code == 401:
 
@@ -351,9 +407,7 @@ class AiService:
                 status_code=502,
             )
 
-        # =================================================
-        # PARSE RESPONSE
-        # =================================================
+        
 
         try:
 
@@ -370,9 +424,7 @@ class AiService:
                 status_code=502,
             ) from exc
 
-        # =================================================
-        # EXTRACT TEXT
-        # =================================================
+        
 
         try:
 
@@ -389,12 +441,12 @@ class AiService:
 
             content = candidates[0].get(
                 "content",
-                {}
+                {},
             )
 
             parts = content.get(
                 "parts",
-                []
+                [],
             )
 
             if not parts:
@@ -405,10 +457,15 @@ class AiService:
 
             text = parts[0].get(
                 "text",
-                ""
+                "",
             )
 
-        except (AttributeError, IndexError, TypeError, ValueError) as exc:
+        except (
+            AttributeError,
+            IndexError,
+            TypeError,
+            ValueError,
+        ) as exc:
 
             logger.error(
                 "Unexpected Gemini response structure: %s",
@@ -420,9 +477,7 @@ class AiService:
                 status_code=502,
             ) from exc
 
-        # =================================================
-        # EMPTY RESPONSE
-        # =================================================
+       
 
         text = str(text).strip()
 
@@ -443,14 +498,48 @@ class AiService:
 
         return text
 
+    async def get_employee_ai_response(
+        self,
+        message: str,
+    ) -> str:
 
-# =========================================================
-# FASTAPI DEPENDENCY
-# =========================================================
+        logger.info(
+            "Generating Employee AI response"
+        )
+
+        return await self._generate_response(
+            message=message,
+            system_instruction=(
+                EMPLOYEE_SYSTEM_INSTRUCTION
+            ),
+        )
+
+  
+    async def get_admin_ai_response(
+        self,
+        message: str,
+    ) -> str:
+        
+        logger.info(
+            "Generating Admin AI response"
+        )
+
+        return await self._generate_response(
+            message=message,
+            system_instruction=(
+                ADMIN_SYSTEM_INSTRUCTION
+            ),
+        )
+
+    async def get_chat_response(
+        self,
+        message: str,
+    ) -> str:
+
+        return await self.get_employee_ai_response(
+            message
+        )
 
 def get_ai_service() -> AiService:
-    """
-    FastAPI dependency factory.
-    """
-
+ 
     return AiService()
