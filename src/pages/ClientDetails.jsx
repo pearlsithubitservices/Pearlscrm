@@ -79,7 +79,7 @@ export default function CompanyOverview() {
                 />;
 
             case "Payments":
-                return <ClientPayment clientId={selectedClient[0]?._id} clientName={selectedClient[0]?.companyName} companyName={selectedClient[0]?.companyName} />;
+                return <ClientPayment client={selectedClient[0]} />;
 
             case "Notes":
                 return <ClientNotes client={selectedClient[0]} />;

@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import useChat from "../../Hooks/chat.js";
-import useEmployees from "../../Hooks/useEmployees";
 import { apiUrl } from "../../config/api.js";
 import CollabCreateView from "./CollabCreateView";
 import AccessPermissionsModal from "./AccessPermissionsModal";
@@ -49,7 +48,6 @@ export default function Messenger() {
   const userDbId = user?._id || user?.id || user?.uid || "";
 
   const userId = userDbId || userEmail || userDisplayName || "admin";
-  const { employees: hookEmployees } = useEmployees();
 
   const [activeTab, setActiveTab] = useState("Chats");
   const [activeChatId, setActiveChatId] = useState(null);
@@ -132,21 +130,6 @@ export default function Messenger() {
   const [taskList, setTaskList] = useState([]);
   const [loadingModalData, setLoadingModalData] = useState(false);
 
-  // Sync hook employees into employeeList
-  useEffect(() => {
-    if (hookEmployees && hookEmployees.length > 0) {
-      setEmployeeList((prev) => {
-        const map = new Map();
-        prev.forEach((item) => {
-          if (item) map.set(String(item._id || item.id || item.email).toLowerCase(), item);
-        });
-        hookEmployees.forEach((item) => {
-          if (item) map.set(String(item.id || item._id || item.uid || item.email).toLowerCase(), item);
-        });
-        return Array.from(map.values());
-      });
-    }
-  }, [hookEmployees]);
 
   // Message Editing State
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -204,45 +187,40 @@ export default function Messenger() {
       const combined = [];
       const seenKeys = new Set();
 
-      // 1. Fetch from Backend API `/employees`
-      try {
-        const res = await fetch(apiUrl("/employees"));
-        if (res.ok) {
-          const data = await res.json();
-          const apiList = Array.isArray(data) ? data : data.data || data.employees || [];
-          apiList.forEach((emp) => {
-            const key = String(emp.email || emp._id || emp.id || emp.uid || "").toLowerCase();
-            if (key && !seenKeys.has(key)) {
-              combined.push(emp);
-              seenKeys.add(key);
-            }
-          });
-        }
-      } catch (e) {
-        console.log("API employees fetch error:", e);
-      }
-
-      // 2. Fetch from Backend API `/auth/users`
+      // Fetch ONLY from MongoDB Users collection (/auth/users)
       try {
         const resUsers = await fetch(apiUrl("/auth/users"));
         if (resUsers.ok) {
           const userData = await resUsers.json();
           const rawUsers = Array.isArray(userData) ? userData : (userData?.data || []);
           rawUsers.forEach((u) => {
+            if (!u) return;
+            const primaryName = u.username || u.name || u.displayName || (u.email ? u.email.split("@")[0] : "User");
             const key = String(u.email || u._id || u.id || "").toLowerCase();
+            const userObj = {
+              ...u,
+              _id: u._id || u.id,
+              id: u.id || u._id,
+              name: primaryName,
+              username: u.username || u.name || primaryName,
+              displayName: primaryName,
+              employeeName: primaryName,
+              email: u.email || "",
+              role: u.role || "User",
+            };
             if (key && !seenKeys.has(key)) {
-              combined.push(u);
+              combined.push(userObj);
               seenKeys.add(key);
             }
           });
         }
       } catch (e) {
-        console.log("API users fetch error:", e);
+        console.log("API users collection fetch error:", e);
       }
 
       setEmployeeList(combined);
     } catch (err) {
-      console.error("Error fetching dynamic employees:", err);
+      console.error("Error fetching dynamic users from MongoDB users collection:", err);
     } finally {
       setLoadingModalData(false);
     }
@@ -391,17 +369,6 @@ export default function Messenger() {
     return (name || "").toLowerCase().includes(search.toLowerCase());
   });
 
-  // Auto-select first room when tab changes or current room is not in current view
-  useEffect(() => {
-    if (filteredChats && filteredChats.length > 0) {
-      const exists = filteredChats.some((c) => c._id === activeChatId);
-      if (!exists) {
-        setActiveChatId(filteredChats[0]._id);
-      }
-    } else {
-      setActiveChatId(null);
-    }
-  }, [activeTab, filteredChats.length]);
 
   const handleSend = async () => {
     if (!messageText.trim() && selectedFiles.length === 0) return;
@@ -492,7 +459,7 @@ export default function Messenger() {
         ].filter(Boolean)
       )
     );
-    const targetEmpName = targetEmp.employeeName || targetEmp.name || targetEmp.email || "Employee";
+    const targetEmpName = targetEmp.username || targetEmp.name || targetEmp.displayName || targetEmp.employeeName || targetEmp.email || "User";
 
     try {
       const newChat = await createChat({
@@ -849,6 +816,10 @@ export default function Messenger() {
               setCollabNameInput={setCollabNameInput}
               collabDescriptionInput={collabDescriptionInput}
               setCollabDescriptionInput={setCollabDescriptionInput}
+              employeeList={employeeList}
+              selectedEmpIds={selectedEmpIds}
+              toggleEmpSelection={toggleEmpSelection}
+              loadingModalData={loadingModalData}
               onOpenAccessPermissions={() => setShowAccessPermissions(true)}
               onCancel={() => setIsCreatingCollab(false)}
               onCreateCollab={async () => {
@@ -1419,55 +1390,68 @@ export default function Messenger() {
             {activeModal === "direct" && (
               <div className="space-y-3">
                 <p className="text-xs text-gray-500 font-medium">
-                  Select a team member to start a 1-on-1 conversation:
+                  Select a team member from Users DB to start a 1-on-1 conversation:
                 </p>
 
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                  <Search size={16} className="text-gray-400" />
+                  <Search size={16} className="text-gray-400 shrink-0" />
                   <input
                     type="text"
-                    placeholder="Search by name..."
+                    placeholder="Search by name, email, or role..."
                     value={modalSearch}
                     onChange={(e) => setModalSearch(e.target.value)}
                     className="bg-transparent text-xs outline-none w-full text-gray-800"
                   />
                 </div>
 
-                <div className="max-h-64 overflow-y-auto space-y-1.5 pt-1">
-                  {employeeList
-                    .filter((emp) => {
-                      const empName = emp.employeeName || emp.name || emp.email || "";
-                      return empName.toLowerCase().includes(modalSearch.toLowerCase());
-                    })
-                    .map((emp) => {
-                      const empName = emp.employeeName || emp.name || emp.email || "Employee";
-                      const empRole = emp.employeeRole || emp.role || emp.email || "Team Member";
+                <div className="max-h-64 overflow-y-auto space-y-1.5 pt-1 pr-1 no-scrollbar">
+                  {loadingModalData ? (
+                    <p className="text-center text-xs text-gray-400 py-4">Loading users from DB...</p>
+                  ) : (
+                    employeeList
+                      .filter((emp) => {
+                        if (!emp) return false;
+                        const empIdStr = String(emp._id || emp.id || emp.uid || emp.email || "").toLowerCase();
+                        const currentUserIdStr = String(userId || user?.email || "").toLowerCase();
+                        if (empIdStr && (empIdStr === currentUserIdStr || empIdStr === String(user?.email || "").toLowerCase())) {
+                          return false;
+                        }
+                        const empName = (emp.employeeName || emp.name || emp.displayName || emp.username || "").toLowerCase();
+                        const empEmail = (emp.email || "").toLowerCase();
+                        const empRole = (emp.role || emp.department || emp.designation || emp.employeeRole || "").toLowerCase();
+                        const q = modalSearch.toLowerCase();
+                        return empName.includes(q) || empEmail.includes(q) || empRole.includes(q);
+                      })
+                      .map((emp) => {
+                        const empName = emp.username || emp.name || emp.displayName || emp.employeeName || (emp.email ? emp.email.split("@")[0] : "User");
+                        const empRole = emp.role || emp.employeeRole || emp.department || emp.designation || emp.email || "Team Member";
 
-                      return (
-                        <button
-                          key={emp._id || emp.id || emp.email}
-                          onClick={() => handleStartDirectChat(emp)}
-                          className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-blue-50/80 transition border border-gray-100 hover:border-blue-200 text-left group cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-100 text-[#1D61E7] font-bold text-sm flex items-center justify-center shrink-0">
-                              {empName.charAt(0).toUpperCase()}
+                        return (
+                          <button
+                            key={emp._id || emp.id || emp.email}
+                            onClick={() => handleStartDirectChat(emp)}
+                            className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-blue-50/80 transition border border-gray-100 hover:border-blue-200 text-left group cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-full bg-blue-100 text-[#1D61E7] font-bold text-xs flex items-center justify-center shrink-0">
+                                {empName.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-gray-900 truncate group-hover:text-[#1D61E7] transition">
+                                  {empName}
+                                </p>
+                                <p className="text-[10px] text-gray-400 truncate">
+                                  {emp.email ? `${emp.email} • ${empRole}` : empRole}
+                                </p>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-gray-900 truncate group-hover:text-[#1D61E7] transition">
-                                {empName}
-                              </p>
-                              <p className="text-[11px] text-gray-400 truncate">
-                                {empRole}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs font-bold text-[#1D61E7] bg-blue-50 group-hover:bg-[#1D61E7] group-hover:text-white px-3 py-1.5 rounded-xl transition">
-                            Chat &rarr;
-                          </span>
-                        </button>
-                      );
-                    })}
+                            <span className="text-xs font-bold text-[#1D61E7] bg-blue-50 group-hover:bg-[#1D61E7] group-hover:text-white px-3 py-1.5 rounded-xl transition shrink-0 ml-2">
+                              Chat &rarr;
+                            </span>
+                          </button>
+                        );
+                      })
+                  )}
                 </div>
               </div>
             )}
@@ -1488,27 +1472,66 @@ export default function Messenger() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                    Select Members
-                  </label>
-                  <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-100 rounded-xl p-2 bg-gray-50/50">
-                    {employeeList.map((emp) => {
-                      const empId = emp._id || emp.id || emp.email;
-                      const isSelected = selectedEmpIds.includes(empId);
-                      return (
-                        <div
-                          key={empId}
-                          onClick={() => toggleEmpSelection(empId)}
-                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition text-xs ${isSelected
-                              ? "bg-blue-50 text-[#1D61E7] font-bold"
-                              : "hover:bg-gray-100 text-gray-700"
-                            }`}
-                        >
-                          <span>{emp.employeeName || emp.name || emp.email}</span>
-                          {isSelected && <Check size={16} />}
-                        </div>
-                      );
-                    })}
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      Select Members (Users DB)
+                    </label>
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                      {selectedEmpIds.length} Selected
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 mb-2">
+                    <Search size={14} className="text-gray-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search member..."
+                      value={modalSearch}
+                      onChange={(e) => setModalSearch(e.target.value)}
+                      className="bg-transparent text-xs outline-none w-full text-gray-800"
+                    />
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-100 rounded-xl p-2 bg-gray-50/50 no-scrollbar">
+                    {loadingModalData ? (
+                      <p className="text-center text-xs text-gray-400 py-3">Loading DB users...</p>
+                    ) : (
+                      employeeList
+                        .filter((emp) => {
+                          if (!emp) return false;
+                          const name = (emp.employeeName || emp.name || emp.displayName || "").toLowerCase();
+                          const email = (emp.email || "").toLowerCase();
+                          const role = (emp.role || emp.department || "").toLowerCase();
+                          const q = modalSearch.toLowerCase();
+                          return name.includes(q) || email.includes(q) || role.includes(q);
+                        })
+                        .map((emp) => {
+                          const empId = emp._id || emp.id || emp.email;
+                          const isSelected = selectedEmpIds.includes(empId);
+                          const name = emp.employeeName || emp.name || emp.displayName || emp.email;
+                          return (
+                            <div
+                              key={empId}
+                              onClick={() => toggleEmpSelection(empId)}
+                              className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition text-xs ${isSelected
+                                  ? "bg-blue-50 text-[#1D61E7] font-bold border border-blue-200"
+                                  : "hover:bg-gray-100 text-gray-700 bg-white border border-gray-100"
+                                }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isSelected ? "bg-[#1D61E7] text-white" : "bg-gray-100 text-gray-600"}`}>
+                                  {name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="truncate text-xs font-semibold">{name}</p>
+                                  <p className="text-[10px] text-gray-400 truncate">{emp.email || emp.role || "Employee"}</p>
+                                </div>
+                              </div>
+                              {isSelected && <Check size={16} className="text-[#1D61E7] shrink-0 ml-2" />}
+                            </div>
+                          );
+                        })
+                    )}
                   </div>
                 </div>
 
@@ -1531,39 +1554,79 @@ export default function Messenger() {
 
             {activeModal === "task" && (
               <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Search tasks..."
-                  value={modalSearch}
-                  onChange={(e) => setModalSearch(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2 text-xs outline-none focus:border-blue-500"
-                />
-                <div className="max-h-60 overflow-y-auto space-y-1.5 pt-1">
-                  {taskList
-                    .filter((t) =>
-                      (t.title || t.taskName || "")
-                        .toLowerCase()
-                        .includes(modalSearch.toLowerCase())
-                    )
-                    .map((task) => (
-                      <button
-                        key={task._id || task.id}
-                        onClick={() => handleSelectTaskChat(task)}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-cyan-50/70 transition border border-transparent hover:border-cyan-100 text-left cursor-pointer"
-                      >
-                        <div>
-                          <p className="text-xs font-bold text-gray-900">
-                            {task.title || task.taskName}
-                          </p>
-                          <p className="text-[10px] text-gray-400">
-                            Status: {task.status || "Pending"}
-                          </p>
-                        </div>
-                        <span className="text-[11px] font-semibold text-cyan-600">
-                          Open Room &rarr;
-                        </span>
-                      </button>
-                    ))}
+                <p className="text-xs text-gray-500 font-medium">
+                  Select a task from Tasks DB to open its dedicated Task Chat room:
+                </p>
+
+                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                  <Search size={16} className="text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search task by title, assigned employee, or company..."
+                    value={modalSearch}
+                    onChange={(e) => setModalSearch(e.target.value)}
+                    className="bg-transparent text-xs outline-none w-full text-gray-800"
+                  />
+                </div>
+
+                <div className="max-h-64 overflow-y-auto space-y-2 pt-1 pr-1 no-scrollbar">
+                  {taskList.length === 0 ? (
+                    <p className="text-center text-xs text-gray-400 py-6">No tasks found in DB</p>
+                  ) : (
+                    taskList
+                      .filter((t) => {
+                        if (!t) return false;
+                        const title = (t.title || t.taskName || "").toLowerCase();
+                        const company = (t.company || "").toLowerCase();
+                        const status = (t.status || "").toLowerCase();
+                        const assignedToName = getEmployeeName(t.assignedTo || t.assignedEmployee || "").toLowerCase();
+                        const q = modalSearch.toLowerCase();
+
+                        return title.includes(q) || company.includes(q) || status.includes(q) || assignedToName.includes(q);
+                      })
+                      .map((task) => {
+                        const taskTitle = task.title || task.taskName || task.company || "Untitled Task";
+                        const assignedName = getEmployeeName(task.assignedTo || task.assignedEmployee);
+                        const status = task.status || "Pending";
+                        const priority = task.priority || "Medium";
+
+                        const statusStyle =
+                          status.toLowerCase() === "completed"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : status.toLowerCase() === "in progress"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-blue-50 text-blue-700 border-blue-200";
+
+                        return (
+                          <button
+                            key={task._id || task.id}
+                            onClick={() => handleSelectTaskChat(task)}
+                            className="w-full flex items-center justify-between p-3 rounded-2xl bg-white border border-gray-100 hover:border-cyan-300 hover:bg-cyan-50/40 transition text-left group cursor-pointer shadow-xs"
+                          >
+                            <div className="min-w-0 pr-2 space-y-1">
+                              <p className="text-xs font-bold text-gray-900 group-hover:text-cyan-800 truncate">
+                                {taskTitle}
+                              </p>
+                              <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                <span>Assigned: <strong className="text-gray-700">{assignedName}</strong></span>
+                                {task.company && <span>• {task.company}</span>}
+                              </div>
+                              <div className="flex items-center gap-1.5 pt-0.5">
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border ${statusStyle}`}>
+                                  ● {status}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                                  {priority}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-cyan-600 bg-cyan-50 group-hover:bg-cyan-600 group-hover:text-white px-3 py-1.5 rounded-xl transition shrink-0">
+                              Open Room &rarr;
+                            </span>
+                          </button>
+                        );
+                      })
+                  )}
                 </div>
               </div>
             )}
@@ -1584,27 +1647,61 @@ export default function Messenger() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                    Select Collaborators
-                  </label>
-                  <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-100 rounded-xl p-2 bg-gray-50/50">
-                    {employeeList.map((emp) => {
-                      const empId = emp._id || emp.id || emp.email;
-                      const isSelected = selectedEmpIds.includes(empId);
-                      return (
-                        <div
-                          key={empId}
-                          onClick={() => toggleEmpSelection(empId)}
-                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition text-xs ${isSelected
-                              ? "bg-indigo-50 text-indigo-600 font-bold"
-                              : "hover:bg-gray-100 text-gray-700"
-                            }`}
-                        >
-                          <span>{emp.employeeName || emp.name || emp.email}</span>
-                          {isSelected && <Check size={16} />}
-                        </div>
-                      );
-                    })}
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      Select Collaborators (Users DB)
+                    </label>
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                      {selectedEmpIds.length} Selected
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 mb-2">
+                    <Search size={14} className="text-gray-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search collaborator..."
+                      value={modalSearch}
+                      onChange={(e) => setModalSearch(e.target.value)}
+                      className="bg-transparent text-xs outline-none w-full text-gray-800"
+                    />
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-100 rounded-xl p-2 bg-gray-50/50 no-scrollbar">
+                    {employeeList
+                      .filter((emp) => {
+                        if (!emp) return false;
+                        const name = (emp.employeeName || emp.name || emp.displayName || "").toLowerCase();
+                        const email = (emp.email || "").toLowerCase();
+                        const q = modalSearch.toLowerCase();
+                        return name.includes(q) || email.includes(q);
+                      })
+                      .map((emp) => {
+                        const empId = emp._id || emp.id || emp.email;
+                        const isSelected = selectedEmpIds.includes(empId);
+                        const name = emp.employeeName || emp.name || emp.displayName || emp.email;
+                        return (
+                          <div
+                            key={empId}
+                            onClick={() => toggleEmpSelection(empId)}
+                            className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition text-xs ${isSelected
+                                ? "bg-indigo-50 text-indigo-600 font-bold border border-indigo-200"
+                                : "hover:bg-gray-100 text-gray-700 bg-white border border-gray-100"
+                              }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${isSelected ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600"}`}>
+                                {name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-semibold">{name}</p>
+                                <p className="text-[10px] text-gray-400 truncate">{emp.email || emp.role || "Employee"}</p>
+                              </div>
+                            </div>
+                            {isSelected && <Check size={16} className="text-indigo-600 shrink-0 ml-2" />}
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
 
@@ -1627,29 +1724,52 @@ export default function Messenger() {
 
             {activeModal === "add_member" && (
               <div className="space-y-3">
-                <p className="text-xs text-gray-500 font-medium mb-2">
-                  Select a team member to add to {activeChat?.chatName || "this chat"}:
+                <p className="text-xs text-gray-500 font-medium mb-1">
+                  Select a team member from Users DB to add to {activeChat?.chatName || "this chat"}:
                 </p>
-                <div className="max-h-60 overflow-y-auto space-y-1.5">
+
+                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 mb-2">
+                  <Search size={14} className="text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search user to add..."
+                    value={modalSearch}
+                    onChange={(e) => setModalSearch(e.target.value)}
+                    className="bg-transparent text-xs outline-none w-full text-gray-800"
+                  />
+                </div>
+
+                <div className="max-h-60 overflow-y-auto space-y-1.5 no-scrollbar">
                   {employeeList
                     .filter(
                       (emp) =>
-                        !activeChat?.participants?.includes(emp._id || emp.id || emp.email)
+                        !activeChat?.participants?.includes(emp._id || emp.id || emp.email) &&
+                        ((emp.employeeName || emp.name || emp.displayName || "").toLowerCase().includes(modalSearch.toLowerCase()) ||
+                         (emp.email || "").toLowerCase().includes(modalSearch.toLowerCase()))
                     )
-                    .map((emp) => (
-                      <button
-                        key={emp._id || emp.id || emp.email}
-                        onClick={() => handleAddMember(emp._id || emp.id || emp.email)}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-blue-50/70 transition border border-transparent hover:border-blue-100 text-left cursor-pointer"
-                      >
-                        <span className="text-xs font-bold text-gray-900">
-                          {emp.employeeName || emp.name || emp.email}
-                        </span>
-                        <span className="text-[11px] font-semibold text-[#1D61E7]">
-                          + Add
-                        </span>
-                      </button>
-                    ))}
+                    .map((emp) => {
+                      const empName = emp.employeeName || emp.name || emp.displayName || emp.email;
+                      return (
+                        <button
+                          key={emp._id || emp.id || emp.email}
+                          onClick={() => handleAddMember(emp._id || emp.id || emp.email)}
+                          className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-blue-50/70 transition border border-gray-100 hover:border-blue-100 text-left cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-[#1D61E7] font-bold text-xs flex items-center justify-center shrink-0">
+                              {empName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-900 truncate">{empName}</p>
+                              <p className="text-[10px] text-gray-400 truncate">{emp.email || emp.role || "Employee"}</p>
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-bold text-[#1D61E7] bg-blue-50 px-2.5 py-1 rounded-lg shrink-0 ml-2">
+                            + Add
+                          </span>
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             )}

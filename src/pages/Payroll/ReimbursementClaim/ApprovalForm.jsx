@@ -5,6 +5,15 @@ import { FileText } from 'lucide-react';
 import useReimbursement from '../../../Hooks/useReimbursement';
 
 
+const getReceiptUrl = (receiptPath) => {
+    if (!receiptPath) return null;
+    if (receiptPath.startsWith("http")) return receiptPath;
+    const normalized = receiptPath.replace(/\\/g, "/");
+    const uploadsIndex = normalized.indexOf("uploads/");
+    const relativePath = uploadsIndex !== -1 ? normalized.substring(uploadsIndex) : normalized.replace(/^\/?/, "");
+    return `http://localhost:5000/${relativePath}`;
+};
+
 export default function ReimbursementApproval({ selectedClaims, getClaims, onClose }) {
     const { updateStatus } = useReimbursement()
     if (!selectedClaims) return null;
@@ -28,24 +37,23 @@ export default function ReimbursementApproval({ selectedClaims, getClaims, onClo
     };
 
     const handleDecline = async () => {
-        // const remarks = prompt("Enter decline reason") || "";
+        const remarks = prompt("Enter rejection reason (optional):") || "";
 
         try {
             await updateStatus(
                 selectedClaims._id,
-                "Declined",
-              
+                "Rejected",
+                remarks
             );
 
-            alert("Claim declined successfully.");
+            alert("Claim rejected successfully.");
 
-            // optional
             onClose();
-            await getClaims();
+            if (getClaims) await getClaims();
 
         } catch (err) {
             console.error(err);
-            alert("Failed to decline claim");
+            alert("Failed to reject claim");
         }
     };
 
@@ -53,9 +61,9 @@ export default function ReimbursementApproval({ selectedClaims, getClaims, onClo
         <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="h-[500px] overflow-y-auto no-scrollbar rounded-2xl flex items-center justify-center"
+            className="w-full max-h-[85vh] overflow-y-auto no-scrollbar rounded-2xl"
         >
-            <div className="w-full max-w-5xl bg-[#F7F4EE] rounded-2xl shadow-xl border border-gray-200 p-8">
+            <div className="w-full bg-[#F7F4EE] rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-8">
 
                 <h2 className="text-4xl font-bold text-[#123B6B] mb-8">
                     Reimbursement Approval
@@ -108,18 +116,18 @@ export default function ReimbursementApproval({ selectedClaims, getClaims, onClo
 
                 </div>
 
-                {/* Summary */}
+                {/* Description / Summary */}
 
                 <div className="mb-6">
                     <label className="block mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-                        Claim Summary
+                        Claim Description
                     </label>
 
                     <textarea
-                        rows={4}
+                        rows={3}
                         readOnly
-                        value={selectedClaims.summary || ""}
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-xl resize-none outline-none"
+                        value={selectedClaims.description || selectedClaims.summary || "No description provided."}
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-base resize-none outline-none"
                     />
                 </div>
 
@@ -128,41 +136,29 @@ export default function ReimbursementApproval({ selectedClaims, getClaims, onClo
                 <div className="mb-8">
 
                     <label className="block mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-                        Attachment
+                        Attachment Receipt
                     </label>
 
-                    <div className="border rounded-xl bg-white p-6 flex items-center justify-between">
+                    <div className="border rounded-xl bg-white p-4 flex items-center justify-between">
 
                         <div className="flex items-center gap-3">
 
-                            <FileText className="text-green-700" />
+                            <FileText className="text-blue-600" />
 
                             {selectedClaims?.receipt ? (
                                 <a
-                                    href={selectedClaims?.receipt}
+                                    href={getReceiptUrl(selectedClaims.receipt)}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-blue-600 underline"
+                                    className="text-blue-600 font-semibold underline text-sm"
                                 >
-                                    View File
+                                    View Uploaded Receipt Document
                                 </a>
                             ) : (
-                                <span>No File</span>
+                                <span className="text-gray-400 text-sm">No Receipt Attachment Uploaded</span>
                             )}
 
                         </div>
-
-                        {selectedClaims.fileUrl && (
-                            <a
-                                href={selectedClaims.fileUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-2 text-green-700 hover:underline"
-                            >
-                                <Download size={18} />
-                                Download
-                            </a>
-                        )}
 
                     </div>
 

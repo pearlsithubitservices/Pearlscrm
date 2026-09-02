@@ -13,20 +13,20 @@ const attendanceCorrectionSchema = new mongoose.Schema(
     },
     department: {
       type: String,
-      required: true,
+      default: "General",
     },
     managerId: {
       type: String,
-      required: true,
+      default: "ADMIN-01",
     },
     managerName: {
       type: String,
-      required: true,
+      default: "Admin",
     },
 
     correctionType: {
       type: String,
-      required: true,
+      default: "Missed Check-In",
     },
 
     date: {
@@ -41,19 +41,18 @@ const attendanceCorrectionSchema = new mongoose.Schema(
 
     correctCheckOut: {
       type: String, // HH:mm
-      required: true,
+      default: "",
     },
 
     workMode: {
       type: String,
-     
-      required: true,
+      default: "In Office",
     },
 
     reason: {
       type: String,
       maxlength: 500,
-      required: true,
+      default: "Attendance Correction Request",
     },
 
     documents: [

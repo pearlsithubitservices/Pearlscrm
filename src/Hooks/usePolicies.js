@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../config/api";
 
 export default function usePolicies() {
     const [policies, setPolicies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const API = "https://pearlscrm.onrender.com/api/reimbursementpolicy";
+    const API = apiUrl("/reimbursementpolicy");
 
     // FETCH
     const fetchPolicies = async () => {

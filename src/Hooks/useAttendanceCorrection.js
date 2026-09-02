@@ -13,7 +13,7 @@ const useAttendanceCorrection = () => {
 
         try {
             const res = await fetch(
-                apiUrl("/api/empAttendanceCorrection"),
+                apiUrl("/empAttendanceCorrection"),
                 {
                     method: "POST",
                     headers: {
@@ -41,7 +41,7 @@ const useAttendanceCorrection = () => {
     const getCorrections = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(apiUrl("/api/empAttendanceCorrection"));
+            const res = await fetch(apiUrl("/empAttendanceCorrection"));
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || "Failed to fetch corrections");
             return data.data || [];
@@ -56,7 +56,7 @@ const useAttendanceCorrection = () => {
     const updateStatus = async (id, status) => {
         try {
             const res = await fetch(
-                apiUrl(`/api/empAttendanceCorrection/${id}/status`),
+                apiUrl(`/empAttendanceCorrection/${id}/status`),
                 {
                     method: "PATCH",
                     headers: {

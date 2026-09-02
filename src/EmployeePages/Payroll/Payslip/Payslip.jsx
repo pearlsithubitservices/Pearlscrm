@@ -35,11 +35,20 @@ const StatusBadge = ({ status }) => {
 
 const Payslip = () => {
   const { payslips, loading } = usePayslip();
- 
   const { user } = useAuth();
-  const payslipById = payslips.filter((item) =>
-    item.employeeId == user?.uid);
-  console.log(payslipById);
+
+  const userUid = user?.uid || user?.id || user?._id;
+  const userEmpId = user?.profile?.empId || user?.empId;
+
+  const empPayslips = (payslips || []).filter((item) =>
+    item.employeeId == userUid ||
+    item.employeeId == userEmpId ||
+    item.employeeId?.toLowerCase() == user?.email?.toLowerCase() ||
+    item.employeeName == user?.name ||
+    item.employeeName == user?.profile?.name
+  );
+
+  const payslipById = empPayslips;
 
 
   const [showForm, setShowForm] = useState(false);
@@ -51,11 +60,10 @@ const Payslip = () => {
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white border rounded-xl p-4 h-[300px] overflow-auto no-scrollbar"
+        className="bg-white border border-gray-100 rounded-2xl p-4 min-h-[300px] max-h-[450px] overflow-auto custom-scrollbar shadow-sm"
       >
-        <div className=" ">
-          <button onClick={() => setShowForm(true)}>Form</button>
-          <table className="w-full min-w-[900px] ">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full min-w-[700px]">
             <thead className="sticky top-0 z-20 bg-white ">
               <tr className=" border-b text-[#0b2b57] font-semibold ">
                 <th className="py-4 px-4 text-left">MONTH</th>
@@ -69,7 +77,8 @@ const Payslip = () => {
             </thead>
 
             <tbody>
-              {payslipById?.map((row, idx) => (
+              {payslipById && payslipById.length > 0 ? (
+                payslipById.map((row, idx) => (
 
                 <motion.tr
                   key={idx}
@@ -85,7 +94,7 @@ const Payslip = () => {
                   </td>
 
                   <td className="py-5 px-4 text-red-500">
-                    ₹{Number(row?.totalDeductions).toLocaleString('en-IN')}
+                    ₹{Number(row?.totalDeductions || row?.deductions || 0).toLocaleString('en-IN')}
                   </td>
 
                   <td className="py-5 px-4 text-blue-600">
@@ -93,7 +102,7 @@ const Payslip = () => {
                   </td>
 
                   <td className="py-5 px-4 font-medium text-sm">
-                    {row.date}
+                    {row.date ? new Date(row.date).toLocaleDateString('en-GB') : "N/A"}
                   </td>
 
                   <td className="py-5 px-4">
@@ -109,7 +118,12 @@ const Payslip = () => {
                     </button>
                   </td>
                 </motion.tr>
-              ))}
+              ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center py-8 text-gray-400 italic">No payslip records available for your account yet.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

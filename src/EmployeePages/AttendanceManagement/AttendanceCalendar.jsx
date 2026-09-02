@@ -13,9 +13,16 @@ import useEmpAttendance from "../../Hooks/useEmpAttendance";
 import AttendanceEdit from "./AttendanceEdit";
 import { calculateAttendanceStatus } from "../../Utils/formatNumber";
 import { useAuth } from "../../context/AuthContext";
+import socket from "../../config/socket";
 
 const AttendanceCalendar = ({ refreshTrigger }) => {
-  const [filter, setFilter] = useState("week");
+  const [filter, setFilter] = useState("month");
+  const [customStartDate, setCustomStartDate] = useState(
+    new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split("T")[0]
+  );
+  const [customEndDate, setCustomEndDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [search, setSearch] = useState("");
 
   const [attendance, setAttendances] = useState([]);
@@ -30,12 +37,21 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
     if (userId) {
       fetchAttendancebyId();
 
-      // Auto-refresh every 30 seconds in background
+      if (socket) {
+        socket.on("attendanceUpdated", fetchAttendancebyId);
+      }
+
+      // Auto-refresh every 10 seconds in background
       const interval = setInterval(() => {
         fetchAttendancebyId();
-      }, 30000);
+      }, 10000);
 
-      return () => clearInterval(interval);
+      return () => {
+        if (socket) {
+          socket.off("attendanceUpdated", fetchAttendancebyId);
+        }
+        clearInterval(interval);
+      };
     }
   }, [userId, refreshTrigger]);
 
@@ -60,13 +76,16 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
     const startOfToday = new Date(now);
     startOfToday.setHours(0, 0, 0, 0);
 
-    const sorted = [...(attendance || [])].sort(
-      (a, b) => new Date(b.date) - new Date(a.date)
-    );
+    const sorted = [...(attendance || [])].sort((a, b) => {
+      const dateA = a.clockIn ? new Date(a.clockIn) : new Date(a.date);
+      const dateB = b.clockIn ? new Date(b.clockIn) : new Date(b.date);
+      return dateB - dateA;
+    });
 
     return sorted.filter((item) => {
-      if (!item.date) return false;
-      const attendanceDate = new Date(item.date);
+      const itemDateRaw = item.clockIn || item.date;
+      if (!itemDateRaw) return false;
+      const attendanceDate = new Date(itemDateRaw);
 
       let matchPeriod = true;
 
@@ -80,6 +99,20 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
           attendanceDate.getFullYear() === now.getFullYear();
       } else if (filter === "year") {
         matchPeriod = attendanceDate.getFullYear() === now.getFullYear();
+      } else if (filter === "custom") {
+        let afterStart = true;
+        let beforeEnd = true;
+        if (customStartDate) {
+          const s = new Date(customStartDate);
+          s.setHours(0, 0, 0, 0);
+          afterStart = attendanceDate >= s;
+        }
+        if (customEndDate) {
+          const e = new Date(customEndDate);
+          e.setHours(23, 59, 59, 999);
+          beforeEnd = attendanceDate <= e;
+        }
+        matchPeriod = afterStart && beforeEnd;
       } else if (filter === "all") {
         matchPeriod = true;
       }
@@ -179,7 +212,7 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
               />
             </div>
 
-            <div className="mt-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
 
               <select
                 value={filter}
@@ -188,7 +221,7 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
                     e.target.value
                   )
                 }
-                className=" bg-gray-100 rounded-xl px-5 py-3 pr-10 outline-none"
+                className=" bg-gray-100 rounded-xl px-5 py-3 pr-10 outline-none cursor-pointer text-sm font-semibold"
               >
                 <option value="all">
                   All Time
@@ -205,14 +238,33 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
                 <option value="year">
                   This Year
                 </option>
+
+                <option value="custom">
+                  📅 Custom Date Range
+                </option>
               </select>
 
+              {filter === "custom" && (
+                <div className="flex items-center gap-2 bg-blue-50/60 p-1.5 rounded-xl border border-blue-100">
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none"
+                    title="From Date"
+                  />
+                  <span className="text-xs text-gray-400 font-bold">to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none"
+                    title="To Date"
+                  />
+                </div>
+              )}
 
             </div>
-
-            <button className="bg-gray-100 p-3 rounded-xl w-[50px] h-[45px] mt-2 " onClick={() => setShowform(true)}>
-              <PencilLine size={18} className="hover:scale-125 transition-transform duration-100" />
-            </button>
 
           </div>
 
@@ -287,7 +339,7 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
                       className="border-b hover:bg-gray-50"
                     >
                       <td className="text-center py-6 font-bold">
-                        {new Date(row.date).toLocaleDateString("en-GB")}
+                        {new Date(row.clockIn || row.date).toLocaleDateString("en-GB")}
                       </td>
 
                       {(() => {
@@ -323,9 +375,10 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
                         const displayBreakHours = formatDuration(totalBreakSeconds);
                         const displayWorkingHours = formatDuration(workingSeconds);
 
+                        const actualDate = row.clockIn ? new Date(row.clockIn) : (row.date ? new Date(row.date) : null);
                         const isToday =
-                          row.date &&
-                          new Date(row.date).toDateString() === new Date().toDateString();
+                          actualDate &&
+                          actualDate.toDateString() === new Date().toDateString();
 
                         return (
                           <>
@@ -372,20 +425,25 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
                         </div>
                       </td>
 
-                      <td className="text-center">
+                      <td className="text-center py-5">
+                        <div className="flex items-center justify-center gap-2">
+                          <span
+                            className={`px-5 py-2 rounded-full font-sm ${statusStyle[row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours)?.toLowerCase()] || "bg-gray-100 text-gray-600"}`}
+                          >
+                            ● {row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours) || "present"}
+                          </span>
 
-                        <span
-                          className={`px-5 py-2 rounded-full font-sm ${statusStyle[row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours)?.toLowerCase()] || "bg-gray-100 text-gray-600"}`}
-                        >
-                          ● {row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours) || "present"}
-                        </span>
-
-                      </td>
-                      <td className="py-5 text-[#0b2b57] font-bold text-sm">
-                        <Edit size={16} className="mr-2" onClick={() => {
-                          setSelectedAttendances(row);
-                          setShowEdit(true);
-                        }} />
+                          <button
+                            onClick={() => {
+                              setSelectedAttendances(row);
+                              setShowform(true);
+                            }}
+                            className="p-2 hover:bg-gray-200 rounded-xl text-[#0b2b57] transition border border-gray-200 bg-white shadow-sm"
+                            title="Request Attendance Correction"
+                          >
+                            <PencilLine size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -408,7 +466,11 @@ const AttendanceCalendar = ({ refreshTrigger }) => {
             className="w-full max-w-6xl max-h-[90vh]  overflow-y-auto overflow-x-hidden no-scrollbar"
           >
             <AttendanceCorrection
-              onClose={() => setShowform(false)}
+              selectedRecord={selectedattendance}
+              onClose={() => {
+                setShowform(false);
+                setSelectedAttendances(null);
+              }}
             />
           </motion.div>
         </div>

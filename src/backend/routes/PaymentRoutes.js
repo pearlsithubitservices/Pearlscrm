@@ -49,24 +49,4 @@ route.get("/", async (req, res) => {
   }
 });
 
-// Update Payment Status
-route.put("/:id", async (req, res) => {
-  try {
-    const payment = await PaymentModel.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!payment) {
-      return res.status(404).json({ message: "Payment not found" });
-    }
-
-    res.status(200).json(payment);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-});
-
 module.exports = route;

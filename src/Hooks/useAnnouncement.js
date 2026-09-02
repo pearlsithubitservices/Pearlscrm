@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
+import apiUrl from "../config/api";
 
-const API_URL = "https://pearlscrm.onrender.com/api/announcement";
-// const API_URL = "https://localhost:5000/api/announcement";
-// change this to your backend URL
+const API_URL = apiUrl("/announcement");
 
 const useAnnouncement = () => {
     const [announcements, setAnnouncements] = useState([]);
