@@ -380,6 +380,56 @@ export default function ProjectForm({ onClose, fetchProjects }) {
 
         </div>
 
+        {/* PROGRESS */}
+
+        <div className="grid md:grid-cols-2 gap-5">
+
+          <InputField
+            label="Project Progress (%)"
+            name="progress"
+            value={project.progress}
+            onChange={handleChange}
+            placeholder="0"
+            type="number"
+            min="0"
+            max="100"
+          />
+
+          <InputField
+            label="Project Status"
+            name="status"
+            value={project.status}
+            onChange={handleChange}
+            type="select"
+            options={[
+              { label: "In Progress", value: "In Progress" },
+              { label: "Pending", value: "Pending" },
+              { label: "Completed", value: "Completed" },
+              { label: "On Hold", value: "On Hold" }
+            ]}
+          />
+
+        </div>
+
+        {/* PRIORITY */}
+
+        <InputField
+          label="Project Priority"
+          name="priority"
+          value={project.priority}
+          onChange={handleChange}
+          type="select"
+          options={[
+            { label: "🔥 Urgent", value: "Urgent" },
+            { label: "🔥 Hot", value: "Hot" },
+            { label: "⚡ High", value: "High" },
+            { label: "⚡ Medium", value: "Medium" },
+            { label: "⚡ Warm", value: "Warm" },
+            { label: "🌱 Low", value: "Low" },
+            { label: "❄️ Cold", value: "Cold" }
+          ]}
+        />
+
         {/* BUTTONS */}
 
         <div className="border-t pt-8 flex gap-4">

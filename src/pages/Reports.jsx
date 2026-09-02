@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ReportAnalytics from "../components/Dashboard/ReportAnalytics.jsx";
 
-import Createinvoice from '../pages/Createinvoice.jsx'
-
 import {
   Plus,
   Search,
@@ -15,14 +13,12 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import AnimateModals from "../components/Dashboard/AnimateModals.jsx";
+import { apiUrl } from "../config/api.js";
 
 export default function Reports() {
   const [loading, setLoading] = useState(
     !sessionStorage.getItem("loaded")
   );
-
-  const [open, setOpen] = useState(false);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -35,6 +31,8 @@ export default function Reports() {
     recentLeads: [],
     todayTasks: [],
   });
+
+  const [leadData, setLeadData] = useState([]);
 
   // Skeleton Loader
   useEffect(() => {
@@ -52,48 +50,166 @@ export default function Reports() {
     }
   }, []);
 
+  const fetchLeads = async () => {
+    try {
+      const response = await fetch(apiUrl("/leads"));
+      if (!response.ok) {
+        throw new Error("Failed to load leads data");
+      }
+
+      const data = await response.json();
+      setLeadData(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching leads for reports:", error);
+      setLeadData([]);
+    }
+  };
+
   // Fetch Dashboard Data
   const fetchDashboard = async () => {
     try {
-      const response = await fetch(
-        "https://pearlscrm.onrender.com/api/dashboard"
-      );
+      const response = await fetch(apiUrl("/dashboard"));
+
+      if (!response.ok) {
+        throw new Error("Failed to load dashboard data");
+      }
 
       const data = await response.json();
-
-      setDashboardData(data);
-
+      setDashboardData(data || {
+        totalLeads: 0,
+        pendingTasks: 0,
+        completedTasks: 0,
+        followupsToday: 0,
+        recentLeads: [],
+        todayTasks: [],
+      });
     } catch (error) {
-      console.log(error);
+      console.error("Dashboard fetch error:", error);
     }
   };
 
   useEffect(() => {
     fetchDashboard();
+    fetchLeads();
   }, []);
+
+  const totalRevenue = leadData.reduce((sum, lead) => {
+    const numericValue = Number(
+      String(lead?.budget ?? "0")
+        .replace(/[₹,\s]/g, "")
+        .replace(/[^0-9.]/g, "")
+    );
+
+    return sum + (Number.isFinite(numericValue) ? numericValue : 0);
+  }, 0);
+
+  const totalTasks = (dashboardData.pendingTasks || 0) + (dashboardData.completedTasks || 0);
+  const performanceRate = totalTasks
+    ? Math.round(((dashboardData.completedTasks || 0) / totalTasks) * 100)
+    : 0;
+
+  const qualifiedLeadStatuses = [
+    "qualified",
+    "converted",
+    "closed",
+    "won",
+    "proposal",
+    "negotiation",
+  ];
+
+  const conversionRate = leadData.length
+    ? Math.round(
+        (leadData.filter((lead) =>
+          qualifiedLeadStatuses.includes(String(lead?.status || "").trim().toLowerCase())
+        ).length / leadData.length) * 100
+      )
+    : 0;
+
+  const onTrackRate = totalTasks
+    ? Math.round(((dashboardData.completedTasks || 0) / totalTasks) * 100)
+    : 0;
+
+  const formatCurrency = (value) => {
+    if (!Number.isFinite(value) || value <= 0) return "₹0";
+
+    if (value >= 1000000) {
+      return `₹${(value / 1000000).toFixed(2)}M`;
+    }
+
+    if (value >= 1000) {
+      return `₹${(value / 1000).toFixed(1)}K`;
+    }
+
+    return `₹${Math.round(value)}`;
+  };
 
   const stats = [
     {
       title: "Total Revenue",
-      value: "₹1.24M",
+      value: formatCurrency(totalRevenue),
       icon: IndianRupee,
     },
     {
       title: "Lead Conversion",
-      value: "82.2%",
+      value: `${conversionRate}%`,
       icon: Briefcase,
     },
     {
       title: "Avg Performance",
-      value: "87%",
+      value: `${performanceRate}%`,
       icon: ChartNoAxesCombined,
     },
     {
       title: "Projects On Track",
-      value: "67%",
+      value: `${onTrackRate}%`,
       icon: IndianRupee,
     },
   ];
+
+  const handleExportReport = () => {
+    const rows = [
+      ["Metric", "Value"],
+      ["Total Revenue", formatCurrency(totalRevenue)],
+      ["Lead Conversion", `${conversionRate}%`],
+      ["Avg Performance", `${performanceRate}%`],
+      ["Projects On Track", `${onTrackRate}%`],
+      ["Total Leads", dashboardData.totalLeads || leadData.length || 0],
+      ["Pending Tasks", dashboardData.pendingTasks || 0],
+      ["Completed Tasks", dashboardData.completedTasks || 0],
+      ["Followups Today", dashboardData.followupsToday || 0],
+      [],
+      ["Lead Name", "Company", "Status", "Budget", "Source", "Assigned To"],
+      ...leadData.map((lead) => [
+        lead?.name || "-",
+        lead?.company || "-",
+        lead?.status || "-",
+        lead?.budget || "-",
+        lead?.source || "-",
+        lead?.assignedTo || lead?.assignedEmployee || "-",
+      ]),
+    ];
+
+    const csv = rows
+      .map((row) =>
+        row
+          .map((value) => {
+            const safeValue = value === null || value === undefined ? "" : String(value);
+            return `"${safeValue.replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "crm-report.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <>
@@ -134,7 +250,7 @@ export default function Reports() {
             {/* Export */}
 
             <button
-              onClick={() => setOpen(true)}
+              onClick={handleExportReport}
               className="flex items-center gap-2 px-3 py-2 rounded bg-[#2563a9] font-semibold hover:scale-110 transition"
             >
               <Plus className="w-4 h-4" />
@@ -206,14 +322,6 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Modal */}
-
-     { open && (
-      <AnimateModals>
-
-        <Createinvoice onClose={() => setOpen(false)} />
-      </AnimateModals>
-     )}
     </>
   );
 }
