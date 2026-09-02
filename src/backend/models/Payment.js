@@ -39,6 +39,7 @@ const invoiceSchema = new mongoose.Schema(
         "Overdue",
         "Cancelled",
         "partial",
+        "Partial",
       ],
       default: "Pending",
     },
@@ -55,7 +56,4 @@ const invoiceSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model(
-  "Invoice",
-  invoiceSchema
-);
+module.exports = mongoose.model("Invoice", invoiceSchema );

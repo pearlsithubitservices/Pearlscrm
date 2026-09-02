@@ -49,7 +49,7 @@ export default function CompanyOverview() {
                 return <ClientProjects />;
 
             case "Payments":
-                return <ClientPayment />;
+                return <ClientPayment client={selectedClient[0]} />;
 
             case "Notes":
                 return <ClientNotes />;
