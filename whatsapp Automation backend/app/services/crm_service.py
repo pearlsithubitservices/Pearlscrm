@@ -60,7 +60,9 @@ class CrmService:
     ):
         self.settings = settings or get_settings()
 
-        self.base_url = self.settings.CRM_BASE_URL.rstrip("/")
+        self.base_url = (
+            self.settings.CRM_BASE_URL.rstrip("/")
+        )
 
         self.timeout = (
             self.settings.CRM_REQUEST_TIMEOUT_SECONDS
@@ -70,7 +72,9 @@ class CrmService:
     # HEADERS
     # =====================================================
 
-    def _headers(self) -> dict[str, str]:
+    def _headers(
+        self,
+    ) -> dict[str, str]:
 
         headers = {
             "Accept": "application/json",
@@ -78,210 +82,12 @@ class CrmService:
         }
 
         if self.settings.CRM_API_TOKEN:
+
             headers["Authorization"] = (
                 f"Bearer {self.settings.CRM_API_TOKEN}"
             )
 
         return headers
-
-    # =====================================================
-    # GET REQUEST
-    # =====================================================
-
-    async def _get(
-        self,
-        path: str,
-    ) -> httpx.Response:
-
-        url = f"{self.base_url}{path}"
-
-        try:
-            async with httpx.AsyncClient(
-                timeout=self.timeout
-            ) as client:
-
-                response = await client.get(
-                    url,
-                    headers=self._headers(),
-                )
-
-        except httpx.ConnectError as exc:
-
-            logger.error(
-                "CRM unreachable at %s: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "Could not connect to the CRM service.",
-                status_code=503,
-            ) from exc
-
-        except httpx.TimeoutException as exc:
-
-            logger.error(
-                "CRM request to %s timed out: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "The CRM service took too long to respond.",
-                status_code=504,
-            ) from exc
-
-        except httpx.HTTPError as exc:
-
-            logger.error(
-                "HTTP error calling %s: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "Unexpected error while contacting the CRM service.",
-                status_code=502,
-            ) from exc
-
-        return self._validate_response(
-            response,
-            url,
-        )
-
-    # =====================================================
-    # POST REQUEST
-    # =====================================================
-
-    async def _post(
-        self,
-        path: str,
-        data: dict[str, Any] | None = None,
-    ) -> httpx.Response:
-
-        url = f"{self.base_url}{path}"
-
-        try:
-            async with httpx.AsyncClient(
-                timeout=self.timeout
-            ) as client:
-
-                response = await client.post(
-                    url,
-                    headers=self._headers(),
-                    json=data or {},
-                )
-
-        except httpx.ConnectError as exc:
-
-            logger.error(
-                "CRM unreachable at %s: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "Could not connect to the CRM service.",
-                status_code=503,
-            ) from exc
-
-        except httpx.TimeoutException as exc:
-
-            logger.error(
-                "CRM request to %s timed out: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "The CRM service took too long to respond.",
-                status_code=504,
-            ) from exc
-
-        except httpx.HTTPError as exc:
-
-            logger.error(
-                "HTTP error calling %s: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "Unexpected error while contacting the CRM service.",
-                status_code=502,
-            ) from exc
-
-        return self._validate_response(
-            response,
-            url,
-        )
-
-    # =====================================================
-    # PUT REQUEST
-    # =====================================================
-
-    async def _put(
-        self,
-        path: str,
-        data: dict[str, Any] | None = None,
-    ) -> httpx.Response:
-
-        url = f"{self.base_url}{path}"
-
-        try:
-            async with httpx.AsyncClient(
-                timeout=self.timeout
-            ) as client:
-
-                response = await client.put(
-                    url,
-                    headers=self._headers(),
-                    json=data or {},
-                )
-
-        except httpx.ConnectError as exc:
-
-            logger.error(
-                "CRM unreachable at %s: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "Could not connect to the CRM service.",
-                status_code=503,
-            ) from exc
-
-        except httpx.TimeoutException as exc:
-
-            logger.error(
-                "CRM request to %s timed out: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "The CRM service took too long to respond.",
-                status_code=504,
-            ) from exc
-
-        except httpx.HTTPError as exc:
-
-            logger.error(
-                "HTTP error calling %s: %s",
-                url,
-                exc,
-            )
-
-            raise CrmServiceError(
-                "Unexpected error while contacting the CRM service.",
-                status_code=502,
-            ) from exc
-
-        return self._validate_response(
-            response,
-            url,
-        )
 
     # =====================================================
     # RESPONSE VALIDATION
@@ -293,7 +99,10 @@ class CrmService:
         url: str,
     ) -> httpx.Response:
 
-        if response.status_code in (401, 403):
+        if response.status_code in (
+            401,
+            403,
+        ):
 
             logger.warning(
                 "CRM authentication failure (%s): %s",
@@ -347,33 +156,276 @@ class CrmService:
         return response
 
     # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    async def _get(
+        self,
+        path: str,
+    ) -> httpx.Response:
+
+        url = f"{self.base_url}{path}"
+
+        try:
+
+            async with httpx.AsyncClient(
+                timeout=self.timeout,
+            ) as client:
+
+                response = await client.get(
+                    url,
+                    headers=self._headers(),
+                )
+
+        except httpx.ConnectError as exc:
+
+            logger.error(
+                "CRM unreachable at %s: %s",
+                url,
+                exc,
+            )
+
+            raise CrmServiceError(
+                "Could not connect to the CRM service.",
+                status_code=503,
+            ) from exc
+
+        except httpx.TimeoutException as exc:
+
+            logger.error(
+                "CRM request timed out: %s",
+                url,
+            )
+
+            raise CrmServiceError(
+                "The CRM service took too long to respond.",
+                status_code=504,
+            ) from exc
+
+        except httpx.HTTPError as exc:
+
+            logger.error(
+                "HTTP error calling %s: %s",
+                url,
+                exc,
+            )
+
+            raise CrmServiceError(
+                "Unexpected error while contacting the CRM service.",
+                status_code=502,
+            ) from exc
+
+        return self._validate_response(
+            response,
+            url,
+        )
+
+    # =====================================================
+    # POST REQUEST
+    # =====================================================
+
+    async def _post(
+        self,
+        path: str,
+        data: dict[str, Any] | None = None,
+    ) -> httpx.Response:
+
+        url = f"{self.base_url}{path}"
+
+        try:
+
+            async with httpx.AsyncClient(
+                timeout=self.timeout,
+            ) as client:
+
+                response = await client.post(
+                    url,
+                    headers=self._headers(),
+                    json=data or {},
+                )
+
+        except httpx.ConnectError as exc:
+
+            logger.error(
+                "CRM unreachable at %s: %s",
+                url,
+                exc,
+            )
+
+            raise CrmServiceError(
+                "Could not connect to the CRM service.",
+                status_code=503,
+            ) from exc
+
+        except httpx.TimeoutException as exc:
+
+            logger.error(
+                "CRM request timed out: %s",
+                url,
+            )
+
+            raise CrmServiceError(
+                "The CRM service took too long to respond.",
+                status_code=504,
+            ) from exc
+
+        except httpx.HTTPError as exc:
+
+            logger.error(
+                "HTTP error calling %s: %s",
+                url,
+                exc,
+            )
+
+            raise CrmServiceError(
+                "Unexpected error while contacting the CRM service.",
+                status_code=502,
+            ) from exc
+
+        return self._validate_response(
+            response,
+            url,
+        )
+
+    # =====================================================
+    # PUT REQUEST
+    # =====================================================
+
+    async def _put(
+        self,
+        path: str,
+        data: dict[str, Any] | None = None,
+    ) -> httpx.Response:
+
+        url = f"{self.base_url}{path}"
+
+        try:
+
+            async with httpx.AsyncClient(
+                timeout=self.timeout,
+            ) as client:
+
+                response = await client.put(
+                    url,
+                    headers=self._headers(),
+                    json=data or {},
+                )
+
+        except httpx.ConnectError as exc:
+
+            logger.error(
+                "CRM unreachable at %s: %s",
+                url,
+                exc,
+            )
+
+            raise CrmServiceError(
+                "Could not connect to the CRM service.",
+                status_code=503,
+            ) from exc
+
+        except httpx.TimeoutException as exc:
+
+            logger.error(
+                "CRM request timed out: %s",
+                url,
+            )
+
+            raise CrmServiceError(
+                "The CRM service took too long to respond.",
+                status_code=504,
+            ) from exc
+
+        except httpx.HTTPError as exc:
+
+            logger.error(
+                "HTTP error calling %s: %s",
+                url,
+                exc,
+            )
+
+            raise CrmServiceError(
+                "Unexpected error while contacting the CRM service.",
+                status_code=502,
+            ) from exc
+
+        return self._validate_response(
+            response,
+            url,
+        )
+
+    # =====================================================
+    # RESPONSE HELPERS
+    # =====================================================
+
+    @staticmethod
+    def _extract_list(
+        result: Any,
+        keys: list[str],
+    ) -> list[dict] | None:
+
+        if isinstance(
+            result,
+            list,
+        ):
+            return result
+
+        if isinstance(
+            result,
+            dict,
+        ):
+
+            for key in keys:
+
+                value = result.get(key)
+
+                if isinstance(
+                    value,
+                    list,
+                ):
+                    return value
+
+        return None
+
+    # =====================================================
     # EMPLOYEES
     # =====================================================
 
-    async def get_employees(self) -> list[dict]:
+    async def get_employees(
+        self,
+    ) -> list[dict]:
 
         response = await self._get(
             "/api/employees"
         )
 
         try:
-            data = response.json()
+
+            result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM service returned an invalid response.",
+                "The CRM returned an invalid employee response.",
                 status_code=502,
             ) from exc
 
-        if not isinstance(data, list):
+        employees = self._extract_list(
+            result,
+            [
+                "employees",
+                "data",
+            ],
+        )
+
+        if employees is None:
 
             raise CrmServiceError(
-                "The CRM service returned an unexpected response shape.",
+                "The CRM returned an unexpected employee response.",
                 status_code=502,
             )
 
-        return data
+        return employees
 
     # =====================================================
     # ATTENDANCE - ACTIVE
@@ -388,23 +440,32 @@ class CrmService:
         )
 
         try:
-            data = response.json()
+
+            result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid attendance response.",
+                "Invalid active attendance response.",
                 status_code=502,
             ) from exc
 
-        if not isinstance(data, list):
+        attendance = self._extract_list(
+            result,
+            [
+                "attendance",
+                "data",
+            ],
+        )
+
+        if attendance is None:
 
             raise CrmServiceError(
-                "The CRM returned an unexpected attendance response.",
+                "Unexpected active attendance response.",
                 status_code=502,
             )
 
-        return data
+        return attendance
 
     # =====================================================
     # ATTENDANCE - HISTORY
@@ -419,23 +480,42 @@ class CrmService:
         )
 
         try:
-            data = response.json()
+
+            result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid attendance history response.",
+                "Invalid attendance history response.",
                 status_code=502,
             ) from exc
 
-        if not isinstance(data, list):
+        attendance = self._extract_list(
+            result,
+            [
+                "attendance",
+                "data",
+            ],
+        )
+
+        if attendance is None:
 
             raise CrmServiceError(
-                "The CRM returned an unexpected attendance history response.",
+                "Unexpected attendance history response.",
                 status_code=502,
             )
 
-        return data
+        return attendance
+
+    # =====================================================
+    # ATTENDANCE - GET ALL
+    # =====================================================
+
+    async def get_attendance(
+        self,
+    ) -> list[dict]:
+
+        return await self.get_attendance_history()
 
     # =====================================================
     # ATTENDANCE - BY EMPLOYEE
@@ -447,11 +527,13 @@ class CrmService:
         employee_name: str | None = None,
     ) -> list[dict]:
 
-        attendance = await self.get_attendance_history()
+        attendance = (
+            await self.get_attendance_history()
+        )
 
         requested_uid = str(
             employee_uid or ""
-        ).strip()
+        ).strip().lower()
 
         requested_name = str(
             employee_name or ""
@@ -464,24 +546,41 @@ class CrmService:
             record_uid = str(
                 record.get(
                     "employee_uid",
-                    "",
+                    record.get(
+                        "employeeId",
+                        record.get(
+                            "employee_id",
+                            "",
+                        ),
+                    ),
                 )
-            ).strip()
+            ).strip().lower()
 
             record_name = str(
                 record.get(
                     "employee_name",
-                    "",
+                    record.get(
+                        "employeeName",
+                        "",
+                    ),
                 )
             ).strip().lower()
 
-            if requested_uid and record_uid == requested_uid:
+            if (
+                requested_uid
+                and record_uid == requested_uid
+            ):
+
                 result.append(record)
+
                 continue
 
-            if requested_name and record_name == requested_name:
+            if (
+                requested_name
+                and record_name == requested_name
+            ):
+
                 result.append(record)
-                continue
 
         return result
 
@@ -498,9 +597,11 @@ class CrmService:
         payload: dict[str, Any] = {}
 
         if employee_uid:
+
             payload["employee_uid"] = employee_uid
 
         if employee_name:
+
             payload["employee_name"] = employee_name
 
         response = await self._post(
@@ -509,87 +610,13 @@ class CrmService:
         )
 
         try:
+
             return response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid attendance login response.",
-                status_code=502,
-            ) from exc
-
-    # =====================================================
-    # ATTENDANCE - BREAK
-    # =====================================================
-
-    async def attendance_break(
-        self,
-        attendance_id: str,
-    ) -> dict:
-
-        response = await self._put(
-            f"/api/attendance/break/{attendance_id}"
-        )
-
-        try:
-            return response.json()
-
-        except ValueError as exc:
-
-            raise CrmServiceError(
-                "The CRM returned an invalid attendance break response.",
-                status_code=502,
-            ) from exc
-
-    # =====================================================
-    # ATTENDANCE - RESUME
-    # =====================================================
-
-    async def attendance_resume(
-        self,
-        attendance_id: str,
-    ) -> dict:
-
-        response = await self._put(
-            f"/api/attendance/resume/{attendance_id}"
-        )
-
-        try:
-            return response.json()
-
-        except ValueError as exc:
-
-            raise CrmServiceError(
-                "The CRM returned an invalid attendance resume response.",
-                status_code=502,
-            ) from exc
-
-    # =====================================================
-    # ATTENDANCE - LOGOUT
-    # =====================================================
-
-    async def attendance_logout(
-        self,
-        attendance_id: str,
-        total_seconds: int,
-    ) -> dict:
-
-        payload = {
-            "totalSeconds": total_seconds
-        }
-
-        response = await self._put(
-            f"/api/attendance/logout/{attendance_id}",
-            payload,
-        )
-
-        try:
-            return response.json()
-
-        except ValueError as exc:
-
-            raise CrmServiceError(
-                "The CRM returned an invalid attendance logout response.",
+                "Invalid attendance login response.",
                 status_code=502,
             ) from exc
 
@@ -606,32 +633,73 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid tasks response.",
+                "Invalid tasks response.",
                 status_code=502,
             ) from exc
 
-        # CRM may return a direct list
-        if isinstance(result, list):
-            return result
-
-        # Or CRM may return:
-        # { "success": true, "data": [...] }
-        if isinstance(result, dict):
-
-            tasks = result.get("data")
-
-            if isinstance(tasks, list):
-                return tasks
-
-        raise CrmServiceError(
-            "The CRM returned an unexpected tasks response.",
-            status_code=502,
+        tasks = self._extract_list(
+            result,
+            [
+                "tasks",
+                "data",
+            ],
         )
+
+        if tasks is None:
+
+            raise CrmServiceError(
+                "Unexpected tasks response.",
+                status_code=502,
+            )
+
+        return tasks
+
+    # =====================================================
+    # TASKS - BY EMPLOYEE
+    # =====================================================
+
+    async def get_tasks_by_employee(
+        self,
+        employee_uid: str,
+    ) -> list[dict]:
+
+        tasks = await self.get_tasks()
+
+        requested_uid = str(
+            employee_uid
+        ).strip().lower()
+
+        result = []
+
+        for task in tasks:
+
+            task_employee_uid = str(
+                task.get(
+                    "employee_uid",
+                    task.get(
+                        "employeeId",
+                        task.get(
+                            "employee_id",
+                            "",
+                        ),
+                    ),
+                )
+            ).strip().lower()
+
+            if (
+                task_employee_uid
+                == requested_uid
+            ):
+
+                result.append(task)
+
+        return result
 
     # =====================================================
     # TASKS - RECENT
@@ -647,35 +715,35 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid recent tasks response.",
+                "Invalid recent tasks response.",
                 status_code=502,
             ) from exc
 
-        if isinstance(result, list):
-            return result
-
-        if isinstance(result, dict):
-
-            data = result.get(
+        tasks = self._extract_list(
+            result,
+            [
+                "tasks",
                 "data",
-                [],
-            )
-
-            if isinstance(data, list):
-                return data
-
-        raise CrmServiceError(
-            "The CRM returned an unexpected recent tasks response.",
-            status_code=502,
+            ],
         )
 
+        if tasks is None:
+
+            raise CrmServiceError(
+                "Unexpected recent tasks response.",
+                status_code=502,
+            )
+
+        return tasks
+
     # =====================================================
-    # TASKS - GET BY ID
+    # TASK - BY ID
     # =====================================================
 
     async def get_task(
@@ -688,17 +756,30 @@ class CrmService:
         )
 
         try:
-            return response.json()
+
+            result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid task response.",
+                "Invalid task response.",
                 status_code=502,
             ) from exc
 
+        if isinstance(
+            result,
+            dict,
+        ):
+
+            return result
+
+        raise CrmServiceError(
+            "Unexpected task response.",
+            status_code=502,
+        )
+
     # =====================================================
-    # TASKS - CREATE
+    # TASK - CREATE
     # =====================================================
 
     async def create_task(
@@ -712,17 +793,18 @@ class CrmService:
         )
 
         try:
+
             return response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid task creation response.",
+                "Invalid task creation response.",
                 status_code=502,
             ) from exc
 
     # =====================================================
-    # TASKS - UPDATE
+    # TASK - UPDATE
     # =====================================================
 
     async def update_task(
@@ -737,41 +819,18 @@ class CrmService:
         )
 
         try:
+
             return response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid task update response.",
+                "Invalid task update response.",
                 status_code=502,
             ) from exc
 
     # =====================================================
-    # LEAVE - CREATE
-    # =====================================================
-
-    async def create_leave(
-        self,
-        leave_data: dict,
-    ) -> dict:
-
-        response = await self._post(
-            "/api/leave",
-            leave_data,
-        )
-
-        try:
-            return response.json()
-
-        except ValueError as exc:
-
-            raise CrmServiceError(
-                "The CRM service returned an invalid leave response.",
-                status_code=502,
-            ) from exc
-
-    # =====================================================
-    # LEAVE - GET ALL
+    # LEAVES - GET ALL
     # =====================================================
 
     async def get_leaves(
@@ -783,37 +842,35 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid leaves response.",
+                "Invalid leaves response.",
                 status_code=502,
             ) from exc
 
-        if isinstance(result, list):
-            return result
-
-        if isinstance(result, dict):
-
-            leaves = result.get("leaves")
-
-            if isinstance(leaves, list):
-                return leaves
-
-            data = result.get("data")
-
-            if isinstance(data, list):
-                return data
-
-        raise CrmServiceError(
-            "The CRM returned an unexpected leaves response.",
-            status_code=502,
+        leaves = self._extract_list(
+            result,
+            [
+                "leaves",
+                "data",
+            ],
         )
 
+        if leaves is None:
+
+            raise CrmServiceError(
+                "Unexpected leaves response.",
+                status_code=502,
+            )
+
+        return leaves
+
     # =====================================================
-    # LEAVE - BY EMPLOYEE
+    # LEAVES - BY EMPLOYEE
     # =====================================================
 
     async def get_leaves_by_employee(
@@ -824,38 +881,305 @@ class CrmService:
         response = await self._post(
             "/api/leave/by-employee",
             {
-                "employeeId": employee_id
+                "employeeId": employee_id,
             },
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid employee leave response.",
+                "Invalid employee leaves response.",
                 status_code=502,
             ) from exc
 
-        if isinstance(result, list):
-            return result
-
-        if isinstance(result, dict):
-
-            leaves = result.get("leaves")
-
-            if isinstance(leaves, list):
-                return leaves
-
-            data = result.get("data")
-
-            if isinstance(data, list):
-                return data
-                raise CrmServiceError(
-            "The CRM returned an unexpected employee leave response.",
-            status_code=502,
+        leaves = self._extract_list(
+            result,
+            [
+                "leaves",
+                "data",
+            ],
         )
+
+        if leaves is None:
+
+            raise CrmServiceError(
+                "Unexpected employee leaves response.",
+                status_code=502,
+            )
+
+        return leaves
+
+    # =====================================================
+    # LEAVES - APPROVED
+    # =====================================================
+
+    async def get_approved_leaves(
+        self,
+    ) -> list[dict]:
+
+        leaves = await self.get_leaves()
+
+        return [
+            leave
+            for leave in leaves
+            if str(
+                leave.get(
+                    "status",
+                    "",
+                )
+            ).strip().lower()
+            == "approved"
+        ]
+
+    # =====================================================
+    # LEAVES - PENDING
+    # =====================================================
+
+    async def get_pending_leaves(
+        self,
+    ) -> list[dict]:
+
+        leaves = await self.get_leaves()
+
+        return [
+            leave
+            for leave in leaves
+            if str(
+                leave.get(
+                    "status",
+                    "",
+                )
+            ).strip().lower()
+            == "pending"
+        ]
+
+    # =====================================================
+    # LEAVES - REJECTED
+    # =====================================================
+
+    async def get_rejected_leaves(
+        self,
+    ) -> list[dict]:
+
+        leaves = await self.get_leaves()
+
+        return [
+            leave
+            for leave in leaves
+            if str(
+                leave.get(
+                    "status",
+                    "",
+                )
+            ).strip().lower()
+            == "rejected"
+        ]
+
+    # =====================================================
+    # LEAVE - CREATE
+    # =====================================================
+
+    async def create_leave(
+        self,
+        leave_data: dict[str, Any],
+    ) -> dict:
+
+        response = await self._post(
+            "/api/leave",
+            leave_data,
+        )
+
+        try:
+
+            return response.json()
+
+        except ValueError as exc:
+
+            raise CrmServiceError(
+                "Invalid leave creation response.",
+                status_code=502,
+            ) from exc
+
+    # =====================================================
+    # PAYSLIPS - GET ALL
+    # =====================================================
+
+    async def get_payslips(
+        self,
+    ) -> list[dict]:
+
+        response = await self._get(
+            "/api/payslip"
+        )
+
+        try:
+
+            result = response.json()
+
+        except ValueError as exc:
+
+            raise CrmServiceError(
+                "The CRM returned an invalid payslip response.",
+                status_code=502,
+            ) from exc
+
+        payslips = self._extract_list(
+            result,
+            [
+                "payslips",
+                "data",
+                "payroll",
+            ],
+        )
+
+        if payslips is None:
+
+            raise CrmServiceError(
+                "The CRM returned an unexpected payslip response.",
+                status_code=502,
+            )
+
+        return payslips
+
+    # =====================================================
+    # PAYSLIPS - BY EMPLOYEE
+    # =====================================================
+
+    async def get_payslips_by_employee(
+        self,
+        employee_id: str,
+    ) -> list[dict]:
+
+        payslips = await self.get_payslips()
+
+        requested_id = str(
+            employee_id or ""
+        ).strip().lower()
+
+        result = []
+
+        for payslip in payslips:
+
+            payslip_employee_id = str(
+                payslip.get(
+                    "employeeId",
+                    payslip.get(
+                        "employee_id",
+                        payslip.get(
+                            "employee_uid",
+                            payslip.get(
+                                "empId",
+                                payslip.get(
+                                    "emp_id",
+                                    "",
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            ).strip().lower()
+
+            if (
+                requested_id
+                and payslip_employee_id == requested_id
+            ):
+
+                result.append(
+                    payslip
+                )
+
+        return result
+
+    # =====================================================
+    # PAYSLIPS - BY EMPLOYEE NAME
+    # =====================================================
+
+    async def get_payslips_by_employee_name(
+        self,
+        employee_name: str,
+    ) -> list[dict]:
+
+        payslips = await self.get_payslips()
+
+        requested_name = str(
+            employee_name or ""
+        ).strip().lower()
+
+        result = []
+
+        for payslip in payslips:
+
+            payslip_employee_name = str(
+                payslip.get(
+                    "employeeName",
+                    payslip.get(
+                        "employee_name",
+                        payslip.get(
+                            "empName",
+                            payslip.get(
+                                "name",
+                                "",
+                            ),
+                        ),
+                    ),
+                )
+            ).strip().lower()
+
+            if (
+                requested_name
+                and payslip_employee_name == requested_name
+            ):
+
+                result.append(
+                    payslip
+                )
+
+        return result
+
+    # =====================================================
+    # PAYSLIP - BY EMPLOYEE AND MONTH
+    # =====================================================
+
+    async def get_payslip_by_employee_and_month(
+        self,
+        employee_id: str,
+        month: str,
+    ) -> dict | None:
+
+        payslips = (
+            await self.get_payslips_by_employee(
+                employee_id
+            )
+        )
+
+        requested_month = str(
+            month or ""
+        ).strip().lower()
+
+        for payslip in payslips:
+
+            payslip_month = str(
+                payslip.get(
+                    "month",
+                    payslip.get(
+                        "payMonth",
+                        "",
+                    ),
+                )
+            ).strip().lower()
+
+            if (
+                payslip_month
+                == requested_month
+            ):
+
+                return payslip
+
+        return None
 
     # =====================================================
     # CONVERSATIONS - GET ALL
@@ -870,24 +1194,32 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid conversations response.",
+                "Invalid conversations response.",
                 status_code=502,
             ) from exc
 
-        if not isinstance(result, list):
+        conversations = self._extract_list(
+            result,
+            [
+                "conversations",
+                "data",
+            ],
+        )
+
+        if conversations is None:
 
             raise CrmServiceError(
-                "The CRM returned an unexpected conversations response.",
+                "Unexpected conversations response.",
                 status_code=502,
             )
 
-        return result
-
+        return conversations
 
     # =====================================================
     # CONVERSATION - GET BY ID
@@ -903,27 +1235,42 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid conversation response.",
+                "Invalid conversation response.",
                 status_code=502,
             ) from exc
 
-        if isinstance(result, dict):
+        if not isinstance(
+            result,
+            dict,
+        ):
 
-            data = result.get("data")
+            raise CrmServiceError(
+                "Unexpected conversation response.",
+                status_code=502,
+            )
 
-            if isinstance(data, dict):
-                return data
-
-        raise CrmServiceError(
-            "The CRM returned an unexpected conversation response.",
-            status_code=502,
+        data = result.get(
+            "data",
+            result,
         )
 
+        if isinstance(
+            data,
+            dict,
+        ):
+
+            return data
+
+        raise CrmServiceError(
+            "Unexpected conversation response.",
+            status_code=502,
+        )
 
     # =====================================================
     # CONVERSATION - CREATE
@@ -940,27 +1287,42 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid conversation creation response.",
+                "Invalid conversation creation response.",
                 status_code=502,
             ) from exc
 
-        if isinstance(result, dict):
+        if not isinstance(
+            result,
+            dict,
+        ):
 
-            data = result.get("data")
+            raise CrmServiceError(
+                "Unexpected conversation creation response.",
+                status_code=502,
+            )
 
-            if isinstance(data, dict):
-                return data
-
-        raise CrmServiceError(
-            "The CRM returned an unexpected conversation creation response.",
-            status_code=502,
+        data = result.get(
+            "data",
+            result,
         )
 
+        if isinstance(
+            data,
+            dict,
+        ):
+
+            return data
+
+        raise CrmServiceError(
+            "Unexpected conversation creation response.",
+            status_code=502,
+        )
 
     # =====================================================
     # CONVERSATION - ADD MESSAGE
@@ -982,27 +1344,30 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid conversation message response.",
+                "Invalid conversation message response.",
                 status_code=502,
             ) from exc
 
-        if isinstance(result, dict):
+        if isinstance(
+            result,
+            dict,
+        ):
 
-            data = result.get("data")
-
-            if isinstance(data, dict):
-                return data
+            return result.get(
+                "data",
+                result,
+            )
 
         raise CrmServiceError(
-            "The CRM returned an unexpected conversation message response.",
+            "Unexpected conversation message response.",
             status_code=502,
         )
-
 
     # =====================================================
     # CONVERSATION - TAKE OVER
@@ -1018,27 +1383,30 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid take-over response.",
+                "Invalid take-over response.",
                 status_code=502,
             ) from exc
 
-        if isinstance(result, dict):
+        if isinstance(
+            result,
+            dict,
+        ):
 
-            data = result.get("data")
-
-            if isinstance(data, dict):
-                return data
+            return result.get(
+                "data",
+                result,
+            )
 
         raise CrmServiceError(
-            "The CRM returned an unexpected take-over response.",
+            "Unexpected take-over response.",
             status_code=502,
         )
-
 
     # =====================================================
     # CONVERSATION - RESOLVE
@@ -1054,31 +1422,34 @@ class CrmService:
         )
 
         try:
+
             result = response.json()
 
         except ValueError as exc:
 
             raise CrmServiceError(
-                "The CRM returned an invalid resolve response.",
+                "Invalid resolve response.",
                 status_code=502,
             ) from exc
 
-        if isinstance(result, dict):
+        if isinstance(
+            result,
+            dict,
+        ):
 
-            data = result.get("data")
-
-            if isinstance(data, dict):
-                return data
+            return result.get(
+                "data",
+                result,
+            )
 
         raise CrmServiceError(
-            "The CRM returned an unexpected resolve response.",
+            "Unexpected resolve response.",
             status_code=502,
         )
 
 
 # =========================================================
 # FASTAPI DEPENDENCY
-# IMPORTANT: OUTSIDE CrmService CLASS
 # =========================================================
 
 def get_crm_service() -> CrmService:

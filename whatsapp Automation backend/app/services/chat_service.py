@@ -29,6 +29,10 @@ from app.services.intent_service import (
     extract_task_id,
     extract_task_employee_name,
     extract_leave_employee_name,
+    extract_payroll_employee_name,
+    extract_payroll_status,
+    extract_payroll_field,
+    extract_payslip_month,
 )
 
 from app.services.response_formatting import (
@@ -47,10 +51,14 @@ logger = logging.getLogger(
 )
 
 
+# =========================================================
+# RESPONSES
+# =========================================================
+
 UNWANTED_RESPONSE = (
     "Sorry, I can only assist with company-related questions "
-    "such as employees, attendance, tasks, leave, and "
-    "CRM-related information."
+    "such as employees, attendance, tasks, leave, payslips, "
+    "and CRM-related information."
 )
 
 
@@ -72,12 +80,20 @@ WHATSAPP_NOT_LINKED_RESPONSE = (
 )
 
 
+# =========================================================
+# SOURCE HELPERS
+# =========================================================
+
 def is_whatsapp_employee(
     source: str,
 ) -> bool:
 
     return source == "whatsapp"
 
+
+# =========================================================
+# EMPLOYEE HELPERS
+# =========================================================
 
 def find_employee(
     employees: list[dict],
@@ -166,6 +182,10 @@ def find_employee_by_phone(
 
     return None
 
+
+# =========================================================
+# ATTENDANCE FIELD FORMATTER
+# =========================================================
 
 def format_attendance_field_response(
     employee: dict,
@@ -324,6 +344,10 @@ def format_attendance_field_response(
     )
 
 
+# =========================================================
+# CRM ERROR
+# =========================================================
+
 def crm_http_exception(
     exc: CrmServiceError,
 ) -> HTTPException:
@@ -333,6 +357,10 @@ def crm_http_exception(
         detail=exc.message,
     )
 
+
+# =========================================================
+# TASK FORMATTER
+# =========================================================
 
 def format_tasks(
     tasks: list[dict],
@@ -375,6 +403,10 @@ def format_tasks(
         lines
     )
 
+
+# =========================================================
+# LEAVE FORMATTER
+# =========================================================
 
 def format_leaves(
     leaves: list[dict],
@@ -475,6 +507,206 @@ def filter_leaves_by_status(
     return filtered_leaves
 
 
+# =========================================================
+# PAYSLIP HELPERS
+# =========================================================
+
+def format_currency(
+    value,
+) -> str:
+
+    if value is None or value == "":
+
+        return "Not available"
+
+    try:
+
+        amount = float(
+            value
+        )
+
+        return f"₹{amount:,.2f}"
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        return str(
+            value
+        )
+
+
+def format_payslip(
+    payslip: dict,
+    title: str = "Payslip Details",
+) -> str:
+
+    employee_name = (
+        payslip.get("employeeName")
+        or payslip.get("employee_name")
+        or "Unknown employee"
+    )
+
+    month = (
+        payslip.get("month")
+        or "Not available"
+    )
+
+    lines = [
+        title,
+        "",
+        f"Employee: {employee_name}",
+        f"Month: {month}",
+    ]
+
+    employee_id = (
+        payslip.get("employeeId")
+        or payslip.get("employee_id")
+    )
+
+    if employee_id:
+
+        lines.append(
+            f"Employee ID: {employee_id}"
+        )
+
+    basic_salary = (
+        payslip.get("basicSalary")
+        or payslip.get("basic_salary")
+    )
+
+    if basic_salary is not None:
+
+        lines.append(
+            "Basic Salary: "
+            f"{format_currency(basic_salary)}"
+        )
+
+    allowances = (
+        payslip.get("allowances")
+    )
+
+    if allowances is not None:
+
+        lines.append(
+            "Allowances: "
+            f"{format_currency(allowances)}"
+        )
+
+    deductions = (
+        payslip.get("deductions")
+    )
+
+    if deductions is not None:
+
+        lines.append(
+            "Deductions: "
+            f"{format_currency(deductions)}"
+        )
+
+    gross_salary = (
+        payslip.get("grossSalary")
+        or payslip.get("gross_salary")
+    )
+
+    if gross_salary is not None:
+
+        lines.append(
+            "Gross Salary: "
+            f"{format_currency(gross_salary)}"
+        )
+
+    net_salary = (
+        payslip.get("netSalary")
+        or payslip.get("net_salary")
+        or payslip.get("salary")
+    )
+
+    if net_salary is not None:
+
+        lines.append(
+            "Net Salary: "
+            f"{format_currency(net_salary)}"
+        )
+
+    status = (
+        payslip.get("status")
+    )
+
+    if status:
+
+        lines.append(
+            f"Status: {status}"
+        )
+
+    return "\n".join(
+        lines
+    )
+
+
+def format_payslips(
+    payslips: list[dict],
+    title: str = "Payslips",
+) -> str:
+
+    if not payslips:
+
+        return "No payslips found."
+
+    lines = [
+        title,
+        "",
+    ]
+
+    for index, payslip in enumerate(
+        payslips,
+        start=1,
+    ):
+
+        employee_name = (
+            payslip.get("employeeName")
+            or payslip.get("employee_name")
+            or "Unknown employee"
+        )
+
+        month = (
+            payslip.get("month")
+            or "Not available"
+        )
+
+        net_salary = (
+            payslip.get("netSalary")
+            or payslip.get("net_salary")
+            or payslip.get("salary")
+        )
+
+        lines.append(
+            f"{index}. {employee_name}"
+        )
+
+        lines.append(
+            f"   Month: {month}"
+        )
+
+        if net_salary is not None:
+
+            lines.append(
+                "   Net Salary: "
+                f"{format_currency(net_salary)}"
+            )
+
+        lines.append("")
+
+    return "\n".join(
+        lines
+    ).rstrip()
+
+
+# =========================================================
+# CHAT SERVICE
+# =========================================================
+
 class ChatService:
 
     def __init__(
@@ -515,6 +747,10 @@ class ChatService:
                 "Please enter a message."
             )
 
+
+        # =================================================
+        # IDENTIFY WHATSAPP EMPLOYEE
+        # =================================================
 
         current_employee = None
 
@@ -575,6 +811,10 @@ class ChatService:
         )
 
 
+        # =================================================
+        # DETECT INTENT
+        # =================================================
+
         intent = detect_intent(
             message
         )
@@ -588,13 +828,19 @@ class ChatService:
         )
 
 
+        # =================================================
         # UNWANTED TALK
+        # =================================================
+
         if intent is Intent.UNWANTED_TALK:
 
             return UNWANTED_RESPONSE
 
 
+        # =================================================
         # HUMAN HELP
+        # =================================================
+
         if intent is Intent.HUMAN_HELP:
 
             try:
@@ -641,7 +887,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # ATTENDANCE FIELD
+        # =================================================
+
         if intent is Intent.GET_ATTENDANCE_FIELD:
 
             field = extract_attendance_field(
@@ -728,7 +977,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # ATTENDANCE
+        # =================================================
+
         if intent is Intent.GET_ATTENDANCE:
 
             if is_whatsapp_employee(source):
@@ -803,7 +1055,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # ACTIVE ATTENDANCE
+        # =================================================
+
         if intent is Intent.GET_ACTIVE_ATTENDANCE:
 
             if is_whatsapp_employee(source):
@@ -827,7 +1082,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # ATTENDANCE HISTORY
+        # =================================================
+
         if intent is Intent.GET_ATTENDANCE_HISTORY:
 
             if is_whatsapp_employee(source):
@@ -854,7 +1112,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # EMPLOYEES
+        # =================================================
+
         if intent is Intent.GET_EMPLOYEES:
 
             if is_whatsapp_employee(source):
@@ -878,7 +1139,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # EMPLOYEE FIELD LIST
+        # =================================================
+
         if intent is Intent.GET_EMPLOYEE_FIELD_LIST:
 
             if is_whatsapp_employee(source):
@@ -913,7 +1177,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # EMPLOYEE FIELD
+        # =================================================
+
         if intent is Intent.GET_EMPLOYEE_FIELD:
 
             if is_whatsapp_employee(source):
@@ -992,7 +1259,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # EMPLOYEE DETAILS
+        # =================================================
+
         if intent is Intent.GET_EMPLOYEE_DETAILS:
 
             if is_whatsapp_employee(source):
@@ -1047,7 +1317,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # ALL TASKS
+        # =================================================
+
         if intent is Intent.GET_TASKS:
 
             if is_whatsapp_employee(source):
@@ -1099,7 +1372,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # TASKS BY EMPLOYEE
+        # =================================================
+
         if intent is Intent.GET_TASKS_BY_EMPLOYEE:
 
             if is_whatsapp_employee(source):
@@ -1185,7 +1461,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # TASK DETAILS
+        # =================================================
+
         if intent is Intent.GET_TASK:
 
             if is_whatsapp_employee(source):
@@ -1248,7 +1527,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # CREATE TASK
+        # =================================================
+
         if intent is Intent.CREATE_TASK:
 
             if is_whatsapp_employee(source):
@@ -1265,7 +1547,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # UPDATE TASK
+        # =================================================
+
         if intent is Intent.UPDATE_TASK:
 
             if is_whatsapp_employee(source):
@@ -1282,7 +1567,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # APPROVED LEAVES
+        # =================================================
+
         if intent is Intent.GET_APPROVED_LEAVES:
 
             if is_whatsapp_employee(source):
@@ -1314,7 +1602,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # PENDING LEAVES
+        # =================================================
+
         if intent is Intent.GET_PENDING_LEAVES:
 
             if is_whatsapp_employee(source):
@@ -1346,7 +1637,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # REJECTED LEAVES
+        # =================================================
+
         if intent is Intent.GET_REJECTED_LEAVES:
 
             if is_whatsapp_employee(source):
@@ -1378,7 +1672,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # ALL LEAVES
+        # =================================================
+
         if intent is Intent.GET_LEAVES:
 
             if is_whatsapp_employee(source):
@@ -1402,7 +1699,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # LEAVES BY EMPLOYEE
+        # =================================================
+
         if intent is Intent.GET_LEAVES_BY_EMPLOYEE:
 
             if is_whatsapp_employee(source):
@@ -1502,7 +1802,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # CREATE LEAVE
+        # =================================================
+
         if intent is Intent.CREATE_LEAVE:
 
             return (
@@ -1512,7 +1815,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # UPDATE LEAVE
+        # =================================================
+
         if intent is Intent.UPDATE_LEAVE:
 
             if is_whatsapp_employee(source):
@@ -1529,7 +1835,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # UPDATE LEAVE STATUS
+        # =================================================
+
         if intent is Intent.UPDATE_LEAVE_STATUS:
 
             if is_whatsapp_employee(source):
@@ -1545,7 +1854,272 @@ class ChatService:
             )
 
 
+        # =================================================
+        # PAYSLIP BY EMPLOYEE AND MONTH
+        # IMPORTANT: CHECK BEFORE GENERAL PAYSLIP INTENT
+        # =================================================
+
+        if (
+            intent
+            is Intent.GET_PAYSLIP_BY_EMPLOYEE_AND_MONTH
+        ):
+
+            month = extract_payslip_month(
+                message
+            )
+
+            if not month:
+
+                return (
+                    "Please specify the month "
+                    "for the payslip."
+                )
+
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
+
+                employee = current_employee
+
+            else:
+
+                requested_employee_name = (
+                    extract_payslip_employee_name(
+                        message
+                    )
+                )
+
+                if not requested_employee_name:
+
+                    return (
+                        "Please provide the employee name."
+                    )
+
+                try:
+
+                    employees = (
+                        await self.crm.get_employees()
+                    )
+
+                except CrmServiceError as exc:
+
+                    raise crm_http_exception(
+                        exc
+                    )
+
+                employee = find_employee(
+                    employees,
+                    requested_employee_name,
+                )
+
+                if employee is None:
+
+                    return (
+                        f"I could not find an employee "
+                        f"named '{requested_employee_name}' "
+                        f"in the CRM."
+                    )
+
+            employee_id = employee.get(
+                "_id"
+            )
+
+            if not employee_id:
+
+                return (
+                    f"The employee "
+                    f"'{employee.get('employeeName')}' "
+                    f"does not have a valid employee ID."
+                )
+
+            try:
+
+                payslip = (
+                    await self.crm
+                    .get_payslip_by_employee_and_month(
+                        employee_id,
+                        month,
+                    )
+                )
+
+            except CrmServiceError as exc:
+
+                raise crm_http_exception(
+                    exc
+                )
+
+            if payslip is None:
+
+                return (
+                    f"No payslip was found for "
+                    f"{employee.get('employeeName')} "
+                    f"for {month}."
+                )
+
+            return format_payslip(
+                payslip,
+                title="Payslip Details",
+            )
+
+
+        # =================================================
+        # PAYSLIPS BY EMPLOYEE
+        # =================================================
+
+        if intent is Intent.GET_PAYROLL_BY_EMPLOYEE:
+
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
+
+                employee = current_employee
+
+            else:
+
+                requested_employee_name = (
+                    extract_payroll_employee_name(
+                        message
+                    )
+                )
+
+                if not requested_employee_name:
+
+                    return (
+                        "Please provide the employee name "
+                        "to retrieve payslips."
+                    )
+
+                try:
+
+                    employees = (
+                        await self.crm.get_employees()
+                    )
+
+                except CrmServiceError as exc:
+
+                    raise crm_http_exception(
+                        exc
+                    )
+
+                employee = find_employee(
+                    employees,
+                    requested_employee_name,
+                )
+
+                if employee is None:
+
+                    return (
+                        f"I could not find an employee "
+                        f"named '{requested_employee_name}' "
+                        f"in the CRM."
+                    )
+
+            employee_id = employee.get(
+                "_id"
+            )
+
+            if not employee_id:
+
+                return (
+                    f"The employee "
+                    f"'{employee.get('employeeName')}' "
+                    f"does not have a valid employee ID."
+                )
+
+            try:
+
+                payslips = (
+                    await self.crm.get_payslips_by_employee(
+                        employee_id
+                    )
+                )
+
+            except CrmServiceError as exc:
+
+                raise crm_http_exception(
+                    exc
+                )
+
+            return format_payslips(
+                payslips,
+                title=(
+                    f"Payslips - "
+                    f"{employee.get('employeeName')}"
+                ),
+            )
+
+
+        # =================================================
+        # ALL PAYSLIPS
+        # =================================================
+
+        if intent is Intent.GET_PAYSLIPS:
+
+            if is_whatsapp_employee(source):
+
+                if current_employee is None:
+
+                    return WHATSAPP_NOT_LINKED_RESPONSE
+
+                employee_id = (
+                    current_employee.get("_id")
+                )
+
+                if not employee_id:
+
+                    return (
+                        "Your employee account does not have "
+                        "a valid employee ID."
+                    )
+
+                try:
+
+                    payslips = (
+                        await self.crm.get_payslips_by_employee(
+                            employee_id
+                        )
+                    )
+
+                except CrmServiceError as exc:
+
+                    raise crm_http_exception(
+                        exc
+                    )
+
+                return format_payslips(
+                    payslips,
+                    title=(
+                        f"My Payslips - "
+                        f"{current_employee.get('employeeName')}"
+                    ),
+                )
+
+            try:
+
+                payslips = (
+                    await self.crm.get_payslips()
+                )
+
+            except CrmServiceError as exc:
+
+                raise crm_http_exception(
+                    exc
+                )
+
+            return format_payslips(
+                payslips,
+                title="All Payslips",
+            )
+
+
+        # =================================================
         # MY DETAILS
+        # =================================================
+
         if intent is Intent.GET_MY_DETAILS:
 
             if is_whatsapp_employee(source):
@@ -1564,7 +2138,10 @@ class ChatService:
             )
 
 
+        # =================================================
         # AI FALLBACK
+        # =================================================
+
         try:
 
             answer = (

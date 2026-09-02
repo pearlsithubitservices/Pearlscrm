@@ -1,10 +1,12 @@
-
-
 import re
 from enum import Enum
 
 
 class Intent(str, Enum):
+
+    # =========================================================
+    # EMPLOYEE
+    # =========================================================
 
     GET_EMPLOYEES = "get_employees"
 
@@ -16,6 +18,11 @@ class Intent(str, Enum):
 
     GET_MY_DETAILS = "get_my_details"
 
+
+    # =========================================================
+    # ATTENDANCE
+    # =========================================================
+
     GET_ATTENDANCE = "get_attendance"
 
     GET_ATTENDANCE_FIELD = "get_attendance_field"
@@ -23,6 +30,11 @@ class Intent(str, Enum):
     GET_ACTIVE_ATTENDANCE = "get_active_attendance"
 
     GET_ATTENDANCE_HISTORY = "get_attendance_history"
+
+
+    # =========================================================
+    # TASKS
+    # =========================================================
 
     GET_TASKS = "get_tasks"
 
@@ -34,9 +46,15 @@ class Intent(str, Enum):
 
     UPDATE_TASK = "update_task"
 
+
+    # =========================================================
+    # LEAVES
+    # =========================================================
+
     GET_LEAVES = "get_leaves"
 
     GET_LEAVES_BY_EMPLOYEE = "get_leaves_by_employee"
+
     GET_APPROVED_LEAVES = "get_approved_leaves"
 
     GET_PENDING_LEAVES = "get_pending_leaves"
@@ -49,11 +67,42 @@ class Intent(str, Enum):
 
     UPDATE_LEAVE_STATUS = "update_leave_status"
 
+
+    # =========================================================
+    # PAYROLL / PAYSLIP
+    # =========================================================
+
+    GET_PAYROLL = "get_payroll"
+
+    GET_PAYROLL_BY_EMPLOYEE = "get_payroll_by_employee"
+
+    GET_PAYROLL_DETAILS = "get_payroll_details"
+
+    GET_PAYROLL_STATUS = "get_payroll_status"
+
+    GET_PAID_PAYROLL = "get_paid_payroll"
+
+    GET_PENDING_PAYROLL = "get_pending_payroll"
+
+    GET_PAYSLIP_BY_EMPLOYEE_AND_MONTH = (
+        "get_payslip_by_employee_and_month"
+    )
+
+
+    # =========================================================
+    # OTHER
+    # =========================================================
+
     UNWANTED_TALK = "unwanted_talk"
 
     HUMAN_HELP = "human_help"
 
     GENERAL_CHAT = "general_chat"
+
+
+# =========================================================
+# COMMON HELPERS
+# =========================================================
 
 def _contains_any(
     text: str,
@@ -66,7 +115,9 @@ def _contains_any(
     )
 
 
-def _normalize(text: str) -> str:
+def _normalize(
+    text: str,
+) -> str:
 
     return re.sub(
         r"\s+",
@@ -74,44 +125,43 @@ def _normalize(text: str) -> str:
         text.strip().lower(),
     )
 
-UNWANTED_PATTERNS = [
 
+# =========================================================
+# UNWANTED TALK
+# =========================================================
+
+UNWANTED_PATTERNS = [
 
     r"\btell me a joke\b",
     r"\bmake me laugh\b",
     r"\bdo you know any jokes\b",
     r"\bsay a joke\b",
 
-   
     r"\bsing a song\b",
     r"\bsing for me\b",
     r"\bsing something\b",
 
-
     r"\btell me a story\b",
     r"\btell me a funny story\b",
 
-
-
     r"\bplay a game\b",
     r"\bplay with me\b",
-
 
     r"\bwho is your boyfriend\b",
     r"\bwho is your girlfriend\b",
     r"\bdo you have a girlfriend\b",
     r"\bdo you have a boyfriend\b",
+
     r"\bwhat is your favorite movie\b",
     r"\bwhat is your favorite song\b",
-
 
     r"\bwrite me a poem\b",
     r"\bwrite a poem\b",
     r"\bwrite me a song\b",
     r"\bwrite a song\b",
+
     r"\bdance for me\b",
     r"\bcan you dance\b",
-
 ]
 
 
@@ -131,20 +181,29 @@ def is_unwanted_talk(
     )
 
 
+# =========================================================
+# HUMAN HELP
+# =========================================================
+
 HUMAN_HELP_PATTERNS = [
 
     r"\btalk to hr\b",
     r"\bconnect me to hr\b",
     r"\bconnect me with hr\b",
     r"\bcontact hr\b",
+
     r"\bi want to talk to hr\b",
     r"\bi need hr\b",
+
     r"\btalk to a human\b",
     r"\btalk to a person\b",
+
     r"\bconnect me to a human\b",
     r"\bconnect me with a person\b",
+
     r"\bneed human help\b",
     r"\bneed human assistance\b",
+
     r"\bcontact human\b",
     r"\bconnect with human\b",
 ]
@@ -166,7 +225,9 @@ def is_human_help_request(
     )
 
 
-
+# =========================================================
+# EMPLOYEE HELPERS
+# =========================================================
 
 def extract_employee_name(
     message: str,
@@ -176,14 +237,14 @@ def extract_employee_name(
 
     patterns = [
 
-        r"(?:show|get|find|give|display)\s+(.+?)\s+(?:details|information|info)$",
+        r"(?:show|get|find|give|display)\s+(.+?)\s+"
+        r"(?:details|information|info)$",
 
         r"(?:show|get|find|give|display)\s+(.+?)\s+"
         r"(?:email|mail|phone|contact|role|position|department|designation)$",
 
         r"(?:what is|what's)\s+(.+?)\s+"
         r"(?:email|mail|phone|contact|role|position|department)$",
-
     ]
 
     for pattern in patterns:
@@ -202,22 +263,7 @@ def extract_employee_name(
                 return name
 
     return None
-def extract_task_id(
-    message: str,
-) -> str | None:
 
-    match = re.search(
-        r"(?:task\s*(?:id)?|task)\s*[:#]?\s*"
-        r"([a-zA-Z0-9_-]{4,})",
-        message,
-        flags=re.IGNORECASE,
-    )
-
-    if match:
-
-        return match.group(1).strip()
-
-    return None
 
 def extract_employee_field(
     message: str,
@@ -255,13 +301,11 @@ def extract_employee_field(
         "designation": [
             "designation",
         ],
-
     }
 
     for field, keywords in field_patterns.items():
 
         if _contains_any(text, keywords):
-
             return field
 
     return None
@@ -325,6 +369,11 @@ def extract_employee_list_field(
 
     return None
 
+
+# =========================================================
+# ATTENDANCE HELPERS
+# =========================================================
+
 def extract_attendance_employee_name(
     message: str,
 ) -> str | None:
@@ -334,13 +383,11 @@ def extract_attendance_employee_name(
     patterns = [
 
         r"(?:show|get|find|give|display)\s+(.+?)\s+"
-        r"(?:attendance|login|logout|status|"
-        r"break|attendance id|total work|work time)",
+        r"(?:attendance|login|logout|status|break|attendance id|"
+        r"total work|work time)",
 
         r"(?:what is|what's)\s+(.+?)\s+"
-        r"(?:login|logout|attendance|status|"
-        r"break|work time)",
-
+        r"(?:login|logout|attendance|status|break|work time)",
     ]
 
     for pattern in patterns:
@@ -359,6 +406,7 @@ def extract_attendance_employee_name(
                 return name
 
     return None
+
 
 def extract_attendance_field(
     message: str,
@@ -443,6 +491,27 @@ def extract_attendance_field(
     return None
 
 
+# =========================================================
+# TASK HELPERS
+# =========================================================
+
+def extract_task_id(
+    message: str,
+) -> str | None:
+
+    match = re.search(
+        r"(?:task\s*(?:id)?|task)\s*[:#]?\s*"
+        r"([a-zA-Z0-9_-]{4,})",
+        message,
+        flags=re.IGNORECASE,
+    )
+
+    if match:
+        return match.group(1).strip()
+
+    return None
+
+
 def extract_task_employee_name(
     message: str,
 ) -> str | None:
@@ -451,17 +520,13 @@ def extract_task_employee_name(
 
     patterns = [
 
-        
         r"(?:tasks|task)\s+(?:for|of)\s+(.+?)(?:\?|$)",
 
-        
         r"(?:show|get|find|give|display)\s+(.+?)\s+"
         r"(?:tasks|task)$",
 
-        
         r"(?:show|get|find|give|display)\s+(.+?)\s+"
         r"recent\s+tasks$",
-
     ]
 
     for pattern in patterns:
@@ -476,7 +541,6 @@ def extract_task_employee_name(
 
             name = match.group(1).strip()
 
-            # These are NOT employee names
             invalid_names = [
                 "all",
                 "all employees",
@@ -487,15 +551,16 @@ def extract_task_employee_name(
 
             if (
                 name
-                and name.lower()
-                not in invalid_names
+                and name.lower() not in invalid_names
             ):
-
                 return name
 
     return None
 
 
+# =========================================================
+# LEAVE HELPERS
+# =========================================================
 
 def extract_leave_employee_name(
     message: str,
@@ -509,7 +574,6 @@ def extract_leave_employee_name(
         r"(?:leave|leaves|leave history)",
 
         r"(?:leave|leaves)\s+(?:for|of)\s+(.+?)(?:\?|$)",
-
     ]
 
     for pattern in patterns:
@@ -542,11 +606,9 @@ def extract_leave_id(
     )
 
     if match:
-
         return match.group(1).strip()
 
     return None
-
 
 
 def extract_leave_status(
@@ -578,7 +640,188 @@ def extract_leave_status(
     return None
 
 
+# =========================================================
+# PAYROLL HELPERS
+# =========================================================
 
+def extract_payroll_employee_name(
+    message: str,
+) -> str | None:
+
+    text = message.strip()
+
+    patterns = [
+
+        r"(?:payslip|payroll|salary)\s+(?:for|of)\s+(.+?)(?:\?|$)",
+
+        r"(?:show|get|find|give|display)\s+(.+?)\s+"
+        r"(?:payslip|payroll|salary)$",
+
+        r"(.+?)\s+(?:salary|payslip|payroll)\s+"
+        r"(?:details|information|info)$",
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        if match:
+
+            name = match.group(1).strip()
+
+            invalid_names = [
+                "all",
+                "employees",
+                "all employees",
+                "my",
+                "current",
+                "latest",
+                "pending",
+                "paid",
+            ]
+
+            if (
+                name
+                and name.lower() not in invalid_names
+            ):
+                return name
+
+    return None
+
+
+def extract_payroll_status(
+    message: str,
+) -> str | None:
+
+    text = _normalize(message)
+
+    if re.search(r"\bpaid\b", text):
+        return "Paid"
+
+    if re.search(r"\bpending\b", text):
+        return "Pending"
+
+    return None
+
+
+def extract_payroll_field(
+    message: str,
+) -> str | None:
+
+    text = _normalize(message)
+
+    field_patterns = {
+
+        "basicSalary": [
+            "basic salary",
+            "basic",
+        ],
+
+        "medical": [
+            "medical",
+            "medical allowance",
+        ],
+
+        "performanceBonus": [
+            "performance bonus",
+            "bonus",
+        ],
+
+        "conveyance": [
+            "conveyance",
+            "travel allowance",
+        ],
+
+        "pf": [
+            "pf",
+            "provident fund",
+        ],
+
+        "esi": [
+            "esi",
+        ],
+
+        "tds": [
+            "tds",
+        ],
+
+        "professionalTax": [
+            "professional tax",
+        ],
+
+        "gross": [
+            "gross salary",
+            "gross",
+        ],
+
+        "totalDeductions": [
+            "total deductions",
+            "deductions",
+        ],
+
+        "net": [
+            "net salary",
+            "net pay",
+            "take home",
+            "take-home",
+        ],
+    }
+
+    for field, keywords in field_patterns.items():
+
+        if _contains_any(
+            text,
+            keywords,
+        ):
+            return field
+
+    return None
+
+
+# =========================================================
+# PAYSLIP MONTH HELPER
+# =========================================================
+
+def extract_payslip_month(
+    message: str,
+) -> str | None:
+
+    text = _normalize(message)
+
+    months = {
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December",
+    }
+
+    for month_key, month_value in months.items():
+
+        if re.search(
+            rf"\b{month_key}\b",
+            text,
+            flags=re.IGNORECASE,
+        ):
+            return month_value
+
+    return None
+
+
+# =========================================================
+# DETECT INTENT
+# =========================================================
 
 def detect_intent(
     message: str,
@@ -587,16 +830,25 @@ def detect_intent(
     text = _normalize(message)
 
 
-    if is_unwanted_talk(text):
+    # =====================================================
+    # UNWANTED TALK
+    # =====================================================
 
+    if is_unwanted_talk(text):
         return Intent.UNWANTED_TALK
 
-    
+
+    # =====================================================
+    # HUMAN HELP
+    # =====================================================
 
     if is_human_help_request(text):
-
         return Intent.HUMAN_HELP
 
+
+    # =====================================================
+    # ATTENDANCE
+    # =====================================================
 
     if _contains_any(
         text,
@@ -608,8 +860,8 @@ def detect_intent(
             "who are working",
         ],
     ):
-
         return Intent.GET_ACTIVE_ATTENDANCE
+
 
     if _contains_any(
         text,
@@ -620,23 +872,22 @@ def detect_intent(
             "attendance report",
         ],
     ):
-
         return Intent.GET_ATTENDANCE_HISTORY
 
-    attendance_field = extract_attendance_field(
-        text
-    )
+
+    attendance_field = extract_attendance_field(text)
 
     attendance_employee = (
         extract_attendance_employee_name(text)
     )
 
+
     if (
         attendance_field
         and attendance_employee
     ):
-
         return Intent.GET_ATTENDANCE_FIELD
+
 
     if _contains_any(
         text,
@@ -648,10 +899,12 @@ def detect_intent(
     ):
 
         if attendance_employee:
-
             return Intent.GET_ATTENDANCE
 
- 
+
+    # =====================================================
+    # TASKS
+    # =====================================================
 
     if _contains_any(
         text,
@@ -663,8 +916,8 @@ def detect_intent(
             "new task",
         ],
     ):
-
         return Intent.CREATE_TASK
+
 
     if _contains_any(
         text,
@@ -675,8 +928,8 @@ def detect_intent(
             "modify task",
         ],
     ):
-
         return Intent.UPDATE_TASK
+
 
     if (
         _contains_any(
@@ -688,8 +941,8 @@ def detect_intent(
         )
         and extract_task_employee_name(text)
     ):
-
         return Intent.GET_TASKS_BY_EMPLOYEE
+
 
     if (
         _contains_any(
@@ -703,8 +956,8 @@ def detect_intent(
         )
         and extract_task_id(text)
     ):
-
         return Intent.GET_TASK
+
 
     if _contains_any(
         text,
@@ -720,51 +973,53 @@ def detect_intent(
         task_employee = extract_task_employee_name(text)
 
         if task_employee:
-
             return Intent.GET_TASKS_BY_EMPLOYEE
 
         return Intent.GET_TASKS
 
-    if _contains_any(
-         text,
-         [
-           "approved leaves",
-           "approved leave",
-           "show approved leaves",
-           "show approved leave",
-           "list approved leaves",
-         ],
-    ):
 
-         return Intent.GET_APPROVED_LEAVES
+    # =====================================================
+    # LEAVES
+    # =====================================================
+
+    if _contains_any(
+        text,
+        [
+            "approved leaves",
+            "approved leave",
+            "show approved leaves",
+            "show approved leave",
+            "list approved leaves",
+        ],
+    ):
+        return Intent.GET_APPROVED_LEAVES
 
 
     if _contains_any(
         text,
         [
-           "pending leaves",
-           "pending leave",
-           "show pending leaves",
-           "show pending leave",
-           "list pending leaves",
+            "pending leaves",
+            "pending leave",
+            "show pending leaves",
+            "show pending leave",
+            "list pending leaves",
         ],
     ):
-
         return Intent.GET_PENDING_LEAVES
 
 
     if _contains_any(
         text,
         [
-           "rejected leaves",
-           "rejected leave",
-           "show rejected leaves",
-           "show rejected leave",
-           "list rejected leaves",
-         ],
+            "rejected leaves",
+            "rejected leave",
+            "show rejected leaves",
+            "show rejected leave",
+            "list rejected leaves",
+        ],
     ):
-
         return Intent.GET_REJECTED_LEAVES
+
 
     if _contains_any(
         text,
@@ -776,8 +1031,8 @@ def detect_intent(
             "new leave",
         ],
     ):
-
         return Intent.CREATE_LEAVE
+
 
     if _contains_any(
         text,
@@ -788,8 +1043,8 @@ def detect_intent(
             "modify leave",
         ],
     ):
-
         return Intent.UPDATE_LEAVE
+
 
     if _contains_any(
         text,
@@ -800,8 +1055,8 @@ def detect_intent(
             "change leave status",
         ],
     ):
-
         return Intent.UPDATE_LEAVE_STATUS
+
 
     if (
         _contains_any(
@@ -814,8 +1069,8 @@ def detect_intent(
         and extract_leave_id(text)
         and extract_leave_status(text)
     ):
-
         return Intent.UPDATE_LEAVE_STATUS
+
 
     if _contains_any(
         text,
@@ -825,8 +1080,8 @@ def detect_intent(
             "my leave history",
         ],
     ):
-
         return Intent.GET_LEAVES_BY_EMPLOYEE
+
 
     if _contains_any(
         text,
@@ -835,27 +1090,149 @@ def detect_intent(
             "leave records",
             "all leave records",
             "show leave records",
-            "show all leaves"
+            "show all leaves",
             "all leaves",
             "all leave",
             "show leaves",
-            "show all leaves",
             "list leaves",
-            "list leaves records"
+            "list leave records",
         ],
     ):
 
-        leave_employee = (
-            extract_leave_employee_name(text)
-        )
+        leave_employee = extract_leave_employee_name(text)
 
         if leave_employee:
-
             return Intent.GET_LEAVES_BY_EMPLOYEE
 
         return Intent.GET_LEAVES
 
-   
+
+    # =====================================================
+    # PAYROLL / PAYSLIP
+    # =====================================================
+
+    payroll_employee = (
+        extract_payroll_employee_name(text)
+    )
+
+    payroll_status = (
+        extract_payroll_status(text)
+    )
+
+    payroll_field = (
+        extract_payroll_field(text)
+    )
+
+    payslip_month = (
+        extract_payslip_month(text)
+    )
+
+
+    # Specific salary field
+    if (
+        payroll_field
+        and payroll_employee
+    ):
+        return Intent.GET_PAYROLL_DETAILS
+
+
+    # Payslip for employee and month
+    if (
+        payroll_employee
+        and payslip_month
+        and _contains_any(
+            text,
+            [
+                "payslip",
+                "payroll",
+                "salary",
+            ],
+        )
+    ):
+        return Intent.GET_PAYSLIP_BY_EMPLOYEE_AND_MONTH
+
+
+    # Paid payroll
+    if _contains_any(
+        text,
+        [
+            "paid payroll",
+            "paid payslips",
+            "paid salaries",
+            "show paid payroll",
+            "show paid payslips",
+        ],
+    ):
+        return Intent.GET_PAID_PAYROLL
+
+
+    # Pending payroll
+    if _contains_any(
+        text,
+        [
+            "pending payroll",
+            "pending payslips",
+            "pending salaries",
+            "show pending payroll",
+            "show pending payslips",
+        ],
+    ):
+        return Intent.GET_PENDING_PAYROLL
+
+
+    # Payroll by employee
+    if (
+        payroll_employee
+        and _contains_any(
+            text,
+            [
+                "payroll",
+                "payslip",
+                "salary",
+            ],
+        )
+    ):
+        return Intent.GET_PAYROLL_BY_EMPLOYEE
+
+
+    # Payroll status
+    if (
+        payroll_status
+        and _contains_any(
+            text,
+            [
+                "payroll",
+                "payslip",
+                "salary",
+            ],
+        )
+    ):
+        return Intent.GET_PAYROLL_STATUS
+
+
+    # All payroll
+    if _contains_any(
+        text,
+        [
+            "all payroll",
+            "show payroll",
+            "show all payroll",
+            "list payroll",
+            "all payslips",
+            "show payslips",
+            "show all payslips",
+            "list payslips",
+            "payroll records",
+            "payslip records",
+        ],
+    ):
+        return Intent.GET_PAYROLL
+
+
+    # =====================================================
+    # EMPLOYEES
+    # =====================================================
+
     if _contains_any(
         text,
         [
@@ -866,9 +1243,7 @@ def detect_intent(
             "employees",
         ],
     ):
-
         return Intent.GET_EMPLOYEES
-
 
 
     employee_list_field = (
@@ -876,10 +1251,8 @@ def detect_intent(
     )
 
     if employee_list_field:
-
         return Intent.GET_EMPLOYEE_FIELD_LIST
 
- 
 
     if _contains_any(
         text,
@@ -890,9 +1263,7 @@ def detect_intent(
             "my employee information",
         ],
     ):
-
         return Intent.GET_MY_DETAILS
-
 
 
     employee_field = (
@@ -903,11 +1274,14 @@ def detect_intent(
         extract_employee_name(text)
     )
 
-    if employee_field and employee_name:
 
+    if (
+        employee_field
+        and employee_name
+    ):
         return Intent.GET_EMPLOYEE_FIELD
 
-    
+
     if _contains_any(
         text,
         [
@@ -918,8 +1292,11 @@ def detect_intent(
     ):
 
         if employee_name:
-
             return Intent.GET_EMPLOYEE_DETAILS
 
-   
+
+    # =====================================================
+    # GENERAL CHAT
+    # =====================================================
+
     return Intent.GENERAL_CHAT
