@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ChevronDown, Calendar, X } from "lucide-react";
 import useGoals from "../../../Hooks/useGoals";
 
-export default function AddGoalForm({ onClose }) {
+export default function AddGoalForm({ onClose, onSuccess }) {
     const { createGoal } = useGoals();
     const [formData, setFormData] = useState({
         goalTitle: "",
@@ -11,8 +11,8 @@ export default function AddGoalForm({ onClose }) {
         alignedTo: "",
         dueDate: "",
     });
-
-
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
 
     const alignmentOptions = [
         "Company OKR",
@@ -20,117 +20,160 @@ export default function AddGoalForm({ onClose }) {
         "Personal Growth",
     ];
 
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.goalTitle.trim()) {
+            newErrors.goalTitle = "Goal title is required";
+        }
+        if (!formData.description.trim()) {
+            newErrors.description = "Description is required";
+        }
+        if (!formData.alignedTo) {
+            newErrors.alignedTo = "Please select an alignment option";
+        }
+        if (!formData.dueDate) {
+            newErrors.dueDate = "Due date is required";
+        }
+        return newErrors;
+    };
+
     const handleGoal = async () => {
+        const newErrors = validateForm();
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        setLoading(true);
         try {
-            await createGoal({
+            const createdGoal = await createGoal({
                 title: formData.goalTitle,
                 goalDescription: formData.description,
                 alignedTo: formData.alignedTo,
                 dueDate: formData.dueDate,
-                startDate: new Date().toISOString(), // auto set start date
+                startDate: new Date().toISOString(),
                 progress: 0,
-                status: " ",
+                status: "On Track",
                 progressDescription: "",
             });
 
-            onClose?.(); // close modal after success
+            onSuccess?.(createdGoal);
+            onClose?.();
         } catch (err) {
             console.log(err);
+            setErrors({ submit: err?.message || "Failed to create goal" });
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className=" bg-[#D9D9D9] flex items-center justify-center p-6">
-            <motion.div
-                initial={{ opacity: 0, y: 25, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.4 }}
-                className="w-full max-w-5xl bg-[#F6F3ED]  px-10 py-10 shadow-sm"
-            >
-                {/* Section Header */}
-                <div className="flex items-center gap-5 mb-8">
-                    <h2 className="text-sm tracking-[4px] uppercase text-gray-500 whitespace-nowrap">
-                        Goals Information
-                    </h2>
-
-                    <div className="flex-1 border-t border-gray-400" />
-                    <div><X size={20} className="bg-red-600 text-white hover:scale-105 transition-all duration-100"
+        <motion.div
+            initial={{ opacity: 0, y: 25, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl px-8 py-8 max-h-[90vh] overflow-y-auto no-scrollbar"
+        >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 className="text-3xl font-bold text-[#0B2B57]">
+                            Add New Goal
+                        </h2>
+                        <p className="text-gray-500 mt-2">Set and track your performance goals</p>
+                    </div>
+                    <button
+                        type="button"
                         onClick={onClose}
-                    /></div>
+                        className="p-1 hover:bg-gray-100 rounded-lg transition"
+                    >
+                        <X size={24} className="text-gray-500" />
+                    </button>
                 </div>
 
                 {/* Goal Title */}
                 <div className="mb-6">
-                    <label className="block text-[18px] font-bold text-[#0B2B57] mb-3">
-                        Goal title
+                    <label className="block text-sm font-semibold text-[#0B2B57] mb-2">
+                        Goal title <span className="text-red-500">*</span>
                     </label>
 
-                    <div className="relative">
-                        <input
-                            type="text"
-                           placeholder="Goal Title"
-                            value={formData.goalTitle}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    goalTitle: e.target.value,
-                                })
+                    <input
+                        type="text"
+                        placeholder="Enter your goal title"
+                        value={formData.goalTitle}
+                        onChange={(e) => {
+                            setFormData({
+                                ...formData,
+                                goalTitle: e.target.value,
+                            });
+                            if (errors.goalTitle) {
+                                setErrors({ ...errors, goalTitle: "" });
                             }
-                            className="w-full bg-white rounded-2xl border border-gray-200 px-5 py-5 resize-none outline-none text-lg placeholder:text-gray-400"
-                        />
-
-
-                    </div>
+                        }}
+                        className={`w-full bg-white rounded-xl border ${errors.goalTitle ? "border-red-500" : "border-gray-300"} px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition placeholder:text-gray-400`}
+                    />
+                    {errors.goalTitle && (
+                        <span className="text-red-500 text-sm mt-1 block">{errors.goalTitle}</span>
+                    )}
                 </div>
 
                 {/* Description */}
                 <div className="mb-8">
-                    <div className="flex justify-between items-center mb-3">
-                        <label className="text-[18px] font-bold text-[#0B2B57]">
-                            Description
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm font-semibold text-[#0B2B57]">
+                            Description <span className="text-red-500">*</span>
                         </label>
 
-                        <span className="text-sm text-gray-400">
+                        <span className="text-xs text-gray-500">
                             {formData.description.length} / 500
                         </span>
                     </div>
 
                     <textarea
-                        rows={5}
+                        rows={4}
                         maxLength={500}
-                        placeholder="Please explain the reason for this regularization request..."
+                        placeholder="Describe your goal and what you want to achieve..."
                         value={formData.description}
-                        onChange={(e) =>
+                        onChange={(e) => {
                             setFormData({
                                 ...formData,
                                 description: e.target.value,
-                            })
-                        }
-                        className="w-full bg-white rounded-2xl border border-gray-200 px-5 py-5 resize-none outline-none text-lg placeholder:text-gray-400"
+                            });
+                            if (errors.description) {
+                                setErrors({ ...errors, description: "" });
+                            }
+                        }}
+                        className={`w-full bg-white rounded-xl border ${errors.description ? "border-red-500" : "border-gray-300"} px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition resize-none placeholder:text-gray-400`}
                     />
+                    {errors.description && (
+                        <span className="text-red-500 text-sm mt-1 block">{errors.description}</span>
+                    )}
                 </div>
 
                 {/* Two Column Fields */}
-                <div className="grid md:grid-cols-2 gap-6 mb-10">
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
                     {/* Aligned To */}
                     <div>
-                        <label className="block text-[18px] font-bold text-[#0B2B57] mb-3">
-                            Aligned to
+                        <label className="block text-sm font-semibold text-[#0B2B57] mb-2">
+                            Aligned to <span className="text-red-500">*</span>
                         </label>
 
                         <div className="relative">
                             <select
                                 value={formData.alignedTo}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                     setFormData({
                                         ...formData,
                                         alignedTo: e.target.value,
-                                    })
-                                }
-                                className="w-full appearance-none bg-white rounded-2xl border border-gray-200 px-5 py-5 text-lg outline-none"
+                                    });
+                                    if (errors.alignedTo) {
+                                        setErrors({ ...errors, alignedTo: "" });
+                                    }
+                                }}
+                                className={`w-full appearance-none bg-white rounded-xl border ${errors.alignedTo ? "border-red-500" : "border-gray-300"} px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition`}
                             >
                                 <option value="">
-                                    Company OKR
+                                    Select alignment option
                                 </option>
 
                                 {alignmentOptions.map((item) => (
@@ -144,43 +187,58 @@ export default function AddGoalForm({ onClose }) {
                             </select>
 
                             <ChevronDown
-                                size={20}
-                                className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                size={18}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                             />
                         </div>
+                        {errors.alignedTo && (
+                            <span className="text-red-500 text-sm mt-1 block">{errors.alignedTo}</span>
+                        )}
                     </div>
 
                     {/* Due Date */}
                     <div>
-                        <label className="block text-[18px] font-bold text-[#0B2B57] mb-3">
-                            Due date
+                        <label className="block text-sm font-semibold text-[#0B2B57] mb-2">
+                            Due date <span className="text-red-500">*</span>
                         </label>
 
                         <div className="relative">
                             <input
                                 type="date"
                                 value={formData.dueDate}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                     setFormData({
                                         ...formData,
                                         dueDate: e.target.value,
-                                    })
-                                }
-                                className="w-full bg-white rounded-2xl border border-gray-200 px-5 py-5 text-lg outline-none text-gray-700"
+                                    });
+                                    if (errors.dueDate) {
+                                        setErrors({ ...errors, dueDate: "" });
+                                    }
+                                }}
+                                className={`w-full bg-white rounded-xl border ${errors.dueDate ? "border-red-500" : "border-gray-300"} px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-700`}
                             />
-
-
                         </div>
+                        {errors.dueDate && (
+                            <span className="text-red-500 text-sm mt-1 block">{errors.dueDate}</span>
+                        )}
                     </div>
                 </div>
 
+                {errors.submit && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                        {errors.submit}
+                    </div>
+                )}
+
                 {/* Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex gap-3 pt-6 border-t">
                     <motion.button
-                        whileHover={{ scale: 1.02 }}
+                        whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        className="sm:w-[140px] py-5 rounded-2xl border border-gray-400 bg-white text-gray-500 text-lg font-medium"
+                        type="button"
+                        className="px-6 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 text-base font-medium hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={onClose}
+                        disabled={loading}
                     >
                         Cancel
                     </motion.button>
@@ -188,13 +246,14 @@ export default function AddGoalForm({ onClose }) {
                     <motion.button
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        className="flex-1 py-5 rounded-2xl bg-[#0B5DB5] text-white text-xl font-semibold shadow-sm"
+                        type="button"
+                        className="flex-1 px-6 py-3 rounded-xl bg-[#0B5DB5] text-white text-base font-semibold hover:bg-[#0945A0] transition disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleGoal}
+                        disabled={loading}
                     >
-                        Add to Goal
+                        {loading ? "Creating..." : "Add Goal"}
                     </motion.button>
                 </div>
             </motion.div>
-        </div>
-    );
-}
+        );
+    }

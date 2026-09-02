@@ -13,14 +13,13 @@ router.get("/", async (req, res) => {
     if (!userId || userId === "undefined" || userId === "null" || userId === "admin") {
       chats = await Chat.find({}).sort({ lastMessageAt: -1 });
     } else {
+      const cleanUserId = String(userId).trim();
+      const searchRegex = new RegExp(cleanUserId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i");
       chats = await Chat.find({
         $or: [
-          { participants: { $in: [userId, new RegExp(userId, "i")] } },
-          { createdBy: userId },
-          { isGroup: true },
-          { chatType: "collab" },
-          { chatType: "task" },
-          { chatType: "direct" },
+          { participants: { $in: [cleanUserId, searchRegex] } },
+          { createdBy: cleanUserId },
+          { createdBy: searchRegex }
         ],
       }).sort({ lastMessageAt: -1 });
     }
@@ -38,10 +37,40 @@ router.get("/", async (req, res) => {
 });
 
 // GET OR CREATE TASK CHAT FOR A SPECIFIC TASK
+const mongoose = require("mongoose");
+const Task = require("../models/TaskModels/Task");
+
 router.get("/task/:taskId", async (req, res) => {
   try {
     const { taskId } = req.params;
     const { userId, taskTitle } = req.query;
+
+    let taskDoc = null;
+    try {
+      if (mongoose.Types.ObjectId.isValid(taskId)) {
+        taskDoc = await Task.findById(taskId);
+      }
+    } catch (err) {
+      console.log("Error finding task:", err);
+    }
+
+    const defaultParticipants = [userId || "admin"];
+    if (taskDoc) {
+      if (taskDoc.assignedTo) {
+        const assignedVal = typeof taskDoc.assignedTo === "object"
+          ? (taskDoc.assignedTo._id || taskDoc.assignedTo.id || taskDoc.assignedTo.email || taskDoc.assignedTo.name)
+          : taskDoc.assignedTo;
+        if (assignedVal && assignedVal !== "Unassigned") defaultParticipants.push(assignedVal);
+      }
+      if (taskDoc.assignedBy) {
+        const assignedByVal = typeof taskDoc.assignedBy === "object"
+          ? (taskDoc.assignedBy._id || taskDoc.assignedBy.id || taskDoc.assignedBy.email || taskDoc.assignedBy.name)
+          : taskDoc.assignedBy;
+        if (assignedByVal) defaultParticipants.push(assignedByVal);
+      }
+    }
+
+    const uniqueParticipants = Array.from(new Set(defaultParticipants.filter(Boolean)));
 
     let chat = await Chat.findOne({
       $or: [
@@ -51,9 +80,10 @@ router.get("/task/:taskId", async (req, res) => {
     });
 
     if (!chat) {
+      const name = taskDoc ? `Task Chat: ${taskDoc.title}` : (taskTitle ? `Task Chat: ${taskTitle}` : `Task #${taskId}`);
       chat = await Chat.create({
-        participants: userId ? [userId, "admin"] : ["admin"],
-        chatName: taskTitle ? `Task Chat: ${taskTitle}` : `Task #${taskId}`,
+        participants: uniqueParticipants,
+        chatName: name,
         isGroup: true,
         chatType: "task",
         taskId: taskId,
@@ -68,9 +98,18 @@ router.get("/task/:taskId", async (req, res) => {
       } catch (err) {
         console.error("Socket emit error:", err);
       }
-    } else if (userId && !chat.participants.includes(userId)) {
-      chat.participants.push(userId);
-      await chat.save();
+    } else {
+      // Ensure assigned participants are present in existing chat
+      let updated = false;
+      uniqueParticipants.forEach((p) => {
+        if (!chat.participants.includes(p)) {
+          chat.participants.push(p);
+          updated = true;
+        }
+      });
+      if (updated) {
+        await chat.save();
+      }
     }
 
     res.status(200).json({
@@ -99,20 +138,28 @@ router.post("/", async (req, res) => {
 
     const type = chatType || (isGroup ? "group" : "direct");
 
-    // Avoid duplicate 1-on-1 chats between the same two people
+    // Avoid duplicate 1-on-1 chats between the exact same two people
     if (!isGroup && type === "direct" && participants.length >= 2) {
-      const existingChat = await Chat.findOne({
-        isGroup: false,
-        chatType: "direct",
-        participants: { $in: participants },
-      });
-
-      if (existingChat) {
-        return res.status(200).json({
-          success: true,
-          data: existingChat,
-          message: "Chat already exists",
+      const creatorId = createdBy || participants[0];
+      const otherParticipants = participants.filter((p) => String(p) !== String(creatorId));
+      if (otherParticipants.length > 0) {
+        const targetId = otherParticipants[0];
+        const existingChat = await Chat.findOne({
+          isGroup: false,
+          chatType: "direct",
+          $and: [
+            { participants: { $in: [creatorId, "admin"] } },
+            { participants: targetId }
+          ]
         });
+
+        if (existingChat) {
+          return res.status(200).json({
+            success: true,
+            data: existingChat,
+            message: "Chat already exists",
+          });
+        }
       }
     }
 

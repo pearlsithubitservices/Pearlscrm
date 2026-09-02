@@ -16,6 +16,19 @@ const Hotleads = () => {
         converted: 0,
     };
 
+    const formatBudget = (value) => {
+        const num = Number(value);
+        if (!Number.isFinite(num) || num <= 0) return 0;
+        return num;
+    };
+
+    const stageBudgetTotals = {
+        proposal: 0,
+        negotiation: 0,
+        qualified: 0,
+        closed: 0,
+    };
+
     safeLeads.forEach((lead) => {
         const status = lead.status?.trim().toLowerCase();
 
@@ -27,13 +40,38 @@ const Hotleads = () => {
                 statusCounts.contacted++;
                 break;
             case "interested":
+            case "qualified":
                 statusCounts.interested++;
                 break;
             case "converted":
+            case "closed":
+            case "won":
                 statusCounts.converted++;
                 break;
             default:
                 break;
+        }
+
+        const budgetValue = formatBudget(
+            lead?.budget?.toString().replace(/[₹,\s]/g, "") ||
+            lead?.amount ||
+            0
+        );
+
+        if (status === "proposal" || status === "quote" || status === "negotiation") {
+            stageBudgetTotals.proposal += budgetValue;
+        }
+
+        if (status === "negotiation" || status === "follow-up" || status === "in progress") {
+            stageBudgetTotals.negotiation += budgetValue;
+        }
+
+        if (status === "qualified" || status === "interested" || status === "warm") {
+            stageBudgetTotals.qualified += budgetValue;
+        }
+
+        if (status === "converted" || status === "closed" || status === "won") {
+            stageBudgetTotals.closed += budgetValue;
         }
     });
 
@@ -51,26 +89,55 @@ const Hotleads = () => {
     // CIRCLE CHART DATA
     const data = [
         {
-            value: Number(statusPercentage.new) || 25,
+            value: Number(statusPercentage.new) || 0,
             color: "#eab308",
             status: "New",
         },
         {
-            value: Number(statusPercentage.contacted) || 30,
+            value: Number(statusPercentage.contacted) || 0,
             color: "#3b82f6",
             status: "Contacted",
         },
         {
-            value: Number(statusPercentage.interested) || 25,
+            value: Number(statusPercentage.interested) || 0,
             color: "#a855f7",
             status: "Interested",
         },
         {
-            value: Number(statusPercentage.converted) || 20,
+            value: Number(statusPercentage.converted) || 0,
             color: "#22c55e",
             status: "Converted",
         },
     ];
+
+    const pipelineStages = [
+        {
+            name: "Proposal Stage",
+            color: "bg-purple-500",
+            width: totalLeads ? Math.max(8, Math.min(100, (statusCounts.interested || 0) / Math.max(totalLeads, 1) * 100)) + '%' : '0%',
+            revenue: `₹${(stageBudgetTotals.proposal || 0).toLocaleString('en-IN')}`,
+        },
+        {
+            name: "Negotiation",
+            color: "bg-orange-500",
+            width: totalLeads ? Math.max(8, Math.min(100, (statusCounts.contacted || 0) / Math.max(totalLeads, 1) * 100)) + '%' : '0%',
+            revenue: `₹${(stageBudgetTotals.negotiation || 0).toLocaleString('en-IN')}`,
+        },
+        {
+            name: "Qualified Leads",
+            color: "bg-yellow-500",
+            width: totalLeads ? Math.max(8, Math.min(100, (statusCounts.interested || 0) / Math.max(totalLeads, 1) * 100)) + '%' : '0%',
+            revenue: `₹${(stageBudgetTotals.qualified || 0).toLocaleString('en-IN')}`,
+        },
+        {
+            name: "Closed Won",
+            color: "bg-emerald-500",
+            width: totalLeads ? Math.max(8, Math.min(100, (statusCounts.converted || 0) / Math.max(totalLeads, 1) * 100)) + '%' : '0%',
+            revenue: `₹${(stageBudgetTotals.closed || 0).toLocaleString('en-IN')}`,
+        },
+    ];
+
+    const totalRevenue = Object.values(stageBudgetTotals).reduce((sum, value) => sum + value, 0);
 
     const radius = 35;
     const stroke = 6;
@@ -176,39 +243,14 @@ const Hotleads = () => {
                         Revenue Pipeline
                     </h2>
                     <span className="text-xs font-bold text-[#2563a9] bg-blue-50 px-3 py-1 rounded-full">
-                        Total 312K
+                        Total ₹{(totalRevenue / 1000).toFixed(0)}K
                     </span>
                 </div>
 
                 {/* Main Content */}
                 <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col items-center justify-between">
                     <div className="w-full">
-                        {[
-                            {
-                                name: "Proposal Stage",
-                                color: "bg-purple-500",
-                                revenue: "118K",
-                                width: "80%",
-                            },
-                            {
-                                name: "Negotiation",
-                                color: "bg-orange-500",
-                                width: "60%",
-                                revenue: "98K",
-                            },
-                            {
-                                name: "Qualified Leads",
-                                color: "bg-yellow-500",
-                                width: "40%",
-                                revenue: "62K",
-                            },
-                            {
-                                name: "Closed Won",
-                                color: "bg-emerald-500",
-                                width: "25%",
-                                revenue: "34K",
-                            },
-                        ].map((item, index) => (
+                        {pipelineStages.map((item, index) => (
                             <div key={index} className="mb-4">
                                 <div className="flex justify-between mb-1.5 text-xs font-semibold text-gray-700">
                                     <span>{item.name}</span>

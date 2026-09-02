@@ -1,5 +1,6 @@
 import React, {
-    useState
+    useState,
+    useEffect
 } from 'react';
 
 import {
@@ -20,22 +21,98 @@ import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
 
 import useClients from "../Hooks/useclients.js";
 import useTaskfilter from '../Hooks/useTaskfilter.js';
+import useProject from "../Hooks/useProject.js";
 
 import { formatNumber } from '../Utils/formatNumber.js';
 import LoadingPage from '../components/Dashboard/Loading.jsx';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { apiUrl } from '../config/api.js';
 
 
 export default function ClientManagement() {
 
     const { clients, loading, fetchClients } = useClients();
+    const { getAll: getAllProjects } = useProject();
+    const [projects, setProjects] = useState([]);
+    const [payments, setPayments] = useState({});
+    
+    useEffect(() => {
+        const fetchAllData = async () => {
+            try {
+                const projectsData = await getAllProjects();
+                setProjects(Array.isArray(projectsData) ? projectsData : []);
+            } catch (error) {
+                console.error("Error fetching projects:", error);
+                setProjects([]);
+            }
+        };
+        fetchAllData();
+    }, []);
+
+    // Fetch payments for all clients
+    useEffect(() => {
+        const fetchAllPayments = async () => {
+            if (!clients.length) return;
+            
+            try {
+                const paymentsData = {};
+                await Promise.all(
+                    clients.map(async (client) => {
+                        try {
+                            const response = await fetch(apiUrl(`/payment?clientId=${client._id}`));
+                            if (response.ok) {
+                                const data = await response.json();
+                                paymentsData[client._id] = Array.isArray(data) ? data : [];
+                            }
+                        } catch (err) {
+                            console.error(`Error fetching payments for client ${client._id}:`, err);
+                            paymentsData[client._id] = [];
+                        }
+                    })
+                );
+                setPayments(paymentsData);
+            } catch (error) {
+                console.error("Error fetching payments:", error);
+            }
+        };
+        fetchAllPayments();
+    }, [clients]);
+
     console.log(clients);
+    console.log(projects);
+    console.log(payments);
 
 
     const [active, setActive] = useState(0);
     const [search, setSearch] = useState("");
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
+
+    // Helper function to count open projects for a client
+    const getOpenProjectsCount = (clientId, clientCompany) => {
+        return projects.filter(proj => {
+            const projClientId = proj.clientId;
+            const projCompany = proj.company;
+            return (projClientId === clientId || projCompany === clientCompany) && 
+                   proj.status?.toLowerCase() !== "completed";
+        }).length;
+    };
+
+    // Helper function to get paid amount from payments
+    const getPaidAmount = (clientId) => {
+        const clientPayments = payments[clientId] || [];
+        return clientPayments
+            .filter((item) => String(item.status).toLowerCase() === "paid")
+            .reduce((sum, item) => sum + Number(item.budget || 0), 0);
+    };
+
+    // Helper function to get pending amount from payments
+    const getPendingAmount = (clientId) => {
+        const clientPayments = payments[clientId] || [];
+        return clientPayments
+            .filter((item) => String(item.status).toLowerCase() === "pending")
+            .reduce((sum, item) => sum + Number(item.budget || 0), 0);
+    };
 
     const buttons = ["All", "Low", "Medium", "High"];
 
@@ -47,6 +124,15 @@ export default function ClientManagement() {
         );
 
     // STATS
+
+    const averageHealthScore = clients.length
+        ? Math.round(
+            clients.reduce(
+                (acc, client) => acc + Number(client.healthScore ?? client.health ?? 0),
+                0
+            ) / clients.length
+        )
+        : 0;
 
     const stats = [
         {
@@ -76,7 +162,7 @@ export default function ClientManagement() {
         },
         {
             title: "Avg Health Score",
-            value: "24%",
+            value: `${averageHealthScore}%`,
             icon: Activity,
         }
     ];
@@ -305,7 +391,7 @@ export default function ClientManagement() {
                                             <div className='text-sm text-gray-400'>
 
                                                 <p>
-                                                    Renewal Dec 2024
+                                                    Renewal {p.renewalDate ? new Date(p.renewalDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                                                 </p>
 
                                             </div>
@@ -325,7 +411,7 @@ export default function ClientManagement() {
                                             </p>
 
                                             <p className="font-semibold text-green-600">
-                                                ₹ {formatNumber(p.paid || 0)}
+                                                ₹ {formatNumber(getPaidAmount(p._id || p.id))}
                                             </p>
 
                                         </div>
@@ -337,7 +423,7 @@ export default function ClientManagement() {
                                             </p>
 
                                             <p className="font-semibold text-red-500">
-                                                ₹ {formatNumber(p.pending || 0)}
+                                                ₹ {formatNumber(getPendingAmount(p._id || p.id))}
                                             </p>
 
                                         </div>
@@ -349,7 +435,7 @@ export default function ClientManagement() {
                                             </p>
 
                                             <p className="font-semibold">
-                                                2 Open
+                                                {getOpenProjectsCount(p._id || p.id, p.companyName)} Open
                                             </p>
 
                                         </div>
@@ -361,7 +447,7 @@ export default function ClientManagement() {
                                             </p>
 
                                             <p className="font-semibold text-green-600">
-                                                {p.health || "23%"}
+                                                {p.healthScore ?? p.health ?? 0}%
                                             </p>
 
                                         </div>

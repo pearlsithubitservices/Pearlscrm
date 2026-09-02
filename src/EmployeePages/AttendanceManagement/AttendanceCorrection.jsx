@@ -1,25 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Upload, ChevronDown, X } from "lucide-react";
 import useAttendanceCorrection from "../../Hooks/useAttendanceCorrection";
 import InputField from "../../components/InputField";
+import { useAuth } from "../../context/AuthContext";
 
-const AttendanceCorrection = ({ onClose }) => {
+const AttendanceCorrection = ({ onClose, selectedRecord }) => {
   const { submitCorrection, loading } = useAttendanceCorrection();
+  const { user } = useAuth();
+
+  const getFormattedDate = (rec) => {
+    if (!rec) return new Date().toISOString().split("T")[0];
+    const rawDate = rec.clockIn || rec.date;
+    if (!rawDate) return new Date().toISOString().split("T")[0];
+    const d = new Date(rawDate);
+    return isNaN(d.getTime()) ? new Date().toISOString().split("T")[0] : d.toISOString().split("T")[0];
+  };
+
+  const getFormattedTime = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    const hrs = String(d.getHours()).padStart(2, "0");
+    const mins = String(d.getMinutes()).padStart(2, "0");
+    return `${hrs}:${mins}`;
+  };
 
   const [form, setForm] = useState({
-    employeeId: "",
-    fullName: "",
-    department: "",
+    employeeId: user?.employeeId || user?.employee_uid || user?.uid || user?._id || user?.id || "",
+    fullName: user?.displayName || user?.fullName || user?.name || (user?.email ? user.email.split("@")[0] : ""),
+    department: user?.department || user?.dept || "",
     managerId: "",
     managerName: "",
-    correctionType: "",
-    date: "",
-    correctCheckIn: "",
-    correctCheckOut: "",
-    workMode: "",
+    correctionType: "Missed Check-In",
+    date: getFormattedDate(selectedRecord),
+    correctCheckIn: getFormattedTime(selectedRecord?.clockIn),
+    correctCheckOut: getFormattedTime(selectedRecord?.clockOut),
+    workMode: selectedRecord?.location || "In Office",
     reason: "",
   });
+
+  useEffect(() => {
+    if (user || selectedRecord) {
+      setForm((prev) => ({
+        ...prev,
+        employeeId: prev.employeeId || user?.employeeId || user?.employee_uid || user?.uid || user?._id || user?.id || "",
+        fullName: prev.fullName || user?.displayName || user?.fullName || user?.name || (user?.email ? user.email.split("@")[0] : ""),
+        department: prev.department || user?.department || user?.dept || "",
+        date: selectedRecord ? getFormattedDate(selectedRecord) : prev.date,
+        correctCheckIn: selectedRecord?.clockIn ? getFormattedTime(selectedRecord.clockIn) : prev.correctCheckIn,
+        correctCheckOut: selectedRecord?.clockOut ? getFormattedTime(selectedRecord.clockOut) : prev.correctCheckOut,
+      }));
+    }
+  }, [user, selectedRecord]);
 
   // 🔥 handle input change
   const handleChange = (e) => {
@@ -31,8 +64,36 @@ const AttendanceCorrection = ({ onClose }) => {
 
   // 🔥 submit handler
   const handleSubmit = async () => {
-    await submitCorrection(form);
-    onClose?.();
+    const empId = form.employeeId || user?.employeeId || user?.employee_uid || user?.uid || user?._id || user?.id;
+    const empName = form.fullName || user?.displayName || user?.fullName || user?.name || (user?.email ? user.email.split("@")[0] : "");
+
+    if (!empId || !empName) {
+      alert("Please ensure Employee ID and Full Name are provided!");
+      return;
+    }
+
+    if (!form.correctCheckIn) {
+      alert("Please select the Correct Check-In time!");
+      return;
+    }
+
+    const payload = {
+      ...form,
+      employeeId: empId,
+      fullName: empName,
+    };
+
+    try {
+      const res = await submitCorrection(payload);
+      if (res && res.success) {
+        alert("✅ Attendance correction request submitted successfully!");
+        onClose?.();
+      } else {
+        alert("❌ Failed to submit request: " + (res?.message || "Server error"));
+      }
+    } catch (err) {
+      alert("❌ Error: " + (err.message || "Failed to submit request"));
+    }
   };
 
   return (

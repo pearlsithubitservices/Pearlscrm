@@ -93,11 +93,11 @@ export default function LeaveApprovals({ leaves, updateLeaveStatus }) {
                                     </td>
 
                                     <td className="border border-gray-300 py-6 px-4 text-center">
-                                        {item?.employeeId.slice(0, 5)}
+                                        {item?.employeeId || "Not available"}
                                     </td>
 
                                     <td className="border border-gray-300 py-6 px-4 text-center">
-                                        {employees.find((emp) => emp.uid === item.employeeId)?.role || "Employee"}
+                                        {item?.department || employees.find((emp) => String(emp.uid || emp.id || emp._id) === String(item.employeeId))?.role || "General"}
                                     </td>
 
                                     <td className="border border-gray-300 py-6 px-4 text-center">

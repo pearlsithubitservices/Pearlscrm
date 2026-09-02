@@ -32,7 +32,7 @@ const PersonalDetails = ({ startEditing = false }) => {
             joiningdate: "",
             reportingmanager: "",
             workLocation: "",
-
+            description: "",
         }
     );
 
@@ -61,6 +61,7 @@ const PersonalDetails = ({ startEditing = false }) => {
                     joiningdate: profile.joiningDate ? profile.joiningDate.slice(0, 10) : '',
                     reportingmanager: profile.reportingManager || '',
                     workLocation: profile.workLocation || '',
+                    description: profile.description || '',
                 });
             })
             .catch((error) => setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to load profile' }))
@@ -111,6 +112,7 @@ const PersonalDetails = ({ startEditing = false }) => {
                 joiningDate: jobdetails.joiningdate || null,
                 reportingManager: jobdetails.reportingmanager,
                 workLocation: jobdetails.workLocation,
+                description: jobdetails.description,
             });
             await fetchCurrentUser();
             setIsEditing(false);
@@ -278,6 +280,17 @@ const PersonalDetails = ({ startEditing = false }) => {
                             name="workLocation"
                             value={jobdetails.workLocation}
                             placeholder="Work Location"
+                            onChange={handleJobChange}
+                            disabled={isEditing ? false : true}
+                        />
+                    </div>
+                    <div>
+                        <InputField
+                            label="Employee Description:"
+                            name="description"
+                            value={jobdetails.description}
+                            placeholder="Add an employee description..."
+                            type="textarea"
                             onChange={handleJobChange}
                             disabled={isEditing ? false : true}
                         />

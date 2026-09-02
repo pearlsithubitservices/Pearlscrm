@@ -13,14 +13,14 @@ function initSocket(server) {
   });
 
   io.on("connection", (socket) => {
-    console.log("Socket connected:", socket.id);
+    // console.log("Socket connected:", socket.id);
 
     // Join personal user room
     socket.on("joinUser", (userId) => {
       if (userId) {
         socket.join("user_" + userId);
         socket.join(userId.toString());
-        console.log(`Socket ${socket.id} joined personal room for user: ${userId}`);
+        // console.log(`Socket ${socket.id} joined personal room for user: ${userId}`);
       }
     });
 
@@ -28,7 +28,7 @@ function initSocket(server) {
     socket.on("joinChat", (chatId) => {
       if (chatId) {
         socket.join(chatId.toString());
-        console.log(`Socket ${socket.id} joined chat room: ${chatId}`);
+        // console.log(`Socket ${socket.id} joined chat room: ${chatId}`);
       }
     });
 
@@ -36,7 +36,7 @@ function initSocket(server) {
     socket.on("leaveChat", (chatId) => {
       if (chatId) {
         socket.leave(chatId.toString());
-        console.log(`Socket ${socket.id} left chat room: ${chatId}`);
+        // console.log(`Socket ${socket.id} left chat room: ${chatId}`);
       }
     });
 
@@ -54,7 +54,7 @@ function initSocket(server) {
     });
 
     socket.on("disconnect", () => {
-      console.log("Socket disconnected:", socket.id);
+      // console.log("Socket disconnected:", socket.id);
     });
   });
 

@@ -1,13 +1,11 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api";
 
 export default function useAttendance() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-
-    const API_URL = "https://pearlscrm.onrender.com/api/empattendancenew";
-
-
+    const API_URL = apiUrl("/empattendancenew");
 
     // CLOCK IN
     const clockIn = async (attendanceData) => {
@@ -74,7 +72,7 @@ export default function useAttendance() {
             setError(null);
 
             const response = await fetch(`${API_URL}/break/end`, {
-                method: "PUT",
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -103,7 +101,7 @@ export default function useAttendance() {
             setError(null);
 
             const response = await fetch(`${API_URL}/clock-out`, {
-                method: "PUT",
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },

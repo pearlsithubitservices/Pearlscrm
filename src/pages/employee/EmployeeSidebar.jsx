@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Briefcase,
+  UserRound,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -29,6 +30,11 @@ export default function Sidebar() {
   const navigate = useNavigate();
 
   const mainItems = [
+    {
+      name: 'My Overview',
+      icon: UserRound,
+      path: '/employee/overview',
+    },
     {
       name: 'Dashboard',
       icon: BarChart3,

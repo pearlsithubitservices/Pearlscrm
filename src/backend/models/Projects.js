@@ -46,6 +46,18 @@ const noteSchema = new mongoose.Schema(
   { _id: true, timestamps: true }
 );
 
+const documentSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, default: "file" },
+    size: { type: String, default: "" },
+    uploadedBy: { type: String, default: "System" },
+    date: { type: String, default: "" },
+  },
+  { _id: true, timestamps: true }
+);
+
 const activitySchema = new mongoose.Schema(
   {
     title: { type: String, default: "" },
@@ -62,6 +74,11 @@ const projectSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+
+    clientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Client",
     },
 
     companylocation: {
@@ -85,6 +102,7 @@ const projectSchema = new mongoose.Schema(
     notes: [noteSchema],
     activities: [activitySchema],
     milestones: [milestoneSchema],
+    documents: [documentSchema],
 
     assignedDate: {
       type: Date,

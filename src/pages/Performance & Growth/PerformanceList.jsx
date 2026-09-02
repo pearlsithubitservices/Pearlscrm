@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
     Search,
@@ -10,6 +10,7 @@ import {
     Bell,
 } from "lucide-react";
 import useEmployees from "../../Hooks/useEmployees";
+import useReview from "../../Hooks/useReview";
 import Pagination from "../../components/Pagination";
 import { useNavigate } from "react-router-dom";
 
@@ -18,9 +19,42 @@ export default function PerformanceList() {
 
     const [search, setSearch] = useState("");
     const [department, setDepartment] = useState("All Departments");
+    const [reviews, setReviews] = useState([]);
     const { employees } = useEmployees();
-    console.log(employees);
+    const { getReviews } = useReview();
     const navigate = useNavigate();
+
+    const getEmployeeDisplay = (employee, field, fallback = "-") => {
+        const profile = employee?.profile || {};
+
+        if (field === "id") {
+            return profile?.empId || employee?.empId || employee?.uid || employee?.id || employee?._id || fallback;
+        }
+        if (field === "department") {
+            return employee?.employeeDepartment || profile?.department || employee?.department || employee?.industry || "Employee";
+        }
+        if (field === "role") {
+            return employee?.employeeRole || profile?.designation || employee?.role || "Employee";
+        }
+        if (field === "name") {
+            return employee?.employeeName || employee?.name || "Employee";
+        }
+        return employee?.[field] || profile?.[field] || fallback;
+    };
+
+    useEffect(() => {
+        const fetchReviews = async () => {
+            try {
+                const res = await getReviews();
+                setReviews(Array.isArray(res?.data) ? res.data : []);
+            } catch (error) {
+                console.error("Error loading reviews:", error);
+                setReviews([]);
+            }
+        };
+
+        fetchReviews();
+    }, [getReviews]);
 
     const filteredEmployees = useMemo(() => {
         return employees?.filter((emp) => {
@@ -37,6 +71,34 @@ export default function PerformanceList() {
     }, [employees, search, department]);
     console.log(filteredEmployees);
     const [currentPage, setCurrentPage] = useState(1);
+
+    const getPerformanceValue = (employee) => {
+        const employeeId = employee?.uid || employee?.id || employee?._id;
+        const matchingReview = reviews.find((review) => {
+            const reviewEmployeeId = review?.employee_uid || review?.employeeId || review?.employee?.uid || review?.employee?.id;
+            return String(reviewEmployeeId || "") === String(employeeId || "") ||
+                String(review?.employeeName || "") === String(employee?.employeeName || employee?.name || "") ||
+                String(review?.employee_uid || "") === String(employee?.uid || "");
+        });
+
+        const rating = Number(matchingReview?.overallRating ?? 0);
+        if (!rating) return 0;
+
+        return Math.min(100, Math.max(0, Math.round((rating / 5) * 100)));
+    };
+
+    const getPerformanceBadge = (value) => {
+        if (value >= 88) {
+            return "bg-emerald-100 text-emerald-700";
+        }
+
+        if (value >= 78) {
+            return "bg-amber-100 text-amber-700";
+        }
+
+        return "bg-rose-100 text-rose-700";
+    };
+
     /* PAGINATION */
 
     const filesPerPage = 5;
@@ -153,7 +215,7 @@ export default function PerformanceList() {
                     {/* Employee Count */}
 
                     <div className="px-6 h-11 rounded-xl bg-[#EEF3FB] flex items-center justify-center font-semibold text-gray-700">
-                        {employees?.length} Employees
+                        {filteredEmployees?.length || 0} Employees
                     </div>
 
                 </div>
@@ -220,16 +282,21 @@ export default function PerformanceList() {
                                 {/* Employee Name */}
 
                                 <td className="border border-gray-300 py-5 px-6 text-center">
-                                    <h3 className="text-[20px] font-medium text-[#1A1A1A]">
-                                        {employee?.employeeName || employee?.name || "Ragavi"}
-                                    </h3>
+                                    <div className="flex flex-col items-center justify-center gap-2">
+                                        <h3 className="text-[20px] font-medium text-[#1A1A1A]">
+                                            {getEmployeeDisplay(employee, "name")}
+                                        </h3>
+                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getPerformanceBadge(getPerformanceValue(employee))}`}>
+                                            Performance {getPerformanceValue(employee)}%
+                                        </span>
+                                    </div>
                                 </td>
 
                                 {/* Employee ID */}
 
                                 <td className="border border-gray-300 py-5 text-center">
                                     <span className="text-gray-700">
-                                        {employee?.uid?.slice(0, 5) || "EMP-001"}
+                                        {String(getEmployeeDisplay(employee, "id")).trim() || "-"}
                                     </span>
                                 </td>
 
@@ -237,7 +304,7 @@ export default function PerformanceList() {
 
                                 <td className="border border-gray-300 py-5 text-center">
                                     <span className="text-gray-700">
-                                        {employee?.employeeDepartment || "Employee"}
+                                        {getEmployeeDisplay(employee, "department")}
                                     </span>
                                 </td>
 
@@ -245,7 +312,7 @@ export default function PerformanceList() {
 
                                 <td className="border border-gray-300 py-5 text-center">
                                     <span className="text-gray-700">
-                                        {employee?.employeeDepartment || "Employee"}
+                                        {getEmployeeDisplay(employee, "role")}
                                     </span>
                                 </td>
 

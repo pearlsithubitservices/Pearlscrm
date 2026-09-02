@@ -53,6 +53,15 @@ const stats = [
 export default function PerformanceGrowth() {
   const [showModel, setShowModel] = useState("mygoals");
   const [goalform, setGoalform] = useState(false);
+  const [goalsRefresh, setGoalsRefresh] = useState(0);
+  const [latestGoal, setLatestGoal] = useState(null);
+
+  const handleGoalCreated = (newGoal) => {
+    if (newGoal) {
+      setLatestGoal(newGoal);
+    }
+    setGoalsRefresh(prev => prev + 1);
+  };
 
   const tabs = [
     {
@@ -166,7 +175,13 @@ export default function PerformanceGrowth() {
         animate={{ opacity: 1, y: 0 }}
         className=" pb-2 mb-2"
       >
-        {showModel === "mygoals" && <MyGoals />}
+        {showModel === "mygoals" && (
+          <MyGoals
+            key={goalsRefresh}
+            newGoal={latestGoal}
+            refreshKey={goalsRefresh}
+          />
+        )}
 
         {showModel === "training" && (
          
@@ -190,10 +205,11 @@ export default function PerformanceGrowth() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.25 }}
-            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar"
+            className="w-full max-w-2xl"
           >
             <AddGoalForm
               onClose={() => setGoalform(false)}
+              onSuccess={handleGoalCreated}
             />
           </motion.div>
         </div>

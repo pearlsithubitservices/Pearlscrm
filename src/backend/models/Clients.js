@@ -77,6 +77,13 @@ const clientSchema = new mongoose.Schema(
       type: String,
       enum: ["New", "Interested", "Converted", "Lost"],
       default: "New"
+    },
+
+    healthScore: {
+      type: Number,
+      default: 50,
+      min: 0,
+      max: 100
     }
   },
   {

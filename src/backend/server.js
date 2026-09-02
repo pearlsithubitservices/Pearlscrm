@@ -1,3 +1,4 @@
+
 const dns = require("dns");
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
@@ -40,44 +41,70 @@ const EmpCourse = require("./routes/EmpCourseRoutes");
 const EmpSkillCertification = require("./routes/SkillCertificationRoutes");
 const EmpContributionRoutes = require("./routes/ContributionRoutes");
 const EmpActivityRoutes = require("./routes/TaskActivityRoute");
-const EmpTotalLeave = require('./routes/TotalLeaveRoutes');
+const EmpTotalLeave = require("./routes/TotalLeaveRoutes");
 const TaskDocumentRoutes = require("./routes/TaskDocumentRoutes");
+const BenefitRoutes = require("./routes/BenefitRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
 const { initSocket } = require("./Socket");
 
-const whatsappCampaignRoutes = require('./routes/WhatsAppCampaign/campaignRoutes');
-const whatsappTemplateRoutes = require('./routes/WhatsAppCampaign/templateRoutes');
-const whatsappBroadcastRoutes = require('./routes/WhatsAppCampaign/broadcastRoutes');
-const whatsappQueueRoutes = require('./routes/WhatsAppCampaign/queueRoutes');
-const whatsappAnalyticsRoutes = require('./routes/WhatsAppCampaign/analyticsRoutes');
-const whatsappConnectionRoutes = require('./routes/WhatsAppCampaign/connectionRoutes');
-const whatsappWebhookRoutes = require('./routes/WhatsAppCampaign/webhookRoutes');
+const whatsappCampaignRoutes = require("./routes/WhatsAppCampaign/campaignRoutes");
+const whatsappTemplateRoutes = require("./routes/WhatsAppCampaign/templateRoutes");
+const whatsappBroadcastRoutes = require("./routes/WhatsAppCampaign/broadcastRoutes");
+const whatsappQueueRoutes = require("./routes/WhatsAppCampaign/queueRoutes");
+const whatsappAnalyticsRoutes = require("./routes/WhatsAppCampaign/analyticsRoutes");
+const whatsappConnectionRoutes = require("./routes/WhatsAppCampaign/connectionRoutes");
+const whatsappWebhookRoutes = require("./routes/WhatsAppCampaign/webhookRoutes");
 
-const whatsappConversationRoutes = require('./routes/Whatsapp Automation/ConversationRoute');
+// WhatsApp Automation
+const whatsappConversationRoutes = require("./routes/Whatsapp Automation/ConversationRoute");
 const automationRuleRoutes = require("./routes/Whatsapp Automation/AutomationRuleRoutes");
 const messageTemplateRoutes = require("./routes/Whatsapp Automation/messageTemplates");
 const aiConfigRoutes = require("./routes/Whatsapp Automation/aiConfig");
 const reportRoutes = require("./routes/Whatsapp Automation/report");
 const whatsappConfigRoutes = require("./routes/Whatsapp Automation/whatsappIntegration");
 const humanHandoffRoutes = require("./routes/Whatsapp Automation/HumanHandoffRoutes");
-connectDB();
+
+const ReimbursementPolicyroutes = require("./routes/ReimbursementPolicyroutes");
+const TaxDocumentsRoutes = require("./routes/TaxDocumentsRoutes");
+
+const {
+  startFollowupReminderScheduler,
+} = require("./services/followupReminderScheduler");
+
+const {
+  startAttendancePhotoCleanupScheduler,
+} = require("./services/attendancePhotoCleanupScheduler");
 
 const app = express();
 const server = http.createServer(app);
+
 initSocket(server);
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://pearlscrm.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://pearlscrm.vercel.app",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
+
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(
+  express.urlencoded({
+    limit: "50mb",
+    extended: true,
+  })
+);
+
+// =====================================================
+// MAIN CRM ROUTES
+// =====================================================
 
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
@@ -90,46 +117,132 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/projects", ProjectsRoutes);
 app.use("/api/clients", ClientRoutes);
 app.use("/api/employees", EmployeeRoutes);
+
 app.use("/api/payment", PaymentRoutes);
-// app.use("/api/marketing-leads",MarketingLeadRoutes);
 app.use("/api/leave", LeaveRoute);
 app.use("/api/holidays", HolidayRoute);
 app.use("/api/reimbursement", ReimbursementRoutes);
+app.use("/api/reimbursementpolicy", ReimbursementPolicyroutes);
+app.use("/api/taxdocuments", TaxDocumentsRoutes);
+
 app.use("/api/empattendancenew", EmpAttendanceRoutes);
+
 app.use("/api/announcement", AnnouncementSchema);
 app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
+
+app.use(
+  "/api/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
+
 app.use("/api/feedback", FeedbackRoutes);
 app.use("/api/payslip", PayslipRoutes);
-app.use("/api/empAttendanceCorrection", EmpAttendanceCorrectionRoutes);
+app.use("/api/benefits", BenefitRoutes);
+app.use(
+  "/api/empAttendanceCorrection",
+  EmpAttendanceCorrectionRoutes
+);
 app.use("/api/mygoal", EmpMyGoal);
 app.use("/api/review", EmpReview);
 app.use("/api/empenrollment", EmpEnrollment);
 app.use("/api/empCourse", EmpCourse);
-app.use("/api/skillscertification", EmpSkillCertification);
+app.use(
+  "/api/skillscertification",
+  EmpSkillCertification
+);
 app.use("/api/contribution", EmpContributionRoutes);
-app.use("/api/activity",EmpActivityRoutes);
-app.use('/api/totalLeave', EmpTotalLeave);
+app.use("/api/activity", EmpActivityRoutes);
+app.use("/api/totalLeave", EmpTotalLeave);
 
 app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
-const { startFollowupReminderScheduler } = require("./services/followupReminderScheduler");
+// =====================================================
+// WHATSAPP CAMPAIGN ROUTES
+// =====================================================
 
-app.use('/api/conversations', whatsappConversationRoutes);
-app.use("/api/automation-rules", automationRuleRoutes);
-app.use("/api/message-templates", messageTemplateRoutes);
-app.use("/api/ai-config", aiConfigRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/whatsapp-integration", whatsappConfigRoutes);
-app.use( "/api/handoff", humanHandoffRoutes);
+app.use("/api/whatsapp/campaigns", whatsappCampaignRoutes);
+app.use("/api/whatsapp/templates", whatsappTemplateRoutes);
+app.use("/api/whatsapp/broadcast", whatsappBroadcastRoutes);
+app.use("/api/whatsapp/queue", whatsappQueueRoutes);
+app.use("/api/whatsapp/analytics", whatsappAnalyticsRoutes);
+app.use("/api/whatsapp/connection", whatsappConnectionRoutes);
+app.use("/api/whatsapp/webhook", whatsappWebhookRoutes);
+
+// =====================================================
+// WHATSAPP AI AUTOMATION ROUTES
+// =====================================================
+
+app.use(
+  "/api/conversations",
+  whatsappConversationRoutes
+);
+
+app.use(
+  "/api/automation-rules",
+  automationRuleRoutes
+);
+
+app.use(
+  "/api/message-templates",
+  messageTemplateRoutes
+);
+
+app.use(
+  "/api/ai-config",
+  aiConfigRoutes
+);
+
+app.use(
+  "/api/reports",
+  reportRoutes
+);
+
+app.use(
+  "/api/whatsapp-integration",
+  whatsappConfigRoutes
+);
+
+app.use(
+  "/api/handoff",
+  humanHandoffRoutes
+);
+
+// =====================================================
+// SERVER
+// =====================================================
+
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log("Connected to database with WebSocket support");
-  startFollowupReminderScheduler();
-});
+// Connect to database before starting server
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(
+        "Connected to database with WebSocket support"
+      );
+
+      startFollowupReminderScheduler();
+      startAttendancePhotoCleanupScheduler();
+    });
+  } catch (error) {
+    console.error(
+      "Failed to start server:",
+      error.message
+    );
+
+    process.exit(1);
+  }
+};
+
+startServer();
 

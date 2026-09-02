@@ -136,16 +136,16 @@ const CompanyAnnouncements = () => {
               <div className="flex items-center justify-between mt-5">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-[#0B2B57] text-white flex items-center justify-center font-semibold">
-                    {item.author.charAt().toUpperCase()}
+                    {((item.author && item.author.trim() !== "") ? item.author : "Admin").charAt(0).toUpperCase()}
                   </div>
 
                   <div>
                     <p className="font-semibold text-sm">
-                      {item.author.toUpperCase()}
+                      {((item.author && item.author.trim() !== "") ? item.author : "Admin").toUpperCase()}
                     </p>
 
                     <p className="text-xs text-gray-500">
-                      {item.role}
+                      {item.role || "Company Wide"}
                     </p>
                   </div>
                 </div>

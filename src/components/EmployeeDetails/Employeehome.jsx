@@ -7,11 +7,12 @@ import {
   CalendarDays,
 } from "lucide-react";
 
-export default function LeadDetails({ employees }) {
+export default function LeadDetails({ employees, editableDescription = false, descriptionValue, onDescriptionChange, onDescriptionSave, savingDescription, onDescriptionEdit }) {
   const profile = employees?.profile || {};
   const bankDetails = profile.bankDetails || employees?.bankDetails || {};
   const salary = profile.salary || employees?.salary || {};
-  const description = employees?.description || employees?.notes || profile.description || profile.notes || "No description available.";
+  const storedDescription = employees?.description || employees?.notes || profile.description || profile.notes || "";
+  const description = descriptionValue !== undefined ? descriptionValue : storedDescription;
 
   const contactInfo = [
     {
@@ -58,16 +59,37 @@ export default function LeadDetails({ employees }) {
             EMPLOYEE DESCRIPTION
           </h3>
 
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            className="bg-[#efede8] rounded-3xl p-6 shadow-sm border border-black/40"
-          >
-            <div className="min-h-[100px]">
-              <h1 className="text-xl text-[#082f57] leading-relaxed">
-                {description}
-              </h1>
-            </div>
-          </motion.div>
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+            {editableDescription ? (
+              <>
+                <textarea
+                  value={descriptionValue}
+                  onChange={onDescriptionChange}
+                  rows={4}
+                  placeholder="Add an employee description..."
+                  className="w-full resize-y rounded-lg border border-gray-200 p-3 text-sm text-[#082f57] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <div className="flex justify-end mt-3">
+                  <button type="button" onClick={onDescriptionSave} disabled={savingDescription} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                    {savingDescription ? "Updating..." : "Update Description"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="min-h-[100px] text-base text-[#082f57] leading-relaxed">
+                  {description || "No description available."}
+                </p>
+                {onDescriptionEdit && (
+                  <div className="flex justify-end mt-3">
+                    <button type="button" onClick={onDescriptionEdit} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                      Update Description
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         <div className="mt-10 grid grid-cols-1 xl:grid-cols-3 gap-6">

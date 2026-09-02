@@ -213,11 +213,29 @@ const updateUserSalary = async (req, res) => {
   }
 };
 
+const updateUserDescription = async (req, res) => {
+  try {
+    const description = String(req.body.description || "").trim();
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: { "profile.description": description } },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) return res.status(404).json({ success: false, message: "Employee not found" });
+    return res.status(200).json({ success: true, message: "Description updated successfully", user });
+  } catch (error) {
+    console.error("Update employee description error:", error);
+    return res.status(500).json({ success: false, message: "Unable to update description" });
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
   getAllUsers,
   updateUserSalary,
+  updateUserDescription,
   toggleUserStatus,
 };

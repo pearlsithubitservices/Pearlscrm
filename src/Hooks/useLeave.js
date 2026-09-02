@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { apiUrl } from "../config/api";
 
 export default function useLeave() {
   const [loading, setLoading] = useState(false);
@@ -9,6 +10,7 @@ export default function useLeave() {
   const [leaves, setLeaves] = useState([]);
 
   const { user } = useAuth();
+  const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
 
 
   // CREATE LEAVE
@@ -20,6 +22,10 @@ export default function useLeave() {
       const startDate = new Date(formData.leaveFrom);
       const endDate = new Date(formData.leaveTo);
 
+      if (!formData.leaveTitle || !formData.leaveType || !formData.leaveReason || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate) {
+        throw new Error("Please complete all leave fields and select a valid date range");
+      }
+
       const leaveDays =
         Math.ceil(
           (endDate - startDate) / (1000 * 60 * 60 * 24)
@@ -28,11 +34,15 @@ export default function useLeave() {
       const payload = {
         ...formData,
         leaveDays,
-        employeeId: user.uid,
+        employeeId,
+        employeeName: formData.employeeName || user?.name || "",
+        department: formData.department || user?.industry || "General",
+        managerName: formData.managerName || "",
+        managerId: formData.managerId || "",
       };
 
       const response = await fetch(
-        "https://pearlscrm.onrender.com/api/leave",
+        apiUrl("/leave"),
         {
           method: "POST",
           headers: {
@@ -69,10 +79,10 @@ export default function useLeave() {
   // GET ALL LEAVES
 
   useEffect(() => {
-    if (user?.uid) {
+    if (employeeId) {
       getLeaves();
     }
-  }, [user?.uid]);
+  }, [employeeId]);
 
 
   const getLeaves = async () => {
@@ -81,7 +91,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        "https://pearlscrm.onrender.com/api/leave"
+        apiUrl("/leave")
       );
 
       const data = await response.json();
@@ -92,7 +102,7 @@ export default function useLeave() {
         );
       }
 
-      setLeaves(data);
+      setLeaves(Array.isArray(data) ? data : []);
 
       return data;
     } catch (err) {
@@ -135,6 +145,10 @@ export default function useLeave() {
       const startDate = new Date(formData.leaveFrom);
       const endDate = new Date(formData.leaveTo);
 
+      if (!formData.leaveTitle || !formData.leaveType || !formData.leaveReason || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate) {
+        throw new Error("Please complete all leave fields and select a valid date range");
+      }
+
       const leaveDays =
         Math.ceil(
           (endDate - startDate) / (1000 * 60 * 60 * 24)
@@ -143,11 +157,15 @@ export default function useLeave() {
       const payload = {
         ...formData,
         leaveDays,
-        employeeId: user.uid,
+        employeeId,
+        employeeName: formData.employeeName || user?.name || "",
+        department: formData.department || user?.industry || "General",
+        managerName: formData.managerName || "",
+        managerId: formData.managerId || "",
       };
 
       const response = await fetch(
-        `https://pearlscrm.onrender.com/api/leave/${id}`,
+        apiUrl(`/leave/${id}`),
         {
           method: "PUT",
           headers: {
@@ -296,7 +314,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `https://pearlscrm.onrender.com/api/leave/${id}/status`,
+        apiUrl(`/leave/${id}/status`),
         {
           method: "PATCH",
           headers: {
@@ -335,6 +353,23 @@ export default function useLeave() {
     }
   };
 
+  const deleteLeave = async (id) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(apiUrl(`/leave/${id}`), { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to cancel leave request");
+      setLeaves((prev) => prev.filter((leave) => leave._id !== id));
+      return { success: true, data: data.leave };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
 
   return {
@@ -351,5 +386,6 @@ export default function useLeave() {
     deleteHoliday,
 
     updateLeaveStatus,
+    deleteLeave,
   };
 }

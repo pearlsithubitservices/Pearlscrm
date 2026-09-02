@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const invoiceSchema = new mongoose.Schema(
   {
+    clientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Client",
+      default: null,
+    },
 
     clientName: {
       type: String,
@@ -39,6 +44,7 @@ const invoiceSchema = new mongoose.Schema(
         "Overdue",
         "Cancelled",
         "partial",
+        "Partial",
       ],
       default: "Pending",
     },
@@ -55,7 +61,4 @@ const invoiceSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model(
-  "Invoice",
-  invoiceSchema
-);
+module.exports = mongoose.model("Invoice", invoiceSchema );

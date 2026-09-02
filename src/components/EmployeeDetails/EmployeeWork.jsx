@@ -1,30 +1,136 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import { apiUrl } from "../../config/api";
+import { useAuth } from "../../context/AuthContext";
 
-export default function AssignedWork() {
-  const [tasks] = useState([
-    {
-      title: "Stripe billing integration",
-      subtitle: "In Progress",
-      progress: 67,
-    },
-    {
-      title: "Data pipeline migration",
-      subtitle: "Data Infra",
-      progress: 67,
-    },
-    {
-      title: "Mobile app API layer",
-      subtitle: "Mobile App",
-      progress: 67,
-    },
-    {
-      title: "Analytics dashboard v2",
-      subtitle: "Analytics",
-      progress: 67,
-    },
-  ]);
+export default function AssignedWork({ employee, canManage = true }) {
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState([]);
+  const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+
+  const employeeId = employee?._id || employee?.uid || employee?.id;
+  const employeeIdentifiers = Array.from(
+    new Set(
+      [
+        employeeId,
+        employee?.uid,
+        employee?._id,
+        employee?.id,
+        employee?.email,
+        employee?.employeeEmail,
+        employee?.name,
+        employee?.employeeName,
+      ]
+        .filter(Boolean)
+        .map((value) => String(value).trim())
+        .map((value) => value.toLowerCase())
+    )
+  );
+
+  const matchesEmployee = (task) => {
+    if (!task || !Array.isArray(employeeIdentifiers) || employeeIdentifiers.length === 0) return false;
+
+    const possibleValues = [];
+    const assignedTo = task.assignedTo;
+
+    if (assignedTo && typeof assignedTo === "object") {
+      possibleValues.push(
+        assignedTo._id,
+        assignedTo.uid,
+        assignedTo.id,
+        assignedTo.email,
+        assignedTo.name,
+        assignedTo.employeeName,
+        assignedTo.username
+      );
+    } else if (assignedTo) {
+      possibleValues.push(assignedTo);
+    }
+
+    const normalized = possibleValues
+      .filter(Boolean)
+      .map((value) => String(value).trim().toLowerCase());
+
+    return normalized.some((value) => employeeIdentifiers.includes(value));
+  };
+
+  const fetchTasks = async () => {
+    if (!employeeId && employeeIdentifiers.length === 0) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch(apiUrl("/tasks"));
+      if (!response.ok) throw new Error("Unable to load assigned tasks");
+
+      const data = await response.json();
+      const taskList = Array.isArray(data) ? data : data?.data || [];
+      setTasks(taskList.filter(matchesEmployee));
+    } catch (error) {
+      console.error("Error loading assigned tasks:", error);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [employeeId, employee?.uid, employee?._id, employee?.id, employee?.email, employee?.name, employee?.employeeName]);
+
+  const addTask = async () => {
+    const taskTitle = title.trim();
+    const assignee = employeeId || employee?.uid || employee?._id || employee?.id || employee?.email;
+    if (!taskTitle || !assignee) return;
+
+    try {
+      setAdding(true);
+      const response = await fetch(apiUrl("/tasks"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: taskTitle,
+          assignedTo: assignee,
+          assignedBy: user?._id || user?.uid || user?.id || user?.email,
+          priority: "Medium",
+          status: "Pending",
+          progress: 0,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to add task");
+      }
+
+      setTitle("");
+      await fetchTasks();
+    } catch (error) {
+      console.error("Add assigned task error:", error);
+      alert(error.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const removeTask = async (taskId) => {
+    if (!taskId || !window.confirm("Remove this task?")) return;
+
+    try {
+      const response = await fetch(apiUrl(`/tasks/${taskId}`), { method: "DELETE" });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to remove task");
+      }
+
+      setTasks((currentTasks) => currentTasks.filter((task) => task._id !== taskId));
+    } catch (error) {
+      console.error("Remove assigned task error:", error);
+      alert(error.message);
+    }
+  };
 
   return (
     <div className="mt-6 space-y-8">
@@ -36,14 +142,21 @@ export default function AssignedWork() {
         </h2>
 
         <textarea
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
           placeholder="Add a task..."
           className="w-full h-28 resize-none outline-none text-sm"
         />
 
         <div className="flex justify-end mt-3">
-          <button className="flex items-center gap-1 px-4 py-1 bg-blue-600 text-white rounded-md text-sm">
+          <button
+            type="button"
+            onClick={addTask}
+            disabled={adding || !title.trim() || !employeeId}
+            className="flex items-center gap-1 px-4 py-1 bg-blue-600 text-white rounded-md text-sm disabled:opacity-50"
+          >
             <Plus size={14} />
-            Add to task
+            {adding ? "Adding..." : "Add to task"}
           </button>
         </div>
       </div>
@@ -56,9 +169,11 @@ export default function AssignedWork() {
 
         <div className="space-y-6 border-l-2 border-gray-300 pl-6">
 
-          {tasks.map((task, i) => (
+          {loading && <p className="text-sm text-gray-500">Loading assigned tasks...</p>}
+          {!loading && tasks.length === 0 && <p className="text-sm text-gray-500">No tasks assigned yet.</p>}
+          {!loading && tasks.map((task, i) => (
             <motion.div
-              key={i}
+              key={task._id || i}
               whileHover={{ scale: 1.01 }}
               className="relative"
             >
@@ -66,21 +181,33 @@ export default function AssignedWork() {
               <div className="absolute -left-[34px] top-1 w-4 h-4 bg-blue-600 rounded-full" />
 
               {/* TITLE */}
-              <h3 className="text-base font-semibold text-gray-800">
-                {task.title}
-              </h3>
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-base font-semibold text-gray-800">
+                  {task.title}
+                </h3>
+                {canManage && <button
+                  type="button"
+                  onClick={() => removeTask(task._id)}
+                  title="Remove task"
+                  aria-label={`Remove ${task.title}`}
+                  className="text-red-500 hover:text-red-700 disabled:opacity-40"
+                  disabled={!task._id}
+                >
+                  <Trash2 size={16} />
+                </button>}
+              </div>
 
               {/* SUBTITLE */}
               <p className="text-sm text-gray-500">
-                {task.subtitle}{" "}
-                <span className="ml-2">{task.progress}%</span>
+                {task.status || "Pending"}{" "}
+                <span className="ml-2">{task.progress || 0}%</span>
               </p>
 
               {/* PROGRESS BAR */}
               <div className="w-full h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
                 <div
                   className="h-full bg-blue-500"
-                  style={{ width: `${task.progress}%` }}
+                  style={{ width: `${task.progress || 0}%` }}
                 />
               </div>
             </motion.div>

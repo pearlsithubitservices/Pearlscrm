@@ -22,4 +22,22 @@ router.get("/", async (req, res) => {
   }
 });
 
+// UPDATE FEEDBACK STATUS
+router.put("/:id", async (req, res) => {
+  try {
+    const { status, adminComment } = req.body;
+    const updated = await Feedback.findByIdAndUpdate(
+      req.params.id,
+      { ...(status && { status }), ...(adminComment !== undefined && { adminComment }) },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

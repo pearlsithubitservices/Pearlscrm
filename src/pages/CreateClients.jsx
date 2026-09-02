@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 
 import InputField from "../components/InputField.jsx";
+import { apiUrl } from "../config/api.js";
 
 import {
     Globe,
@@ -16,61 +17,98 @@ import {
     FlagOff,
     ActivityIcon
 } from "lucide-react";
-import { Activity, useState } from "react";
+import { Activity, useEffect, useState } from "react";
 
+const emptyClient = () => ({
+    companyName: "",
+    projectName: "",
+    website: "",
+    contactNumber: "",
+    email: "",
+    revenue: "",
+    headquarters: "",
+    employees: "",
+    budget: "",
+    managerinput: "",
+    managers: [],
+    projectstartdate: "",
+    duedate: "",
+    projectnotes: "",
+    foundeddate: "",
+    priority: "",
+    status: "",
+    healthScore: 50
+});
 
-export default function ClientForm({ onClose, fetchClients }) {
+export default function ClientForm({ onClose, fetchClients, initialClient = null }) {
+    const isEditing = Boolean(initialClient?._id);
+    const [client, setClient] = useState(emptyClient());
 
-    const [client, setClient] = useState({
-        companyName: "",
-        projectName: "",
-        website: "",
-        contactNumber: "",
-        email: "",
-        revenue: "",
-        headquarters: "",
-        employees: "",
-        budget: "",
-        managerinput: "",
-        managers: [],
-        projectstartdate: "",
-        duedate: "",
-        projectnotes: "",
-        foundeddate: "",
-        priority: "",
-        status: ""
-    });
+    useEffect(() => {
+        if (initialClient) {
+            setClient({
+                ...emptyClient(),
+                ...initialClient,
+                managers: Array.isArray(initialClient.managers) ? initialClient.managers : [],
+                managerinput: "",
+                healthScore: initialClient.healthScore ?? 50,
+                revenue: initialClient.revenue ?? "",
+                employees: initialClient.employees ?? "",
+                budget: initialClient.budget ?? "",
+            });
+        } else {
+            setClient(emptyClient());
+        }
+    }, [initialClient]);
 
-    //ADD CLIENT
-    const addClient = async () => {
+    const submitClient = async () => {
+        const payload = {
+            ...client,
+            managers: client.managers.filter(Boolean),
+            revenue: Number(client.revenue || 0),
+            employees: Number(client.employees || 0),
+            budget: Number(client.budget || 0),
+            healthScore: Number(client.healthScore || 0),
+        };
+
+        delete payload.managerinput;
+
         try {
-            console.log("Adding client:", client);
-            // const response = await fetch("http://localhost:5000/api/clients",
-            const response = await fetch("https://pearlscrm.onrender.com/api/clients",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(client)
-                });
-            const data = await response.json();
-            console.log("Client added:", data);
-            if (response.ok) {
-                alert("Client Added Successfully");
-                await fetchClients();
-                onClose();
-            }
+            const url = isEditing
+                ? apiUrl(`/clients/${initialClient._id}`)
+                : apiUrl("/clients");
 
+            const response = await fetch(url, {
+                method: isEditing ? "PUT" : "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            console.log(isEditing ? "Client updated:" : "Client added:", data);
+
+            if (response.ok) {
+                alert(isEditing ? "Client Updated Successfully" : "Client Added Successfully");
+                if (fetchClients) await fetchClients();
+                onClose();
+            } else {
+                alert(data?.message || "Something went wrong");
+            }
         } catch (error) {
-            console.error("Error adding client:", error);
+            console.error("Error saving client:", error);
+            alert("Failed to save client");
         }
     };
 
     function handleChange(e) {
+        const rawValue = e.target.value;
+        const numericFields = ["revenue", "employees", "budget", "healthScore"];
+
         setClient({
             ...client,
-            [e.target.name]: e.target.value
+            [e.target.name]: numericFields.includes(e.target.name) ? (rawValue === "" ? "" : Number(rawValue)) : rawValue
         });
     }
 
@@ -237,7 +275,19 @@ export default function ClientForm({ onClose, fetchClients }) {
 
 
 
-                <div className="grid md:grid-cols-2 gap-5 ">
+                <div className="grid md:grid-cols-2 gap-5">
+                    <InputField
+                        label="Health Score"
+                        name="healthScore"
+                        onChange={handleChange}
+                        value={client.healthScore}
+                        placeholder="0-100"
+                        Icon={Activity}
+                        type="number"
+                        min={0}
+                        max={100}
+                    />
+
                     <div>
                         <label className="font-bold text-[#0b2b57] ">
                             Add Managers
@@ -380,10 +430,10 @@ export default function ClientForm({ onClose, fetchClients }) {
                     </button>
 
                     <button
-                        onClick={addClient}
+                        onClick={submitClient}
                         className="flex-1 bg-blue-700 hover:bg-blue-600 text-white rounded-xl">
 
-                        + Add To Clients
+                        {isEditing ? "Update Client" : "+ Add To Clients"}
 
                     </button>
 
