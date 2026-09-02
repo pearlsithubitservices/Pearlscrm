@@ -8,23 +8,20 @@ import {
 import ClientOverview from "../components/ClientDetails/ClientOverview.jsx";
 import ClientProjects from "../components/ClientDetails/ClientProjects.jsx";
 import ClientPayment from "../components/ClientDetails/ClientPayment.jsx";
-import ClientNotes from "../components/ProjectDetails/ProjectNotes.jsx";
+import ClientNotes from "../components/ClientDetails/ClientNotes.jsx";
+import AnimateModals from "../components/Dashboard/AnimateModals.jsx";
+import CreateClients from "./CreateClients.jsx";
 import { useNavigate, useParams } from "react-router-dom";
 import useClients from "../Hooks/useclients.js";
-import { div } from "framer-motion/client";
 
 export default function CompanyOverview() {
 
     const [activeTab, setActiveTab] = useState("Overview");
-    const { clients } = useClients();
-    console.log(clients);
+    const [isEditing, setIsEditing] = useState(false);
+    const { clients, fetchClients } = useClients();
     const { id } = useParams();
-    console.log(id);
 
-    const selectedClient = clients.filter((item) => (
-        item._id == id
-    ))
-    console.log(selectedClient)
+    const selectedClient = clients.filter((item) => item._id === id);
 
     const buttons = [
         "Overview",
@@ -36,6 +33,35 @@ export default function CompanyOverview() {
     const head = ["Call", "Email", "Notes"];
     const navigate = useNavigate();
 
+    const handleQuickAction = (action) => {
+        const client = selectedClient[0];
+        setButton(action);
+
+        if (!client) return;
+
+        if (action === "Call") {
+            if (client.contactNumber) {
+                window.location.href = `tel:${client.contactNumber}`;
+            } else {
+                alert("No phone number available for this client.");
+            }
+            return;
+        }
+
+        if (action === "Email") {
+            if (client.email) {
+                window.location.href = `mailto:${client.email}`;
+            } else {
+                alert("No email address available for this client.");
+            }
+            return;
+        }
+
+        if (action === "Notes") {
+            setActiveTab("Notes");
+        }
+    };
+
     // Render Tabs
     const renderTab = () => {
 
@@ -46,13 +72,21 @@ export default function CompanyOverview() {
                     clients={selectedClient} />;
 
             case "Projects":
-                return <ClientProjects />;
+                return <ClientProjects
+                    clientId={selectedClient[0]?._id}
+                    clientName={selectedClient[0]?.companyName}
+                    companyName={selectedClient[0]?.companyName}
+                />;
 
             case "Payments":
+<<<<<<< HEAD
                 return <ClientPayment client={selectedClient[0]} />;
+=======
+                return <ClientPayment clientId={selectedClient[0]?._id} clientName={selectedClient[0]?.companyName} companyName={selectedClient[0]?.companyName} />;
+>>>>>>> 67372ebb86f6fcf512b5e6ec4e15a21394e5e599
 
             case "Notes":
-                return <ClientNotes />;
+                return <ClientNotes client={selectedClient[0]} />;
 
             default:
                 return null;
@@ -61,7 +95,8 @@ export default function CompanyOverview() {
 
 
     return (
-        <div className="max-h-screen overflow-y-auto no-scrollbar">
+        <>
+            <div className="max-h-screen overflow-y-auto no-scrollbar">
 
             {/* HEADER */}
 
@@ -180,7 +215,7 @@ export default function CompanyOverview() {
 
                     {/* ACTION BUTTONS + EDIT */}
 
-                    <div className="flex items-center justify-between mt-5">
+                    <div className="flex items-center justify-between mt-5 gap-4">
 
                         {/* LEFT BUTTONS */}
 
@@ -190,9 +225,13 @@ export default function CompanyOverview() {
 
                                 <button
                                     key={i}
-                                    className={`flex items-center   gap-1 px-4 py-2  rounded-md ${button.toLowerCase() === btn.toLowerCase() ? " bg-[#4A6CF7]    text-white" : "text-black bg-white"}
-                                          text-[12px] font-medium hover:bg-[#3E63EE] hover:text-white transition `}
-                                    onClick={() => setButton(btn)}
+                                    type="button"
+                                    aria-pressed={button.toLowerCase() === btn.toLowerCase()}
+                                    className={`flex min-w-[96px] items-center justify-center gap-1 rounded-md px-4 py-2 text-[12px] font-medium transition-all duration-200 ${button.toLowerCase() === btn.toLowerCase()
+                                        ? "bg-[#4A6CF7] text-white shadow-sm"
+                                        : "bg-white text-[#3A3A3A] hover:bg-[#eef2ff] hover:text-[#1d3a7c]"
+                                    }`}
+                                    onClick={() => handleQuickAction(btn)}
                                 >
                                     {btn}
                                 </button>
@@ -204,6 +243,7 @@ export default function CompanyOverview() {
                         {/* EDIT BUTTON */}
 
                         <button
+                            onClick={() => setIsEditing(true)}
                             className="
               flex
               items-center
@@ -326,6 +366,17 @@ export default function CompanyOverview() {
 
             </div>
 
-        </div>
+            </div>
+
+            {isEditing && selectedClient[0] && (
+                <AnimateModals>
+                    <CreateClients
+                        initialClient={selectedClient[0]}
+                        fetchClients={fetchClients}
+                        onClose={() => setIsEditing(false)}
+                    />
+                </AnimateModals>
+            )}
+        </>
     );
 }
