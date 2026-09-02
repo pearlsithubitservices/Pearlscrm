@@ -1,86 +1,90 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import React, { useState, useMemo } from "react";
 import { ArrowRight, Plus, FileText } from "lucide-react";
+=======
+import React from "react";
+import {
+  Building2,
+  ArrowRight,
+  Pencil,
+} from "lucide-react";
+>>>>>>> 4db2783c071fc54f8e9a38ba2245e4ee7d3831fb
 import { motion } from "framer-motion";
-import usePayments from "../../Hooks/usePayments";
-import Createinvoice from "../../pages/Createinvoice";
-import AnimateModals from "../Dashboard/AnimateModals";
 
-const ClientPayment = ({ client }) => {
-  const { payments, loading, fetchPayments } = usePayments();
-  const [openModal, setOpenModal] = useState(false);
-
-  // Filter payments for this client if client data is passed
-  const clientPayments = useMemo(() => {
-    if (!Array.isArray(payments)) return [];
-    if (!client) return payments;
-
-    const nameToMatch = (client.companyName || client.name || "").toLowerCase();
-    return payments.filter(
-      (p) =>
-        (p.companyName && p.companyName.toLowerCase().includes(nameToMatch)) ||
-        (p.clientName && p.clientName.toLowerCase().includes(nameToMatch))
-    );
-  }, [payments, client]);
-
-  // Compute summary stats
-  const { total, paid, pending } = useMemo(() => {
-    let totalAmt = 0;
-    let paidAmt = 0;
-    let pendingAmt = 0;
-
-    clientPayments.forEach((p) => {
-      const budgetVal = Number(p.budget) || 0;
-      totalAmt += budgetVal;
-      if ((p.status || "").toLowerCase() === "paid") {
-        paidAmt += budgetVal;
-      } else {
-        pendingAmt += budgetVal;
-      }
-    });
-
-    return { total: totalAmt, paid: paidAmt, pending: pendingAmt };
-  }, [clientPayments]);
+const ClientPayment = () => {
+  const payments = [
+    {
+      title: "Q2 2024 — Enterprise license",
+      date: "Jun 1, 2024",
+      amount: "₹ 30,000",
+    },
+    {
+      title: "Q2 2024 — Enterprise license",
+      date: "Mar 1, 2024",
+      amount: "₹ 30,000",
+    },
+    {
+      title: "P1 2024 — Enterprise license",
+      date: "Jun 1, 2024",
+      amount: "₹ 30,000",
+    },
+  ];
 
   return (
-    <div className="w-full min-h-screen rounded-2xl bg-[#f5f2ec] overflow-hidden">
+    <div className="w-full min-h-screen rounded-2xl bg-[#f5f2ec]  overflow-hidden ">
+
       {/* CONTENT */}
       <div className="p-5">
+
+        
+        
+
         {/* PAYMENT SUMMARY */}
-        <div className="mt-2">
-          <p className="text-[10px] font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+        <div className="mt-5">
+          <p className="text-[10px] font-semibold text-gray-400 mb-3">
             PAYMENT SUMMARY
           </p>
 
           <div className="grid grid-cols-3 gap-3">
             <motion.div
               whileHover={{ y: -2 }}
-              className="rounded-lg bg-[#dfe9ff] p-3 border border-blue-200"
+              className="rounded-lg bg-[#dfe9ff] p-3"
             >
-              <p className="text-[10px] font-bold text-[#16345f]">TOTAL</p>
+              <p className="text-[10px] font-bold text-[#16345f]">
+                TOTAL
+              </p>
+
               <h3 className="text-lg font-bold text-[#16345f] mt-1">
-                ₹ {total.toLocaleString()}
+                ₹ 1,20,000
               </h3>
             </motion.div>
 
             <motion.div
               whileHover={{ y: -2 }}
-              className="rounded-lg bg-[#e7f7d8] p-3 border border-green-200"
+              className="rounded-lg bg-[#e7f7d8] p-3"
             >
-              <p className="text-[10px] font-bold text-[#2f6d2f]">PAID</p>
+              <p className="text-[10px] font-bold text-[#2f6d2f]">
+                PAID
+              </p>
+
               <h3 className="text-lg font-bold text-[#2f6d2f] mt-1">
-                ₹ {paid.toLocaleString()}
+                ₹ 60,000
               </h3>
             </motion.div>
 
             <motion.div
               whileHover={{ y: -2 }}
-              className="rounded-lg bg-[#ffe5df] p-3 border border-red-200"
+              className="rounded-lg bg-[#ffe5df] p-3"
             >
-              <p className="text-[10px] font-bold text-[#e05b45]">PENDING</p>
+              <p className="text-[10px] font-bold text-[#e05b45]">
+                PENDING
+              </p>
+
               <h3 className="text-lg font-bold text-[#e05b45] mt-1">
-                ₹ {pending.toLocaleString()}
+                ₹ 60,000
               </h3>
+<<<<<<< HEAD
 =======
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Plus, X } from "lucide-react";
@@ -214,6 +218,8 @@ const ClientPayment = ({ clientId, clientName, companyName }) => {
               <p className="text-[10px] font-bold text-[#e05b45]">PENDING</p>
               <h3 className="text-lg font-bold text-[#e05b45] mt-1">{currencyFormatter.format(summary.pending)}</h3>
 >>>>>>> 67372ebb86f6fcf512b5e6ec4e15a21394e5e599
+=======
+>>>>>>> 4db2783c071fc54f8e9a38ba2245e4ee7d3831fb
             </motion.div>
           </div>
         </div>
@@ -221,19 +227,20 @@ const ClientPayment = ({ clientId, clientName, companyName }) => {
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
 <<<<<<< HEAD
+<<<<<<< HEAD
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+=======
+            <p className="text-[10px] font-semibold text-gray-400">
+>>>>>>> 4db2783c071fc54f8e9a38ba2245e4ee7d3831fb
               PAYMENT HISTORY
             </p>
 
-            <button
-              onClick={() => setOpenModal(true)}
-              className="px-3 py-1.5 rounded-md bg-[#2563a9] text-white text-xs font-semibold hover:bg-blue-700 transition flex items-center gap-1 shadow-sm"
-            >
-              <Plus size={12} />
+            <button className="px-2 py-1 rounded-md bg-white border border-black/10 text-[10px] text-gray-500">
               Add Payment
             </button>
           </div>
 
+<<<<<<< HEAD
           {loading ? (
             <div className="p-6 text-center text-xs text-gray-500">
               Loading payment history...
@@ -415,6 +422,45 @@ const ClientPayment = ({ clientId, clientName, companyName }) => {
         </div>
 >>>>>>> 67372ebb86f6fcf512b5e6ec4e15a21394e5e599
       )}
+=======
+          <div className="space-y-3">
+            {payments.map((item, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ scale: 1.01 }}
+                className="bg-white rounded-xl p-4 border border-black/5 flex items-center justify-between"
+              >
+                <div>
+                  <h3 className="text-sm font-bold text-[#16345f]">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {item.date}
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-end">
+                  <h3 className="text-lg font-bold text-green-600">
+                    {item.amount}
+                  </h3>
+
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="px-2 py-[2px] rounded-full bg-green-100 text-green-600 text-[10px] font-medium">
+                      Paid
+                    </span>
+
+                    <button className="w-5 h-5 rounded-full border border-black/10 flex items-center justify-center text-gray-400">
+                      <ArrowRight size={10} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+>>>>>>> 4db2783c071fc54f8e9a38ba2245e4ee7d3831fb
     </div>
   );
 };
