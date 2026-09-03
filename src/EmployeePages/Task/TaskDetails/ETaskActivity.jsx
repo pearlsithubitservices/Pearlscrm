@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Send, Clock } from "lucide-react";
+import { Send, Clock, Trash2 } from "lucide-react";
 import { apiUrl } from "../../../config/api";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -70,6 +70,29 @@ export default function ETaskActivity({ task, onRefresh }) {
     }
   };
 
+  const handleDeleteActivity = async (activityId) => {
+    if (!window.confirm("Are you sure you want to delete this activity log?")) return;
+    if (!activityId) return;
+
+    try {
+      const res = await fetch(apiUrl(`/activity/${activityId}`), {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setActivitiesList((prev) => prev.filter((item) => (item._id || item.id) !== activityId));
+        alert("Activity log deleted successfully!");
+        fetchTaskActivities();
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Failed to delete activity log.");
+      }
+    } catch (err) {
+      console.error("Error deleting activity:", err);
+      alert("Failed to delete activity log.");
+    }
+  };
+
   return (
     <div className="bg-[#f5f2ec] p-4 md:p-8 rounded-2xl min-h-[500px]">
       <motion.div
@@ -130,7 +153,16 @@ export default function ETaskActivity({ task, onRefresh }) {
 
                   <div className="flex justify-between items-center text-xs text-gray-500">
                     <span className="font-bold text-[#082f57]">{item.name || "Employee"}</span>
-                    <span>{item.createdAt ? new Date(item.createdAt).toLocaleString() : item.time || "Just now"}</span>
+                    <div className="flex items-center gap-3">
+                      <span>{item.createdAt ? new Date(item.createdAt).toLocaleString() : item.time || "Just now"}</span>
+                      <button
+                        onClick={() => handleDeleteActivity(item._id || item.id)}
+                        title="Delete Activity Log"
+                        className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">

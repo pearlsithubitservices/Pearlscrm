@@ -1,32 +1,93 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarDays,
   Repeat,
+  Save,
+  Trash2,
+  Clock,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiUrl } from "../../config/api.js";
 
 export default function NextActionPage({ lead, fetchLead }) {
   const [nextAction, setNextAction] = useState(lead?.nextAction || "");
-  const [nextActionDate, setNextActionDate] = useState(lead?.nextActionDate ? new Date(lead.nextActionDate).toISOString().slice(0, 10) : "");
+  const [nextActionDate, setNextActionDate] = useState(
+    lead?.nextActionDate ? new Date(lead.nextActionDate).toISOString().slice(0, 10) : ""
+  );
   const [followUpCount, setFollowUpCount] = useState(lead?.followUpCount || 0);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (lead) {
+      setNextAction(lead.nextAction || "");
+      setNextActionDate(
+        lead.nextActionDate ? new Date(lead.nextActionDate).toISOString().slice(0, 10) : ""
+      );
+      setFollowUpCount(lead.followUpCount || 0);
+    }
+  }, [lead]);
+
   const saveNextAction = async () => {
-    if (!lead?._id) return;
+    const leadId = lead?._id || lead?.id;
+    if (!leadId) {
+      toast.error("Lead ID not found.");
+      return;
+    }
+
     setSaving(true);
     try {
-      const response = await fetch(apiUrl(`/leads/${lead._id}/next-action`), {
+      const validDateStr = nextActionDate && String(nextActionDate).trim() !== "" ? nextActionDate : null;
+
+      const payload = {
+        nextAction: nextAction || "",
+        nextActionDate: validDateStr,
+        followUpCount: Number(followUpCount) || 0,
+      };
+
+      // 1. Try PUT /leads/:id/next-action
+      let response = await fetch(apiUrl(`/leads/${leadId}/next-action`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nextAction, nextActionDate, followUpCount }),
+        body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error("Failed to save next action");
-      await fetchLead();
-      toast.success("Next action saved");
+
+      // 2. Fallback to general PUT /leads/:id if needed
+      if (!response.ok) {
+        response = await fetch(apiUrl(`/leads/${leadId}`), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to save next action");
+      }
+
+      // Also log activity if description provided
+      if (nextAction.trim()) {
+        const newActivity = {
+          title: `Next Action: ${nextAction.slice(0, 30)}${nextAction.length > 30 ? "..." : ""}`,
+          description: nextAction,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: new Date().toLocaleDateString("en-IN"),
+          empName: "Admin",
+        };
+        const currentActivities = Array.isArray(lead?.activities) ? lead.activities : [];
+        await fetch(apiUrl(`/leads/${leadId}`), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activities: [newActivity, ...currentActivities] }),
+        }).catch(() => {});
+      }
+
+      await fetchLead?.();
+      toast.success("Next action & follow-up schedule saved!");
     } catch (error) {
-      toast.error(error.message);
+      console.error("Save next action error:", error);
+      toast.error(error.message || "Failed to save next action");
     } finally {
       setSaving(false);
     }
@@ -35,11 +96,15 @@ export default function NextActionPage({ lead, fetchLead }) {
   const activities = Array.isArray(lead?.activities) ? lead.activities : [];
 
   const deleteActivity = async (activityId) => {
-    if (!activityId || !window.confirm("Delete this activity?")) return;
+    const leadId = lead?._id || lead?.id;
+    if (!leadId || !activityId || !window.confirm("Delete this activity log?")) return;
+
     try {
-      const response = await fetch(apiUrl(`/leads/${lead._id}/activities/${activityId}`), { method: "DELETE" });
+      const response = await fetch(apiUrl(`/leads/${leadId}/activities/${activityId}`), {
+        method: "DELETE",
+      });
       if (!response.ok) throw new Error("Failed to delete activity");
-      await fetchLead();
+      await fetchLead?.();
       toast.success("Activity deleted");
     } catch (error) {
       toast.error(error.message);
@@ -47,170 +112,150 @@ export default function NextActionPage({ lead, fetchLead }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f0eb] flex justify-center p-2 md:p-5">
+    <div className="bg-[#f3f0eb] min-h-screen p-4 md:p-8">
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="w-full max-w-7xl bg-[#f3f0eb] rounded-[35px] overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-6xl mx-auto space-y-6"
       >
-        {/* TOP HEADER */}
-        
-
-        {/* TABS */}
-        
-
-        {/* CONTENT */}
-        <div className="p-5 md:p-8">
-
-          <h2 className="font-bold text-gray-500 text-xl mb-6">
-            NEXT ACTION
+        {/* HEADER & FORM CARD */}
+        <div className="bg-white p-5 md:p-6 rounded-2xl shadow-xs border border-gray-200 space-y-5">
+          <h2 className="font-bold text-[#082f57] text-base md:text-lg flex items-center gap-2 border-b pb-3">
+            <CalendarDays size={18} className="text-[#2563a9]" />
+            <span>Schedule Next Action & Follow-Up</span>
           </h2>
 
-          {/* INPUT SECTION */}
-
-          <div className="grid lg:grid-cols-2 gap-6">
-
-            {/* Follow count */}
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Follow-ups count */}
             <div>
-              <label className="font-bold text-[#082f57] text-xl block mb-3">
+              <label className="font-bold text-gray-700 text-xs block mb-1.5 uppercase">
                 Follow-ups Count
               </label>
-
-              <div className="bg-white rounded-xl p-4 flex items-center gap-3 border">
-
-                <Repeat
-                  size={18}
-                  className="text-gray-400"
-                />
-
+              <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-300">
+                <Repeat size={16} className="text-gray-400 shrink-0" />
                 <input
                   type="number"
                   min="0"
                   value={followUpCount}
                   onChange={(e) => setFollowUpCount(e.target.value)}
                   placeholder="0"
-                  className="outline-none w-full bg-transparent"
+                  className="outline-none w-full bg-transparent text-xs text-gray-800 font-bold"
                 />
               </div>
             </div>
 
-            {/* Reschedule */}
-
+            {/* Reschedule Date */}
             <div>
-              <label className="font-bold text-[#082f57] text-xl block mb-3">
-                Reschedule Follow Up
+              <label className="font-bold text-gray-700 text-xs block mb-1.5 uppercase">
+                Follow Up Target Date
               </label>
-
-              <div className="bg-white rounded-xl p-4 flex items-center gap-3 border">
-
-                <CalendarDays
-                  size={18}
-                  className="text-gray-400"
-                />
-
+              <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-300">
+                <CalendarDays size={16} className="text-gray-400 shrink-0" />
                 <input
                   type="date"
                   value={nextActionDate}
                   onChange={(e) => setNextActionDate(e.target.value)}
-                  className="outline-none w-full"
+                  className="outline-none w-full bg-transparent text-xs text-gray-800 font-medium"
                 />
-
               </div>
             </div>
-
           </div>
 
-          {/* TEXTAREA */}
-
-          <div className="mt-6">
-
+          {/* NEXT ACTION DESCRIPTION TEXTAREA */}
+          <div>
+            <label className="font-bold text-gray-700 text-xs block mb-1.5 uppercase">
+              Next Action Description
+            </label>
             <textarea
               value={nextAction}
               onChange={(e) => setNextAction(e.target.value)}
-              placeholder="Describe the next action..."
-              className="
-              w-full
-              h-[140px]
-              rounded-2xl
-              bg-white
-              border
-              p-5
-              resize-none
-              outline-none
-            "
+              placeholder="Describe the upcoming task, call target, proposal delivery, or next step for this lead..."
+              className="w-full h-28 rounded-xl bg-gray-50 border border-gray-300 p-3 text-xs text-gray-800 font-medium outline-none resize-none focus:bg-white focus:border-[#2563a9] transition-all"
             />
+          </div>
 
-            <div className="flex justify-end mt-5">
+          <div className="flex justify-end">
+            <button
+              onClick={saveNextAction}
+              disabled={saving}
+              className="bg-[#2563a9] hover:bg-[#1d4ed8] text-white px-6 py-2.5 rounded-xl font-semibold text-xs flex items-center gap-2 shadow-xs disabled:opacity-50 transition-all cursor-pointer"
+            >
+              {saving ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Saving Schedule...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={15} />
+                  <span>Save Next Action</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
 
-              <button
-                onClick={saveNextAction}
-                disabled={saving}
-                className="
-                bg-blue-600
-                text-white
-                px-8
-                py-2
-                rounded-full
-                font-medium
-                hover:scale-105
-                transition
-              "
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
+        {/* RECENT ACTION TIMELINE */}
+        <div className="space-y-4">
+          <h2 className="font-bold text-[#082f57] text-lg flex items-center gap-2">
+            <span>ACTION LOG HISTORY</span>
+            <span className="text-xs bg-blue-100 text-[#2563a9] px-2.5 py-0.5 rounded-full font-bold">
+              {activities.length}
+            </span>
+          </h2>
 
+          {activities.length === 0 ? (
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 text-center text-gray-400 italic text-xs">
+              No historical action log found for this lead.
             </div>
-          </div>
+          ) : (
+            <div className="relative pl-3">
+              <div className="absolute top-2 left-[19px] bottom-4 w-[2px] bg-blue-200"></div>
 
-          {/* TIMELINE */}
-
-          <div className="mt-12 relative ml-3">
-
-            <div className="absolute top-0 left-[9px] w-[2px] h-full bg-gray-300"></div>
-
-            {activities.map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{
-                  opacity: 0,
-                  x: -20,
-                }}
-                animate={{
-                  opacity: 1,
-                  x: 0,
-                }}
-                transition={{
-                  delay: index * 0.2,
-                }}
-                className="relative pl-10 mb-12"
-              >
-                <div className="absolute left-[-1px] top-2 w-5 h-5 rounded-full bg-blue-600"></div>
-
-                <h3 className="font-bold text-[#082f57] text-2xl">
-                  {item.title}
-                </h3>
-
-                <p className="text-gray-500 text-lg mt-2 max-w-3xl">
-                  {item.description}
-                </p>
-
-                <p className="text-gray-400 mt-2 text-lg">
-                  {item.date} {item.empName ? `· ${item.empName}` : ""}
-                </p>
-
-                <button
-                  onClick={() => deleteActivity(item._id)}
-                  className="text-red-500 hover:text-red-700"
+              {activities.map((item, index) => (
+                <motion.div
+                  key={item._id || index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="relative flex gap-4 mb-5"
                 >
-                  Delete
-                </button>
+                  <div className="w-4 h-4 rounded-full bg-[#2563a9] mt-2.5 z-10 shrink-0 ring-4 ring-blue-100" />
 
-              </motion.div>
-            ))}
+                  <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs w-full space-y-1.5 relative pr-10">
+                    <div className="flex items-center justify-between border-b pb-1.5">
+                      <h3 className="text-xs font-bold text-[#082f57]">
+                        {item.title || "Action Item"}
+                      </h3>
+                      {item.date && (
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          {item.date} {item.time ? `• ${item.time}` : ""}
+                        </span>
+                      )}
+                    </div>
 
-          </div>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      {item.description}
+                    </p>
 
+                    {item.empName && (
+                      <p className="text-[10px] text-gray-400 font-medium pt-1">
+                        By: <span className="text-gray-700">{item.empName}</span>
+                      </p>
+                    )}
+
+                    <button
+                      onClick={() => deleteActivity(item._id)}
+                      className="absolute top-2.5 right-2.5 text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                      title="Delete log"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

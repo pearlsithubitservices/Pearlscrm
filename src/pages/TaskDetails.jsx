@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiUrl } from '../config/api';
+import useEmployees from '../Hooks/useEmployees';
 
 export default function TaskDetails() {
 
   const { id } = useParams();
-
   const navigate = useNavigate();
+  const { employees } = useEmployees();
 
   const [task, setTask] = useState({
     title: '',
@@ -106,14 +107,23 @@ export default function TaskDetails() {
             className="w-full bg-[#151521] border border-white/10 rounded-2xl p-4 outline-none min-h-[120px]"
           />
 
-          <input
-            type="text"
+          <select
             name="assignedTo"
-            value={task.assignedTo}
+            value={typeof task.assignedTo === 'object' && task.assignedTo !== null ? (task.assignedTo._id || task.assignedTo.id || task.assignedTo.name) : task.assignedTo}
             onChange={handleChange}
-            placeholder="Assigned To"
             className="w-full bg-[#151521] border border-white/10 rounded-2xl p-4 outline-none"
-          />
+          >
+            <option value="">Select Assigned Employee / User</option>
+            {employees.map((emp) => {
+              const name = emp.employeeName || emp.name || emp.displayName || (emp.email ? emp.email.split('@')[0] : "Employee");
+              const val = emp._id || emp.id || emp.uid || emp.email;
+              return (
+                <option key={val} value={val}>
+                  {name} ({emp.role || 'Employee'})
+                </option>
+              );
+            })}
+          </select>
 
           <select
             name="priority"

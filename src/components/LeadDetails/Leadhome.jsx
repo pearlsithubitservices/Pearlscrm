@@ -292,6 +292,20 @@ export default function LeadDetails({ lead }) {
 
         </div>
 
+        {/* EMPLOYEE LEAD DESCRIPTION SECTION */}
+        {lead?.notes && (
+          <div className="mt-10">
+            <h3 className="font-bold text-gray-400 mb-4">
+              EMPLOYEE LEAD DESCRIPTION / NOTES
+            </h3>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+              <p className="text-[#082f57] font-medium text-sm leading-relaxed whitespace-pre-line">
+                {lead.notes}
+              </p>
+            </div>
+          </div>
+        )}
+
       </div>
 
     </motion.div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 
 import {
   Search,
@@ -20,6 +20,7 @@ import LoadingPage from "../../components/Dashboard/Loading";
 import { motion } from "framer-motion";
 import AnimateModals from "../../components/Dashboard/AnimateModals.jsx";
 import { apiUrl } from "../../config/api.js";
+import { socket } from "../../config/socket.js";
 
 import useTaskfilter from "../../Hooks/useTaskfilter.js";
 import useTasks from "../../Hooks/useTaskid.js";
@@ -37,6 +38,9 @@ export default function Tasks() {
   const { employees } = useEmployees();
   const [search, setSearch] = useState('');
   const [active, setActive] = useState("All");
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const notificationsRef = useRef(null);
 
   const [updatingTask, setUpdatingTask] = useState(null);
   const [updateFormData, setUpdateFormData] = useState({
@@ -45,6 +49,100 @@ export default function Tasks() {
     notes: "",
   });
   const [updating, setUpdating] = useState(false);
+
+  // Close notifications on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Listen to Socket.io real-time updates
+  useEffect(() => {
+    if (socket) {
+      const handleTaskUpdated = () => {
+        if (refetch) refetch();
+      };
+      socket.on("taskUpdated", handleTaskUpdated);
+      socket.on("taskCreated", handleTaskUpdated);
+      return () => {
+        socket.off("taskUpdated", handleTaskUpdated);
+        socket.off("taskCreated", handleTaskUpdated);
+      };
+    }
+  }, [refetch]);
+
+  // Notifications memoized calculation for employee's assigned tasks
+  const notifications = useMemo(() => {
+    const list = [];
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    (Array.isArray(tasks) ? tasks : []).forEach((t) => {
+      const statusLower = (t.status || "").toLowerCase();
+      const priorityLower = (t.priority || "").toLowerCase();
+      const dueDate = t.dueDate ? new Date(t.dueDate) : null;
+      const isOverdue = dueDate && !isNaN(dueDate.getTime()) && dueDate < now && statusLower !== "completed";
+
+      if (isOverdue) {
+        list.push({
+          id: `ov-${t.id || t._id}`,
+          type: "overdue",
+          title: "Overdue Task Warning",
+          message: `Your task "${t.title || "Untitled"}" is overdue! Please update status.`,
+          time: dueDate ? `Due: ${dueDate.toLocaleDateString("en-IN")}` : "Overdue",
+          task: t,
+        });
+      } else if (priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") {
+        if (statusLower !== "completed") {
+          list.push({
+            id: `hot-${t.id || t._id}`,
+            type: "hot",
+            title: "High Priority Task",
+            message: `Hot task "${t.title || "Untitled"}" requires immediate attention.`,
+            time: statusLower === "in progress" ? "In Progress" : "Pending",
+            task: t,
+          });
+        }
+      } else if (statusLower === "pending") {
+        list.push({
+          id: `pd-${t.id || t._id}`,
+          type: "pending",
+          title: "Pending Task",
+          message: `Task "${t.title || "Untitled"}" is currently pending action.`,
+          time: "Pending Action",
+          task: t,
+        });
+      }
+    });
+
+    return list;
+  }, [tasks]);
+
+  const handleQuickStatusUpdate = async (e, taskItem, newStatus) => {
+    e.stopPropagation();
+    const taskId = taskItem._id || taskItem.id || taskItem.uid;
+    try {
+      const res = await fetch(apiUrl(`/tasks/${taskId}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        alert(`Task status updated to ${newStatus}`);
+        if (refetch) refetch();
+      } else {
+        alert("Failed to update status.");
+      }
+    } catch (err) {
+      console.error("Error updating status:", err);
+      alert("Failed to update status.");
+    }
+  };
 
   const openUpdateModal = (e, taskItem) => {
     e.stopPropagation();
@@ -95,12 +193,7 @@ export default function Tasks() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-
-  console.log(tasks);
-  console.log(employees);
-
   //STATS
-
   const inprogress = (tasks || []).filter(
     (task) => (task?.status || "").toLowerCase() === "pending" || (task?.status || "").toLowerCase() === "in progress"
   );
@@ -141,10 +234,92 @@ export default function Tasks() {
           </div>
           <div className="flex items-center gap-3">
 
-            <button className="p-2  border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-110 transition-transform duration-300">
-              <Bell size={18} className='text-white' />
-            </button>
-            <button className="p-2  border border-gray-200 rounded-lg bg-red-600 text-white hover:scale-110 transition-transform duration-300">
+            {/* NOTIFICATIONS BELL DROPDOWN */}
+            <div className="relative" ref={notificationsRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2 border border-gray-200 rounded-lg bg-[#2563a9] hover:bg-[#1d4ed8] transition-all cursor-pointer relative"
+              >
+                <Bell size={18} className='text-white' />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown Popover */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-4 bg-[#0b2b57] text-white flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Bell size={16} />
+                      <h3 className="font-bold text-sm">Task Notifications</h3>
+                    </div>
+                    <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                      {notifications.length} Active
+                    </span>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 custom-scrollbar">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-gray-500 text-xs font-medium">
+                        🎉 No overdue or urgent task alerts!
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            setShowNotifications(false);
+                            navigate(`/employee/taskDetails/${n.task._id || n.task.id || n.task.uid}`);
+                          }}
+                          className="p-3.5 hover:bg-blue-50/50 transition-colors cursor-pointer space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                                n.type === "overdue"
+                                  ? "bg-red-100 text-red-700"
+                                  : n.type === "hot"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {n.type}
+                            </span>
+                            <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>
+                          </div>
+                          <h4 className="font-bold text-xs text-gray-800 line-clamp-1">{n.title}</h4>
+                          <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{n.message}</p>
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              onClick={(e) => handleQuickStatusUpdate(e, n.task, "Completed")}
+                              className="text-[11px] bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer"
+                            >
+                              Mark Complete
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowNotifications(false);
+                                navigate(`/employee/taskDetails/${n.task._id || n.task.id || n.task.uid}`);
+                              }}
+                              className="text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button className="p-2 border border-gray-200 rounded-lg bg-red-600 text-white hover:scale-110 transition-transform duration-300">
               <X size={18} className='text-white' onClick={() => navigate(-1)} />
             </button>
 

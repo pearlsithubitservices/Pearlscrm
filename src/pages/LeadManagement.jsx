@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -10,6 +10,8 @@ import {
   Users2,
   Briefcase,
   Trash2,
+  X,
+  RotateCcw,
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -18,7 +20,9 @@ import CreateLead from "./CreateLead";
 import AnimateModals from "../components/Dashboard/AnimateModals";
 import LoadingPage from "../components/Dashboard/Loading";
 import useLeadfilter from "../Hooks/useLeadfilter";
+import useEmployees from "../Hooks/useEmployees";
 import { apiUrl } from "../config/api.js";
+import { socket } from "../config/socket.js";
 
 export default function LeadManagement() {
   const [leaddetails, setLeaddetails] = useState([]);
@@ -29,7 +33,56 @@ export default function LeadManagement() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Popover States
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Advanced Filters State
+  const [extraFilters, setExtraFilters] = useState({
+    filterStatus: "all",
+    filterPriority: "all",
+    filterEmployee: "all",
+    filterSource: "all",
+    filterDateRange: "all",
+  });
+
+  const filterRef = useRef(null);
+  const notifRef = useRef(null);
   const navigate = useNavigate();
+  const { employees } = useEmployees();
+
+  // Outside click handlers
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setShowFilterModal(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Socket.io Real-time sync
+  useEffect(() => {
+    if (socket) {
+      const handleSync = () => {
+        fetchleads();
+        fetchDashboard();
+      };
+      socket.on("leadCreated", handleSync);
+      socket.on("leadUpdated", handleSync);
+      socket.on("leadDeleted", handleSync);
+      return () => {
+        socket.off("leadCreated", handleSync);
+        socket.off("leadUpdated", handleSync);
+        socket.off("leadDeleted", handleSync);
+      };
+    }
+  }, []);
+
   const deleteLead = async (leadId) => {
     if (!window.confirm("Delete this lead permanently?")) return;
     const response = await fetch(apiUrl(`/leads/${leadId}`), { method: "DELETE" });
@@ -76,8 +129,71 @@ export default function LeadManagement() {
   };
 
   const safeLeaddetails = Array.isArray(leaddetails) ? leaddetails : [];
-  const filteredLeads = useLeadfilter(safeLeaddetails, search, buttons[active]);
+  const filteredLeads = useLeadfilter(safeLeaddetails, search, buttons[active], extraFilters, employees);
   const safeFilteredLeads = Array.isArray(filteredLeads) ? filteredLeads : [];
+
+  // Calculate active extra filter count
+  const activeExtraFilterCount = Object.values(extraFilters).filter((v) => v !== "all").length;
+
+  // Memoize Lead Notifications
+  const notifications = useMemo(() => {
+    const list = [];
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    safeLeaddetails.forEach((lead) => {
+      const statusLower = (lead.status || "").toLowerCase();
+      const priorityLower = (lead.priority || "").toLowerCase();
+      const followUpStr = lead.nextActionDate || lead.follow || lead.followUpDate;
+      const followUpDate = followUpStr ? new Date(followUpStr) : null;
+      const isClosed = statusLower === "converted" || statusLower === "closed" || statusLower === "won" || statusLower === "lost";
+
+      const isOverdue = followUpDate && !isNaN(followUpDate.getTime()) && followUpDate < now && !isClosed;
+
+      if (isOverdue) {
+        list.push({
+          id: `ov-${lead._id || lead.id}`,
+          type: "overdue",
+          title: "Overdue Follow Up Alert",
+          message: `Follow-up date for "${lead.name || lead.clientName || "Lead"}" is overdue!`,
+          time: followUpDate.toLocaleDateString("en-IN"),
+          lead,
+        });
+      } else if (priorityLower === "hot") {
+        if (!isClosed) {
+          list.push({
+            id: `hot-${lead._id || lead.id}`,
+            type: "hot",
+            title: "Hot Lead Requires Action",
+            message: `Lead "${lead.name || lead.clientName || "Lead"}" (${lead.company || "Company"}) is marked HOT.`,
+            time: lead.status || "Hot Priority",
+            lead,
+          });
+        }
+      } else if (statusLower === "new") {
+        list.push({
+          id: `new-${lead._id || lead.id}`,
+          type: "new",
+          title: "New Lead Created",
+          message: `New lead "${lead.name || lead.clientName || "Lead"}" is waiting for initial contact.`,
+          time: "New Status",
+          lead,
+        });
+      }
+    });
+
+    return list;
+  }, [safeLeaddetails]);
+
+  const handleResetFilters = () => {
+    setExtraFilters({
+      filterStatus: "all",
+      filterPriority: "all",
+      filterEmployee: "all",
+      filterSource: "all",
+      filterDateRange: "all",
+    });
+  };
 
   // PAGINATION
   const filesPerPage = 5;
@@ -139,19 +255,230 @@ export default function LeadManagement() {
           <div className="flex items-center justify-end gap-2 shrink-0">
             <button
               onClick={() => setOpenlead(true)}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#2563a9] text-white rounded-lg hover:scale-105 transition-transform duration-200 shadow-xs text-sm font-medium"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#2563a9] text-white rounded-lg hover:scale-105 transition-transform duration-200 shadow-xs text-sm font-medium cursor-pointer"
             >
               <Plus size={16} />
               <span className="hidden sm:inline">Add Lead</span>
             </button>
 
-            <button aria-label="Filter leads" title="Filter leads" className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
-              <Filter size={18} className="text-white" />
-            </button>
+            {/* FILTER BUTTON & POPOVER */}
+            <div className="relative" ref={filterRef}>
+              <button
+                onClick={() => setShowFilterModal(!showFilterModal)}
+                aria-label="Filter leads"
+                title="Filter leads"
+                className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:bg-[#1d4ed8] transition-all shadow-xs relative cursor-pointer"
+              >
+                <Filter size={18} className="text-white" />
+                {activeExtraFilterCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-black text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                    {activeExtraFilterCount}
+                  </span>
+                )}
+              </button>
 
-            <button aria-label="View lead notifications" title="View lead notifications" className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:scale-105 transition-transform duration-200 shadow-xs">
-              <Bell size={18} className="text-white" />
-            </button>
+              {/* Filter Popover Modal */}
+              {showFilterModal && (
+                <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-5 space-y-4 text-xs">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <div className="flex items-center gap-2 text-[#082f57] font-bold text-sm">
+                      <Filter size={16} />
+                      <span>Advanced Lead Filters</span>
+                    </div>
+                    <button
+                      onClick={() => setShowFilterModal(false)}
+                      className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Status Filter */}
+                    <div>
+                      <label className="font-semibold text-gray-700 block mb-1">Lead Status</label>
+                      <select
+                        value={extraFilters.filterStatus}
+                        onChange={(e) => setExtraFilters({ ...extraFilters, filterStatus: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-800 font-medium outline-none cursor-pointer"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="New">New</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Qualified">Qualified</option>
+                        <option value="Proposal">Proposal</option>
+                        <option value="Negotiation">Negotiation</option>
+                        <option value="Converted">Converted</option>
+                        <option value="Closed">Closed</option>
+                        <option value="Lost">Lost</option>
+                      </select>
+                    </div>
+
+                    {/* Priority Filter */}
+                    <div>
+                      <label className="font-semibold text-gray-700 block mb-1">Priority / Temperature</label>
+                      <select
+                        value={extraFilters.filterPriority}
+                        onChange={(e) => setExtraFilters({ ...extraFilters, filterPriority: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-800 font-medium outline-none cursor-pointer"
+                      >
+                        <option value="all">All Priorities</option>
+                        <option value="Hot">Hot (High)</option>
+                        <option value="Warm">Warm (Medium)</option>
+                        <option value="Cold">Cold (Low)</option>
+                      </select>
+                    </div>
+
+                    {/* Employee Filter */}
+                    <div>
+                      <label className="font-semibold text-gray-700 block mb-1">Assigned Employee</label>
+                      <select
+                        value={extraFilters.filterEmployee}
+                        onChange={(e) => setExtraFilters({ ...extraFilters, filterEmployee: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-800 font-medium outline-none cursor-pointer"
+                      >
+                        <option value="all">All Assigned Employees</option>
+                        {employees.map((emp) => (
+                          <option key={emp._id || emp.id || emp.uid || emp.name} value={emp._id || emp.id || emp.uid || emp.name}>
+                            {emp.employeeName || emp.name || emp.displayName || emp.email}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Source Filter */}
+                    <div>
+                      <label className="font-semibold text-gray-700 block mb-1">Lead Source</label>
+                      <select
+                        value={extraFilters.filterSource}
+                        onChange={(e) => setExtraFilters({ ...extraFilters, filterSource: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-800 font-medium outline-none cursor-pointer"
+                      >
+                        <option value="all">All Sources</option>
+                        <option value="Website">Website</option>
+                        <option value="Referral">Referral</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Cold Call">Cold Call</option>
+                        <option value="Social Media">Social Media</option>
+                        <option value="Direct">Direct</option>
+                      </select>
+                    </div>
+
+                    {/* Follow Up Period */}
+                    <div>
+                      <label className="font-semibold text-gray-700 block mb-1">Follow Up Period</label>
+                      <select
+                        value={extraFilters.filterDateRange}
+                        onChange={(e) => setExtraFilters({ ...extraFilters, filterDateRange: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50 text-gray-800 font-medium outline-none cursor-pointer"
+                      >
+                        <option value="all">All Follow Ups</option>
+                        <option value="today">Follow Up Today</option>
+                        <option value="this_week">Follow Up This Week</option>
+                        <option value="overdue">Overdue Follow Ups</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <button
+                      onClick={handleResetFilters}
+                      className="text-gray-600 hover:text-red-600 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw size={13} />
+                      <span>Reset</span>
+                    </button>
+                    <button
+                      onClick={() => setShowFilterModal(false)}
+                      className="bg-[#2563a9] hover:bg-[#1d4ed8] text-white font-semibold px-4 py-1.5 rounded-lg cursor-pointer"
+                    >
+                      Apply Filters
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* NOTIFICATION BUTTON & POPOVER */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                aria-label="View lead notifications"
+                title="View lead notifications"
+                className="w-10 h-10 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg bg-[#2563a9] hover:bg-[#1d4ed8] transition-all shadow-xs relative cursor-pointer"
+              >
+                <Bell size={18} className="text-white" />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Popover Modal */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-4 bg-[#0b2b57] text-white flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Bell size={16} />
+                      <h3 className="font-bold text-sm">Lead Notifications</h3>
+                    </div>
+                    <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                      {notifications.length} Active
+                    </span>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 custom-scrollbar">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-gray-500 text-xs font-medium">
+                        🎉 No overdue follow-ups or critical lead alerts!
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            setShowNotifications(false);
+                            navigate(`/leadDetails/${n.lead._id}`);
+                          }}
+                          className="p-3.5 hover:bg-blue-50/50 transition-colors cursor-pointer space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                                n.type === "overdue"
+                                  ? "bg-red-100 text-red-700"
+                                  : n.type === "hot"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {n.type}
+                            </span>
+                            <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>
+                          </div>
+                          <h4 className="font-bold text-xs text-gray-800 line-clamp-1">{n.title}</h4>
+                          <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{n.message}</p>
+
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowNotifications(false);
+                                navigate(`/leadDetails/${n.lead._id}`);
+                              }}
+                              className="text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md font-semibold transition-colors cursor-pointer"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
