@@ -39,6 +39,22 @@ export default function Tasks() {
   const [search, setSearch] = useState('');
   const [active, setActive] = useState("All");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [dismissedNotifIds, setDismissedNotifIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("crm_emp_dismissed_task_notifs");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("crm_emp_dismissed_task_notifs", JSON.stringify(dismissedNotifIds));
+    } catch (e) {
+      console.error("Error saving employee task notifications to localStorage:", e);
+    }
+  }, [dismissedNotifIds]);
 
   const notificationsRef = useRef(null);
 
@@ -88,19 +104,23 @@ export default function Tasks() {
       const dueDate = t.dueDate ? new Date(t.dueDate) : null;
       const isOverdue = dueDate && !isNaN(dueDate.getTime()) && dueDate < now && statusLower !== "completed";
 
-      if (isOverdue) {
+      const ovId = `ov-${t.id || t._id}`;
+      const hotId = `hot-${t.id || t._id}`;
+      const pdId = `pd-${t.id || t._id}`;
+
+      if (isOverdue && !dismissedNotifIds.includes(ovId)) {
         list.push({
-          id: `ov-${t.id || t._id}`,
+          id: ovId,
           type: "overdue",
           title: "Overdue Task Warning",
           message: `Your task "${t.title || "Untitled"}" is overdue! Please update status.`,
           time: dueDate ? `Due: ${dueDate.toLocaleDateString("en-IN")}` : "Overdue",
           task: t,
         });
-      } else if (priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") {
+      } else if ((priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") && !dismissedNotifIds.includes(hotId)) {
         if (statusLower !== "completed") {
           list.push({
-            id: `hot-${t.id || t._id}`,
+            id: hotId,
             type: "hot",
             title: "High Priority Task",
             message: `Hot task "${t.title || "Untitled"}" requires immediate attention.`,
@@ -108,9 +128,9 @@ export default function Tasks() {
             task: t,
           });
         }
-      } else if (statusLower === "pending") {
+      } else if (statusLower === "pending" && !dismissedNotifIds.includes(pdId)) {
         list.push({
-          id: `pd-${t.id || t._id}`,
+          id: pdId,
           type: "pending",
           title: "Pending Task",
           message: `Task "${t.title || "Untitled"}" is currently pending action.`,
@@ -121,7 +141,25 @@ export default function Tasks() {
     });
 
     return list;
-  }, [tasks]);
+  }, [tasks, dismissedNotifIds]);
+
+  const handleClearAllNotifs = (e) => {
+    e.stopPropagation();
+    const allNotifIds = notifications.map((n) => n.id);
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+  };
+
+  const handleNotifClick = (e, notif) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    setShowNotifications(false);
+    navigate(`/employee/taskDetails/${notif.task._id || notif.task.id || notif.task.uid}`);
+  };
+
+  const handleDismissNotif = (e, notifId) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+  };
 
   const handleQuickStatusUpdate = async (e, taskItem, newStatus) => {
     e.stopPropagation();
@@ -256,9 +294,19 @@ export default function Tasks() {
                       <Bell size={16} />
                       <h3 className="font-bold text-sm">Task Notifications</h3>
                     </div>
-                    <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
-                      {notifications.length} Active
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={handleClearAllNotifs}
+                          className="text-[10px] bg-red-500/80 hover:bg-red-600 text-white px-2 py-0.5 rounded font-semibold transition cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                      <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                        {notifications.length} Active
+                      </span>
+                    </div>
                   </div>
 
                   <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 custom-scrollbar">
@@ -270,10 +318,7 @@ export default function Tasks() {
                       notifications.map((n) => (
                         <div
                           key={n.id}
-                          onClick={() => {
-                            setShowNotifications(false);
-                            navigate(`/employee/taskDetails/${n.task._id || n.task.id || n.task.uid}`);
-                          }}
+                          onClick={(e) => handleNotifClick(e, n)}
                           className="p-3.5 hover:bg-blue-50/50 transition-colors cursor-pointer space-y-1.5"
                         >
                           <div className="flex items-center justify-between">
@@ -288,7 +333,16 @@ export default function Tasks() {
                             >
                               {n.type}
                             </span>
-                            <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>
+                              <button
+                                onClick={(e) => handleDismissNotif(e, n.id)}
+                                className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition"
+                                title="Dismiss Notification"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
                           </div>
                           <h4 className="font-bold text-xs text-gray-800 line-clamp-1">{n.title}</h4>
                           <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{n.message}</p>
@@ -301,11 +355,7 @@ export default function Tasks() {
                               Mark Complete
                             </button>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowNotifications(false);
-                                navigate(`/employee/taskDetails/${n.task._id || n.task.id || n.task.uid}`);
-                              }}
+                              onClick={(e) => handleNotifClick(e, n)}
                               className="text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer"
                             >
                               View Details

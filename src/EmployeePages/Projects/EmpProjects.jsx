@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Search,
   Calendar,
@@ -11,6 +11,9 @@ import {
   MessageSquareText,
   Clock,
   CheckCircle2,
+  Bell,
+  X,
+  RotateCcw,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -30,7 +33,38 @@ export default function EmpProjects() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [active, setActive] = useState(0);
+  const [priorityFilter, setPriorityFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [dismissedNotifIds, setDismissedNotifIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("crm_emp_dismissed_project_notifs");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("crm_emp_dismissed_project_notifs", JSON.stringify(dismissedNotifIds));
+    } catch (e) {
+      console.error("Error saving employee project notifications to localStorage:", e);
+    }
+  }, [dismissedNotifIds]);
+
+  const notifRef = useRef(null);
+
+  // Close notifications popover on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const buttons = ['All', 'Pending', 'On Track', 'At Risk', 'Completed'];
 
@@ -112,6 +146,116 @@ export default function EmpProjects() {
     return userSpecific.length > 0 ? userSpecific : projects;
   }, [user, projects]);
 
+  // Employee Project Notifications (At Risk, Urgent, Active Alerts)
+  const notifications = useMemo(() => {
+    const list = [];
+    const todayObj = new Date();
+    const y = todayObj.getFullYear();
+    const m = String(todayObj.getMonth() + 1).padStart(2, "0");
+    const d = String(todayObj.getDate()).padStart(2, "0");
+    const todayStr = `${y}-${m}-${d}`;
+
+    const parseToYYYYMMDD = (dVal) => {
+      if (!dVal) return "";
+      if (dVal instanceof Date) {
+        if (isNaN(dVal.getTime())) return "";
+        return dVal.toISOString().split("T")[0];
+      }
+      const str = String(dVal).trim();
+      if (!str) return "";
+
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        return str.substring(0, 10);
+      }
+
+      if (str.includes("/")) {
+        const parts = str.split("/");
+        if (parts.length === 3 && parts[2].length === 4) {
+          const p0 = parts[0].padStart(2, "0");
+          const p1 = parts[1].padStart(2, "0");
+          const year = parts[2];
+          return parseInt(p0, 10) > 12 ? `${year}-${p1}-${p0}` : `${year}-${p0}-${p1}`;
+        }
+      }
+
+      const parsed = new Date(str);
+      if (!isNaN(parsed.getTime())) {
+        const py = parsed.getFullYear();
+        const pm = String(parsed.getMonth() + 1).padStart(2, "0");
+        const pd = String(parsed.getDate()).padStart(2, "0");
+        return `${py}-${pm}-${pd}`;
+      }
+      return "";
+    };
+
+    userProjects.forEach((item) => {
+      const health = getProjectHealthStatus(item);
+      const statusLower = (item.status || "").toLowerCase();
+      const priorityLower = (item.priority || "").toLowerCase();
+      const isCompleted = statusLower === "completed" || Number(item.progress) >= 100;
+      if (isCompleted) return;
+
+      const itemDueDateStr = parseToYYYYMMDD(item.dueDate || item.date);
+      const isOverdue = Boolean(itemDueDateStr && itemDueDateStr < todayStr);
+
+      const riskId = `risk-${item._id || item.id}`;
+      const prioId = `prio-${item._id || item.id}`;
+      const progId = `prog-${item._id || item.id}`;
+
+      if ((health === "At Risk" || isOverdue || statusLower === "at risk" || statusLower === "delayed") && !dismissedNotifIds.includes(riskId)) {
+        list.push({
+          id: riskId,
+          type: "at_risk",
+          title: "🚨 At Risk Project Alert",
+          message: `Project "${item.title || "Untitled"}" (${item.company || "Pearls Client"}) is At Risk or Overdue! Progress: ${item.progress || 0}%`,
+          time: itemDueDateStr || "Overdue",
+          item,
+        });
+      } else if (
+        (priorityLower === "urgent" || priorityLower === "high" || priorityLower === "hot") &&
+        !dismissedNotifIds.includes(prioId)
+      ) {
+        list.push({
+          id: prioId,
+          type: "urgent",
+          title: "🔥 High Priority Project",
+          message: `High priority project "${item.title || "Untitled"}" (${item.company || "Pearls Client"}) requires active tracking.`,
+          time: itemDueDateStr || "High Priority",
+          item,
+        });
+      } else if (!dismissedNotifIds.includes(progId)) {
+        list.push({
+          id: progId,
+          type: "pending",
+          title: "⏳ Active Project In Progress",
+          message: `Project "${item.title || "Untitled"}" (${item.company || "Pearls Client"}) is active (${item.progress || 0}% complete).`,
+          time: itemDueDateStr || "In Progress",
+          item,
+        });
+      }
+    });
+
+    return list;
+  }, [userProjects, dismissedNotifIds]);
+
+  const handleClearAllNotifs = (e) => {
+    e.stopPropagation();
+    const allNotifIds = notifications.map((n) => n.id);
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+  };
+
+  const handleNotifClick = (e, notif) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    setShowNotifications(false);
+    navigate(`/employee/projectDetails/${notif.item._id || notif.item.id}`);
+  };
+
+  const handleDismissNotif = (e, notifId) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+  };
+
   const filteredProjects = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -137,9 +281,14 @@ export default function EmpProjects() {
         matchesStatus = health === 'Completed';
       }
 
-      return matchesSearch && matchesStatus;
+      let matchesPriority = true;
+      if (priorityFilter && priorityFilter !== 'All') {
+        matchesPriority = (p.priority || '').toLowerCase() === priorityFilter.toLowerCase();
+      }
+
+      return matchesSearch && matchesStatus && matchesPriority;
     });
-  }, [userProjects, search, active, buttons]);
+  }, [userProjects, search, active, priorityFilter, buttons]);
 
   /* PAGINATION */
   const filesPerPage = 5;
@@ -202,6 +351,91 @@ export default function EmpProjects() {
               Monitor active project milestones, progress, and team deliverables
             </p>
           </div>
+
+          {/* NOTIFICATION BUTTON & POPOVER */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              title="Project Notifications"
+              className="p-2.5 border border-gray-200 rounded-xl bg-[#2563a9] hover:bg-blue-700 transition cursor-pointer text-white shadow-xs relative flex items-center justify-center"
+            >
+              <Bell size={18} />
+              {notifications.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Popover Modal */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden text-xs">
+                <div className="p-4 bg-[#0b2b57] text-white flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Bell size={16} />
+                    <h3 className="font-bold text-sm">Project Notifications</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleClearAllNotifs}
+                        className="text-[10px] bg-red-500/80 hover:bg-red-600 text-white px-2 py-0.5 rounded font-semibold transition cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                    <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                      {notifications.length} Active
+                    </span>
+                  </div>
+                </div>
+
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 custom-scrollbar">
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500 text-xs font-medium">
+                      🎉 All your projects are running on track!
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={(e) => handleNotifClick(e, n)}
+                        className={`p-3.5 hover:bg-blue-50/50 transition-colors cursor-pointer space-y-1.5 ${
+                          n.type === "at_risk" ? "bg-red-50/40" : n.type === "urgent" ? "bg-amber-50/30" : ""
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                              n.type === "at_risk"
+                                ? "bg-red-100 text-red-700"
+                                : n.type === "urgent"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {n.type === "at_risk" ? "At Risk" : n.type === "urgent" ? "High Priority" : "Progress"}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>
+                            <button
+                              onClick={(e) => handleDismissNotif(e, n.id)}
+                              className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition"
+                              title="Dismiss Notification"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        </div>
+                        <h4 className="font-bold text-xs text-gray-800 line-clamp-1">{n.title}</h4>
+                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{n.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* CONTENT */}
@@ -250,15 +484,39 @@ export default function EmpProjects() {
               </div>
             </div>
 
-            {/* SEARCH */}
-            <div className="flex items-center bg-gray-100 rounded-xl px-3.5 py-2 text-xs border border-gray-200/60 min-w-[240px]">
-              <Search size={16} className="text-gray-400 shrink-0" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search project or company..."
-                className="ml-2 bg-transparent outline-none w-full text-xs text-gray-800"
-              />
+            {/* PRIORITY & SEARCH FILTERS */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Priority Filter */}
+              <div className="flex items-center bg-gray-100 rounded-xl px-3 py-2 text-xs border border-gray-200/60">
+                <select
+                  value={priorityFilter}
+                  onChange={(e) => {
+                    setPriorityFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="bg-transparent outline-none text-xs font-semibold text-gray-700 cursor-pointer"
+                >
+                  <option value="All">All Priorities</option>
+                  <option value="Urgent">🔥 Urgent</option>
+                  <option value="High">⚡ High</option>
+                  <option value="Medium">⚡ Medium</option>
+                  <option value="Low">🌱 Low</option>
+                </select>
+              </div>
+
+              {/* SEARCH */}
+              <div className="flex items-center bg-gray-100 rounded-xl px-3.5 py-2 text-xs border border-gray-200/60 min-w-[200px]">
+                <Search size={16} className="text-gray-400 shrink-0" />
+                <input
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Search project or company..."
+                  className="ml-2 bg-transparent outline-none w-full text-xs text-gray-800"
+                />
+              </div>
             </div>
           </div>
 
@@ -286,7 +544,7 @@ export default function EmpProjects() {
                     <div
                       key={p._id || p.id}
                       onClick={() => navigate(`/employee/projectDetails/${p._id || p.id}`)}
-                      className="bg-white border border-gray-200/80 p-5 md:p-6 rounded-2xl hover:border-blue-300 transition-all cursor-pointer shadow-2xs space-y-4"
+                      className="bg-white border border-gray-200/90 p-6 md:p-7 min-h-[190px] rounded-2xl hover:border-blue-300 transition-all cursor-pointer shadow-xs hover:shadow-xl space-y-5"
                     >
                       {/* CARD HEADER */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-gray-100">

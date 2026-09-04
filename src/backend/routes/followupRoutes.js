@@ -7,12 +7,16 @@ const { getIO } = require("../Socket");
 // Create Followup
 router.post("/", async (req, res) => {
   try {
-    const followup = await Followup.create(req.body);
+    const followupData = { ...req.body };
+    if (!followupData.date) {
+      followupData.date = new Date().toISOString().split("T")[0];
+    }
+
+    const followup = await Followup.create(followupData);
 
     const io = getIO();
     if (io) {
       io.emit("followupCreated", followup);
-      io.emit("followupUpdated", followup);
     }
 
     // Trigger Notification for assigned employee if present
@@ -27,7 +31,6 @@ router.post("/", async (req, res) => {
         });
         if (io) {
           io.to(`user_${targetEmp}`).emit("newNotification", notif);
-          io.to(String(targetEmp)).emit("newNotification", notif);
         }
       } catch (nErr) {
         console.warn("Followup notification creation error:", nErr.message);
@@ -98,7 +101,9 @@ router.put("/:id", async (req, res) => {
       }
     }
 
-    let history = existing.history || [];
+    let history = updateFields.history !== undefined ? updateFields.history : (existing.history || []);
+    delete updateFields.history;
+
     if (newNote && newNote.trim()) {
       history.push({
         date: new Date().toLocaleDateString(),

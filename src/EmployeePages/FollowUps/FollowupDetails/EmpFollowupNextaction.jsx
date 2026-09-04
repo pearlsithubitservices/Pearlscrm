@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Repeat2, CalendarDays, Clock3, Save } from "lucide-react";
+import { Repeat2, CalendarDays, Clock3, Save, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import useFollowups from "../../../Hooks/useFollowups";
 import { useAuth } from "../../../context/AuthContext";
@@ -50,6 +50,26 @@ export default function EmpFollowupNextaction({ followup, onRefresh }) {
       toast.error(err.message || "Failed to save next action");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteLog = async (originalIndex) => {
+    if (!window.confirm("Are you sure you want to delete this action log?")) return;
+
+    const followupId = followup?._id || followup?.id;
+    if (!followupId) return;
+
+    try {
+      const updatedHistory = historyLogs.filter((_, idx) => idx !== originalIndex);
+      await updateFollowup(followupId, {
+        history: updatedHistory,
+      });
+
+      toast.success("Action log deleted successfully");
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error("Error deleting employee action log:", err);
+      toast.error("Failed to delete log");
     }
   };
 
@@ -154,19 +174,32 @@ export default function EmpFollowupNextaction({ followup, onRefresh }) {
             No next action history logged yet.
           </p>
         ) : (
-          historyLogs.slice().reverse().map((item, index) => (
-            <div key={index} className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex gap-4">
-              <div className="w-3 h-3 rounded-full bg-[#3167dc] mt-1.5 shrink-0" />
-              <div>
-                <h1 className="text-sm font-bold text-[#0b2d59]">
-                  {item.note}
-                </h1>
-                <p className="text-xs text-gray-400 mt-1">
-                  By {item.author || "Employee"} · {item.createdAt ? new Date(item.createdAt).toLocaleString() : item.date || "Just now"}
-                </p>
+          historyLogs.slice().reverse().map((item, index) => {
+            const originalIndex = historyLogs.length - 1 - index;
+            return (
+              <div key={index} className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs flex justify-between items-start gap-4 group">
+                <div className="flex gap-4 min-w-0">
+                  <div className="w-3 h-3 rounded-full bg-[#3167dc] mt-1.5 shrink-0" />
+                  <div className="min-w-0">
+                    <h1 className="text-sm font-bold text-[#0b2d59] leading-snug">
+                      {item.note}
+                    </h1>
+                    <p className="text-xs text-gray-400 mt-1">
+                      By {item.author || "Employee"} · {item.createdAt ? new Date(item.createdAt).toLocaleString() : item.date || "Just now"}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleDeleteLog(originalIndex)}
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer shrink-0"
+                  title="Delete Log Entry"
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </motion.div>

@@ -18,35 +18,59 @@ import {
   History
 } from 'lucide-react';
 
+import { apiUrl } from '../../config/api';
+import { socket } from '../../config/socket';
+
 export default function EmployeeFollowups() {
-
-  const [followups, setFollowups] =
-    useState([]);
-
-  const [search, setSearch] =
-    useState('');
-
+  const [followups, setFollowups] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const loading = false;
+  const fetchFollowups = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(apiUrl('/followups'));
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.data || []);
+      setFollowups(list.map(item => ({
+        ...item,
+        id: item._id || item.id,
+        leadName: item.clientName || item.leadName || '',
+        company: item.companyName || item.company || '',
+        note: item.notes || item.note || '',
+      })));
+    } catch (err) {
+      console.error('Error fetching employee followups:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchFollowups();
+
+    if (socket) {
+      const handleSync = () => fetchFollowups();
+      socket.on('followupCreated', handleSync);
+      socket.on('followupUpdated', handleSync);
+
+      return () => {
+        socket.off('followupCreated', handleSync);
+        socket.off('followupUpdated', handleSync);
+      };
+    }
+  }, []);
 
   if (!user) {
     return null;
   }
 
   // HANDLE CHANGE
-
-  const handleChange = (
-    id,
-    field,
-    value
-  ) => {
-
+  const handleChange = (id, field, value) => {
     setFollowups((prev) =>
-
       prev.map((item) =>
-
-        item.id === id
+        (item._id === id || item.id === id)
           ? {
               ...item,
               [field]: value,
@@ -54,78 +78,39 @@ export default function EmployeeFollowups() {
           : item
       )
     );
-
   };
 
   // UPDATE FOLLOWUP
 
-  const updateFollowup =
-    async (item) => {
+  const updateFollowup = async (item) => {
+    try {
+      const followupId = item._id || item.id;
+      const res = await fetch(apiUrl(`/followups/${followupId}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientName: item.leadName || item.clientName,
+          companyName: item.company || item.companyName,
+          type: item.type,
+          status: item.status,
+          date: item.date,
+          newNote: item.note,
+          author: user?.name || user?.username || 'Employee',
+          followupCount: (item.followupCount || 1) + 1,
+        }),
+      });
 
-      try {
-
-        const followupRef =
-          doc(
-            db,
-            'followups',
-            item.id
-          );
-
-        await updateDoc(
-          followupRef,
-          {
-
-            leadName:
-              item.leadName,
-
-            company:
-              item.company,
-
-            type:
-              item.type,
-
-            status:
-              item.status,
-
-            date:
-              item.date,
-
-            note:
-              item.note,
-
-            followupCount:
-              (item.followupCount || 1) + 1,
-
-            history: [
-
-              ...(item.history || []),
-
-              {
-                date:
-                  new Date()
-                    .toLocaleDateString(),
-
-                note:
-                  item.note ||
-                  'Followup Updated',
-              }
-
-            ],
-
-          }
-        );
-
-        alert(
-          'Followup Updated'
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
+      if (res.ok) {
+        alert('Followup Updated Successfully!');
+        fetchFollowups();
+      } else {
+        alert('Failed to update followup');
       }
-
-    };
+    } catch (error) {
+      console.error('Error updating followup:', error);
+      alert('Error updating followup');
+    }
+  };
 
   // FILTER
 

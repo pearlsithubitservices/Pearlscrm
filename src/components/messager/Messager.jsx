@@ -26,7 +26,9 @@ import {
   Lock,
   FileText,
   Download,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ExternalLink,
+  Eye
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import useChat from "../../Hooks/chat.js";
@@ -129,6 +131,7 @@ export default function Messenger() {
   const [employeeList, setEmployeeList] = useState([]);
   const [taskList, setTaskList] = useState([]);
   const [loadingModalData, setLoadingModalData] = useState(false);
+  const [activeImagePreview, setActiveImagePreview] = useState(null);
 
 
   // Message Editing State
@@ -164,6 +167,44 @@ export default function Messenger() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleOpenImage = (dataUrl, name) => {
+    if (!dataUrl) return;
+    setActiveImagePreview({ url: dataUrl, name: name || "Image Attachment" });
+  };
+
+  const handleDownloadFile = (dataUrl, name) => {
+    if (!dataUrl) return;
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = name || "download";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleOpenInNewTab = (dataUrl) => {
+    if (!dataUrl) return;
+    if (dataUrl.startsWith("data:")) {
+      try {
+        const parts = dataUrl.split(",");
+        const mime = parts[0].match(/:(.*?);/)[1];
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, "_blank");
+        return;
+      } catch (e) {
+        console.error("Blob open error:", e);
+      }
+    }
+    window.open(dataUrl, "_blank");
+  };
 
   // Auto-dismiss in-app toast banner after 5 seconds
   useEffect(() => {
@@ -1088,19 +1129,39 @@ export default function Messenger() {
                                     const cleanUrl = rawUrl;
 
                                     return isImg ? (
-                                      <a
+                                      <div
                                         key={idx}
-                                        href={cleanUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block rounded-xl overflow-hidden border border-white/20 max-w-xs hover:opacity-90 transition shadow-xs"
+                                        className="relative group/img rounded-xl overflow-hidden border border-white/20 max-w-xs cursor-pointer shadow-xs mt-1 bg-black/5"
+                                        onClick={() => handleOpenImage(cleanUrl, attName)}
                                       >
                                         <img
                                           src={cleanUrl}
                                           alt={attName || "Attachment"}
-                                          className="max-h-48 w-full object-cover rounded-xl"
+                                          className="max-h-56 w-full object-cover rounded-xl transition-transform duration-300 group-hover/img:scale-105"
                                         />
-                                      </a>
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleOpenImage(cleanUrl, attName);
+                                            }}
+                                            className="p-2 rounded-full bg-white/90 text-gray-900 hover:bg-white transition cursor-pointer shadow-md"
+                                            title="Preview Image"
+                                          >
+                                            <Eye size={16} />
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDownloadFile(cleanUrl, attName);
+                                            }}
+                                            className="p-2 rounded-full bg-white/90 text-gray-900 hover:bg-white transition cursor-pointer shadow-md"
+                                            title="Download Image"
+                                          >
+                                            <Download size={16} />
+                                          </button>
+                                        </div>
+                                      </div>
                                     ) : (
                                       <a
                                         key={idx}
@@ -1903,6 +1964,72 @@ export default function Messenger() {
           setActiveModal("add_member");
         }}
       />
+
+      {/* FULL SCREEN IMAGE LIGHTBOX MODAL */}
+      {activeImagePreview && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => setActiveImagePreview(null)}
+        >
+          {/* Top Bar */}
+          <div
+            className="w-full max-w-5xl flex items-center justify-between text-white py-2 px-4 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 truncate">
+              <ImageIcon size={18} className="text-blue-400 shrink-0" />
+              <span className="font-semibold text-sm truncate">
+                {activeImagePreview.name || "Image Preview"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleOpenInNewTab(activeImagePreview.url)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                title="Open in new tab"
+              >
+                <ExternalLink size={15} />
+                <span className="hidden sm:inline">New Tab</span>
+              </button>
+              <button
+                onClick={() => handleDownloadFile(activeImagePreview.url, activeImagePreview.name)}
+                className="p-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md"
+                title="Download"
+              >
+                <Download size={15} />
+                <span className="hidden sm:inline">Download</span>
+              </button>
+              <button
+                onClick={() => setActiveImagePreview(null)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-red-600/80 text-white transition cursor-pointer"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Centered Image */}
+          <div
+            className="flex-1 flex items-center justify-center p-2 w-full max-w-5xl my-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={activeImagePreview.url}
+              alt={activeImagePreview.name || "Preview"}
+              className="max-h-[75vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10 select-none"
+            />
+          </div>
+
+          {/* Bottom Caption */}
+          <div
+            className="text-xs text-gray-300 font-medium py-1 px-4 bg-white/10 rounded-full backdrop-blur-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Click anywhere outside or press X to close
+          </div>
+        </div>
+      )}
     </div>
   );
 }

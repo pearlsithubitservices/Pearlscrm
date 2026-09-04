@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { Trash2 } from "lucide-react";
 import { apiUrl } from "../../config/api";
 
 export default function ClientNotes({ projects, project, fetchProjects }) {
@@ -16,6 +17,29 @@ export default function ClientNotes({ projects, project, fetchProjects }) {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  }
+
+  async function handleDeleteNote(indexToDelete) {
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
+    if (!currentProject._id) return;
+
+    const updatedNotes = notes.filter((_, idx) => idx !== indexToDelete);
+
+    try {
+      const res = await fetch(apiUrl(`/projects/${currentProject._id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: updatedNotes }),
+      });
+
+      if (res.ok) {
+        if (fetchProjects) fetchProjects();
+      } else {
+        alert("Failed to delete note");
+      }
+    } catch (err) {
+      console.error("Error deleting note from project:", err);
+    }
   }
 
   async function handleNote() {
@@ -168,13 +192,22 @@ export default function ClientNotes({ projects, project, fetchProjects }) {
                 w-full
                 ">
 
-                  <h1 className="
-                  text-lg
-                  font-bold
-                  text-[#082f57]
-                  ">
-                    {item.title}
-                  </h1>
+                  <div className="flex items-start justify-between gap-4">
+                    <h1 className="
+                    text-lg
+                    font-bold
+                    text-[#082f57]
+                    ">
+                      {item.title}
+                    </h1>
+                    <button
+                      onClick={() => handleDeleteNote(index)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer shrink-0"
+                      title="Delete Note"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
 
                   <p className="
                   text-gray-500

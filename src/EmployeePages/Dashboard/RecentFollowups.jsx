@@ -129,7 +129,7 @@ export default function FollowUps() {
                                         return (
                                             <tr
                                                 key={item._id}
-                                                onClick={() => navigate(`/empfollowupDetails/${item._id}`)}
+                                                onClick={() => navigate(`/employee/empfollowupDetails/${item._id}`)}
                                                 className="border-t hover:bg-gray-50 cursor-pointer transition"
                                             >
                                                 <td className="p-4">

@@ -531,6 +531,16 @@ export default function App() {
               />
 
               <Route
+                path="/employee/empfollowupDetails/:id"
+                element={<EmpFollowupDetails />}
+              />
+
+              <Route
+                path="/employee/followupDetails/:id"
+                element={<EmpFollowupDetails />}
+              />
+
+              <Route
                 path="/employee/myprofile"
                 element={<EmpMyprofile />}
               />

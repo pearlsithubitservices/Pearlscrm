@@ -140,7 +140,7 @@ const startServer = async () => {
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log("Connected to database with WebSocket support");
-      startFollowupReminderScheduler();
+      // Followup reminder scheduler disabled per user request to avoid duplicate notifications
       startAttendancePhotoCleanupScheduler();
     });
   } catch (error) {

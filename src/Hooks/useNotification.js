@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-
-// const API_URL = "https://pearlscrm.onrender.com/api/notification";
-const API_URL = "https://pearlscrm.onrender.com/api/notification";
+import { apiUrl } from "../config/api.js";
 
 const useNotification = (employeeId = "") => {
   const [notifications, setNotifications] = useState([]);
@@ -11,10 +9,10 @@ const useNotification = (employeeId = "") => {
   // GET Notifications
   const fetchNotification = async () => {
     try {
-      const url = employeeId
-        ? `${API_URL}?employeeId=${encodeURIComponent(employeeId)}`
-        : API_URL;
-      const res = await fetch(url);
+      const endpoint = employeeId
+        ? `/notification?employeeId=${encodeURIComponent(employeeId)}`
+        : "/notification";
+      const res = await fetch(apiUrl(endpoint));
 
       if (!res.ok) {
         throw new Error("Failed to fetch notifications");
@@ -34,7 +32,7 @@ const useNotification = (employeeId = "") => {
   // CREATE Notification
   const createNotification = async (payload) => {
     try {
-      const res = await fetch(API_URL, {
+      const res = await fetch(apiUrl("/notification"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -63,11 +61,11 @@ const useNotification = (employeeId = "") => {
   };
 
 
-  //DELETE NOTFICATION
+  //DELETE NOTIFICATION
   const deleteNotification = async (id) => {
     try {
       const response = await fetch(
-        `${API_URL}/${id}`,
+        apiUrl(`/notification/${id}`),
         {
           method: "DELETE",
         }

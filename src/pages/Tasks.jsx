@@ -58,6 +58,23 @@ export default function Tasks() {
 
   // Notification Dropdown State
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
+  const [dismissedNotifIds, setDismissedNotifIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("crm_dismissed_task_notifs");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("crm_dismissed_task_notifs", JSON.stringify(dismissedNotifIds));
+    } catch (e) {
+      console.error("Error saving dismissed task notifications to localStorage:", e);
+    }
+  }, [dismissedNotifIds]);
+
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
 
   const filterRef = useRef(null);
@@ -175,19 +192,23 @@ export default function Tasks() {
       const isOverdue = dueDate && !isNaN(dueDate.getTime()) && dueDate < now && statusLower !== "completed";
       const assignedToName = getDisplayName(t.assignedTo, "Unassigned");
 
-      if (isOverdue) {
+      const ovId = `ov-${t.id || t._id}`;
+      const hotId = `hot-${t.id || t._id}`;
+      const pdId = `pd-${t.id || t._id}`;
+
+      if (isOverdue && !dismissedNotifIds.includes(ovId)) {
         list.push({
-          id: `ov-${t.id || t._id}`,
+          id: ovId,
           type: "overdue",
           title: "Overdue Task Alert",
           message: `Task "${t.title || "Untitled"}" assigned to ${assignedToName} is overdue!`,
           time: dueDate ? `Due: ${dueDate.toLocaleDateString("en-IN")}` : "Overdue",
           task: t,
         });
-      } else if (priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") {
+      } else if ((priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") && !dismissedNotifIds.includes(hotId)) {
         if (statusLower !== "completed") {
           list.push({
-            id: `hot-${t.id || t._id}`,
+            id: hotId,
             type: "hot",
             title: "High Priority Task",
             message: `Hot task "${t.title || "Untitled"}" requires action (${assignedToName}).`,
@@ -195,9 +216,9 @@ export default function Tasks() {
             task: t,
           });
         }
-      } else if (statusLower === "pending") {
+      } else if (statusLower === "pending" && !dismissedNotifIds.includes(pdId)) {
         list.push({
-          id: `pd-${t.id || t._id}`,
+          id: pdId,
           type: "pending",
           title: "Pending Task",
           message: `Task "${t.title || "Untitled"}" is pending assignment or updates.`,
@@ -208,7 +229,25 @@ export default function Tasks() {
     });
 
     return list;
-  }, [tasks, employeeMap]);
+  }, [tasks, employeeMap, dismissedNotifIds]);
+
+  const handleClearAllNotifs = (e) => {
+    e.stopPropagation();
+    const allNotifIds = notifications.map((n) => n.id);
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+  };
+
+  const handleNotifClick = (e, notif) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    setShowNotificationMenu(false);
+    navigate(`/tasksDetails/${notif.task._id || notif.task.id}`);
+  };
+
+  const handleDismissNotif = (e, notifId) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+  };
 
   const currentFiles = filterdata.slice(firstIndex, lastIndex);
   const totalPages = Math.max(1, Math.ceil(filterdata.length / filesPerPage));
@@ -599,14 +638,24 @@ export default function Tasks() {
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
                     className="absolute right-0 mt-2 w-88 md:w-96 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 text-xs overflow-hidden"
                   >
-                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <div className="bg-[#0b2b57] text-white px-4 py-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Bell size={16} className="text-[#2563a9]" />
-                        <h3 className="font-bold text-gray-900 text-sm">Task Alerts & Notifications</h3>
+                        <Bell size={16} />
+                        <h3 className="font-bold text-sm">Task Notifications</h3>
                       </div>
-                      <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {notifications.length} Alerts
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={handleClearAllNotifs}
+                            className="text-[10px] bg-red-500/80 hover:bg-red-600 text-white px-2 py-0.5 rounded font-semibold transition cursor-pointer"
+                          >
+                            Clear All
+                          </button>
+                        )}
+                        <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                          {notifications.length} Active
+                        </span>
+                      </div>
                     </div>
 
                     <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 custom-scrollbar">
@@ -620,7 +669,8 @@ export default function Tasks() {
                         notifications.map((n) => (
                           <div
                             key={n.id}
-                            className={`p-3.5 hover:bg-gray-50 transition-colors flex items-start gap-3 ${
+                            onClick={(e) => handleNotifClick(e, n)}
+                            className={`p-3.5 hover:bg-gray-50 transition-colors flex items-start gap-3 cursor-pointer ${
                               n.type === "overdue" ? "bg-red-50/40" : n.type === "hot" ? "bg-amber-50/30" : ""
                             }`}
                           >
@@ -639,26 +689,33 @@ export default function Tasks() {
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
                                 <h4 className="font-bold text-gray-900 text-xs">{n.title}</h4>
-                                <span className="text-[10px] text-gray-400 font-medium">{n.time}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-gray-400 font-medium">{n.time}</span>
+                                  <button
+                                    onClick={(e) => handleDismissNotif(e, n.id)}
+                                    className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition"
+                                    title="Dismiss Notification"
+                                  >
+                                    <X size={13} />
+                                  </button>
+                                </div>
                               </div>
                               <p className="text-xs text-gray-600 mt-0.5 leading-snug">{n.message}</p>
 
                               <div className="mt-2 flex items-center gap-2">
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     handleQuickStatusChange(n.task, "Completed");
                                     setShowNotificationMenu(false);
                                   }}
-                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] transition shadow-sm"
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] transition shadow-sm cursor-pointer"
                                 >
                                   Mark Complete
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    setShowNotificationMenu(false);
-                                    navigate(`/taskDetails/${n.task.id || n.task._id}`);
-                                  }}
-                                  className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px] transition"
+                                  onClick={(e) => handleNotifClick(e, n)}
+                                  className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px] transition cursor-pointer"
                                 >
                                   View Details
                                 </button>

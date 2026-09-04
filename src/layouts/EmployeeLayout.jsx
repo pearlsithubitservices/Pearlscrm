@@ -1,11 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import EmployeeSidebar from "../pages/employee/EmployeeSidebar";
+import { socket } from "../config/socket";
 
 export default function EmployeeLayout() {
   const { user, isAdmin, loading } = useAuth();
+
+  useEffect(() => {
+    if (!socket) return;
+    if (!socket.connected) socket.connect();
+  }, []);
 
   if (loading) {
     return (

@@ -264,6 +264,7 @@ export default function Messenger() {
     const handleEnableNotifications = async () => {
         const res = await requestNotificationPermission();
         showToastMessage(res.message, res.status === "granted" ? "success" : "info");
+        window.dispatchEvent(new CustomEvent("open-notification-drawer"));
     };
 
     const filteredChats = chats.filter((c) => {

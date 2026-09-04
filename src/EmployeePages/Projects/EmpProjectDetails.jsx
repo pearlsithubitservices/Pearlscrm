@@ -110,7 +110,7 @@ export default function EmpProjectDetails() {
       case 'Team':
         return <ProjectTeam projects={projectById} fetchProjects={fetchProjects} isLeader={isLeader} user={user} />;
       case 'Activity':
-        return <ProjectActivity project={projectObj} projects={projectById} />;
+        return <ProjectActivity project={projectObj} projects={projectById} fetchProjects={fetchProjects} />;
       default:
         return null;
     }

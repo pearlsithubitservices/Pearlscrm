@@ -31,6 +31,23 @@ export default function EmployeeLeads() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [dismissedNotifIds, setDismissedNotifIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("crm_emp_dismissed_lead_notifs");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("crm_emp_dismissed_lead_notifs", JSON.stringify(dismissedNotifIds));
+    } catch (e) {
+      console.error("Error saving employee dismissed lead notifications to localStorage:", e);
+    }
+  }, [dismissedNotifIds]);
+
   const [selectedLead, setSelectedLead] = useState(null);
 
   const { user } = useAuth();
@@ -145,27 +162,31 @@ export default function EmployeeLeads() {
         }
       }
 
-      if (isOverdue) {
+      const ovId = `ov-${lead._id || lead.id}`;
+      const hotId = `hot-${lead._id || lead.id}`;
+      const newId = `new-${lead._id || lead.id}`;
+
+      if (isOverdue && !dismissedNotifIds.includes(ovId)) {
         list.push({
-          id: `ov-${lead._id || lead.id}`,
+          id: ovId,
           type: "overdue",
           title: "Overdue Follow Up Warning",
           message: `Follow-up date for "${lead.name || lead.clientName || "Lead"}" is overdue!`,
           time: followUpDate ? followUpDate.toLocaleDateString("en-IN") : "Overdue",
           lead,
         });
-      } else if (priorityLower === "hot" && !isClosed) {
+      } else if (priorityLower === "hot" && !isClosed && !dismissedNotifIds.includes(hotId)) {
         list.push({
-          id: `hot-${lead._id || lead.id}`,
+          id: hotId,
           type: "hot",
           title: "Hot Lead Requires Action",
           message: `Your lead "${lead.name || lead.clientName || "Lead"}" (${lead.company || "Company"}) is marked HOT.`,
           time: lead.status || "Hot Priority",
           lead,
         });
-      } else if (statusLower === "new") {
+      } else if (statusLower === "new" && !dismissedNotifIds.includes(newId)) {
         list.push({
-          id: `new-${lead._id || lead.id}`,
+          id: newId,
           type: "new",
           title: "New Lead Assigned",
           message: `New lead "${lead.name || lead.clientName || "Lead"}" assigned to you.`,
@@ -176,7 +197,25 @@ export default function EmployeeLeads() {
     });
 
     return list;
-  }, [leads]);
+  }, [leads, dismissedNotifIds]);
+
+  const handleClearAllNotifs = (e) => {
+    e.stopPropagation();
+    const allNotifIds = notifications.map((n) => n.id);
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+  };
+
+  const handleNotifClick = (e, notif) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    setShowNotifications(false);
+    setSelectedLead(notif.lead);
+  };
+
+  const handleDismissNotif = (e, notifId) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+  };
 
   // HANDLE INLINE INPUT CHANGE
   const handleChange = (id, field, value) => {
@@ -371,21 +410,32 @@ export default function EmployeeLeads() {
                     <Bell size={16} />
                     <span className="font-bold text-sm">Lead Alerts & Reminders</span>
                   </div>
-                  <span className="bg-white/20 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                    {notifications.length} New
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleClearAllNotifs}
+                        className="text-[10px] bg-red-500/80 hover:bg-red-600 text-white px-2 py-0.5 rounded font-semibold transition cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                    <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                      {notifications.length} Active
+                    </span>
+                  </div>
                 </div>
 
                 <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
                   {notifications.length === 0 ? (
                     <div className="p-6 text-center text-gray-400 text-xs">
-                      No active lead notifications right now.
+                      🎉 No active lead notifications right now.
                     </div>
                   ) : (
                     notifications.map((item) => (
                       <div
                         key={item.id}
-                        className={`p-3.5 hover:bg-gray-50 transition-colors flex items-start justify-between gap-3 text-xs ${
+                        onClick={(e) => handleNotifClick(e, item)}
+                        className={`p-3.5 hover:bg-gray-50 transition-colors flex items-start justify-between gap-3 text-xs cursor-pointer ${
                           item.type === "overdue"
                             ? "border-l-4 border-l-red-500 bg-red-50/30"
                             : item.type === "hot"
@@ -393,19 +443,23 @@ export default function EmployeeLeads() {
                             : "border-l-4 border-l-blue-500 bg-blue-50/30"
                         }`}
                       >
-                        <div className="space-y-1">
-                          <p className="font-bold text-gray-900">{item.title}</p>
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center justify-between">
+                            <p className="font-bold text-gray-900">{item.title}</p>
+                            <button
+                              onClick={(e) => handleDismissNotif(e, item.id)}
+                              className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition"
+                              title="Dismiss Notification"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
                           <p className="text-gray-600 text-[11px] leading-snug">{item.message}</p>
                           <span className="text-[10px] font-medium text-gray-400 block">{item.time}</span>
                         </div>
 
                         <button
-                          onClick={() => {
-                            setShowNotifications(false);
-                            if (item.lead) {
-                              setSelectedLead(item.lead);
-                            }
-                          }}
+                          onClick={(e) => handleNotifClick(e, item)}
                           className="bg-[#2563a9] hover:bg-[#1d4ed8] text-white px-3 py-1.5 rounded-lg text-[11px] font-semibold shrink-0 cursor-pointer shadow-xs hover:scale-105 transition-transform"
                         >
                           View Details
