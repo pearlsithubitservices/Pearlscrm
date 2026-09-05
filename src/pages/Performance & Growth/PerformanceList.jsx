@@ -7,7 +7,7 @@ import {
     Trash2,
     ChevronLeft,
     ChevronRight,
-    Bell,
+    
 } from "lucide-react";
 import useEmployees from "../../Hooks/useEmployees";
 import useReview from "../../Hooks/useReview";
@@ -126,9 +126,9 @@ export default function PerformanceList() {
                     </p>
                 </div>
 
-                <button className="bg-[#2563eb] p-3 rounded-lg w-fit">
+                {/* <button className="bg-[#2563eb] p-3 rounded-lg w-fit">
                     <Bell className="text-white" size={20} />
-                </button>
+                </button> */}
             </header>
 
             <motion.div

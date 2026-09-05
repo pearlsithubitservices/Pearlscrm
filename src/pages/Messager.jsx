@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
     Search,
-    Bell,
+    
     Send,
     Paperclip,
     Smile,
@@ -30,6 +30,7 @@ import {
     ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useLocation, useNavigate } from "react-router-dom";
 import useChat from "../Hooks/chat.js";
 import { apiUrl } from "../config/api.js";
 
@@ -81,6 +82,8 @@ export default function Messenger() {
     const { user } = useAuth();
     const userId = user?.uid || user?._id || user?.email || "admin";
 
+    const location = useLocation();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("Chats");
     const [activeChatId, setActiveChatId] = useState(null);
     const [messageText, setMessageText] = useState("");
@@ -264,7 +267,6 @@ export default function Messenger() {
     const handleEnableNotifications = async () => {
         const res = await requestNotificationPermission();
         showToastMessage(res.message, res.status === "granted" ? "success" : "info");
-        window.dispatchEvent(new CustomEvent("open-notification-drawer"));
     };
 
     const filteredChats = chats.filter((c) => {
@@ -645,14 +647,14 @@ export default function Messenger() {
                             Manage and Connecting Client and employees
                         </p>
                     </div>
-                    <button
+                    {/* <button
                         onClick={handleEnableNotifications}
                         title="Enable Desktop Notifications"
                         className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition relative"
                     >
                         <Bell size={18} />
                         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 border-2 border-white rounded-full"></span>
-                    </button>
+                    </button> */}
                 </div>
 
                 {/* Tabs */}

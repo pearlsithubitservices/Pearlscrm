@@ -15,8 +15,10 @@ export default function ImportantNotifications() {
 
   const { user } = useAuth();
   console.log(user.uid);
+  // Show notifications targeted to this employee AND broadcast notifications
+  // (Announcements etc. are created with employeeId left null/empty)
   const empnotification = notifications.filter((item) =>
-    item.employeeId == user.uid
+    item.employeeId == user.uid || !item.employeeId
   );
   console.log(empnotification);
   const today = new Date();

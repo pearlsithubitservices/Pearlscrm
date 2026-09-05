@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users, } from "lucide-react";
+import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users, X, CheckCircle2, Clock3 } from "lucide-react";
 
 
 import CompanyAnnouncements from "./Announcements/CompanyAnnouncements";
@@ -19,11 +19,40 @@ import { useAuth } from "../../context/AuthContext";
 const Communication = () => {
   const [activeTab, setActiveTab] = useState("Announcements");
   const [form, setForm] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [dismissedNotifIds, setDismissedNotifIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("crm_dismissed_comm_notifs_emp");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const notifRef = useRef(null);
   const { announcements } = useAnnouncement();
   const { tickets } = useTicket();
   const { employees } = useEmployees();
   const { feedbacks } = useFeedback();
   const { user } = useAuth();
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("crm_dismissed_comm_notifs_emp", JSON.stringify(dismissedNotifIds));
+    } catch (e) {
+      console.error("Error saving dismissed communication notifications:", e);
+    }
+  }, [dismissedNotifIds]);
+
+  // Close popover on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const currentUserId = user?.uid || user?.id;
   const currentUserName = user?.displayName || user?.name || (user?.email ? user.email.split("@")[0] : "");
@@ -58,6 +87,71 @@ const Communication = () => {
     : (feedbacks || []).length > 0
       ? ((feedbacks.reduce((acc, curr) => acc + (Number(curr.rating) || 5), 0) / feedbacks.length)).toFixed(1)
       : "0.0";
+
+  // Communication Notifications (Unread Announcements, My Ticket Updates)
+  const notifications = useMemo(() => {
+    const list = [];
+
+    (announcements || []).forEach((a) => {
+      const id = `ann-${a._id || a.id}`;
+      if (!a.isRead && !dismissedNotifIds.includes(id)) {
+        list.push({
+          id,
+          type: "announcement",
+          tab: "Announcements",
+          title: "📢 New Announcement",
+          message: a.title || "A new company announcement was posted.",
+          time: a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "New",
+        });
+      }
+    });
+
+    myTickets.forEach((t) => {
+      const id = `tkt-${t._id || t.id}`;
+      const st = (t.status || "In Progress").toLowerCase();
+      if (dismissedNotifIds.includes(id)) return;
+
+      if (st === "resolved" || st === "closed") {
+        list.push({
+          id,
+          type: "ticket_resolved",
+          tab: "HelpDesk",
+          title: "✅ Ticket Resolved",
+          message: `Your ticket "${t.subject || "Support Ticket"}" is now ${t.status}.`,
+          time: t.updatedAt ? new Date(t.updatedAt).toLocaleDateString() : "Updated",
+        });
+      } else {
+        list.push({
+          id,
+          type: "ticket_open",
+          tab: "HelpDesk",
+          title: "🕓 Ticket In Progress",
+          message: `Your ticket "${t.subject || "Support Ticket"}" is being worked on.`,
+          time: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "Pending",
+        });
+      }
+    });
+
+    return list;
+  }, [announcements, myTickets, dismissedNotifIds]);
+
+  const handleClearAllNotifs = (e) => {
+    e.stopPropagation();
+    const allNotifIds = notifications.map((n) => n.id);
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+  };
+
+  const handleNotifClick = (e, notif) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    setShowNotifications(false);
+    setActiveTab(notif.tab);
+  };
+
+  const handleDismissNotif = (e, notifId) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+  };
 
   const stats = [
     {
@@ -188,9 +282,89 @@ const Communication = () => {
           </p>
         </div>
 
-        <button className="bg-[#2563eb] p-3 rounded-lg w-fit">
-          <Bell className="text-white" size={20} />
-        </button>
+        {/* Bell + Popover */}
+        <div className="relative" ref={notifRef}>
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            title="Communication Notifications"
+            className="bg-[#2563eb] hover:bg-blue-700 transition p-3 rounded-lg w-fit relative cursor-pointer"
+          >
+            <Bell className="text-white" size={20} />
+            {notifications.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                {notifications.length}
+              </span>
+            )}
+          </button>
+
+          {showNotifications && (
+            <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden text-xs">
+              <div className="p-4 bg-[#0b2b57] text-white flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Bell size={16} />
+                  <h3 className="font-bold text-sm">Communication Notifications</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={handleClearAllNotifs}
+                      className="text-[10px] bg-red-500/80 hover:bg-red-600 text-white px-2 py-0.5 rounded font-semibold transition cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                  <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                    {notifications.length} Active
+                  </span>
+                </div>
+              </div>
+
+              <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500 text-xs font-medium">
+                    🎉 No new communication updates!
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={(e) => handleNotifClick(e, n)}
+                      className={`p-3.5 hover:bg-blue-50/50 transition-colors cursor-pointer space-y-1.5 ${
+                        n.type === "ticket_open" ? "bg-amber-50/30" : n.type === "announcement" ? "bg-blue-50/30" : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                            n.type === "announcement"
+                              ? "bg-blue-100 text-blue-700"
+                              : n.type === "ticket_open"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-emerald-100 text-emerald-700"
+                          }`}
+                        >
+                          {n.type === "announcement" ? "Announcement" : n.type === "ticket_open" ? "Ticket" : "Resolved"}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>
+                          <button
+                            onClick={(e) => handleDismissNotif(e, n.id)}
+                            className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition"
+                            title="Dismiss Notification"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </div>
+                      <h4 className="font-bold text-xs text-gray-800 line-clamp-1">{n.title}</h4>
+                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{n.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Stats Cards - Fully Dynamic */}

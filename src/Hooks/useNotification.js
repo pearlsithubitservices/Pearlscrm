@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiUrl } from "../config/api.js";
+import { socket } from "../config/socket.js";
 
 const useNotification = (employeeId = "") => {
   const [notifications, setNotifications] = useState([]);
@@ -61,6 +62,46 @@ const useNotification = (employeeId = "") => {
   };
 
 
+  // MARK SINGLE NOTIFICATION AS READ
+  const markAsRead = async (id) => {
+    try {
+      const res = await fetch(apiUrl(`/notification/${id}/read`), {
+        method: "PATCH",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to mark notification as read");
+      }
+
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item._id === id ? { ...item, isRead: true } : item
+        )
+      );
+    } catch (error) {
+      console.error(error.message);
+    }
+  };
+
+  // MARK ALL NOTIFICATIONS AS READ
+  const markAllAsRead = async () => {
+    try {
+      const res = await fetch(apiUrl("/notification/mark-all-read"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to mark all notifications as read");
+      }
+
+      setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+    } catch (error) {
+      console.error(error.message);
+    }
+  };
+
   //DELETE NOTIFICATION
   const deleteNotification = async (id) => {
     try {
@@ -93,6 +134,32 @@ const useNotification = (employeeId = "") => {
     fetchNotification();
   }, [employeeId]);
 
+  // LIVE UPDATES VIA SOCKET.IO
+  // Join this employee's personal room and prepend any relevant
+  // notification the moment the server broadcasts it (leave, payroll,
+  // benefits, etc.) instead of waiting for a manual refresh.
+  useEffect(() => {
+    if (!socket) return;
+
+    if (!socket.connected) socket.connect();
+    if (employeeId) socket.emit("joinUser", employeeId);
+
+    const handleNewNotification = (notif) => {
+      if (!notif) return;
+      // Only accept it if it's a broadcast (no employeeId) or targeted at this user
+      const targeted = notif.employeeId || null;
+      if (employeeId && targeted && String(targeted) !== String(employeeId)) return;
+
+      setNotifications((prev) => {
+        if (notif._id && prev.some((item) => item._id === notif._id)) return prev;
+        return [notif, ...prev];
+      });
+    };
+
+    socket.on("newNotification", handleNewNotification);
+    return () => socket.off("newNotification", handleNewNotification);
+  }, [employeeId]);
+
   return {
     notifications,
     loading,
@@ -100,6 +167,8 @@ const useNotification = (employeeId = "") => {
     fetchNotification,
     createNotification,
     deleteNotification,
+    markAsRead,
+    markAllAsRead,
   };
 };
 

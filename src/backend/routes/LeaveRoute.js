@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const Leave = require("../models/LeaveModels/Leavemanegement");
+const Notification = require("../models/CommunicationModels/Notifications");
+const { getIO } = require("../Socket");
 
 // =====================
 // TEST ROUTE
@@ -55,6 +57,24 @@ router.post("/", async (req, res) => {
       leaveType,
       status: "Pending",
     });
+
+    // Notify the manager (and HR/admin) that a new leave request came in
+    const notifData = {
+      title: "New Leave Request",
+      sub: `${employeeName} applied for ${leaveType} leave (${calculatedLeaveDays} day${calculatedLeaveDays > 1 ? "s" : ""}) from ${new Date(leaveFrom).toLocaleDateString()} to ${new Date(leaveTo).toLocaleDateString()}.`,
+      notificationType: "Leave",
+      employeeId: managerId || null,
+      senderId: employeeId,
+    };
+    await Notification.create(notifData).catch((err) =>
+      console.error("Notification creation failed:", err)
+    );
+
+    const io = getIO();
+    if (io) {
+      if (managerId) io.to("user_" + managerId).emit("newNotification", notifData);
+      io.emit("newNotification", notifData);
+    }
 
     res.status(201).json({
       success: true,
@@ -136,6 +156,28 @@ router.patch("/:id/status", async (req, res) => {
         success: false,
         message: "Leave not found",
       });
+    }
+
+    // Notify the employee that their leave request has been actioned
+    const empId = updatedLeave.employeeId;
+    if (empId) {
+      const notifData = {
+        title: `Leave ${status}`,
+        sub: `Your ${updatedLeave.leaveType} leave request (${new Date(
+          updatedLeave.leaveFrom
+        ).toLocaleDateString()} - ${new Date(updatedLeave.leaveTo).toLocaleDateString()}) has been ${status.toLowerCase()}.`,
+        notificationType: "Leave",
+        employeeId: empId,
+      };
+      await Notification.create(notifData).catch((err) =>
+        console.error("Notification creation failed:", err)
+      );
+
+      const io = getIO();
+      if (io) {
+        io.to("user_" + empId).emit("newNotification", notifData);
+        io.emit("newNotification", notifData);
+      }
     }
 
     res.status(200).json({

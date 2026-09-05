@@ -1,11 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { X, Bell, Calendar, Clock, AlertCircle, CheckCircle, Send, User, ChevronRight, RefreshCw, MessageSquare } from "lucide-react";
+import { X, Bell, Calendar, Clock, AlertCircle, CheckCircle, Send, User, ChevronRight, RefreshCw, MessageSquare, CalendarDays, CreditCard, ShieldCheck, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { socket } from "../config/socket";
 import { apiUrl } from "../config/api";
 import useNotification from "../Hooks/useNotification";
+
+// Visual config per notification type so Leave / Payroll / Benefits
+// alerts are instantly distinguishable at a glance for HR/Admin too.
+const NOTIF_TYPE_META = {
+  Leave: { icon: CalendarDays, color: "text-blue-600", bg: "bg-blue-50" },
+  Payroll: { icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50" },
+  Benefits: { icon: ShieldCheck, color: "text-purple-600", bg: "bg-purple-50" },
+};
+
+function getNotifMeta(type) {
+  return NOTIF_TYPE_META[type] || { icon: Info, color: "text-gray-500", bg: "bg-gray-100" };
+}
+
+const MODULE_ORDER = [
+  { key: "Leave", label: "Leave Management" },
+  { key: "Payroll", label: "Payroll" },
+  { key: "Benefits", label: "Benefits" },
+  { key: "Other", label: "Other Alerts" },
+];
+const KNOWN_NOTIF_KEYS = ["Leave", "Payroll", "Benefits"];
 
 export default function NotificationDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -66,6 +86,17 @@ export default function NotificationDrawer({ isOpen, onClose }) {
       setBroadcastingTest(false);
     }
   };
+
+  // Group system alerts by module (Leave / Payroll / Benefits / Other)
+  // so each shows in its own separate section instead of one mixed feed.
+  const groupedNotifications = MODULE_ORDER.reduce((acc, section) => {
+    acc[section.key] = notifications.filter((n) =>
+      section.key === "Other"
+        ? !KNOWN_NOTIF_KEYS.includes(n.notificationType)
+        : n.notificationType === section.key
+    );
+    return acc;
+  }, {});
 
   // Filter due and upcoming followups
   const dueFollowups = followups.filter((f) => f.status !== "Completed" && f.status !== "Cancelled");
@@ -250,26 +281,54 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                   <p className="text-sm font-bold text-gray-700">No system notifications</p>
                 </div>
               ) : (
-                notifications.map((notif) => (
-                  <div
-                    key={notif._id}
-                    className="p-4 bg-white rounded-2xl border border-gray-200/80 shadow-xs flex items-start justify-between gap-3"
-                  >
-                    <div className="space-y-1 flex-1">
-                      <p className="text-xs font-bold text-gray-900">{notif.title}</p>
-                      <p className="text-xs text-gray-600 leading-relaxed">{notif.sub || notif.message}</p>
-                      <span className="text-[10px] text-gray-400 font-medium block pt-1">
-                        {notif.createdAt ? new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
-                      </span>
+                MODULE_ORDER.map((section) => {
+                  const items = groupedNotifications[section.key] || [];
+                  if (items.length === 0) return null;
+                  const meta = getNotifMeta(section.key === "Other" ? null : section.key);
+                  const SectionIcon = meta.icon;
+
+                  return (
+                    <div key={section.key} className="space-y-2">
+                      {/* Section header — one per module */}
+                      <div className="flex items-center gap-2 px-1 pt-1">
+                        <div className={`w-6 h-6 rounded-md ${meta.bg} flex items-center justify-center shrink-0`}>
+                          <SectionIcon className={`w-3.5 h-3.5 ${meta.color}`} />
+                        </div>
+                        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                          {section.label} ({items.length})
+                        </span>
+                      </div>
+
+                      {items.map((notif) => {
+                        const notifMeta = getNotifMeta(notif.notificationType);
+                        const TypeIcon = notifMeta.icon;
+                        return (
+                          <div
+                            key={notif._id}
+                            className="p-4 bg-white rounded-2xl border border-gray-200/80 shadow-xs flex items-start gap-3"
+                          >
+                            <div className={`w-8 h-8 rounded-lg ${notifMeta.bg} flex items-center justify-center shrink-0`}>
+                              <TypeIcon className={`w-4 h-4 ${notifMeta.color}`} />
+                            </div>
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <p className="text-xs font-bold text-gray-900">{notif.title}</p>
+                              <p className="text-xs text-gray-600 leading-relaxed">{notif.sub || notif.message}</p>
+                              <span className="text-[10px] text-gray-400 font-medium block pt-1">
+                                {notif.createdAt ? new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => deleteNotification(notif._id)}
+                              className="text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition cursor-pointer shrink-0"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <button
-                      onClick={() => deleteNotification(notif._id)}
-                      className="text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition cursor-pointer"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 

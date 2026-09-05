@@ -152,7 +152,7 @@ export default function Dashboard() {
               </button>
 
               <button
-                onClick={() => window.dispatchEvent(new CustomEvent("open-notification-drawer"))}
+                onClick={() => navigate("/followups")}
                 title="Admin Notifications & Follow-up Reminders"
                 className="w-9 h-9 rounded-xl bg-[#2563a9] flex items-center justify-center hover:bg-blue-700 transition-all text-white flex-shrink-0 cursor-pointer shadow-sm relative group"
               >

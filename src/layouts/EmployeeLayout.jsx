@@ -1,17 +1,26 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import EmployeeSidebar from "../pages/employee/EmployeeSidebar";
 import { socket } from "../config/socket";
+import NotificationDrawer from "../components/NotificationDrawer";
 
 export default function EmployeeLayout() {
   const { user, isAdmin, loading } = useAuth();
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
     if (!socket.connected) socket.connect();
+
+    const handleOpenDrawer = () => setIsNotificationOpen(true);
+    window.addEventListener("open-notification-drawer", handleOpenDrawer);
+
+    return () => {
+      window.removeEventListener("open-notification-drawer", handleOpenDrawer);
+    };
   }, []);
 
   if (loading) {
@@ -52,6 +61,11 @@ export default function EmployeeLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <NotificationDrawer
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+      />
     </div>
   );
 }

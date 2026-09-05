@@ -1,33 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './sidebar';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { socket } from '../config/socket';
-import NotificationDrawer from './NotificationDrawer';
 
 export default function Layout() {
   const { user, isAdmin, loading } = useAuth();
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
-  // Global socket listener for Admin Follow-up Reminders & Alerts
+  // Keep the global socket connected for real-time updates across the app
   useEffect(() => {
     if (!socket) return;
 
     if (!socket.connected) {
       socket.connect();
     }
-
-    const handleOpenDrawer = () => {
-      setIsNotificationOpen(true);
-    };
-
-    window.addEventListener("open-notification-drawer", handleOpenDrawer);
-
-    return () => {
-      window.removeEventListener("open-notification-drawer", handleOpenDrawer);
-    };
   }, []);
 
   if (loading) {
@@ -66,12 +54,6 @@ export default function Layout() {
           </motion.div>
         </AnimatePresence>
       </main>
-
-      <NotificationDrawer
-        isOpen={isNotificationOpen}
-        onClose={() => setIsNotificationOpen(false)}
-      />
     </div>
   );
 }
-

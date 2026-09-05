@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const ticketSchema = require('../models/CommunicationModels/HelpDesk');
+const Notification = require('../models/CommunicationModels/Notifications');
+const { getIO } = require('../Socket');
 const multer = require('multer');
 
 const storage = multer.diskStorage({
@@ -56,6 +58,29 @@ router.post("/", upload.single("attachment"), async (req, res) => {
             attachment: req.file ? req.file.filename : null,
         });
 
+        // Notify Admin: Employee raised a new Help Desk ticket
+        try {
+            const io = getIO();
+
+            if (io) {
+                io.emit("ticketCreated", result);
+            }
+
+            const notif = await Notification.create({
+                title: `New Ticket: ${result.subject}`,
+                sub: result.employeeName || "Employee",
+                notificationType: "General",
+                employeeId: null, // null = goes to Admin's notification center
+                senderId: result.employeeId,
+            });
+
+            if (io) {
+                io.emit("newNotification", notif);
+            }
+        } catch (notifErr) {
+            console.warn("Error creating ticket notification:", notifErr.message);
+        }
+
         res.status(201).json({
             success: true,
             data: result,
@@ -87,6 +112,32 @@ router.put("/:id", async (req, res) => {
 
         if (!updated) {
             return res.status(404).json({ success: false, message: "Ticket not found" });
+        }
+
+        // Notify Employee: Admin updated their ticket
+        try {
+            const io = getIO();
+
+            if (io) {
+                io.emit("ticketUpdated", updated);
+            }
+
+            if (updated.employeeId) {
+                const notif = await Notification.create({
+                    title: `Your ticket "${updated.subject}" was updated`,
+                    sub: status ? `Status: ${status}` : "Support Team",
+                    notificationType: "General",
+                    employeeId: String(updated.employeeId),
+                    senderId: "admin",
+                });
+
+                if (io) {
+                    io.to(`user_${updated.employeeId}`).emit("newNotification", notif);
+                    io.to(String(updated.employeeId)).emit("newNotification", notif);
+                }
+            }
+        } catch (notifErr) {
+            console.warn("Error creating ticket update notification:", notifErr.message);
         }
 
         res.status(200).json({

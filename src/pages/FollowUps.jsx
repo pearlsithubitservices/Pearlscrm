@@ -353,8 +353,8 @@ export default function FollowUps() {
       const res = await fetch(apiUrl("/followups/test-reminder"), { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        toast.success("Test reminder triggered! Opening notification center...", { icon: "⏰" });
-        window.dispatchEvent(new CustomEvent("open-notification-drawer"));
+        toast.success("Test reminder triggered!", { icon: "⏰" });
+        fetchdata(true);
       }
     } catch (e) {
       console.error("Test notification error:", e);
