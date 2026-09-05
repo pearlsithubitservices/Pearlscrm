@@ -145,7 +145,7 @@ export default function EmployeeProfile() {
             <div className="mt-6 rounded-3xl">
              <div className="mt-6"> <Accountinformation/></div>
               <div className="mt-6"><Verification/></div>
-              <div className="mt-6"><JobSalary/></div>
+             
             </div>
           )
         }

@@ -32,19 +32,27 @@ import EmployeeBenefits from "./Benifits/EmployeeBenefits";
 export default function PayslipAdmin() {
     const [activeTab, setActiveTab] = useState("Payslips");
     const { id } = useParams();
-    const { payslips, updatePayslipStatus, deletePayslip } = usePayslip();
+    const { payslips, fetchPayslips, updatePayslipStatus, deletePayslip } = usePayslip();
     const navigate = useNavigate();
     const EmpPayslip = payslips.find((item) => (
         item._id == id
     ));
+    const routeEmployeeId = String(id || '').startsWith('employee-')
+        ? String(id).slice('employee-'.length)
+        : id;
     const currentPayslip = payslips.filter((item) => (
-        item.employeeId == EmpPayslip?.employeeId
+        item.employeeId == (EmpPayslip?.employeeId || routeEmployeeId)
     ));
     const PendingPayslip = currentPayslip
         ?.filter((p) => p?.status?.toLowerCase() === "pending")
         ?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || EmpPayslip;
 
     const { employees } = useEmployees();
+    const selectedEmployee = employees.find((employee) => {
+        const employeeKeys = [employee.uid, employee._id, employee.id, employee.email, employee.profile?.empId];
+        const targetId = EmpPayslip?.employeeId || routeEmployeeId;
+        return employeeKeys.some((key) => String(key || '').toLowerCase() === String(targetId || '').toLowerCase());
+    });
     // GETTING EMPLOYEES NAME & ID
     const employeeMap = useMemo(() => {
         const map = {};
@@ -82,7 +90,10 @@ export default function PayslipAdmin() {
 
             case "Salary Details":
                 return <SalaryBreakup
-                    currentPayslip={currentPayslip} />
+                    currentPayslip={currentPayslip}
+                    employee={selectedEmployee}
+                    onCreated={fetchPayslips}
+                />
 
             case "Tax Documents":
                 return <TaxDocuments />

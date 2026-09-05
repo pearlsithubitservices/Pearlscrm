@@ -160,7 +160,7 @@ export default function FollowUps() {
                                                     </span>
                                                 </td>
 
-                                                <td>Today</td>
+                                                <td>{item.nextFollowupDate || item.date || "Not scheduled"}</td>
                                             </tr>
                                         );
                                     })

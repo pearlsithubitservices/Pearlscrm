@@ -36,9 +36,10 @@ export default function PayrollDashboard() {
                         : "Employee"),
 
                 department:
+                    employee.profile?.department ||
+                    employee.department ||
                     employee.employeeRole ||
                     employee.role ||
-                    employee.department ||
                     "General",
 
                 empId:
@@ -87,20 +88,87 @@ export default function PayrollDashboard() {
         updatePayslipStatus,
         deletePayslip,
     } = usePayslip();
-
     const navigate = useNavigate();
 
     const [search, setSearch] = useState("");
     const [department, setDepartment] = useState("All");
     const [addform, setAddForm] = useState(false);
 
-    // EXPORT CSV
+    const payrollRows = useMemo(() => {
+        const getKeys = (employee) =>
+            [
+                employee?.uid,
+                employee?._id,
+                employee?.id,
+                employee?.email,
+                employee?.empId,
+                employee?.profile?.empId,
+                employee?.employeeCode,
+            ]
+                .filter(Boolean)
+                .map((key) => String(key).toLowerCase());
+
+        return employees
+            .filter(
+                (employee) =>
+                    String(employee?.role || "").toLowerCase() !== "admin"
+            )
+            .map((employee) => {
+                const employeeKeys = getKeys(employee);
+                const employeePayslips = (payslips || []).filter((payslip) =>
+                    employeeKeys.includes(
+                        String(payslip?.employeeId || "").toLowerCase()
+                    )
+                );
+                const latestPayslip = [...employeePayslips].sort(
+                    (a, b) =>
+                        new Date(b.createdAt || b.date || 0) -
+                        new Date(a.createdAt || a.date || 0)
+                )[0];
+                const employeeId =
+                    employee.empId ||
+                    employee.profile?.empId ||
+                    employee.uid ||
+                    employee._id ||
+                    employee.id;
+
+                return (
+                    latestPayslip || {
+                        _id: `employee-${
+                            employeeId ||
+                            employee.email ||
+                            employee.name ||
+                            "unknown"
+                        }`,
+                        employeeId,
+                        employeeName:
+                            employee.name || employee.employeeName || "Employee",
+                        status: "Not created",
+                        gross: 0,
+                        totalDeductions: 0,
+                        net: 0,
+                        isMissingPayslip: true,
+                    }
+                );
+            });
+    }, [employees, payslips]);
+
+    const departments = useMemo(
+        () =>
+            [
+                ...new Set(
+                    payrollRows.map(
+                        (row) =>
+                            employeeMap[row.employeeId]?.department || "General"
+                    )
+                ),
+            ],
+        [payrollRows, employeeMap]
+    );
+
     const handleExportCSV = () => {
-        if (
-            !filteredPayslips ||
-            filteredPayslips.length === 0
-        ) {
-            alert("No payslip data to export!");
+        if (!filteredPayslips || filteredPayslips.length === 0) {
+            alert("No employee data to export!");
             return;
         }
 
@@ -229,48 +297,34 @@ export default function PayrollDashboard() {
     // SEARCH + DEPARTMENT FILTER
     const filteredPayslips = useMemo(() => {
         return (
-            payslips?.filter((emp) => {
+            payrollRows.filter((emp) => {
                 const name =
-                    employeeMap[
-                        emp?.employeeId
-                    ]?.name?.toLowerCase() ||
-                    "";
+                    (
+                        employeeMap[emp?.employeeId]?.name ||
+                        emp?.employeeName ||
+                        "Employee"
+                    )
+                        .toLowerCase();
 
-                const empId =
-                    emp?.employeeId?.toLowerCase() ||
-                    "";
-
+                const empId = String(emp?.employeeId || "").toLowerCase();
                 const dept =
-                    employeeMap[
-                        emp?.employeeId
-                    ]?.department?.toLowerCase() ||
-                    "";
+                    (
+                        employeeMap[emp?.employeeId]?.department || "General"
+                    )
+                        .toLowerCase();
 
-                const searchValue =
-                    search.toLowerCase();
-
+                const searchValue = search.toLowerCase();
                 const searchMatch =
                     name.includes(searchValue) ||
                     empId.includes(searchValue) ||
                     dept.includes(searchValue);
-
                 const departmentMatch =
-                    department === "All" ||
-                    dept ===
-                        department.toLowerCase();
+                    department === "All" || dept === department.toLowerCase();
 
-                return (
-                    searchMatch &&
-                    departmentMatch
-                );
+                return searchMatch && departmentMatch;
             }) || []
         );
-    }, [
-        payslips,
-        search,
-        department,
-        employeeMap,
-    ]);
+    }, [payrollRows, search, department, employeeMap]);
 
     // STATUS STYLE
     const statusStyle = (status) => {
@@ -280,6 +334,9 @@ export default function PayrollDashboard() {
 
             case "Pending":
                 return "bg-yellow-100 text-yellow-600";
+
+            case "Not created":
+                return "bg-gray-100 text-gray-500";
 
             default:
                 return "bg-red-100 text-red-600";
@@ -507,25 +564,10 @@ export default function PayrollDashboard() {
                                         setCurrentPage(1);
                                     }}
                                 >
-                                    <option value="All">
-                                        All Departments
-                                    </option>
-
-                                    <option value="developer">
-                                        Developer
-                                    </option>
-
-                                    <option value="designer">
-                                        Designer
-                                    </option>
-
-                                    <option value="hr">
-                                        HR
-                                    </option>
-
-                                    <option value="finance">
-                                        Finance
-                                    </option>
+                                    <option value="All">All Departments</option>
+                                    {departments.map((item) => (
+                                        <option key={item} value={item}>{item}</option>
+                                    ))}
                                 </select>
 
                             </div>
@@ -579,131 +621,84 @@ export default function PayrollDashboard() {
                         <div className="overflow-x-auto custom-scrollbar">
 
                             <table className="w-full text-sm min-w-[700px]">
-
                                 <thead className="bg-gray-100 text-left">
-
                                     <tr>
-
-                                        <th className="p-4">
-                                            EMP NAME
-                                        </th>
-
-                                        <th>
-                                            EMP ID
-                                        </th>
-
-                                        <th>
-                                            DEPARTMENT
-                                        </th>
-
-                                        <th>
-                                            GROSS PAY
-                                        </th>
-
-                                        <th>
-                                            DEDUCTIONS
-                                        </th>
-
-                                        <th>
-                                            NET PAY
-                                        </th>
-
-                                        <th>
-                                            STATUS
-                                        </th>
-
-                                        <th>
-                                            ACTION
-                                        </th>
-
+                                        <th className="p-4">EMP NAME</th>
+                                        <th>EMP ID</th>
+                                        <th>DEPARTMENT</th>
+                                        <th>GROSS PAY</th>
+                                        <th>DEDUCTIONS</th>
+                                        <th>NET PAY</th>
+                                        <th>STATUS</th>
+                                        <th>ACTION</th>
                                     </tr>
-
                                 </thead>
 
                                 <tbody>
+                                    {currentFiles?.map((emp) => (
+                                        <tr
+                                            key={emp._id}
+                                            className="border-t hover:bg-gray-50 cursor-pointer"
+                                            onClick={() =>
+                                                navigate(`/payslipadmin/${emp._id}`)
+                                            }
+                                        >
+                                            <td className="p-4 font-medium">
+                                                {employeeMap[emp?.employeeId]?.name ||
+                                                    emp?.employeeName ||
+                                                    "Employee"}
+                                            </td>
 
-                                    {currentFiles?.map(
-                                        (emp, i) => (
-                                            <tr
-                                                key={i}
-                                                className="border-t hover:bg-gray-50 cursor-pointer"
-                                                onClick={() =>
-                                                    navigate(
-                                                        `/payslipadmin/${emp._id}`
-                                                    )
-                                                }
-                                            >
+                                            <td className="font-mono text-xs font-semibold text-slate-700">
+                                                {employeeMap[emp?.employeeId]?.empId ||
+                                                    (emp?.employeeId
+                                                        ? `EMP-${String(
+                                                              emp.employeeId
+                                                          )
+                                                            .slice(-4)
+                                                            .toUpperCase()}`
+                                                        : "EMP ID")}
+                                            </td>
 
-                                                <td className="p-4 font-medium">
-                                                    {employeeMap[
-                                                        emp?.employeeId
-                                                    ]?.name ||
-                                                        emp?.employeeName ||
-                                                        "Employee"}
-                                                </td>
+                                            <td>
+                                                {employeeMap[emp?.employeeId]?.department ||
+                                                    "General"}
+                                            </td>
 
-                                                <td className="font-mono text-xs font-semibold text-slate-700">
-                                                    {employeeMap[
-                                                        emp?.employeeId
-                                                    ]?.empId ||
-                                                        (emp?.employeeId
-                                                            ? `EMP-${String(
-                                                                  emp.employeeId
-                                                              )
-                                                                  .slice(-4)
-                                                                  .toUpperCase()}`
-                                                            : "EMP ID")}
-                                                </td>
+                                            <td className="text-blue-600 font-semibold">
+                                                ₹ {Number(emp?.gross || 0).toLocaleString("en-IN")}
+                                            </td>
 
-                                                <td>
-                                                    {employeeMap[
-                                                        emp?.employeeId
-                                                    ]?.department ||
-                                                        "General"}
-                                                </td>
+                                            <td className="text-red-500 font-semibold">
+                                                ₹ {Number(emp?.deductions || emp?.totalDeductions || 0).toLocaleString("en-IN")}
+                                            </td>
 
-                                                <td className="text-blue-600 font-semibold">
-                                                    ₹{" "}
-                                                    {emp?.gross}
-                                                </td>
+                                            <td className="text-green-600 font-semibold">
+                                                ₹ {Number(emp?.net || 0).toLocaleString("en-IN")}
+                                            </td>
 
-                                                <td className="text-red-500 font-semibold">
-                                                    ₹{" "}
-                                                    {emp?.deductions ||
-                                                        emp?.totalDeductions ||
-                                                        0}
-                                                </td>
-
-                                                <td className="text-green-600 font-semibold">
-                                                    ₹{" "}
-                                                    {emp?.net}
-                                                </td>
-
-                                                <td>
-                                                    <span
-                                                        className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyle(
-                                                            emp.status
-                                                        )}`}
-                                                    >
-                                                        {
-                                                            emp.status
-                                                        }
-                                                    </span>
-                                                </td>
-
-                                                <td
-                                                    onClick={(e) =>
-                                                        e.stopPropagation()
-                                                    }
+                                            <td>
+                                                <span
+                                                    className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyle(
+                                                        emp.status
+                                                    )}`}
                                                 >
+                                                    {emp.status}
+                                                </span>
+                                            </td>
 
-                                                    <div className="flex items-center gap-2">
-
-                                                        {/* STATUS */}
+                                            <td onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex items-center gap-2">
+                                                    {emp.isMissingPayslip ? (
                                                         <button
-                                                            onClick={(
-                                                                e
-                                                            ) =>
+                                                            onClick={() => setAddForm(true)}
+                                                            className="text-xs px-3 py-1 rounded font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+                                                        >
+                                                            Add payslip
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={(e) =>
                                                                 handleStatusChange(
                                                                     e,
                                                                     emp._id,
@@ -711,26 +706,19 @@ export default function PayrollDashboard() {
                                                                 )
                                                             }
                                                             className={`text-xs px-3 py-1 rounded font-medium transition ${
-                                                                emp.status ===
-                                                                "Paid"
+                                                                emp.status === "Paid"
                                                                     ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
                                                                     : "bg-green-600 text-white hover:bg-green-700"
                                                             }`}
                                                         >
-                                                            Mark as{" "}
-                                                            {emp.status ===
-                                                            "Paid"
-                                                                ? "Pending"
-                                                                : "Paid"}
+                                                            Mark as {emp.status === "Paid" ? "Pending" : "Paid"}
                                                         </button>
+                                                    )}
 
-                                                        {/* DELETE */}
+                                                    {!emp.isMissingPayslip && (
                                                         <button
-                                                            onClick={async (
-                                                                e
-                                                            ) => {
+                                                            onClick={async (e) => {
                                                                 e.stopPropagation();
-
                                                                 if (
                                                                     window.confirm(
                                                                         "Are you sure you want to delete this payslip record?"
@@ -740,9 +728,7 @@ export default function PayrollDashboard() {
                                                                         await deletePayslip(
                                                                             emp._id
                                                                         );
-                                                                    } catch (
-                                                                        err
-                                                                    ) {
+                                                                    } catch (err) {
                                                                         alert(
                                                                             err.message ||
                                                                                 "Failed to delete"
@@ -753,23 +739,14 @@ export default function PayrollDashboard() {
                                                             className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
                                                             title="Delete Payslip"
                                                         >
-                                                            <Trash2
-                                                                size={
-                                                                    16
-                                                                }
-                                                            />
+                                                            <Trash2 size={16} />
                                                         </button>
-
-                                                    </div>
-
-                                                </td>
-
-                                            </tr>
-                                        )
-                                    )}
-
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
-
                             </table>
 
                         </div>

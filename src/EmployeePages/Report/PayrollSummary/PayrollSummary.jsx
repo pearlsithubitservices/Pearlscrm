@@ -2,24 +2,33 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Clock } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import usePayslip from "../../../Hooks/usePayslip";
-import { useEffect, useState } from "react";
 import { formatMonthYear, getFinancialYear } from '../../../Utils/formatNumber'
 
-
-const taxData = [
-  { label: "Gross taxable income", amount: "₹5,40,000" },
-  { label: "Standard deduction (80C)", amount: "-₹1,50,000" },
-  { label: "HRA exemption", amount: "-₹60,000" },
-  { label: "Net taxable income", amount: "₹3,30,000" },
-];
 
 export default function PayrollSummary() {
   const { user } = useAuth();
   const { payslips } = usePayslip();
 
-  console.log(payslips);
-  const payslipId = payslips.filter((item) => item.employeeId == user?.uid);
-  console.log(payslipId);
+  const userUid = user?.uid || user?.id || user?._id;
+  const userEmpId = user?.profile?.empId || user?.empId;
+  const payslipId = (payslips || []).filter((item) =>
+    item.employeeId == userUid ||
+    item.employeeId == userEmpId ||
+    item.employeeId?.toLowerCase() == user?.email?.toLowerCase() ||
+    item.employeeName == user?.name ||
+    item.employeeName == user?.profile?.name
+  );
+
+  const taxSummary = payslipId.reduce((totals, item) => {
+    totals.gross += Number(item.gross || 0);
+    totals.pf += Number(item.pf || 0);
+    totals.esi += Number(item.esi || 0);
+    totals.professionalTax += Number(item.professionalTax || 0);
+    totals.tds += Number(item.tds || 0);
+    return totals;
+  }, { gross: 0, pf: 0, esi: 0, professionalTax: 0, tds: 0 });
+
+  const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
   return (
     <div className="p-6 bg-[#F5F2EC]  space-y-6">
@@ -59,9 +68,9 @@ export default function PayrollSummary() {
                   className="border-b last:border-none"
                 >
                   <td className="py-3 font-medium">{formatMonthYear(item.month)}</td>
-                  <td className="py-3 text-blue-600">₹ {item.net.toLocaleString()}</td>
+                  <td className="py-3 text-blue-600">{formatCurrency(item.net)}</td>
                   <td className="py-3">
-                    {item.status.toLowerCase() === "paid" ? (
+                    {String(item.status || "pending").toLowerCase() === "paid" ? (
                       <span className="flex items-center gap-1 text-green-600 bg-green-50 px-3 py-1 rounded-full w-fit text-xs">
                         <CheckCircle2 size={14} /> Paid
                       </span>
@@ -102,10 +111,16 @@ export default function PayrollSummary() {
           </thead>
 
           <tbody>
-            {taxData.map((item, i) => (
-              <tr key={i} className="border-b last:border-none">
-                <td className="py-3">{item.label}</td>
-                <td className="py-3 font-medium">{item.amount}</td>
+            {[
+              ["Gross salary", taxSummary.gross],
+              ["Provident Fund (PF)", -taxSummary.pf],
+              ["ESI", -taxSummary.esi],
+              ["Professional Tax", -taxSummary.professionalTax],
+              ["TDS (Income Tax)", -taxSummary.tds],
+            ].map(([label, amount]) => (
+              <tr key={label} className="border-b last:border-none">
+                <td className="py-3">{label}</td>
+                <td className="py-3 font-medium">{formatCurrency(amount)}</td>
               </tr>
             ))}
 
@@ -114,7 +129,7 @@ export default function PayrollSummary() {
                 Total TDS deducted
               </td>
               <td className="py-4 font-bold text-black text-lg">
-                ₹38,400
+                {formatCurrency(taxSummary.tds)}
               </td>
             </tr>
           </tbody>

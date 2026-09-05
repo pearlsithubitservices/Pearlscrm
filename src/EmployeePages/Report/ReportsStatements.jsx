@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Bell,
@@ -13,15 +13,53 @@ import AbsentReport from "./AttendanceSummary/AbsentReport";
 import PayrollSummary from "./PayrollSummary/PayrollSummary";
 import LeaveSummary from "./LeaveSummary/LeaveSummary";
 import TaxDocuments from "./TaxDocuments";
+import { useAuth } from "../../context/AuthContext";
+import { apiUrl } from "../../config/api";
 
 export default function ReportsStatements() {
   const [activeTab, setActiveTab] = useState("attendance");
+  const [attendance, setAttendance] = useState([]);
+  const { user } = useAuth();
+  const userId = user?.uid || user?._id || user?.id || "";
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchAttendance = async () => {
+      try {
+        const response = await fetch(apiUrl(`/empattendancenew/employee/${userId}`));
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to load attendance");
+        setAttendance(data?.data || []);
+      } catch (error) {
+        console.error("Error fetching report attendance:", error);
+        setAttendance([]);
+      }
+    };
+    fetchAttendance();
+  }, [userId]);
+
+  const currentMonthAttendance = useMemo(() => {
+    const now = new Date();
+    return attendance.filter((item) => {
+      const date = new Date(item.clockIn || item.date);
+      return !Number.isNaN(date.getTime()) && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    });
+  }, [attendance]);
+
+  const statusCounts = currentMonthAttendance.reduce((counts, item) => {
+    const status = String(item.status || "").toLowerCase();
+    if (status === "absent") counts.absent += 1;
+    if (status === "late" || status === "late comer") counts.late += 1;
+    if (status === "early logout") counts.earlyExit += 1;
+    if (status === "present" || item.clockIn) counts.present += 1;
+    return counts;
+  }, { present: 0, absent: 0, late: 0, earlyExit: 0 });
 
   const stats = [
-    { title: "Present days", value: 22, icon: UserCheck },
-    { title: "Absences", value: "05", icon: ClipboardList },
-    { title: "Late arrivals", value: "04", icon: Clock },
-    { title: "Early exit", value: "03", icon: LogOut },
+    { title: "Present days", value: statusCounts.present, icon: UserCheck },
+    { title: "Absences", value: statusCounts.absent, icon: ClipboardList },
+    { title: "Late arrivals", value: statusCounts.late, icon: Clock },
+    { title: "Early exit", value: statusCounts.earlyExit, icon: LogOut },
   ];
 
   const tabs = [
@@ -36,8 +74,8 @@ export default function ReportsStatements() {
       case "attendance":
         return (
           <>
-            <AttendanceReport />;
-            <AbsentReport />;
+            <AttendanceReport records={currentMonthAttendance} />
+            <AbsentReport records={currentMonthAttendance} />
           </>)
 
       case "payroll":

@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
       enum: ["IT", "Clinic", "Real Estate"],
       default: "IT",
     },
+    department: {
+      type: String,
+      default: "Engineering",
+    },
     phone: {
       type: String,
       default: "",

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dashboardskeleton } from "../components/Dashboard/Skeleton.jsx";
 import Hotleads from '../components/Dashboard/Hotleads.jsx';
 import {
@@ -7,11 +7,9 @@ import {
   Plus,
   IndianRupee,
   Search,
-  ChartNoAxesCombined,
   Briefcase
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import Employeecomp from '../components/Dashboard/Employeecomp.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import CreateLead from './CreateLead.jsx';
@@ -21,7 +19,6 @@ import { apiUrl } from '../config/api.js';
 export default function Dashboard() {
   const [loading, setLoading] = useState(!sessionStorage.getItem("loaded"));
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { fetchLead, fulllead } = useLead();
   
   const safeFulllead = Array.isArray(fulllead) ? fulllead : [];
@@ -38,10 +35,10 @@ export default function Dashboard() {
     totalLeads: safeFulllead.length || 0,
     pendingTasks: 0,
     completedTasks: 0,
-    followupsToday: 0,
     recentLeads: [],
     todayTasks: [],
   });
+  const [projects, setProjects] = useState([]);
 
   // Skeleton Timer
   useEffect(() => {
@@ -55,27 +52,48 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetchDashboard();
+    const loadDashboard = async () => {
+      try {
+        const response = await fetch(apiUrl("/dashboard"));
+        if (response.ok) {
+          const data = await response.json();
+          if (data && typeof data === 'object' && !data.message) {
+            setDashboardData((prev) => ({
+              ...prev,
+              ...data,
+              totalLeads: data.totalLeads || safeFulllead.length || prev.totalLeads,
+            }));
+          }
+        }
+      } catch (error) {
+        console.log("Error fetching dashboard:", error);
+      }
+    };
+    loadDashboard();
   }, [safeFulllead.length]);
 
-  // FETCH DASHBOARD DATA DYNAMICALLY
-  const fetchDashboard = async () => {
-    try {
-      const response = await fetch(apiUrl("/dashboard"));
-      if (response.ok) {
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const response = await fetch(apiUrl('/projects'));
+        if (!response.ok) throw new Error('Failed to fetch projects');
         const data = await response.json();
-        if (data && typeof data === 'object' && !data.message) {
-          setDashboardData((prev) => ({
-            ...prev,
-            ...data,
-            totalLeads: data.totalLeads || safeFulllead.length || prev.totalLeads,
-          }));
-        }
+        setProjects(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error fetching projects for dashboard:', error);
+        setProjects([]);
       }
-    } catch (error) {
-      console.log("Error fetching dashboard:", error);
-    }
-  };
+    };
+
+    loadProjects();
+  }, []);
+
+  const activeProjects = projects.filter((project) =>
+    ['pending', 'in progress'].includes(String(project?.status || '').toLowerCase())
+  ).length;
+  const completedProjects = projects.filter((project) =>
+    String(project?.status || '').toLowerCase() === 'completed'
+  ).length;
 
   const stats = [
     {
@@ -91,16 +109,17 @@ export default function Dashboard() {
       color: 'from-green-500 to-emerald-500',
     },
     {
-      title: 'Follow-ups Today',
-      value: dashboardData.followupsToday || 0,
-      icon: ChartNoAxesCombined,
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
       title: 'Monthly Revenue',
-      value: '₹312K',
+      value: dashboardData.monthlyRevenue ? `₹${Number(dashboardData.monthlyRevenue).toLocaleString('en-IN')}` : '₹0',
       icon: IndianRupee,
       color: 'from-orange-500 to-yellow-500',
+    },
+    {
+      title: 'Project Report',
+      value: projects.length,
+      detail: `${activeProjects} active · ${completedProjects} completed`,
+      icon: Briefcase,
+      color: 'from-blue-500 to-cyan-500',
     },
   ];
 
@@ -186,6 +205,9 @@ export default function Dashboard() {
                   <h2 className="text-3xl sm:text-4xl text-[#0b2b57] font-bold mt-1">
                     {item.value}
                   </h2>
+                  {item.detail && (
+                    <p className="text-xs text-gray-500 mt-1">{item.detail}</p>
+                  )}
                 </motion.div>
               ))}
             </div>

@@ -15,7 +15,7 @@ const generateToken = (user) => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, industry } = req.body;
+    const { name, email, password, role, industry, department } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -26,6 +26,7 @@ const register = async (req, res) => {
 
     const normalizedEmail = String(email).trim().toLowerCase();
     const safeRole = role === "Admin" || role === "Employee" ? role : "Employee";
+    const safeDepartment = String(department || "Engineering").trim() || "Engineering";
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -42,6 +43,10 @@ const register = async (req, res) => {
       password: hashedPassword,
       role: safeRole,
       industry: industry || "IT",
+      department: safeDepartment,
+      profile: {
+        department: safeDepartment,
+      },
     });
 
     const token = generateToken(user);
@@ -56,6 +61,7 @@ const register = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
+        department: user.department || user.profile?.department || "Engineering",
         avatar: user.avatar,
       },
     });
@@ -116,6 +122,7 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
+        department: user.department || user.profile?.department || "Engineering",
         avatar: user.avatar,
       },
     });
@@ -147,6 +154,7 @@ const getMe = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
+        department: user.department || user.profile?.department || "Engineering",
         avatar: user.avatar,
       },
     });

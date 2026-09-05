@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Loading from '../Dashboard/Loading';
 import { apiUrl } from '../../config/api';
 
@@ -58,19 +58,13 @@ const Hotleads = () => {
             0
         );
 
-        if (status === "proposal" || status === "quote" || status === "negotiation") {
+        if (status === "proposal" || status === "quote") {
             stageBudgetTotals.proposal += budgetValue;
-        }
-
-        if (status === "negotiation" || status === "follow-up" || status === "in progress") {
+        } else if (status === "negotiation" || status === "follow-up" || status === "in progress") {
             stageBudgetTotals.negotiation += budgetValue;
-        }
-
-        if (status === "qualified" || status === "interested" || status === "warm") {
+        } else if (status === "qualified" || status === "interested" || status === "warm") {
             stageBudgetTotals.qualified += budgetValue;
-        }
-
-        if (status === "converted" || status === "closed" || status === "won") {
+        } else if (status === "converted" || status === "closed" || status === "won") {
             stageBudgetTotals.closed += budgetValue;
         }
     });
@@ -83,7 +77,24 @@ const Hotleads = () => {
     };
 
     useEffect(() => {
-        fetchLeads();
+        const loadLeads = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch(apiUrl('/leads'));
+                if (response.ok) {
+                    const responseData = await response.json();
+                    setLeads(Array.isArray(responseData) ? responseData : responseData.data || []);
+                } else {
+                    setLeads([]);
+                }
+            } catch (error) {
+                console.log("Hotleads fetch error:", error);
+                setLeads([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadLeads();
     }, []);
 
     // CIRCLE CHART DATA
@@ -110,60 +121,40 @@ const Hotleads = () => {
         },
     ];
 
+    const totalRevenue = Object.values(stageBudgetTotals).reduce((sum, value) => sum + value, 0);
+
     const pipelineStages = [
         {
             name: "Proposal Stage",
             color: "bg-purple-500",
-            width: totalLeads ? Math.max(8, Math.min(100, (statusCounts.interested || 0) / Math.max(totalLeads, 1) * 100)) + '%' : '0%',
+            width: totalLeads ? Math.max(8, Math.min(100, (stageBudgetTotals.proposal / Math.max(totalRevenue, 1)) * 100)) + '%' : '0%',
             revenue: `₹${(stageBudgetTotals.proposal || 0).toLocaleString('en-IN')}`,
         },
         {
             name: "Negotiation",
             color: "bg-orange-500",
-            width: totalLeads ? Math.max(8, Math.min(100, (statusCounts.contacted || 0) / Math.max(totalLeads, 1) * 100)) + '%' : '0%',
+            width: totalLeads ? Math.max(8, Math.min(100, (stageBudgetTotals.negotiation / Math.max(totalRevenue, 1)) * 100)) + '%' : '0%',
             revenue: `₹${(stageBudgetTotals.negotiation || 0).toLocaleString('en-IN')}`,
         },
         {
             name: "Qualified Leads",
             color: "bg-yellow-500",
-            width: totalLeads ? Math.max(8, Math.min(100, (statusCounts.interested || 0) / Math.max(totalLeads, 1) * 100)) + '%' : '0%',
+            width: totalLeads ? Math.max(8, Math.min(100, (stageBudgetTotals.qualified / Math.max(totalRevenue, 1)) * 100)) + '%' : '0%',
             revenue: `₹${(stageBudgetTotals.qualified || 0).toLocaleString('en-IN')}`,
         },
         {
             name: "Closed Won",
             color: "bg-emerald-500",
-            width: totalLeads ? Math.max(8, Math.min(100, (statusCounts.converted || 0) / Math.max(totalLeads, 1) * 100)) + '%' : '0%',
+            width: totalLeads ? Math.max(8, Math.min(100, (stageBudgetTotals.closed / Math.max(totalRevenue, 1)) * 100)) + '%' : '0%',
             revenue: `₹${(stageBudgetTotals.closed || 0).toLocaleString('en-IN')}`,
         },
     ];
-
-    const totalRevenue = Object.values(stageBudgetTotals).reduce((sum, value) => sum + value, 0);
 
     const radius = 35;
     const stroke = 6;
     const r = radius - stroke / 2;
     const circumference = 2 * Math.PI * r;
     let offset = 0;
-
-    // DYNAMIC FETCH LEADS
-    const fetchLeads = async () => {
-        try {
-            setLoading(true);
-            const response = await fetch(apiUrl('/leads'));
-            if (response.ok) {
-                const data = await response.json();
-                const leadList = Array.isArray(data) ? data : data.data || [];
-                setLeads(leadList);
-            } else {
-                setLeads([]);
-            }
-        } catch (error) {
-            console.log("Hotleads fetch error:", error);
-            setLeads([]);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const filteredLeads = safeLeads.filter((lead) => (lead?.priority?.toLowerCase() === "hot"));
 

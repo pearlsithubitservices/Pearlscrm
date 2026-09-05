@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Bell,
   CheckSquare,
   Clock3,
   CheckCheck,
-  CalendarDays,
 } from "lucide-react";
 import RecentTask from "./RecentTask";
 import RecentFollowups from "./RecentFollowups";
@@ -18,11 +17,8 @@ export default function EmployeeDashboard() {
   const { tasks } = useTasks();
   const { getFollowups } = useFollowups();
   const { user } = useAuth();
-  const [followups, setFollowups] = useState([]);
   const pending = tasks.filter((item) => item?.status.toLowerCase() == "pending");
   const completed = tasks.filter((item) => item?.status.toLowerCase() == "completed");
-
-  const followupsbyid=followups.filter((item)=>item.assignedTo == user?.uid);
 
   useEffect(() => {
     const fetchdata = async () => {
@@ -30,7 +26,6 @@ export default function EmployeeDashboard() {
         const data = await getFollowups();
         const res = data.filter((item) =>
           item.assignedTo == user?.uid)
-        setFollowups(res);
         console.log(res);
       }
       catch (err) {
@@ -55,11 +50,6 @@ export default function EmployeeDashboard() {
       title: "Completed Tasks",
       value: completed.length,
       icon: CheckCheck,
-    },
-    {
-      title: "Follow-ups Today",
-      value: followupsbyid.length,
-      icon: CalendarDays,
     },
   ];
 

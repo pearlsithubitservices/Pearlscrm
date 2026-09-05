@@ -10,9 +10,21 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState('IT');
+  const [department, setDepartment] = useState('Engineering');
   const [role, setRole] = useState('Admin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const departmentOptions = [
+  
+    'Engineering',
+    'Design',
+    'HR Department',
+    'Finance',
+    'Sales & Marketing',
+    'Operations',
+    'Order Management',
+  ];
 
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading, login, register } = useAuth();
@@ -76,6 +88,7 @@ export default function Login() {
           password,
           role,
           industry,
+          department,
         });
 
         if (authUser?.role === 'Admin') {
@@ -198,8 +211,7 @@ export default function Login() {
               />
             </div>
 
-            {/* SELECT INDUSTRY (Register only) */}
-            {!isLogin && (
+            {/* {!isLogin && (
               <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
@@ -209,6 +221,25 @@ export default function Login() {
                 <option value="Clinic" className="bg-slate-900 text-white">Clinic</option>
                 <option value="Real Estate" className="bg-slate-900 text-white">Real Estate</option>
               </select>
+            )} */}
+
+            {!isLogin && (
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-medium ml-1">
+                  Department:
+                </label>
+                <select
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  className="w-full px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 outline-none text-white focus:border-purple-500 transition"
+                >
+                  {departmentOptions.map((option) => (
+                    <option key={option} value={option} className="bg-slate-900 text-white">
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
             {/* ROLE SELECTOR */}

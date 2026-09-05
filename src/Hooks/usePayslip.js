@@ -93,6 +93,36 @@ export default function usePayslip() {
     }
   };
 
+  const updatePayslip = async (id, payload) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`${getAPI()}/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Failed to update payslip");
+      }
+
+      setPayslips((prev) => prev.map((item) => (item._id === id ? data : item)));
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // DELETE
   const deletePayslip = async (id) => {
     try {
@@ -127,6 +157,7 @@ export default function usePayslip() {
     error,
     fetchPayslips,
     createPayslip,
+    updatePayslip,
     updatePayslipStatus,
     deletePayslip,
   };
