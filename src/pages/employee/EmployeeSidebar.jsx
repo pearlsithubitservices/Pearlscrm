@@ -22,17 +22,12 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useIndustry } from '../../context/IndustryContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import EmployeeNotificationBell from '../../components/EmployeeNotificationBell';
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, role, logout } = useAuth();
   const { config } = useIndustry();
   const navigate = useNavigate();
-
-  // Same employeeId fallback chain used across Leave/Payroll/Benefits forms
-  const employeeId =
-    user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id || "";
 
   const mainItems = [
     {
@@ -118,10 +113,6 @@ export default function Sidebar() {
             <h1 className="font-bold text-base tracking-wide text-white">
               PEARLS IT HUB
             </h1>
-          </div>
-          {/* NOTIFICATION BELL - desktop only (mobile has its own in the top bar) */}
-          <div className="hidden lg:block">
-            <EmployeeNotificationBell employeeId={employeeId} />
           </div>
           {/* CLOSE BUTTON FOR MOBILE */}
           <button
@@ -245,7 +236,7 @@ export default function Sidebar() {
           </div>
           <h1 className="font-bold text-sm tracking-wide">PEARLS IT HUB</h1>
         </div>
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <EmployeeNotificationBell employeeId={employeeId} />
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -253,7 +244,7 @@ export default function Sidebar() {
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* MOBILE OVERLAY BACKDROP */}
