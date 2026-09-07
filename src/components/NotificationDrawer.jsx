@@ -7,12 +7,13 @@ import { socket } from "../config/socket";
 import { apiUrl } from "../config/api";
 import useNotification from "../Hooks/useNotification";
 
-// Visual config per notification type so Leave / Payroll / Benefits
+// Visual config per notification type so Leave / Payroll / Benefits / Feedback
 // alerts are instantly distinguishable at a glance for HR/Admin too.
 const NOTIF_TYPE_META = {
   Leave: { icon: CalendarDays, color: "text-blue-600", bg: "bg-blue-50" },
   Payroll: { icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50" },
   Benefits: { icon: ShieldCheck, color: "text-purple-600", bg: "bg-purple-50" },
+  Feedback: { icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
 };
 
 function getNotifMeta(type) {
@@ -23,9 +24,10 @@ const MODULE_ORDER = [
   { key: "Leave", label: "Leave Management" },
   { key: "Payroll", label: "Payroll" },
   { key: "Benefits", label: "Benefits" },
+  { key: "Feedback", label: "Feedback & Communication" },
   { key: "Other", label: "Other Alerts" },
 ];
-const KNOWN_NOTIF_KEYS = ["Leave", "Payroll", "Benefits"];
+const KNOWN_NOTIF_KEYS = ["Leave", "Payroll", "Benefits", "Feedback"];
 
 export default function NotificationDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();

@@ -5,9 +5,6 @@ import {
     ChevronDown,
     Eye,
     Trash2,
-    ChevronLeft,
-    ChevronRight,
-    
 } from "lucide-react";
 import useEmployees from "../../Hooks/useEmployees";
 import useReview from "../../Hooks/useReview";
@@ -20,9 +17,47 @@ export default function PerformanceList() {
     const [search, setSearch] = useState("");
     const [department, setDepartment] = useState("All Departments");
     const [reviews, setReviews] = useState([]);
-    const { employees } = useEmployees();
-    const { getReviews } = useReview();
+    const { employees, deleteEmployee, refetch: refetchEmployees } = useEmployees();
+    const { getReviews, deleteReview } = useReview();
     const navigate = useNavigate();
+
+    const handleRemove = async (e, employee) => {
+        e.stopPropagation();
+        if (!employee) return;
+
+        const empName = getEmployeeDisplay(employee, "name");
+        const isConfirmed = window.confirm(`Are you sure you want to remove ${empName}?`);
+        if (!isConfirmed) return;
+
+        try {
+            const employeeId = employee?.uid || employee?.id || employee?._id;
+
+            // Clean up review data
+            if (employeeId) {
+                try {
+                    await deleteReview(employeeId);
+                } catch (err) {
+                    console.error("Error deleting review:", err);
+                }
+            }
+
+            // Clean up employee
+            if (employeeId) {
+                await deleteEmployee(employeeId);
+            }
+
+            if (refetchEmployees) {
+                await refetchEmployees();
+            }
+            const res = await getReviews();
+            if (res && res.data) {
+                setReviews(res.data);
+            }
+        } catch (error) {
+            console.error("Error removing employee:", error);
+            alert("Failed to remove employee: " + (error.message || "Unknown error"));
+        }
+    };
 
     const getEmployeeDisplay = (employee, field, fallback = "-") => {
         const profile = employee?.profile || {};
@@ -56,47 +91,75 @@ export default function PerformanceList() {
         fetchReviews();
     }, [getReviews]);
 
-    const filteredEmployees = useMemo(() => {
-        return employees?.filter((emp) => {
-            const matchesSearch =
-                emp?.employeeName?.toLowerCase()?.includes(search.toLowerCase()) ||
-                emp?.name?.toLowerCase()?.includes(search.toLowerCase()) ||
-                emp?.employeeDepartment?.toLowerCase()?.includes(search.toLowerCase());
+    const availableDepartments = useMemo(() => {
+        const set = new Set(["Engineering", "Design", "HR", "Sales", "Finance", "Marketing"]);
+        employees?.forEach((emp) => {
+            const dept = getEmployeeDisplay(emp, "department");
+            if (dept && dept !== "-" && dept !== "Employee") {
+                set.add(dept);
+            }
+        });
+        return Array.from(set).sort();
+    }, [employees]);
 
-            const matchesDepartment = department === "All Departments" ||
-                emp?.employeeDepartment === department;
+    const filteredEmployees = useMemo(() => {
+        const query = search.trim().toLowerCase();
+
+        return employees?.filter((emp) => {
+            const empName = (emp?.employeeName || emp?.name || "").toLowerCase();
+            const empDept = getEmployeeDisplay(emp, "department").toLowerCase();
+            const empRole = getEmployeeDisplay(emp, "role").toLowerCase();
+            const empId = String(getEmployeeDisplay(emp, "id")).toLowerCase();
+            const empEmail = (emp?.email || "").toLowerCase();
+
+            const matchesSearch =
+                !query ||
+                empName.includes(query) ||
+                empDept.includes(query) ||
+                empRole.includes(query) ||
+                empId.includes(query) ||
+                empEmail.includes(query);
+
+            const matchesDepartment =
+                department === "All Departments" ||
+                empDept === department.toLowerCase();
 
             return matchesSearch && matchesDepartment;
         });
     }, [employees, search, department]);
-    console.log(filteredEmployees);
+
     const [currentPage, setCurrentPage] = useState(1);
 
-    const getPerformanceValue = (employee) => {
+    const getPerformanceInfo = (employee) => {
         const employeeId = employee?.uid || employee?.id || employee?._id;
         const matchingReview = reviews.find((review) => {
             const reviewEmployeeId = review?.employee_uid || review?.employeeId || review?.employee?.uid || review?.employee?.id;
-            return String(reviewEmployeeId || "") === String(employeeId || "") ||
-                String(review?.employeeName || "") === String(employee?.employeeName || employee?.name || "") ||
-                String(review?.employee_uid || "") === String(employee?.uid || "");
+            return (
+                (employeeId && String(reviewEmployeeId || "") === String(employeeId || "")) ||
+                String(review?.employeeName || "").toLowerCase() === String(employee?.employeeName || employee?.name || "").toLowerCase() ||
+                (employee?.uid && String(review?.employee_uid || "") === String(employee?.uid || ""))
+            );
         });
 
-        const rating = Number(matchingReview?.overallRating ?? 0);
-        if (!rating) return 0;
-
-        return Math.min(100, Math.max(0, Math.round((rating / 5) * 100)));
-    };
-
-    const getPerformanceBadge = (value) => {
-        if (value >= 88) {
-            return "bg-emerald-100 text-emerald-700";
+        if (matchingReview && matchingReview.overallRating) {
+            const rating = Number(matchingReview.overallRating);
+            const percent = Math.min(100, Math.max(0, Math.round((rating / 5) * 100)));
+            return {
+                value: percent,
+                hasReview: true,
+                rating,
+                label: `Performance ${percent}%`,
+                badge: percent >= 80 ? "bg-emerald-100 text-emerald-700" : percent >= 60 ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700",
+            };
         }
 
-        if (value >= 78) {
-            return "bg-amber-100 text-amber-700";
-        }
-
-        return "bg-rose-100 text-rose-700";
+        return {
+            value: 0,
+            hasReview: false,
+            rating: 0,
+            label: "No Review Yet",
+            badge: "bg-gray-100 text-gray-600",
+        };
     };
 
     /* PAGINATION */
@@ -122,7 +185,7 @@ export default function PerformanceList() {
                     </h1>
 
                     <p className="text-gray-500 mt-1">
-                        Manage and track all employees performances, goals, training, reveiws
+                        Manage and track all employees&apos; performance, goals, training, and reviews
                     </p>
                 </div>
 
@@ -197,12 +260,11 @@ export default function PerformanceList() {
               "
                         >
                             <option>All Departments</option>
-                            <option>Engineering</option>
-                            <option>Design</option>
-                            <option>HR</option>
-                            <option>Sales</option>
-                            <option>Finance</option>
-                            <option>Marketing</option>
+                            {availableDepartments.map((deptName) => (
+                                <option key={deptName} value={deptName}>
+                                    {deptName}
+                                </option>
+                            ))}
                         </select>
 
                         <ChevronDown
@@ -264,9 +326,11 @@ export default function PerformanceList() {
                     </thead>
 
                     <tbody>
-                        {currentFiles?.map((employee, index) => (
+                        {currentFiles?.map((employee, index) => {
+                            const perf = getPerformanceInfo(employee);
+                            return (
                             <motion.tr
-                                key={employee.id}
+                                key={employee.id || employee._id || index}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{
@@ -276,8 +340,8 @@ export default function PerformanceList() {
                                 whileHover={{
                                     backgroundColor: "#fafafa",
                                 }}
-                                className="transition-colors"
-                                onClick={()=>navigate(`/admin-performance/${employee?.uid || employee?.id}`)}
+                                className="transition-colors cursor-pointer"
+                                onClick={()=>navigate(`/admin-performance/${employee?.uid || employee?.id || employee?._id}`)}
                             >
                                 {/* Employee Name */}
 
@@ -286,8 +350,8 @@ export default function PerformanceList() {
                                         <h3 className="text-[20px] font-medium text-[#1A1A1A]">
                                             {getEmployeeDisplay(employee, "name")}
                                         </h3>
-                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getPerformanceBadge(getPerformanceValue(employee))}`}>
-                                            Performance {getPerformanceValue(employee)}%
+                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${perf.badge}`}>
+                                            {perf.label}
                                         </span>
                                     </div>
                                 </td>
@@ -318,7 +382,7 @@ export default function PerformanceList() {
 
                                 {/* Actions */}
 
-                                <td className="border border-gray-300 py-5">
+                                <td className="border border-gray-300 py-5" onClick={(e) => e.stopPropagation()}>
 
                                     <div className="flex items-center justify-center gap-4">
 
@@ -331,6 +395,7 @@ export default function PerformanceList() {
                                             whileTap={{
                                                 scale: 0.95,
                                             }}
+                                            onClick={(e) => handleRemove(e, employee)}
                                             className="
             flex
             items-center
@@ -346,7 +411,10 @@ export default function PerformanceList() {
             font-medium
             hover:bg-[#FFF5F2]
             transition
+            cursor-pointer
+            shadow-xs
           "
+                                            title="Remove employee"
                                         >
                                             <Trash2 size={15} />
 
@@ -362,6 +430,10 @@ export default function PerformanceList() {
                                             whileTap={{
                                                 scale: 0.95,
                                             }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/admin-performance/${employee?.uid || employee?.id || employee?._id}`);
+                                            }}
                                             className="
             flex
             items-center
@@ -370,12 +442,15 @@ export default function PerformanceList() {
             py-2
             rounded-full
             bg-[#F3F3F3]
-            text-gray-600
+            text-gray-700
             text-sm
             font-medium
             hover:bg-gray-200
             transition
+            cursor-pointer
+            shadow-xs
           "
+                                            title="View employee performance details"
                                         >
                                             <Eye size={15} />
 
@@ -387,9 +462,8 @@ export default function PerformanceList() {
                                 </td>
 
                             </motion.tr>
-                        ))}
-
-
+                            );
+                        })}
 
                     </tbody>
 

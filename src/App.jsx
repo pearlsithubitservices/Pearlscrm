@@ -286,7 +286,7 @@ export default function App() {
 
               <Route
                 path="/clients"
-                element={<Clients />}
+                element={<ClientManagement />}
               />
 
               <Route

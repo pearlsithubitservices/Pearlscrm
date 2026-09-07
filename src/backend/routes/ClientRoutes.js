@@ -67,4 +67,18 @@ router.put("/:id", async (req, res) => {
     }
 });
 
+// DELETE CLIENT
+router.delete("/:id", async (req, res) => {
+    try {
+        const client = await Client.findByIdAndDelete(req.params.id);
+        if (!client) {
+            return res.status(404).json({ message: "Client not found" });
+        }
+        res.status(200).json({ success: true, message: "Client deleted successfully", id: req.params.id });
+    } catch (error) {
+        console.error("Error deleting client:", error);
+        res.status(500).json({ message: "Failed to delete client" });
+    }
+});
+
 module.exports = router;

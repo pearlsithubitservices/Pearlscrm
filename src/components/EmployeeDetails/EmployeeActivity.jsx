@@ -140,13 +140,36 @@ export default function ActivityTimeline({ employee }) {
           ).values()
         );
 
-        uniqueActivities.sort((a, b) => {
-          const aTime = a.timestamp ?? Number.MAX_SAFE_INTEGER;
-          const bTime = b.timestamp ?? Number.MAX_SAFE_INTEGER;
-          return bTime - aTime;
-        });
+        let finalActivities = [...uniqueActivities];
 
-        setActivities(uniqueActivities.length ? uniqueActivities : demoActivities);
+        // If no /activity found, fetch real tasks for this employee
+        if (finalActivities.length === 0) {
+          try {
+            const taskRes = await fetch(apiUrl("/tasks"));
+            if (taskRes.ok) {
+              const allTasks = await taskRes.json();
+              const taskList = Array.isArray(allTasks) ? allTasks : (allTasks?.data || []);
+              const empTasks = taskList.filter((t) => {
+                const assigned = t.assignedTo;
+                const assignedId = typeof assigned === "object" ? (assigned?._id || assigned?.id || assigned?.email || assigned?.name) : assigned;
+                return employeeIdentifiers.some((id) => String(id).toLowerCase() === String(assignedId).toLowerCase());
+              });
+
+              if (empTasks.length > 0) {
+                finalActivities = empTasks.slice(0, 10).map((t, idx) => normalizeActivity({
+                  _id: t._id || t.id || `task-${idx}`,
+                  label: `Assigned Task: ${t.title || 'Task'}`,
+                  description: `Status: ${t.status || 'Pending'} • Priority: ${t.priority || 'Medium'} • Progress: ${t.progress || 0}%`,
+                  createdAt: t.createdAt || t.updatedAt,
+                }, idx));
+              }
+            }
+          } catch (taskErr) {
+            console.warn("Could not load tasks for employee activity:", taskErr);
+          }
+        }
+
+        setActivities(finalActivities.length ? finalActivities : demoActivities);
       } catch (error) {
         console.error("Error loading employee activity:", error);
         setActivities(demoActivities);
