@@ -1,14 +1,14 @@
 // Base API URL dynamically loaded from environment variables (.env)
 const defaultApiUrl = import.meta.env.DEV
-  ? 'http://localhost:5000/api'
-  : 'https://pearlscrm.onrender.com/api';
+  ? "http://localhost:5000/api"
+  : "https://pearlscrm-1.onrender.com/api";
 
 export const BASE_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 
 /**
  * Utility function to dynamically format API endpoints with VITE_API_URL.
  * Handles single slashes and path formatting automatically.
- * 
+ *
  * @param {string} path - API endpoint subpath (e.g., "/leads", "/projects/123")
  * @returns {string} Complete formatted API URL
  */
