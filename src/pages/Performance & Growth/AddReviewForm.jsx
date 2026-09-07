@@ -27,14 +27,19 @@ export default function AddReviewForm({
     } = useReview();
 
     const { employees } = useEmployees();
-    console.log(currentUserid);
 
-    const currentEmployee = employees.find(
+    const currentEmployee = employees?.find(
         (item) =>
-            item.uid === currentUserid ||
-            item.id === currentUserid
-    );
-    console.log(review);
+            String(item.uid) === String(currentUserid) ||
+            String(item.id) === String(currentUserid) ||
+            String(item._id) === String(currentUserid) ||
+            String(item.empId) === String(currentUserid)
+    ) || {
+        uid: currentUserid,
+        id: currentUserid,
+        employeeName: "Employee",
+        role: "Employee"
+    };
 
     const [rating, setRating] = useState(1);
     const [hover, setHover] = useState(0);
@@ -132,16 +137,16 @@ export default function AddReviewForm({
 
             if (review) {
                 const Updatedpayload = {
-                    employee_uid: review.employee_uid,
-                    employeeName: review.employeeName,
-                    employeeDesignation: review.employeeDesignation,
-                    reviewerName: user.uid,
+                    employee_uid: review.employee_uid || currentEmployee.uid || currentEmployee.id || currentEmployee._id,
+                    employeeName: review.employeeName || currentEmployee.employeeName || currentEmployee.name || "Employee",
+                    employeeDesignation: review.employeeDesignation || currentEmployee.employeeRole || currentEmployee.role || "Employee",
+                    reviewerName: user?.displayName || user?.name || user?.email || "Admin",
                     reviewerType: formData.reviewType,
                     reviewerDesignation: "HR Manager",
                     reviewerImage: "",
                     reviewTitle: formData.reviewTitle,
                     overallRating: rating,
-                    reviewDate: review.reviewDate,
+                    reviewDate: review.reviewDate || new Date(),
 
                     metrics: [
                         {
@@ -172,13 +177,14 @@ export default function AddReviewForm({
                 response = await updateReview(review._id, Updatedpayload);
             } else {
                 const payload = {
-                    employee_uid: currentEmployee.uid,
-                    employeeName: currentEmployee.employeeName || currentEmployee.name,
+                    employee_uid: currentEmployee.uid || currentEmployee.id || currentEmployee._id || currentUserid,
+                    employeeName: currentEmployee.employeeName || currentEmployee.name || "Employee",
                     employeeDesignation:
+                        currentEmployee.employeeRole ||
                         currentEmployee.employeeDepartment ||
                         currentEmployee.role ||
                         "Employee",
-                    reviewerName: user.uid,
+                    reviewerName: user?.displayName || user?.name || user?.email || "Admin",
                     reviewerType: formData.reviewType,
                     reviewerDesignation: "HR Manager",
                     reviewerImage: "",

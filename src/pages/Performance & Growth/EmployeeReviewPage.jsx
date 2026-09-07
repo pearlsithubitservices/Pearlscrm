@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import useCourse from "../../Hooks/useCourse";
 import useReview from "../../Hooks/useReview";
 
-export default function EmployeeReviewPage({ reviews, onClose, currentUserid }) {
+export default function EmployeeReviewPage({ reviews, onClose, currentUserid, onReviewDeleted }) {
     console.log(reviews);
     const [Open, setOpen] = useState(false);
     const { deleteReview } = useReview();
@@ -166,10 +166,22 @@ export default function EmployeeReviewPage({ reviews, onClose, currentUserid }) 
                     <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: .97 }}
-                        className="border border-red-500 text-red-500 rounded-xl py-4 font-semibold bg-white"
+                        className="border border-red-500 text-red-500 rounded-xl py-4 font-semibold bg-white cursor-pointer hover:bg-red-50 transition"
                         onClick={async () => {
-                            await deleteReview(reviews?._id);
-                            onClose();
+                            if (!window.confirm("Are you sure you want to remove this performance review?")) return;
+                            try {
+                                const idToDelete = reviews?._id || reviews?.id;
+                                if (!idToDelete) {
+                                    alert("Review ID not found");
+                                    return;
+                                }
+                                await deleteReview(idToDelete);
+                                if (onReviewDeleted) onReviewDeleted(idToDelete);
+                                onClose?.();
+                            } catch (err) {
+                                console.error("Error deleting review:", err);
+                                alert("Failed to remove review: " + (err.message || "Unknown error"));
+                            }
                         }}
                     >
                         Remove

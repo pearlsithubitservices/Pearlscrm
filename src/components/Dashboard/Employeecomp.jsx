@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAttendance from '../../Hooks/useAttendance';
 import useEmployees from '../../Hooks/useEmployees';
 import { apiUrl } from '../../config/api';
 
 const Employeecomp = ({ leadcounts }) => {
     const [leads, setLeads] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [attendance, setAttendance] = useState([]);
     const { getAttendance } = useAttendance();
     const { employees } = useEmployees();
+    const navigate = useNavigate();
 
     const isToday = (isoDate) => {
         if (!isoDate) return false;
@@ -25,6 +26,9 @@ const Employeecomp = ({ leadcounts }) => {
     const safeAttendance = Array.isArray(attendance) ? attendance : [];
     const safeEmployees = Array.isArray(employees) ? employees : [];
     const safeLeads = Array.isArray(leads) ? leads : [];
+    const pendingQuotations = safeLeads.filter((lead) =>
+        ['proposal', 'quote', 'quotation', 'pending quotation'].includes(String(lead?.status || '').trim().toLowerCase())
+    );
 
     // Get today's online employee UIDs
     const onlineEmployeeIds = safeAttendance
@@ -51,28 +55,22 @@ const Employeecomp = ({ leadcounts }) => {
     }, []);
 
     useEffect(() => {
-        fetchLeads();
-    }, []);
-
-    // FETCH LEADS DYNAMICALLY
-    const fetchLeads = async () => {
-        try {
-            setLoading(true);
-            const response = await fetch(apiUrl('/leads'));
-            if (response.ok) {
-                const data = await response.json();
-                const list = Array.isArray(data) ? data : data.data || [];
-                setLeads(list);
-            } else {
+        const loadLeads = async () => {
+            try {
+                const response = await fetch(apiUrl('/leads'));
+                if (response.ok) {
+                    const data = await response.json();
+                    setLeads(Array.isArray(data) ? data : data.data || []);
+                } else {
+                    setLeads([]);
+                }
+            } catch (error) {
+                console.log("Employeecomp leads fetch error:", error);
                 setLeads([]);
             }
-        } catch (error) {
-            console.log("Employeecomp leads fetch error:", error);
-            setLeads([]);
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
+        loadLeads();
+    }, []);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#f3f0eb] px-4 sm:px-8 py-2">
@@ -148,9 +146,13 @@ const Employeecomp = ({ leadcounts }) => {
                     <h2 className="text-base font-bold text-[#0b2b57]">
                         Pending Quotations
                     </h2>
-                    <span className="text-xs font-semibold text-[#2563a9] bg-blue-50 px-3 py-1 rounded-full">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/leads')}
+                        className="text-xs font-semibold text-[#2563a9] bg-blue-50 px-3 py-1 rounded-full hover:bg-blue-100"
+                    >
                         View all
-                    </span>
+                    </button>
                 </div>
 
                 <div className="overflow-hidden rounded-2xl bg-white text-black p-5 border border-gray-200 shadow-sm">
@@ -164,14 +166,14 @@ const Employeecomp = ({ leadcounts }) => {
                         </thead>
 
                         <tbody className="divide-y divide-gray-100">
-                            {safeLeads.length === 0 ? (
+                            {pendingQuotations.length === 0 ? (
                                 <tr>
                                     <td colSpan={3} className="p-6 text-center text-gray-400">
                                         No pending quotations.
                                     </td>
                                 </tr>
                             ) : (
-                                safeLeads.slice(0, 5).map((lead) => (
+                                pendingQuotations.slice(0, 5).map((lead) => (
                                     <tr key={lead._id || lead.id} className="hover:bg-gray-50 transition">
                                         <td className="p-2.5">
                                             <h2 className="font-bold text-gray-900 truncate">
@@ -182,11 +184,11 @@ const Employeecomp = ({ leadcounts }) => {
                                             </p>
                                         </td>
                                         <td className="p-2.5 font-semibold text-gray-800">
-                                            {lead.budget ? `₹${lead.budget}` : "₹10,000"}
+                                            {lead.budget ? `₹${lead.budget}` : "Not specified"}
                                         </td>
                                         <td className="p-2.5">
                                             <span className="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full text-[10px] font-bold">
-                                                Pending
+                                                {lead.status}
                                             </span>
                                         </td>
                                     </tr>

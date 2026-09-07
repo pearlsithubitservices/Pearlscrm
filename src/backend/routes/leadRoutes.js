@@ -14,8 +14,19 @@ const fs = require("fs");
 const leadUploadDirectory = path.join(__dirname, "../uploads/leads");
 fs.mkdirSync(leadUploadDirectory, { recursive: true });
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, leadUploadDirectory);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `lead-doc-${uniqueSuffix}${ext}`);
+  },
+});
+
 const upload = multer({
-  dest: leadUploadDirectory,
+  storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
@@ -56,14 +67,16 @@ router.post(
 router.put("/:id/next-action", async (req, res) => {
   try {
     const { nextAction, nextActionDate, followUpCount } = req.body;
+    const validDate = nextActionDate && String(nextActionDate).trim() !== "" ? new Date(nextActionDate) : null;
+
     const lead = await Lead.findByIdAndUpdate(
       req.params.id,
       {
         nextAction: nextAction || "",
-        nextActionDate: nextActionDate || null,
+        nextActionDate: validDate && !isNaN(validDate.getTime()) ? validDate : null,
         followUpCount: Number.isFinite(Number(followUpCount)) ? Number(followUpCount) : 0,
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: false }
     );
 
     if (!lead) return res.status(404).json({ message: "Lead not found" });
@@ -80,6 +93,7 @@ router.put("/:id/next-action", async (req, res) => {
 
     return res.json(lead);
   } catch (error) {
+    console.error("Error in next-action route:", error);
     return res.status(500).json({ message: error.message });
   }
 });

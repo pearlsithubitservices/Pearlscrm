@@ -1,6 +1,11 @@
-import React from 'react'
-
-const AttendanceReport = () => {
+const AttendanceReport = ({ records = [] }) => {
+    const formatHours = (seconds) => {
+        const totalSeconds = Number(seconds) || 0
+        if (totalSeconds <= 0) return '0m'
+        const hours = Math.floor(totalSeconds / 3600)
+        const minutes = Math.floor((totalSeconds % 3600) / 60)
+        return hours ? `${hours}h ${minutes}m` : `${minutes}m`
+    }
     return (
         <div className="bg-white p-6 rounded-xl shadow-sm mb-6 overflow-x-auto mx-4 border border-black/20">
 
@@ -10,38 +15,36 @@ const AttendanceReport = () => {
                 </h2>
 
                 <span className="bg-gray-100 px-3 py-1 rounded-lg text-sm">
-                    May 2025
+                    {new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' })}
                 </span>
             </div>
 
             <table className="w-full min-w-[900px] text-sm">
                 <thead className="text-left text-gray-500">
                     <tr>
-                        {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN", "TOTAL"].map((h, i) => (
+                        {["DATE", "STATUS", "CLOCK IN", "CLOCK OUT", "WORKING TIME"].map((h, i) => (
                             <th key={i} className="p-3">{h}</th>
                         ))}
                     </tr>
                 </thead>
 
                 <tbody className="text-gray-700">
-                    {[1, 2, 3, 4].map((row) => (
-                        <tr key={row} className="border-t">
-                            <td className="p-3">01<br />8h 40m</td>
-                            <td className="p-3">02<br />8h 40m</td>
-                            <td className="p-3">03<br />8h 40m</td>
-                            <td className="p-3">04<br />8h 40m</td>
-                            <td className="p-3">05<br />8h 40m</td>
-                            <td className="p-3">07<br />8h 40m</td>
-                            <td className="p-3">-</td>
-                            <td className="p-3 font-bold">67h 33m</td>
+                    {records.map((record) => (
+                        <tr key={record._id || record.date} className="border-t">
+                            <td className="p-3">{new Date(record.date).toLocaleDateString('en-GB')}</td>
+                            <td className="p-3 capitalize">{record.status || 'Absent'}</td>
+                            <td className="p-3">{record.clockIn ? new Date(record.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                            <td className="p-3">{record.clockOut ? new Date(record.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                            <td className="p-3">{formatHours(record.workingHours)}</td>
                         </tr>
                     ))}
+                    {!records.length && <tr><td colSpan="5" className="p-6 text-center text-gray-500">No attendance records for this month.</td></tr>}
                 </tbody>
 
                 <tfoot>
                     <tr className="border-t">
-                        <td colSpan="8" className="p-4 text-center font-bold">
-                            Monthly Total = 139h 39m
+                        <td colSpan="5" className="p-4 text-center font-bold">
+                            Monthly Total = {formatHours(records.reduce((total, record) => total + (record.workingHours || 0), 0))}
                         </td>
                     </tr>
                 </tfoot>

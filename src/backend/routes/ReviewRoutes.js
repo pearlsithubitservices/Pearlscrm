@@ -107,11 +107,28 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
     try {
-        const review = await PerformanceReview.findByIdAndDelete(
-            req.params.id
-        );
+        const mongoose = require("mongoose");
+        let review = null;
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            review = await PerformanceReview.findByIdAndDelete(req.params.id);
+        }
 
         if (!review) {
+            const deleteResult = await PerformanceReview.deleteMany({
+                $or: [
+                    { employee_uid: req.params.id },
+                    { employeeId: req.params.id }
+                ]
+            });
+
+            if (deleteResult.deletedCount > 0) {
+                return res.status(200).json({
+                    success: true,
+                    message: "Review(s) deleted successfully",
+                    deletedCount: deleteResult.deletedCount
+                });
+            }
+
             return res.status(404).json({
                 success: false,
                 message: "Review not found",

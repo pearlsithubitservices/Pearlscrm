@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { apiUrl } from "../config/api";
+import { socket } from "../config/socket";
 
 export default function useLeave() {
   const [loading, setLoading] = useState(false);
@@ -12,6 +13,147 @@ export default function useLeave() {
   const { user } = useAuth();
   const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
 
+  // FETCH ALL LEAVES
+  const getLeaves = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(apiUrl("/leave"));
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch leaves");
+      }
+
+      const list = Array.isArray(data) ? data : (data?.data || []);
+      setLeaves(list);
+      return list;
+    } catch (err) {
+      setError(err.message);
+      console.error("Fetch leaves error:", err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // FETCH ALL HOLIDAYS
+  const getHolidays = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(apiUrl("/holidays"));
+      const data = await response.json();
+
+      if (response.ok) {
+        const list = Array.isArray(data?.holidays) ? data.holidays : (Array.isArray(data) ? data : []);
+        setHolidays(list);
+        return list;
+      } else {
+        throw new Error(data?.message || "Failed to fetch holidays");
+      }
+    } catch (error) {
+      console.error("Get holidays error:", error);
+      setError(error.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // INITIAL LOAD
+  useEffect(() => {
+    getLeaves();
+    getHolidays();
+  }, [getLeaves, getHolidays]);
+
+  // REAL-TIME SOCKET.IO LISTENER
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLeaveStatusUpdated = (updatedLeave) => {
+      if (!updatedLeave || !updatedLeave._id) return;
+      setLeaves((prev) => {
+        const exists = prev.some((item) => String(item._id) === String(updatedLeave._id));
+        if (exists) {
+          return prev.map((item) =>
+            String(item._id) === String(updatedLeave._id) ? { ...item, ...updatedLeave } : item
+          );
+        }
+        return [updatedLeave, ...prev];
+      });
+    };
+
+    const handleLeaveCreated = (newLeave) => {
+      if (!newLeave || !newLeave._id) return;
+      setLeaves((prev) => {
+        const exists = prev.some((item) => String(item._id) === String(newLeave._id));
+        if (exists) return prev;
+        return [newLeave, ...prev];
+      });
+    };
+
+    const handleLeaveDeleted = (data) => {
+      const deletedId = data?.id || data?._id;
+      if (!deletedId) return;
+      setLeaves((prev) => prev.filter((item) => String(item._id) !== String(deletedId)));
+    };
+
+    // HOLIDAY REAL-TIME EVENT HANDLERS
+    const handleHolidayCreated = (newHoliday) => {
+      if (!newHoliday || !newHoliday._id) return;
+      setHolidays((prev) => {
+        const exists = prev.some((h) => String(h._id) === String(newHoliday._id));
+        if (exists) return prev;
+        const updated = [newHoliday, ...prev];
+        return updated.sort((a, b) => new Date(a.holidayDate) - new Date(b.holidayDate));
+      });
+    };
+
+    const handleHolidayUpdated = (updatedHoliday) => {
+      if (!updatedHoliday || !updatedHoliday._id) return;
+      setHolidays((prev) => {
+        const updated = prev.map((h) =>
+          String(h._id) === String(updatedHoliday._id) ? { ...h, ...updatedHoliday } : h
+        );
+        return updated.sort((a, b) => new Date(a.holidayDate) - new Date(b.holidayDate));
+      });
+    };
+
+    const handleHolidayDeleted = (data) => {
+      const deletedId = data?.id || data?._id;
+      if (!deletedId) return;
+      setHolidays((prev) => prev.filter((h) => String(h._id) !== String(deletedId)));
+    };
+
+    const handleHolidaysBulk = () => {
+      getHolidays();
+    };
+
+    socket.on("leaveStatusUpdated", handleLeaveStatusUpdated);
+    socket.on("leaveUpdated", handleLeaveStatusUpdated);
+    socket.on("leaveCreated", handleLeaveCreated);
+    socket.on("leaveDeleted", handleLeaveDeleted);
+
+    socket.on("holidayCreated", handleHolidayCreated);
+    socket.on("holidayUpdated", handleHolidayUpdated);
+    socket.on("holidayDeleted", handleHolidayDeleted);
+    socket.on("holidaysBulkUploaded", handleHolidaysBulk);
+
+    return () => {
+      socket.off("leaveStatusUpdated", handleLeaveStatusUpdated);
+      socket.off("leaveUpdated", handleLeaveStatusUpdated);
+      socket.off("leaveCreated", handleLeaveCreated);
+      socket.off("leaveDeleted", handleLeaveDeleted);
+
+      socket.off("holidayCreated", handleHolidayCreated);
+      socket.off("holidayUpdated", handleHolidayUpdated);
+      socket.off("holidayDeleted", handleHolidayDeleted);
+      socket.off("holidaysBulkUploaded", handleHolidaysBulk);
+    };
+  }, [getHolidays]);
 
   // CREATE LEAVE
   const submitLeave = async (formData) => {
@@ -60,6 +202,14 @@ export default function useLeave() {
         );
       }
 
+      // Optimistically add to local state if socket hasn't delivered yet
+      if (data.leave) {
+        setLeaves((prev) => {
+          const exists = prev.some((item) => String(item._id) === String(data.leave._id));
+          return exists ? prev : [data.leave, ...prev];
+        });
+      }
+
       return {
         success: true,
         data,
@@ -76,65 +226,6 @@ export default function useLeave() {
     }
   };
 
-  // GET ALL LEAVES
-
-  useEffect(() => {
-    if (employeeId) {
-      getLeaves();
-    }
-  }, [employeeId]);
-
-
-  const getLeaves = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(
-        apiUrl("/leave")
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to fetch leaves"
-        );
-      }
-
-      setLeaves(Array.isArray(data) ? data : []);
-
-      return data;
-    } catch (err) {
-      setError(err.message);
-      console.error(err);
-
-      return [];
-    } finally {
-      setLoading(false);
-
-    }
-  };
-
-  const getHolidays = async () => {
-    try {
-      setLoading(true);
-
-      const response = await fetch(
-        "https://pearlscrm.onrender.com/api/holidays"
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setHolidays(data.holidays);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // UPDATE LEAVE
   const updateLeave = async (id, formData) => {
@@ -204,7 +295,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        "https://pearlscrm.onrender.com/api/holidays",
+        apiUrl("/holidays"),
         {
           method: "POST",
           headers: {
@@ -220,9 +311,10 @@ export default function useLeave() {
         throw new Error(data.message || "Failed to add holiday");
       }
 
-      setHolidays((prev) => [data.holiday, ...prev]);
+      const newHol = data.holiday || data;
+      setHolidays((prev) => [newHol, ...prev]);
 
-      return { success: true, data: data.holiday };
+      return { success: true, data: newHol };
     } catch (err) {
       setError(err.message);
       return { success: false, error: err.message };
@@ -239,7 +331,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `https://pearlscrm.onrender.com/api/holidays/${id}`,
+        apiUrl(`/holidays/${id}`),
         {
           method: "PUT",
           headers: {
@@ -255,13 +347,14 @@ export default function useLeave() {
         throw new Error(data.message || "Failed to update holiday");
       }
 
+      const updatedHol = data.holiday || data;
       setHolidays((prev) =>
         prev.map((h) =>
-          h._id === id ? data.holiday : h
+          h._id === id ? updatedHol : h
         )
       );
 
-      return { success: true, data: data.holiday };
+      return { success: true, data: updatedHol };
     } catch (err) {
       setError(err.message);
       return { success: false, error: err.message };
@@ -278,7 +371,7 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `https://pearlscrm.onrender.com/api/holidays/${id}`,
+        apiUrl(`/holidays/${id}`),
         {
           method: "DELETE",
         }
@@ -306,12 +399,18 @@ export default function useLeave() {
 
 
 
-  //UPDATE STATUS
-
+  // UPDATE STATUS
   const updateLeaveStatus = async (id, status) => {
     try {
       setLoading(true);
       setError(null);
+
+      // Optimistic instant UI update
+      setLeaves((prev) =>
+        prev.map((leave) =>
+          String(leave._id) === String(id) ? { ...leave, status } : leave
+        )
+      );
 
       const response = await fetch(
         apiUrl(`/leave/${id}/status`),
@@ -327,19 +426,21 @@ export default function useLeave() {
       const data = await response.json();
 
       if (!response.ok) {
+        // Rollback state by re-fetching
+        getLeaves();
         throw new Error(data.message || "Failed to update status");
       }
 
-      // optional: update local state instantly
+      const updated = data.leave || { status };
       setLeaves((prev) =>
         prev.map((leave) =>
-          leave._id === id ? data.leave : leave
+          String(leave._id) === String(id) ? { ...leave, ...updated, status } : leave
         )
       );
 
       return {
         success: true,
-        data: data.leave,
+        data: updated,
       };
     } catch (err) {
       setError(err.message);

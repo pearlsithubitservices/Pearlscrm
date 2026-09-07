@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { NotebookTabs, Send } from "lucide-react";
+import { NotebookTabs, Send, Trash2 } from "lucide-react";
 import { apiUrl } from "../../config/api";
 
 export default function TaskNotesPage({ task, tasks, onRefresh }) {
@@ -76,6 +76,37 @@ export default function TaskNotesPage({ task, tasks, onRefresh }) {
     }
   };
 
+  const handleDeleteNote = async (indexToDelete) => {
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
+    if (!taskId) return;
+
+    try {
+      const updatedList = notesList.filter((_, idx) => idx !== indexToDelete);
+      const stringNotes = updatedList
+        .slice()
+        .reverse()
+        .map((item) => `[${item.date} - ${item.author}]: ${item.description}`)
+        .join("\n\n");
+
+      const res = await fetch(apiUrl(`/tasks/${taskId}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: stringNotes }),
+      });
+
+      if (res.ok) {
+        setNotesList(updatedList);
+        alert("Note deleted successfully!");
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Failed to delete note.");
+      }
+    } catch (err) {
+      console.error("Error deleting note:", err);
+      alert("Failed to delete note.");
+    }
+  };
+
   return (
     <div className="bg-[#f5f2ec] p-4 md:p-8 min-h-[500px]">
       <div className="max-w-5xl mx-auto space-y-6">
@@ -129,7 +160,16 @@ export default function TaskNotesPage({ task, tasks, onRefresh }) {
 
                   <div className="flex justify-between items-center text-xs text-gray-500">
                     <span className="font-bold text-[#082f57]">{item.author}</span>
-                    <span>{item.date}</span>
+                    <div className="flex items-center gap-3">
+                      <span>{item.date}</span>
+                      <button
+                        onClick={() => handleDeleteNote(index)}
+                        title="Delete Note"
+                        className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">

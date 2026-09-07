@@ -16,7 +16,10 @@ import {
   Edit2,
   Trash2,
   Check,
-  MoreVertical
+  MoreVertical,
+  Download,
+  ExternalLink,
+  Eye
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import useChat from "../../Hooks/chat";
@@ -33,6 +36,7 @@ export default function TaskChat({ task, taskId: propTaskId, taskTitle: propTask
   const [messageText, setMessageText] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
+  const [activeImagePreview, setActiveImagePreview] = useState(null);
 
   // Edit Message state
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -72,21 +76,18 @@ export default function TaskChat({ task, taskId: propTaskId, taskTitle: propTask
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // File select handler
+  // File select handler for all file types (images, pdf, doc, etc.)
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFilePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setFilePreview(null);
-    }
     setSelectedFile(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFilePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const clearFile = () => {
@@ -98,12 +99,23 @@ export default function TaskChat({ task, taskId: propTaskId, taskTitle: propTask
   const handleSend = async () => {
     if (!messageText.trim() && !selectedFile) return;
 
-    const attachments = [];
+    let attachments = [];
     if (selectedFile) {
+      let dataUrl = filePreview;
+      if (!dataUrl) {
+        dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(selectedFile);
+        });
+      }
+
       attachments.push({
         name: selectedFile.name,
+        size: selectedFile.size ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "",
         type: selectedFile.type,
-        data: filePreview || null,
+        data: dataUrl,
+        url: dataUrl,
       });
     }
 
@@ -112,6 +124,44 @@ export default function TaskChat({ task, taskId: propTaskId, taskTitle: propTask
     clearFile();
 
     await sendMessage(textToSend, attachments);
+  };
+
+  const handleOpenImage = (dataUrl, name) => {
+    if (!dataUrl) return;
+    setActiveImagePreview({ url: dataUrl, name: name || "Image Attachment" });
+  };
+
+  const handleDownloadFile = (dataUrl, name) => {
+    if (!dataUrl) return;
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = name || "download";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleOpenInNewTab = (dataUrl) => {
+    if (!dataUrl) return;
+    if (dataUrl.startsWith("data:")) {
+      try {
+        const parts = dataUrl.split(",");
+        const mime = parts[0].match(/:(.*?);/)[1];
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, "_blank");
+        return;
+      } catch (e) {
+        console.error("Blob open error:", e);
+      }
+    }
+    window.open(dataUrl, "_blank");
   };
 
   const handleStartEdit = (msg) => {
@@ -346,28 +396,90 @@ export default function TaskChat({ task, taskId: propTaskId, taskTitle: propTask
                       {msg.text && <p className="leading-relaxed">{msg.text}</p>}
 
                       {msg.attachments && msg.attachments.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          {msg.attachments.map((att, idx) => (
-                            <div
-                              key={idx}
-                              className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
-                                isMine ? "bg-blue-700/60" : "bg-gray-100"
-                              }`}
-                            >
-                              {att.data ? (
+                        <div className="mt-2 space-y-2">
+                          {msg.attachments.map((att, idx) => {
+                            const rawUrl = typeof att === "string" ? att : (att?.data || att?.url);
+                            let attName = typeof att === "string" ? "" : att?.name;
+                            const attType = typeof att === "string" ? "" : att?.type;
+                            const attSize = typeof att === "string" ? "" : att?.size;
+
+                            if (!attName || attName === "Attachment") {
+                              if (rawUrl && typeof rawUrl === "string" && !rawUrl.startsWith("data:")) {
+                                const parts = rawUrl.split("/");
+                                attName = decodeURIComponent(parts[parts.length - 1] || "File");
+                              }
+                            }
+                            if (!attName) attName = "File Attachment";
+
+                            const ext = attName.includes(".") ? attName.split(".").pop().toLowerCase() : "";
+                            const isImg =
+                              attType?.startsWith("image/") ||
+                              (rawUrl && rawUrl.startsWith("data:image/")) ||
+                              /\.(jpg|jpeg|png|gif|webp)$/i.test(attName);
+
+                            return isImg && rawUrl ? (
+                              <div
+                                key={idx}
+                                className="relative group/img rounded-xl overflow-hidden border border-white/20 max-w-xs cursor-pointer shadow-xs mt-1 bg-black/5"
+                                onClick={() => handleOpenImage(rawUrl, attName)}
+                              >
                                 <img
-                                  src={att.data}
-                                  alt="Attachment"
-                                  className="w-32 h-32 object-cover rounded-md"
+                                  src={rawUrl}
+                                  alt={attName}
+                                  className="max-h-56 w-full object-cover rounded-xl transition-transform duration-300 group-hover/img:scale-105"
                                 />
-                              ) : (
-                                <>
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenImage(rawUrl, attName);
+                                    }}
+                                    className="p-2 rounded-full bg-white/90 text-gray-900 hover:bg-white transition cursor-pointer shadow-md"
+                                    title="Preview Image"
+                                  >
+                                    <Eye size={16} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDownloadFile(rawUrl, attName);
+                                    }}
+                                    className="p-2 rounded-full bg-white/90 text-gray-900 hover:bg-white transition cursor-pointer shadow-md"
+                                    title="Download Image"
+                                  >
+                                    <Download size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <a
+                                key={idx}
+                                href={rawUrl || "#"}
+                                download={attName}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs font-semibold transition-all shadow-2xs max-w-xs ${
+                                  isMine
+                                    ? "bg-blue-700/70 border-blue-500/40 text-white hover:bg-blue-700"
+                                    : "bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100"
+                                }`}
+                              >
+                                <div className={`p-2 rounded-lg shrink-0 flex items-center justify-center ${isMine ? "bg-white/20 text-white" : "bg-blue-100 text-blue-600"}`}>
                                   <FileText size={16} />
-                                  <span className="truncate">{att.name || "Attachment"}</span>
-                                </>
-                              )}
-                            </div>
-                          ))}
+                                </div>
+                                <div className="flex-1 min-w-0 text-left">
+                                  <p className="truncate font-semibold text-xs leading-tight">{attName}</p>
+                                  <div className="flex items-center gap-1.5 mt-0.5 opacity-80 text-[10px]">
+                                    {ext && <span className="uppercase font-extrabold px-1 py-0.2 rounded bg-black/10 text-[9px]">{ext}</span>}
+                                    {attSize && <span>{attSize}</span>}
+                                  </div>
+                                </div>
+                                <div className={`p-1.5 rounded-lg shrink-0 ${isMine ? "bg-white/20 text-white hover:bg-white/30" : "bg-gray-200/80 text-gray-700 hover:bg-gray-200"}`}>
+                                  <Download size={13} />
+                                </div>
+                              </a>
+                            );
+                          })}
                         </div>
                       )}
                     </>
@@ -382,17 +494,24 @@ export default function TaskChat({ task, taskId: propTaskId, taskTitle: propTask
 
       {/* Attachment Preview Banner */}
       {selectedFile && (
-        <div className="flex items-center justify-between px-4 py-2 bg-blue-50 border-t border-blue-100 text-xs text-blue-800">
-          <div className="flex items-center gap-2 truncate">
-            {filePreview ? (
-              <img src={filePreview} alt="Preview" className="w-8 h-8 object-cover rounded" />
+        <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50 border-t border-blue-100 text-xs text-blue-900 shadow-inner">
+          <div className="flex items-center gap-2.5 truncate">
+            {selectedFile.type?.startsWith("image/") && filePreview ? (
+              <img src={filePreview} alt="Preview" className="w-9 h-9 object-cover rounded-lg shadow-xs" />
             ) : (
-              <FileText size={16} className="text-blue-600" />
+              <div className="w-8 h-8 rounded-lg bg-blue-200/70 text-blue-700 flex items-center justify-center font-bold">
+                <FileText size={18} />
+              </div>
             )}
-            <span className="truncate font-medium">{selectedFile.name}</span>
+            <div className="truncate">
+              <span className="truncate font-bold block text-xs">{selectedFile.name}</span>
+              <span className="text-[10px] text-blue-600 font-medium">
+                {(selectedFile.size / 1024).toFixed(1)} KB • {selectedFile.type || "Document"}
+              </span>
+            </div>
           </div>
-          <button onClick={clearFile} className="p-1 text-blue-500 hover:text-blue-700">
-            <X size={14} />
+          <button onClick={clearFile} className="p-1.5 text-blue-500 hover:text-red-600 hover:bg-blue-100 rounded-lg transition cursor-pointer">
+            <X size={15} />
           </button>
         </div>
       )}
@@ -429,6 +548,72 @@ export default function TaskChat({ task, taskId: propTaskId, taskTitle: propTask
           <Send size={16} />
         </button>
       </div>
+
+      {/* FULL SCREEN IMAGE LIGHTBOX MODAL */}
+      {activeImagePreview && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => setActiveImagePreview(null)}
+        >
+          {/* Top Bar */}
+          <div
+            className="w-full max-w-5xl flex items-center justify-between text-white py-2 px-4 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 truncate">
+              <ImageIcon size={18} className="text-blue-400 shrink-0" />
+              <span className="font-semibold text-sm truncate">
+                {activeImagePreview.name || "Image Preview"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleOpenInNewTab(activeImagePreview.url)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                title="Open in new tab"
+              >
+                <ExternalLink size={15} />
+                <span className="hidden sm:inline">New Tab</span>
+              </button>
+              <button
+                onClick={() => handleDownloadFile(activeImagePreview.url, activeImagePreview.name)}
+                className="p-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md"
+                title="Download"
+              >
+                <Download size={15} />
+                <span className="hidden sm:inline">Download</span>
+              </button>
+              <button
+                onClick={() => setActiveImagePreview(null)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-red-600/80 text-white transition cursor-pointer"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Centered Image */}
+          <div
+            className="flex-1 flex items-center justify-center p-2 w-full max-w-5xl my-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={activeImagePreview.url}
+              alt={activeImagePreview.name || "Preview"}
+              className="max-h-[75vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10 select-none"
+            />
+          </div>
+
+          {/* Bottom Caption */}
+          <div
+            className="text-xs text-gray-300 font-medium py-1 px-4 bg-white/10 rounded-full backdrop-blur-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Click anywhere outside or press X to close
+          </div>
+        </div>
+      )}
     </div>
   );
 }

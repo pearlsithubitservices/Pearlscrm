@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const announcementSchema = require('../models/CommunicationModels/Announcements');
 const notificationSchema = require('../models/CommunicationModels/Notifications');
+const { getIO } = require('../Socket');
 
 //Get Announcements
 router.get("/", async (req, res) => {
@@ -23,15 +24,22 @@ router.post("/", async (req, res) => {
             req.body
         );
 
-        // Auto create system notification for employees
+        // Auto create system notification for employees (broadcast: employeeId left null)
         try {
-            await notificationSchema.create({
+            const notif = await notificationSchema.create({
                 title: req.body.title ? `Announcement: ${req.body.title}` : "New Company Announcement",
                 sub: req.body.role || req.body.author || "HR Manager",
-                notificationType: "General",
+                notificationType: "Announcement",
                 isImportant: true,
                 isRead: false
             });
+
+            // Broadcast to everyone connected, same way Project notifications go out
+            const io = getIO();
+            if (io) {
+                io.emit("newNotification", notif);
+                io.emit("announcementCreated", result);
+            }
         } catch (notifErr) {
             console.error("Error creating auto notification:", notifErr);
         }
@@ -59,6 +67,11 @@ router.patch("/:id", async (req, res) => {
                 message: "Announcement not found",
             });
         }
+
+        try {
+            const io = getIO();
+            if (io) io.emit("announcementUpdated", result);
+        } catch (e) {}
 
         res.status(200).json({
             success: true,
@@ -89,6 +102,11 @@ router.patch("/:id/pin", async (req, res) => {
         announcement.pinned = !announcement.pinned;
         await announcement.save();
 
+        try {
+            const io = getIO();
+            if (io) io.emit("announcementUpdated", announcement);
+        } catch (e) {}
+
         res.status(200).json(announcement);
 
     } catch (error) {
@@ -114,6 +132,11 @@ router.delete("/:id", async (req, res) => {
                 message: "Announcement not found",
             });
         }
+
+        try {
+            const io = getIO();
+            if (io) io.emit("announcementDeleted", { id: req.params.id });
+        } catch (e) {}
 
         res.status(200).json({
             success: true,

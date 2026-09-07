@@ -13,24 +13,20 @@ import AddReviewForm from "./AddReviewForm";
 import EmployeeReviewPage from "./EmployeeReviewPage";
 import { useLocation } from "react-router-dom";
 
-export default function PerformanceReviews({ currentUserid }) {
-
-
-    const { id } = useParams();
-    console.log(id);
-    console.log(currentUserid);
+export default function PerformanceReviews({ currentUserid, employee }) {
+    const params = useParams();
+    const targetEmpId = currentUserid || employee?.uid || employee?.id || employee?._id || params.id;
     const [openForm, setOpenForm] = useState(false);
     const [openReview, setOpenReview] = useState(false);
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All Categories");
-    const [selectedReview, setSelectedReview] = useState("");
+    const [selectedReview, setSelectedReview] = useState(null);
     const { review, getReviews } = useReview();
-    console.log(review);
     const location = useLocation();
     const navigate = useNavigate();
+
     useEffect(() => {
         if (location.state?.isEdit) {
-            console.log("location.state:", location.state);
             setSelectedReview(location.state.review);
             setOpenForm(true);
             setOpenReview(false);
@@ -38,32 +34,39 @@ export default function PerformanceReviews({ currentUserid }) {
                 replace: true,
                 state: {},
             });
-
         }
     }, [location]);
 
-    const currentReviews = review.filter((review) => {
-        return (
-            review.id === id ||
-            review.employee_uid === id
-        );
-    });
+    const employeeReviews = useMemo(() => {
+        if (!targetEmpId) return review;
+        const empName = employee?.employeeName || employee?.name || "";
+        return review.filter((r) => {
+            const rUid = r?.employee_uid || r?.employeeId || r?.employee?.uid || r?.employee?.id;
+            return (
+                String(rUid || "") === String(targetEmpId) ||
+                String(r?.id || "") === String(targetEmpId) ||
+                String(r?._id || "") === String(targetEmpId) ||
+                (empName && String(r?.employeeName || "").toLowerCase() === empName.toLowerCase())
+            );
+        });
+    }, [review, targetEmpId, employee]);
 
-
-    console.log(currentReviews);
     const filteredReviews = useMemo(() => {
-        return review.filter((review) => {
+        return employeeReviews.filter((r) => {
             const matchesSearch =
-                review?.employeeName?.toLowerCase()?.includes(search.toLowerCase()) ||
-                review?.title?.toLowerCase()?.includes(search.toLowerCase());
+                !search ||
+                r?.employeeName?.toLowerCase()?.includes(search.toLowerCase()) ||
+                r?.title?.toLowerCase()?.includes(search.toLowerCase()) ||
+                r?.reviewTitle?.toLowerCase()?.includes(search.toLowerCase());
 
             const matchesCategory =
                 category === "All Categories" ||
-                review?.category === category;
+                r?.category === category ||
+                r?.reviewType === category;
 
             return matchesSearch && matchesCategory;
         });
-    }, [review, search, category]);
+    }, [employeeReviews, search, category]);
 
     return (
         <div className="min-h-screen bg-[#F8F5EF] p-4">
@@ -172,164 +175,134 @@ export default function PerformanceReviews({ currentUserid }) {
 
 
             <div className="space-y-5">
+                {filteredReviews.length > 0 ? (
+                    filteredReviews.map((review, index) => (
+                        <motion.div
+                            key={review._id || review.id || index}
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                                duration: 0.45,
+                                delay: index * 0.08,
+                            }}
+                            whileHover={{
+                                y: -3,
+                                scale: 1.01,
+                            }}
+                            className="
+            bg-white
+            rounded-2xl
+            border
+            border-[#D7D7D7]
+            shadow-sm
+            p-5
+            cursor-pointer
+          "
+                            onClick={() => {
+                                setOpenReview(true);
+                                setSelectedReview(review);
+                            }}
+                        >
+                            {/* Top Section */}
 
-                {filteredReviews.map((review, index) => (
+                            <div className="flex justify-between items-start">
+                                {/* Left */}
 
-                    <motion.div
-                        key={review.id}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                            duration: 0.45,
-                            delay: index * 0.08,
-                        }}
-                        whileHover={{
-                            y: -3,
-                            scale: 1.01,
-                        }}
-                        className="
-        bg-white
-        rounded-2xl
-        border
-        border-[#D7D7D7]
-        shadow-sm
-        p-5
-      "
-                        onClick={() => {
-                            setOpenReview(true);
-                            setSelectedReview(review)
-                        }
-                        }
-                    >
+                                <div className="flex gap-4">
+                                    <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 text-white font-bold text-xl shadow-sm">
+                                        {review?.employeeName?.charAt(0)?.toUpperCase() || "E"}
+                                    </div>
 
-                        {/* Top Section */}
+                                    <div>
+                                        <h2 className="text-[22px] font-bold text-[#163C67]">
+                                            {review?.employeeName || "Employee"}
+                                        </h2>
 
-                        <div className="flex justify-between items-start">
-
-                            {/* Left */}
-
-                            <div className="flex gap-4">
-
-                                {/* <img
-                                    src={review.avatar}
-                                    alt={review.employee}
-                                    className="
-              w-16
-              h-16
-              rounded-full
-              object-cover
-              border
-              border-gray-200
-            "
-                                /> */}
-                                <div className=" flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 font-bold text-2xl">
-                                    {review?.employeeName?.charAt(0)?.toUpperCase() || ""}
+                                        <p className="text-sm text-gray-500 mt-0.5">
+                                            {review?.employeeDesignation || review?.reviewType || "Performance Review"}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <div>
+                                {/* Right */}
 
-                                    <h2 className="text-[24px] font-bold text-[#163C67]">
-                                        {review?.employeeName || ""}
-                                    </h2>
+                                <div className="flex flex-col items-end">
+                                    {/* Stars */}
 
-                                    <p className="text-[17px] text-gray-600">
-                                        {review?.employeeDesignation || ""}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                            {/* Right */}
-
-                            <div className="flex flex-col items-end">
-
-                                {/* Stars */}
-
-                                <div className="flex items-center gap-1">
-
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <motion.div
-                                            key={star}
-                                            whileHover={{ scale: 1.2 }}
-                                        >
+                                    <div className="flex items-center gap-1">
+                                        {[1, 2, 3, 4, 5].map((star) => (
                                             <Star
-                                                size={30}
-                                                strokeWidth={2}
-                                                className={
-                                                    star <= Math.floor(review?.overallRating || 0)
-                                                        ? "text-[#4F8CF8] fill-[#4F8CF8]"
-                                                        : "text-[#4F8CF8]"
-                                                }
+                                                key={star}
+                                                size={18}
+                                                className={`${
+                                                    star <= (review?.overallRating || 0)
+                                                        ? "fill-amber-400 text-amber-400"
+                                                        : "text-gray-300"
+                                                }`}
                                             />
-                                        </motion.div>
-                                    ))}
+                                        ))}
+                                        <span className="font-bold text-gray-700 ml-1.5 text-base">
+                                            {review?.overallRating || 0}
+                                        </span>
+                                    </div>
 
-                                    <span className="ml-3 text-[34px] font-semibold text-[#4F8CF8]">
-                                        {review?.overallRating || ""}
+                                    <span className="text-xs text-gray-400 mt-1">
+                                        {review?.reviewDate ? new Date(review.reviewDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent"}
                                     </span>
-
                                 </div>
-
-                                <p className="mt-8 text-[17px] text-gray-400">
-                                    {new Date(review?.reviewDate).toLocaleDateString()}
-                                </p>
-
                             </div>
 
+                            {/* Middle Title */}
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                    {review?.reviewTitle || "Review"}
+                                </h3>
+                                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                                    {review?.reviewType || "Review"}
+                                </span>
+                            </div>
+
+                            {review?.feedback && (
+                                <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                                    {review.feedback}
+                                </p>
+                            )}
+                        </motion.div>
+                    ))
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-14 text-center bg-white rounded-2xl border border-gray-200">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+                            <Star size={28} />
                         </div>
-
-                        {/* Review Title */}
-
-                        <h3 className="mt-6 text-[20px] font-semibold text-black">
-
-                            {review?.reviewTitle}
-
-                            <span className="font-normal">
-                                {" "}
-                                — {review?.reviewerType || "Normal Review"}
-                            </span>
-
-                        </h3>
-
-                        {/* Description */}
-
-                        {/* <p className="mt-3 text-[18px] leading-7 text-gray-500">
-
-                            {review?.feedback}
-
-                        </p> */}
-
-                    </motion.div>
-
-                ))}
-
+                        <h4 className="text-lg font-semibold text-gray-800">No Performance Reviews Found</h4>
+                        <p className="text-sm text-gray-500 mt-1 max-w-sm">
+                            Click &quot;Add Review&quot; above to create a review for this employee.
+                        </p>
+                    </div>
+                )}
             </div>
             {openForm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="relative w-full  rounded-2xl  shadow-2xl ">
-                        {/* Close Button */}
-
-
+                    <div className="relative w-full rounded-2xl shadow-2xl">
                         <AddReviewForm
                             onClose={() => {
                                 setOpenForm(false);
-                                setSelectedReview(null)
+                                setSelectedReview(null);
                             }}
                             getReviews={getReviews}
-                            currentUserid={currentUserid}
-                            review={selectedReview} />
+                            currentUserid={targetEmpId}
+                            review={selectedReview}
+                        />
                     </div>
                 </div>
             )}
             {openReview && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
                     <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-2xl bg-white shadow-2xl">
-
                         {/* Close Button */}
                         <button
                             onClick={() => setOpenReview(false)}
-                            className="absolute top-1 right-2 text-gray-500 hover:text-black text-2xl"
+                            className="absolute top-1 right-2 text-gray-500 hover:text-black text-2xl cursor-pointer"
                         >
                             ✕
                         </button>
@@ -337,7 +310,11 @@ export default function PerformanceReviews({ currentUserid }) {
                         <EmployeeReviewPage
                             onClose={() => setOpenReview(false)}
                             reviews={selectedReview}
-                            currentUserid={currentUserid} />
+                            currentUserid={targetEmpId}
+                            onReviewDeleted={() => {
+                                getReviews();
+                            }}
+                        />
                     </div>
                 </div>
             )}

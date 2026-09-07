@@ -37,34 +37,44 @@ const skills = [
     },
 ];
 
-export default function Skills() {
+export default function Skills({ employeeId, employee }) {
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All Categories");
 
-    const { id } = useParams();
-    const { getAll, } = useSkillCertification();
+    const params = useParams();
+    const empId = employeeId || employee?.uid || employee?.id || employee?._id || params.id;
+    const { getAll } = useSkillCertification();
     const [skillsAndCertifications, setSkillsAndCertifications] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-
-    const currentskillsAndCertifications = skillsAndCertifications.filter(
-        (item) => item.employee_uid === id
-    );
-    console.log(currentskillsAndCertifications[0]?.skills);
+    const currentskillsAndCertifications = useMemo(() => {
+        return skillsAndCertifications.filter(
+            (item) =>
+                String(item.employee_uid || "") === String(empId || "") ||
+                String(item.employeeId || "") === String(empId || "") ||
+                String(item.id || "") === String(empId || "")
+        );
+    }, [skillsAndCertifications, empId]);
 
     const fetchSkillsAndCertifications = async () => {
+        if (!empId) {
+            setLoading(false);
+            return;
+        }
         try {
-            const data = await getAll(id);
-            setSkillsAndCertifications(data.data);
-
-
+            setLoading(true);
+            const data = await getAll(empId);
+            setSkillsAndCertifications(Array.isArray(data?.data) ? data.data : (data?.data ? [data.data] : []));
         } catch (error) {
             console.error("Error fetching skills and certifications:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchSkillsAndCertifications();
-    }, [id]);
+    }, [empId]);
     return (
         <section className="w-full  py-5 px-4">
             <motion.div
@@ -127,49 +137,61 @@ export default function Skills() {
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {currentskillsAndCertifications[0]?.skills?.map((skill, index) => (
-                        <motion.div
-                            key={skill.name}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{
-                                delay: index * 0.08,
-                            }}
-                            whileHover={{
-                                y: -4,
-                                scale: 1.02,
-                            }}
-                            className="bg-white border border-gray-200 rounded-xl shadow-md px-5 py-4"
-                        >
-                            {/* Title */}
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-2xl font-bold text-slate-800">
-                                    {skill.name}
-                                </h3>
+                {currentskillsAndCertifications[0]?.skills?.length ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {currentskillsAndCertifications[0]?.skills?.map((skill, index) => (
+                            <motion.div
+                                key={skill.name || index}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{
+                                    delay: index * 0.08,
+                                }}
+                                whileHover={{
+                                    y: -4,
+                                    scale: 1.02,
+                                }}
+                                className="bg-white border border-gray-200 rounded-xl shadow-md px-5 py-4"
+                            >
+                                {/* Title */}
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-2xl font-bold text-slate-800">
+                                        {skill.name}
+                                    </h3>
 
-                                <span
-                                    className={`text-xl font-medium ${skill.color}`}
-                                >
-                                    {skill.level}
-                                </span>
-                            </div>
+                                    <span
+                                        className={`text-xl font-medium ${skill.color || "text-blue-600"}`}
+                                    >
+                                        {skill.level}
+                                    </span>
+                                </div>
 
-                            {/* Progress */}
-                            <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${skill.progress}%` }}
-                                    transition={{
-                                        duration: 1,
-                                        delay: index * 0.15,
-                                    }}
-                                    className="h-full rounded-full bg-blue-600"
-                                />
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                                {/* Progress */}
+                                <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${skill.progress || skill.value || 0}%` }}
+                                        transition={{
+                                            duration: 1,
+                                            delay: index * 0.15,
+                                        }}
+                                        className="h-full rounded-full bg-blue-600"
+                                    />
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+                            <Code2 size={28} />
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-800">No Technical Skills Recorded</h4>
+                        <p className="text-sm text-gray-500 mt-1 max-w-sm">
+                            Skills and proficiency ratings for this employee will appear here once added.
+                        </p>
+                    </div>
+                )}
             </motion.div>
         </section>
     );

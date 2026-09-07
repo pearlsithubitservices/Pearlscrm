@@ -40,8 +40,8 @@ export default function useFeedback() {
 
       const requestData = {
         ...payload,
-        employeeId: user?.uid || user?.id,
-        employeeName: empName,
+        employeeId: payload.employeeId || user?.uid || user?.id || user?._id,
+        employeeName: payload.employeeName || empName,
       };
 
       const res = await fetch(BASE_URL, {
