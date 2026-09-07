@@ -11,21 +11,23 @@ import {
   CheckCheck,
   Trash2,
   ChevronDown,
+  MessageSquare,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import useNotification from "../Hooks/useNotification";
 
 // Visual config + display order per notification type/module.
-// Each module (Leave / Payroll / Benefits) gets its own section
+// Each module (Leave / Payroll / Benefits / Feedback) gets its own section
 // in the panel instead of one mixed list.
 const MODULE_CONFIG = [
   { key: "Leave", label: "Leave Management", icon: CalendarDays, color: "text-blue-600", bg: "bg-blue-50", ring: "border-blue-100" },
   { key: "Payroll", label: "Payroll", icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50", ring: "border-emerald-100" },
   { key: "Benefits", label: "Benefits", icon: ShieldCheck, color: "text-purple-600", bg: "bg-purple-50", ring: "border-purple-100" },
+  { key: "Feedback", label: "Feedback & Communication", icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50", ring: "border-indigo-100" },
   { key: "Other", label: "Other Alerts", icon: Info, color: "text-gray-600", bg: "bg-gray-100", ring: "border-gray-200" },
 ];
 
-const KNOWN_KEYS = ["Leave", "Payroll", "Benefits"];
+const KNOWN_KEYS = ["Leave", "Payroll", "Benefits", "Feedback"];
 
 /**
  * Employee-side notification bell.

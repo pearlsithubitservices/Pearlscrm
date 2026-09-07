@@ -38,6 +38,7 @@ router.post("/", async (req, res) => {
             const io = getIO();
             if (io) {
                 io.emit("newNotification", notif);
+                io.emit("announcementCreated", result);
             }
         } catch (notifErr) {
             console.error("Error creating auto notification:", notifErr);
@@ -66,6 +67,11 @@ router.patch("/:id", async (req, res) => {
                 message: "Announcement not found",
             });
         }
+
+        try {
+            const io = getIO();
+            if (io) io.emit("announcementUpdated", result);
+        } catch (e) {}
 
         res.status(200).json({
             success: true,
@@ -96,6 +102,11 @@ router.patch("/:id/pin", async (req, res) => {
         announcement.pinned = !announcement.pinned;
         await announcement.save();
 
+        try {
+            const io = getIO();
+            if (io) io.emit("announcementUpdated", announcement);
+        } catch (e) {}
+
         res.status(200).json(announcement);
 
     } catch (error) {
@@ -121,6 +132,11 @@ router.delete("/:id", async (req, res) => {
                 message: "Announcement not found",
             });
         }
+
+        try {
+            const io = getIO();
+            if (io) io.emit("announcementDeleted", { id: req.params.id });
+        } catch (e) {}
 
         res.status(200).json({
             success: true,

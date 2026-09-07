@@ -43,23 +43,26 @@ router.post("/invite", async (req, res) => {
     try {
         console.log("Invite Request:", req.body);
 
-        const { id, name, email, role } = req.body;
+        const { id, name, email, role, origin } = req.body;
 
-        const inviteLink = `https://pearlscrm.vercel.app/accept-invite/${id}`;
+        const baseUrl = (origin || req.headers.origin || process.env.FRONTEND_URL || "https://pearlscrm.vercel.app").replace(/\/$/, '');
+        const inviteLink = `${baseUrl}/accept-invite/${id}`;
 
         await sendEmail({
             to: email,
             subject: "You're invited to Pearls CRM",
             html: `
-                <h2>Hello ${name}</h2>
-                <p>You have been invited to Pearls CRM.</p>
-                <a href="${inviteLink}">Accept Invitation</a>
+                <h2>Hello ${name || 'Team Member'}</h2>
+                <p>You have been invited to Pearls CRM as an employee.</p>
+                <p>Click the link below to set up your account and password:</p>
+                <p><a href="${inviteLink}" style="display:inline-block;padding:10px 20px;background-color:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">Accept Invitation</a></p>
+                <p style="color:#666;font-size:12px;">Or copy and paste this link: ${inviteLink}</p>
             `,
         });
 
         console.log("Invitation email sent to:", email);
 
-        res.json({ success: true });
+        res.json({ success: true, inviteLink });
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: err.message });

@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Bell, FileText, Megaphone, MessageCircleMore, MessageSquareMore, Users, X, CheckCircle2, Clock3 } from "lucide-react";
-
+import toast from "react-hot-toast";
+import socket from "../../config/socket.js";
 
 import CompanyAnnouncements from "./Announcements/CompanyAnnouncements";
-import Notification from "./Announcements/Notification"
-import HelpDesk from './HelpDesk/HelpDesk.jsx'
+import Notification from "./Announcements/Notification";
+import HelpDesk from './HelpDesk/HelpDesk.jsx';
 import RaiseTicket from "./RaiseTicket.jsx";
 import CompanyDirectory from "./Directory/CompanyDirectory.jsx";
 import FeedbackPage from "./Feedback/Feedback.jsx";
@@ -14,7 +15,6 @@ import useTicket from "../../Hooks/useTicket.js";
 import useEmployees from "../../Hooks/useEmployees.js";
 import useFeedback from "../../Hooks/useFeedback.js";
 import { useAuth } from "../../context/AuthContext";
-
 
 const Communication = () => {
   const [activeTab, setActiveTab] = useState("Announcements");
@@ -28,11 +28,25 @@ const Communication = () => {
       return [];
     }
   });
+
+  // Track IDs of newly submitted feedbacks so ONLY new feedback shows in the notification bell
+  const [newFeedbackIds, setNewFeedbackIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("crm_new_feedback_ids");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Track live real-time incoming changes for employee communication
+  const [liveNotifs, setLiveNotifs] = useState([]);
+
   const notifRef = useRef(null);
-  const { announcements } = useAnnouncement();
-  const { tickets } = useTicket();
+  const { announcements, fetchAnnouncements } = useAnnouncement();
+  const { tickets, fetchTickets } = useTicket();
   const { employees } = useEmployees();
-  const { feedbacks } = useFeedback();
+  const { feedbacks, fetchFeedbacks } = useFeedback();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -42,6 +56,27 @@ const Communication = () => {
       console.error("Error saving dismissed communication notifications:", e);
     }
   }, [dismissedNotifIds]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("crm_new_feedback_ids", JSON.stringify(newFeedbackIds));
+    } catch (e) {
+      console.error("Error saving new feedback IDs:", e);
+    }
+  }, [newFeedbackIds]);
+
+  // Real-time listener: when employee submits new feedback, activate notification
+  useEffect(() => {
+    const handleNewFeedback = (e) => {
+      const newFb = e.detail;
+      const id = newFb?._id || newFb?.id;
+      if (id) {
+        setNewFeedbackIds((prev) => Array.from(new Set([...prev, id])));
+      }
+    };
+    window.addEventListener("new-feedback-submitted", handleNewFeedback);
+    return () => window.removeEventListener("new-feedback-submitted", handleNewFeedback);
+  }, []);
 
   // Close popover on click outside
   useEffect(() => {
@@ -54,8 +89,140 @@ const Communication = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const currentUserId = user?.uid || user?.id;
+  const currentUserId = user?.uid || user?.id || user?._id;
   const currentUserName = user?.displayName || user?.name || (user?.email ? user.email.split("@")[0] : "");
+
+  // Real-time socket updates for ANY changes in the communication module
+  useEffect(() => {
+    if (!socket) return;
+    if (!socket.connected) socket.connect();
+    if (currentUserId) socket.emit("joinUser", currentUserId);
+
+    // 1. Ticket Created by this employee
+    const handleTicketCreated = (data) => {
+      if (!data) return;
+      if (fetchTickets) fetchTickets();
+      if (data.employeeId && String(data.employeeId) === String(currentUserId)) {
+        const notifId = `live-emp-tkt-${data._id || Date.now()}`;
+        setLiveNotifs((prev) => [
+          {
+            id: notifId,
+            type: "ticket_open",
+            tab: "HelpDesk",
+            title: "🎫 Support Ticket Raised",
+            message: `Your ticket "${data.subject || "Ticket"}" has been created successfully.`,
+            time: "Just now",
+          },
+          ...prev,
+        ]);
+        toast.success(`Support ticket "${data.subject || ""}" raised!`, { icon: "🎫" });
+      }
+    };
+
+    // 2. Ticket Status Changed by Admin
+    const handleTicketUpdated = (data) => {
+      if (!data) return;
+      if (fetchTickets) fetchTickets();
+      if (!data.employeeId || String(data.employeeId) === String(currentUserId)) {
+        const notifId = `live-emp-tkt-up-${data._id || Date.now()}`;
+        const isResolved = (data.status || "").toLowerCase() === "resolved" || (data.status || "").toLowerCase() === "closed";
+        setLiveNotifs((prev) => [
+          {
+            id: notifId,
+            type: isResolved ? "ticket_resolved" : "ticket_open",
+            tab: "HelpDesk",
+            title: isResolved ? "✅ Ticket Resolved" : "🔄 Ticket Status Updated",
+            message: `Your ticket "${data.subject || "Ticket"}" is now ${data.status || "Updated"}.`,
+            time: "Just now",
+          },
+          ...prev,
+        ]);
+        toast.success(`Ticket update: "${data.subject || ""}" is ${data.status || ""}`, { icon: "🎫" });
+      }
+    };
+
+    // 3. Feedback Created
+    const handleFeedbackCreated = (data) => {
+      if (!data) return;
+      if (fetchFeedbacks) fetchFeedbacks();
+    };
+
+    // 4. Feedback Status / Reply Updated by Admin
+    const handleFeedbackUpdated = (data) => {
+      if (!data) return;
+      if (fetchFeedbacks) fetchFeedbacks();
+      if (!data.employeeId || String(data.employeeId) === String(currentUserId)) {
+        const notifId = `live-emp-fb-up-${data._id || Date.now()}`;
+        setLiveNotifs((prev) => [
+          {
+            id: notifId,
+            type: "feedback_response",
+            tab: "Feedback",
+            title: "💬 Admin Responded to Feedback",
+            message: data.adminComment
+              ? `Admin replied on "${data.subject || "Feedback"}": "${data.adminComment}"`
+              : `Your feedback "${data.subject || "Feedback"}" status is now ${data.status || "Reviewed"}.`,
+            time: "Just now",
+          },
+          ...prev,
+        ]);
+        toast.success(`Admin replied to your feedback on "${data.subject || ""}"`, { icon: "💬" });
+      }
+    };
+
+    // 5. New Announcement published
+    const handleAnnouncementCreated = (data) => {
+      if (!data) return;
+      if (fetchAnnouncements) fetchAnnouncements();
+      const notifId = `live-emp-ann-${data._id || Date.now()}`;
+      setLiveNotifs((prev) => [
+        {
+          id: notifId,
+          type: "announcement",
+          tab: "Announcements",
+          title: "📢 New Announcement",
+          message: data.title || "A new company announcement was posted.",
+          time: "Just now",
+        },
+        ...prev,
+      ]);
+      toast(`📢 New Announcement: "${data.title || "Updates"}"`, { icon: "📢" });
+    };
+
+    // 6. Announcement Updated or Pinned
+    const handleAnnouncementUpdated = (data) => {
+      if (!data) return;
+      if (fetchAnnouncements) fetchAnnouncements();
+      const notifId = `live-emp-ann-up-${data._id || Date.now()}`;
+      setLiveNotifs((prev) => [
+        {
+          id: notifId,
+          type: "announcement",
+          tab: "Announcements",
+          title: data.pinned ? "📌 Announcement Pinned" : "📢 Announcement Updated",
+          message: data.title || "Announcement was updated.",
+          time: "Just now",
+        },
+        ...prev,
+      ]);
+    };
+
+    socket.on("ticketCreated", handleTicketCreated);
+    socket.on("ticketUpdated", handleTicketUpdated);
+    socket.on("feedbackCreated", handleFeedbackCreated);
+    socket.on("feedbackUpdated", handleFeedbackUpdated);
+    socket.on("announcementCreated", handleAnnouncementCreated);
+    socket.on("announcementUpdated", handleAnnouncementUpdated);
+
+    return () => {
+      socket.off("ticketCreated", handleTicketCreated);
+      socket.off("ticketUpdated", handleTicketUpdated);
+      socket.off("feedbackCreated", handleFeedbackCreated);
+      socket.off("feedbackUpdated", handleFeedbackUpdated);
+      socket.off("announcementCreated", handleAnnouncementCreated);
+      socket.off("announcementUpdated", handleAnnouncementUpdated);
+    };
+  }, [currentUserId]);
 
   const totalAnnouncements = (announcements || []).length;
   const unreadAnnouncements = (announcements || []).filter((a) => !a.isRead).length;
@@ -77,7 +244,7 @@ const Communication = () => {
   const myFeedbacks = (feedbacks || []).filter((item) => {
     if (!currentUserId && !currentUserName) return true;
     return (
-      (currentUserId && item.employeeId === currentUserId) ||
+      (currentUserId && (item.employeeId === currentUserId || item.employeeId === user?._id)) ||
       (currentUserName && item.employeeName?.toLowerCase() === currentUserName.toLowerCase())
     );
   });
@@ -88,29 +255,42 @@ const Communication = () => {
       ? ((feedbacks.reduce((acc, curr) => acc + (Number(curr.rating) || 5), 0) / feedbacks.length)).toFixed(1)
       : "0.0";
 
-  // Communication Notifications (Unread Announcements, My Ticket Updates)
+  // Communication Notifications (Live Socket Events, Unread Announcements, My Ticket Updates, NEW Feedback Submissions/Replies)
   const notifications = useMemo(() => {
     const list = [];
+    const seenIds = new Set();
 
+    // 1. Live real-time incoming changes
+    liveNotifs.forEach((n) => {
+      if (!dismissedNotifIds.includes(n.id) && !seenIds.has(n.id)) {
+        seenIds.add(n.id);
+        list.push(n);
+      }
+    });
+
+    // 2. Announcements changes (unread / new)
     (announcements || []).forEach((a) => {
       const id = `ann-${a._id || a.id}`;
-      if (!a.isRead && !dismissedNotifIds.includes(id)) {
+      if (!a.isRead && !dismissedNotifIds.includes(id) && !seenIds.has(id)) {
+        seenIds.add(id);
         list.push({
           id,
           type: "announcement",
           tab: "Announcements",
-          title: "📢 New Announcement",
+          title: a.pinned ? "📌 Pinned Announcement" : "📢 New Announcement",
           message: a.title || "A new company announcement was posted.",
           time: a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "New",
         });
       }
     });
 
+    // 3. Ticket changes (open / in progress / resolved)
     myTickets.forEach((t) => {
       const id = `tkt-${t._id || t.id}`;
       const st = (t.status || "In Progress").toLowerCase();
-      if (dismissedNotifIds.includes(id)) return;
+      if (dismissedNotifIds.includes(id) || seenIds.has(id)) return;
 
+      seenIds.add(id);
       if (st === "resolved" || st === "closed") {
         list.push({
           id,
@@ -132,18 +312,64 @@ const Communication = () => {
       }
     });
 
+    // 4. Feedback changes (ONLY show for newly submitted feedback or admin replies)
+    myFeedbacks.forEach((fb) => {
+      const fbId = fb._id || fb.id;
+      const id = `fb-${fbId}`;
+      if (dismissedNotifIds.includes(id) || seenIds.has(id)) return;
+
+      const isNewSubmission = newFeedbackIds.includes(fbId);
+      const hasAdminReply = Boolean(fb.adminComment || (fb.status && fb.status !== "pending"));
+
+      if (isNewSubmission || hasAdminReply) {
+        seenIds.add(id);
+        if (hasAdminReply) {
+          list.push({
+            id,
+            fbId,
+            type: "feedback_response",
+            tab: "Feedback",
+            title: "💬 Feedback Response",
+            message: fb.adminComment
+              ? `Admin replied on "${fb.subject || "Feedback"}": "${fb.adminComment}"`
+              : `Your feedback "${fb.subject || "Feedback"}" status is now ${fb.status}.`,
+            time: fb.updatedAt ? new Date(fb.updatedAt).toLocaleDateString() : "Updated",
+          });
+        } else {
+          list.push({
+            id,
+            fbId,
+            type: "feedback_submitted",
+            tab: "Feedback",
+            title: "📋 Feedback Submitted",
+            message: `Your feedback on "${fb.subject || "General"}" (${fb.rating || 5}★) was submitted successfully.`,
+            time: fb.createdAt ? new Date(fb.createdAt).toLocaleDateString() : "New",
+          });
+        }
+      }
+    });
+
     return list;
-  }, [announcements, myTickets, dismissedNotifIds]);
+  }, [liveNotifs, announcements, myTickets, myFeedbacks, newFeedbackIds, dismissedNotifIds]);
 
   const handleClearAllNotifs = (e) => {
     e.stopPropagation();
     const allNotifIds = notifications.map((n) => n.id);
     setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+    setNewFeedbackIds([]);
+    setLiveNotifs([]);
+    try {
+      localStorage.setItem("crm_new_feedback_ids", JSON.stringify([]));
+    } catch (err) {}
   };
 
   const handleNotifClick = (e, notif) => {
     e.stopPropagation();
     setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    setLiveNotifs((prev) => prev.filter((n) => n.id !== notif.id));
+    if (notif.fbId) {
+      setNewFeedbackIds((prev) => prev.filter((fid) => fid !== notif.fbId));
+    }
     setShowNotifications(false);
     setActiveTab(notif.tab);
   };
@@ -151,6 +377,11 @@ const Communication = () => {
   const handleDismissNotif = (e, notifId) => {
     e.stopPropagation();
     setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+    setLiveNotifs((prev) => prev.filter((n) => n.id !== notifId));
+    if (notifId.startsWith("fb-")) {
+      const fbId = notifId.replace("fb-", "");
+      setNewFeedbackIds((prev) => prev.filter((fid) => fid !== fbId));
+    }
   };
 
   const stats = [
@@ -330,7 +561,15 @@ const Communication = () => {
                       key={n.id}
                       onClick={(e) => handleNotifClick(e, n)}
                       className={`p-3.5 hover:bg-blue-50/50 transition-colors cursor-pointer space-y-1.5 ${
-                        n.type === "ticket_open" ? "bg-amber-50/30" : n.type === "announcement" ? "bg-blue-50/30" : ""
+                        n.type === "ticket_open"
+                          ? "bg-amber-50/30"
+                          : n.type === "announcement"
+                          ? "bg-blue-50/30"
+                          : n.type === "feedback_submitted"
+                          ? "bg-purple-50/40"
+                          : n.type === "feedback_response"
+                          ? "bg-emerald-50/40"
+                          : ""
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -340,10 +579,22 @@ const Communication = () => {
                               ? "bg-blue-100 text-blue-700"
                               : n.type === "ticket_open"
                               ? "bg-amber-100 text-amber-700"
-                              : "bg-emerald-100 text-emerald-700"
+                              : n.type === "ticket_resolved"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : n.type === "feedback_response"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-purple-100 text-purple-700"
                           }`}
                         >
-                          {n.type === "announcement" ? "Announcement" : n.type === "ticket_open" ? "Ticket" : "Resolved"}
+                          {n.type === "announcement"
+                            ? "Announcement"
+                            : n.type === "ticket_open"
+                            ? "Ticket"
+                            : n.type === "ticket_resolved"
+                            ? "Resolved"
+                            : n.type === "feedback_response"
+                            ? "Feedback Reply"
+                            : "Feedback"}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>

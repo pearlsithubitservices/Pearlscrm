@@ -12,6 +12,29 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      default: "Employee",
+    },
+
+    empId: {
+      type: String,
+      trim: true,
+    },
+
+    department: {
+      type: String,
+      trim: true,
+      default: "Engineering",
+    },
+
+    status: {
+      type: String,
+      enum: ["Active", "Suspended", "Pending"],
+      default: "Active",
+    },
+
+    sme: {
+      type: Boolean,
+      default: false,
     },
 
     tasks: [
@@ -37,8 +60,20 @@ const employeeSchema = new mongoose.Schema(
     location: String,
     joinDate: Date,
     notes: String,
+    profile: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    bankDetails: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    salary: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Employee", employeeSchema);
+module.exports = mongoose.model("Employee", employeeSchema);

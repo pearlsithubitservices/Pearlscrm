@@ -1,6 +1,7 @@
 import React, {
     useState,
     useEffect,
+    useMemo,
 } from "react";
 
 import {
@@ -10,6 +11,7 @@ import {
     Briefcase,
     AlertCircle,
     Activity,
+    Trash2,
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -18,7 +20,6 @@ import CreateClients from "./CreateClients.jsx";
 import AnimateModals from "../components/Dashboard/AnimateModals.jsx";
 
 import useClients from "../Hooks/useclients.js";
-import useTaskfilter from "../Hooks/useTaskfilter.js";
 import useProject from "../Hooks/useProject.js";
 
 import { formatNumber } from "../Utils/formatNumber.js";
@@ -32,6 +33,7 @@ export default function ClientManagement() {
         clients,
         loading,
         fetchClients,
+        deleteClient,
     } = useClients();
 
     const {
@@ -84,57 +86,38 @@ export default function ClientManagement() {
     }, [getAllProjects]);
 
     // =========================================================
-    // FETCH PAYMENTS
+    // FETCH PAYMENTS (OPTIMIZED SINGLE BATCH REQUEST)
     // =========================================================
 
     useEffect(() => {
         const fetchAllPayments = async () => {
-            if (!clients.length) {
-                setPayments({});
-                return;
-            }
-
             try {
+                const response = await fetch(apiUrl("/payment"));
+                if (!response.ok) {
+                    setPayments({});
+                    return;
+                }
+                const allPayments = await response.json();
+                const list = Array.isArray(allPayments) ? allPayments : [];
+
+                // Group payments by clientId and companyName
                 const paymentsData = {};
-
-                await Promise.all(
-                    clients.map(async (client) => {
-                        try {
-                            const response = await fetch(
-                                apiUrl(
-                                    `/payment?clientId=${client._id}`
-                                )
-                            );
-
-                            if (response.ok) {
-                                const data =
-                                    await response.json();
-
-                                paymentsData[client._id] =
-                                    Array.isArray(data)
-                                        ? data
-                                        : [];
-                            } else {
-                                paymentsData[client._id] = [];
-                            }
-                        } catch (error) {
-                            console.error(
-                                `Error fetching payments for client ${client._id}:`,
-                                error
-                            );
-
-                            paymentsData[client._id] = [];
-                        }
-                    })
-                );
+                list.forEach((p) => {
+                    if (p.clientId) {
+                        const cId = String(p.clientId);
+                        if (!paymentsData[cId]) paymentsData[cId] = [];
+                        paymentsData[cId].push(p);
+                    }
+                    if (p.companyName) {
+                        const compKey = String(p.companyName).toLowerCase().trim();
+                        if (!paymentsData[compKey]) paymentsData[compKey] = [];
+                        paymentsData[compKey].push(p);
+                    }
+                });
 
                 setPayments(paymentsData);
             } catch (error) {
-                console.error(
-                    "Error fetching payments:",
-                    error
-                );
-
+                console.error("Error fetching payments:", error);
                 setPayments({});
             }
         };
@@ -172,9 +155,9 @@ export default function ClientManagement() {
     // PAID AMOUNT
     // =========================================================
 
-    const getPaidAmount = (clientId) => {
-        const clientPayments =
-            payments[clientId] || [];
+    const getPaidAmount = (clientId, clientCompany) => {
+        const compKey = String(clientCompany || "").toLowerCase().trim();
+        const clientPayments = payments[clientId] || (compKey ? payments[compKey] : []) || [];
 
         return clientPayments
             .filter(
@@ -193,15 +176,16 @@ export default function ClientManagement() {
     // PENDING AMOUNT
     // =========================================================
 
-    const getPendingAmount = (clientId) => {
-        const clientPayments =
-            payments[clientId] || [];
+    const getPendingAmount = (clientId, clientCompany) => {
+        const compKey = String(clientCompany || "").toLowerCase().trim();
+        const clientPayments = payments[clientId] || (compKey ? payments[compKey] : []) || [];
 
         return clientPayments
             .filter(
-                (item) =>
-                    String(item.status).toLowerCase() ===
-                    "pending"
+                (item) => {
+                    const s = String(item.status).toLowerCase();
+                    return s === "pending" || s === "overdue" || s === "partial";
+                }
             )
             .reduce(
                 (sum, item) =>
@@ -211,7 +195,7 @@ export default function ClientManagement() {
     };
 
     // =========================================================
-    // PRIORITY FILTER BUTTONS
+    // PRIORITY FILTER BUTTONS & DEDICATED CLIENT FILTER
     // =========================================================
 
     const buttons = [
@@ -221,11 +205,64 @@ export default function ClientManagement() {
         "High",
     ];
 
-    const filteredClients = useTaskfilter(
-        clients,
-        search,
-        buttons[active]
-    );
+    const filteredClients = useMemo(() => {
+        const q = (search || "").toLowerCase().trim();
+        const activePriority = buttons[active];
+
+        return (Array.isArray(clients) ? clients : []).filter((client) => {
+            // Priority Tab Filter
+            if (activePriority && activePriority !== "All") {
+                const clientPriority = String(client?.priority || "").toLowerCase();
+                if (clientPriority !== activePriority.toLowerCase()) return false;
+            }
+
+            // Search Query Filter
+            if (!q) return true;
+
+            const company = String(client?.companyName || "").toLowerCase();
+            const project = String(client?.projectName || "").toLowerCase();
+            const email = String(client?.email || "").toLowerCase();
+            const phone = String(client?.contactNumber || "").toLowerCase();
+            const hq = String(client?.headquarters || "").toLowerCase();
+            const status = String(client?.status || "").toLowerCase();
+            const priority = String(client?.priority || "").toLowerCase();
+            const managers = Array.isArray(client?.managers)
+                ? client.managers.join(" ").toLowerCase()
+                : String(client?.managers || "").toLowerCase();
+
+            return (
+                company.includes(q) ||
+                project.includes(q) ||
+                email.includes(q) ||
+                phone.includes(q) ||
+                hq.includes(q) ||
+                status.includes(q) ||
+                priority.includes(q) ||
+                managers.includes(q)
+            );
+        });
+    }, [clients, search, active]);
+
+    // =========================================================
+    // DELETE CLIENT
+    // =========================================================
+
+    const handleDeleteClient = async (e, client) => {
+        e.stopPropagation();
+        if (!client) return;
+
+        const name = client.companyName || "this client";
+        const confirmed = window.confirm(`Are you sure you want to delete ${name}?`);
+        if (!confirmed) return;
+
+        try {
+            const id = client._id || client.id;
+            await deleteClient(id);
+        } catch (error) {
+            console.error("Error deleting client:", error);
+            alert("Failed to delete client: " + (error.message || "Unknown error"));
+        }
+    };
 
     // =========================================================
     // AVERAGE HEALTH SCORE
@@ -245,6 +282,27 @@ export default function ClientManagement() {
               ) / clients.length
           )
         : 0;
+
+    // =========================================================
+    // OVERDUE INVOICES COUNT
+    // =========================================================
+
+    const overdueCount = useMemo(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        return (clients || []).filter((client) => {
+            const rawDueDate = client.duedate || client.dueDate;
+            if (rawDueDate) {
+                const d = new Date(rawDueDate);
+                if (!isNaN(d.getTime()) && d < now) return true;
+            }
+            const clientId = client?._id || client?.id;
+            const compKey = String(client?.companyName || "").toLowerCase().trim();
+            const clientPayments = payments[clientId] || (compKey ? payments[compKey] : []) || [];
+            return clientPayments.some((p) => String(p.status).toLowerCase() === "overdue");
+        }).length;
+    }, [clients, payments]);
 
     // =========================================================
     // STATS
@@ -270,12 +328,7 @@ export default function ClientManagement() {
         },
         {
             title: "Overdue Invoice",
-            value: clients.filter((client) =>
-                client.dueDate
-                    ? new Date(client.dueDate) <
-                      new Date()
-                    : false
-            ).length,
+            value: overdueCount,
             icon: AlertCircle,
         },
         {
@@ -496,38 +549,51 @@ export default function ClientManagement() {
                                                 </p>
                                             </div>
 
-                                            <div className="flex flex-col items-center">
+                                            <div className="flex items-center gap-3">
 
-                                                <div className="flex gap-2">
+                                                <div className="flex flex-col items-end">
 
-                                                    <span className="bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded">
-                                                        {client.status ||
-                                                            "Pending"}
-                                                    </span>
+                                                    <div className="flex gap-2">
 
-                                                    <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
-                                                        {client.priority ||
-                                                            "No Priority"}
-                                                    </span>
+                                                        <span className="bg-blue-100 text-blue-600 text-xs px-3 py-1 rounded">
+                                                            {client.status ||
+                                                                "Pending"}
+                                                        </span>
+
+                                                        <span className="bg-green-100 text-green-600 text-xs px-3 py-1 rounded">
+                                                            {client.priority ||
+                                                                "No Priority"}
+                                                        </span>
+
+                                                    </div>
+
+                                                    <div className="text-sm text-gray-400 mt-1">
+                                                        <p>
+                                                            Renewal{" "}
+                                                            {client.renewalDate || client.duedate || client.dueDate
+                                                                ? new Date(
+                                                                      client.renewalDate || client.duedate || client.dueDate
+                                                                  ).toLocaleDateString(
+                                                                      "en-US",
+                                                                      {
+                                                                          month: "short",
+                                                                          year: "numeric",
+                                                                      }
+                                                                  )
+                                                                : "N/A"}
+                                                        </p>
+                                                    </div>
 
                                                 </div>
 
-                                                <div className="text-sm text-gray-400">
-                                                    <p>
-                                                        Renewal{" "}
-                                                        {client.renewalDate
-                                                            ? new Date(
-                                                                  client.renewalDate
-                                                              ).toLocaleDateString(
-                                                                  "en-US",
-                                                                  {
-                                                                      month: "short",
-                                                                      year: "numeric",
-                                                                  }
-                                                              )
-                                                            : "N/A"}
-                                                    </p>
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    title="Delete client"
+                                                    onClick={(e) => handleDeleteClient(e, client)}
+                                                    className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
 
                                             </div>
 
@@ -549,7 +615,8 @@ export default function ClientManagement() {
                                                     {formatNumber(
                                                         getPaidAmount(
                                                             client._id ||
-                                                                client.id
+                                                                client.id,
+                                                            client.companyName
                                                         )
                                                     )}
                                                 </p>
@@ -567,7 +634,8 @@ export default function ClientManagement() {
                                                     {formatNumber(
                                                         getPendingAmount(
                                                             client._id ||
-                                                                client.id
+                                                                client.id,
+                                                            client.companyName
                                                         )
                                                     )}
                                                 </p>

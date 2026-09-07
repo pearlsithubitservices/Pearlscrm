@@ -17,16 +17,33 @@ router.post("/", async (req, res) => {
         io.emit("feedbackCreated", feedback);
       }
 
-      const notif = await Notification.create({
+      // 1. Notify Admin: Employee submitted new feedback
+      const adminNotif = await Notification.create({
         title: `New Feedback: ${feedback.subject}`,
         sub: feedback.anonymous ? "Anonymous Employee" : (req.body.employeeName || "Employee"),
-        notificationType: "General",
+        notificationType: "Feedback",
         employeeId: null, // null = goes to Admin's notification center
         senderId: feedback.anonymous ? null : feedback.employeeId,
       });
 
+      // 2. Notify Employee: Feedback submitted confirmation
+      let empNotif = null;
+      if (feedback.employeeId) {
+        empNotif = await Notification.create({
+          title: `Feedback Submitted: ${feedback.subject}`,
+          sub: `Your feedback on "${feedback.feedbackType || "General"}" (${feedback.rating || 5}★) was submitted successfully.`,
+          notificationType: "Feedback",
+          employeeId: String(feedback.employeeId),
+          senderId: "system",
+        });
+      }
+
       if (io) {
-        io.emit("newNotification", notif);
+        io.emit("newNotification", adminNotif);
+        if (empNotif && feedback.employeeId) {
+          io.to(`user_${feedback.employeeId}`).emit("newNotification", empNotif);
+          io.to(String(feedback.employeeId)).emit("newNotification", empNotif);
+        }
       }
     } catch (notifErr) {
       console.warn("Error creating feedback notification:", notifErr.message);

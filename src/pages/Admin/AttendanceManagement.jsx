@@ -14,6 +14,7 @@ import {
   LogOut,
   MapPin,
   CalendarDays,
+  Calendar,
   Users,
   TimerReset,
   Bell,
@@ -148,27 +149,21 @@ export default function AttendanceManagement() {
   // STATUS COUNTS
 
   const onlineEmployees =
-    employeesdetails.filter(
+    (employeesdetails || []).filter(
       (emp) =>
-        emp.attendanceState.toLowerCase() === "working"
+        (emp.attendanceState || "").toLowerCase() === "working"
     );
-  // const onlineEmployee =
-  //   employee.filter(
-  //     (emp) =>
-  //       emp.attendanceState.toLowerCase() === "working"
-  //   );
-  console.log(onlineEmployees)
 
   const breakEmployees =
-    employeesdetails.filter(
+    (employeesdetails || []).filter(
       (emp) =>
-        emp.attendanceState.toLowerCase() === "break"
+        (emp.attendanceState || "").toLowerCase() === "break"
     );
 
   const offlineEmployees =
-    employeesdetails.filter(
+    (employeesdetails || []).filter(
       (emp) =>
-        emp.attendanceState.toLowerCase() === "clocked_out"
+        (emp.attendanceState || "").toLowerCase() === "clocked_out"
     );
 
   const nextHoliday = useMemo(() => {
@@ -235,49 +230,139 @@ export default function AttendanceManagement() {
     return Math.min(100, Math.round((presentCount / totalEmployeesCount) * 100));
   }, [employeesdetails, employees]);
 
-  const [timeFilter, setTimeFilter] = useState("month");
-  const [customStartDate, setCustomStartDate] = useState(
-    new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split("T")[0]
-  );
-  const [customEndDate, setCustomEndDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [timeFilter, setTimeFilter] = useState("week");
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [customStartDate, setCustomStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split("T")[0];
+  });
+  const [customEndDate, setCustomEndDate] = useState(() => {
+    return new Date().toISOString().split("T")[0];
+  });
+
+  // Extract valid date from attendance record (date, clockIn, createdAt)
+  const getRecordDate = (emp) => {
+    if (!emp) return null;
+    const raw = emp.date || emp.clockIn || emp.createdAt;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  // Compute exact start & end boundaries for week, month, and custom filters
+  const filterDateRange = useMemo(() => {
+    const now = new Date();
+
+    if (timeFilter === "today") {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      return { start, end, label: "Today" };
+    }
+
+    if (timeFilter === "week") {
+      // Current Week: Monday 00:00:00 to Sunday 23:59:59
+      const day = now.getDay();
+      const diffToMonday = day === 0 ? 6 : day - 1;
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      return {
+        start,
+        end,
+        label: `This Week (${start.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} - ${end.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })})`,
+      };
+    }
+
+    if (timeFilter === "last_week") {
+      // Previous Week: Monday to Sunday
+      const day = now.getDay();
+      const diffToMonday = day === 0 ? 6 : day - 1;
+      const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
+      const start = new Date(thisMonday);
+      start.setDate(start.getDate() - 7);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      return {
+        start,
+        end,
+        label: `Last Week (${start.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} - ${end.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })})`,
+      };
+    }
+
+    if (timeFilter === "month") {
+      // This Month: 1st of current month to last day of current month
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      return {
+        start,
+        end,
+        label: now.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      };
+    }
+
+    if (timeFilter === "last_month") {
+      // Last Month: 1st of previous month to last day of previous month
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return {
+        start,
+        end,
+        label: start.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      };
+    }
+
+    if (timeFilter === "select_month") {
+      if (!selectedMonth) return null;
+      const [y, m] = selectedMonth.split("-").map(Number);
+      const start = new Date(y, m - 1, 1, 0, 0, 0, 0);
+      const end = new Date(y, m, 0, 23, 59, 59, 999);
+      return {
+        start,
+        end,
+        label: start.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      };
+    }
+
+    if (timeFilter === "year") {
+      const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      return { start, end, label: `Year ${now.getFullYear()}` };
+    }
+
+    if (timeFilter === "custom") {
+      const start = customStartDate ? new Date(customStartDate) : null;
+      if (start) start.setHours(0, 0, 0, 0);
+      const end = customEndDate ? new Date(customEndDate) : null;
+      if (end) end.setHours(23, 59, 59, 999);
+      return {
+        start,
+        end,
+        label: `${customStartDate || "Start"} to ${customEndDate || "End"}`,
+      };
+    }
+
+    return null; // "all"
+  }, [timeFilter, selectedMonth, customStartDate, customEndDate]);
 
   const filteredEmployees = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     return (employeesdetails || []).filter((emp) => {
-      const empDateRaw = emp.clockIn || emp.date;
-      if (empDateRaw) {
-        const empDate = new Date(empDateRaw);
-        if (!isNaN(empDate.getTime())) {
-          if (timeFilter === "week") {
-            const weekAgo = new Date(startOfToday);
-            weekAgo.setDate(weekAgo.getDate() - 6);
-            if (empDate < weekAgo) return false;
-          } else if (timeFilter === "month") {
-            if (empDate.getMonth() !== now.getMonth() || empDate.getFullYear() !== now.getFullYear()) {
-              return false;
-            }
-          } else if (timeFilter === "year") {
-            if (empDate.getFullYear() !== now.getFullYear()) return false;
-          } else if (timeFilter === "custom") {
-            if (customStartDate) {
-              const start = new Date(customStartDate);
-              start.setHours(0, 0, 0, 0);
-              if (empDate < start) return false;
-            }
-            if (customEndDate) {
-              const end = new Date(customEndDate);
-              end.setHours(23, 59, 59, 999);
-              if (empDate > end) return false;
-            }
-          }
-        }
+      // 1. Date-based filtering (Week, Month, Custom)
+      if (filterDateRange) {
+        const recordDate = getRecordDate(emp);
+        if (!recordDate) return false;
+        if (filterDateRange.start && recordDate < filterDateRange.start) return false;
+        if (filterDateRange.end && recordDate > filterDateRange.end) return false;
       }
 
+      // 2. Search query filter
       if (!query) return true;
 
       const name = (emp.employee_name || employeeMap[emp.employee_uid] || "").toLowerCase();
@@ -294,7 +379,7 @@ export default function AttendanceManagement() {
         uid.includes(query)
       );
     });
-  }, [employeesdetails, employeeMap, searchQuery, timeFilter, customStartDate, customEndDate]);
+  }, [employeesdetails, employeeMap, searchQuery, filterDateRange]);
 
   const exportOverallSheet = () => {
     const listToExport = filteredEmployees.length > 0 ? filteredEmployees : employeesdetails;
@@ -304,13 +389,27 @@ export default function AttendanceManagement() {
     }
 
     const now = Date.now();
-    const headers = ["Employee Name", "Department", "Status", "Clock In Time", "Location", "Working Time"];
+    const headers = [
+      "Employee Name",
+      "Employee ID",
+      "Department",
+      "Date",
+      "Status",
+      "Clock In Time",
+      "Clock Out Time",
+      "Location",
+      "Working Time",
+    ];
 
     const rows = listToExport.map((emp) => {
       const name = emp.employee_name || employeeMap[emp.employee_uid] || "Employee";
+      const empId = emp.employee_uid || "N/A";
       const dept = emp.department || "Employee";
+      const recordDate = getRecordDate(emp);
+      const dateStr = recordDate ? recordDate.toLocaleDateString("en-GB") : "N/A";
       const status = emp.attendanceState || emp.status || "N/A";
-      const clockIn = emp.clockIn ? new Date(emp.clockIn).toLocaleTimeString('en-GB') : "N/A";
+      const clockIn = emp.clockIn ? new Date(emp.clockIn).toLocaleTimeString("en-GB") : "N/A";
+      const clockOut = emp.clockOut ? new Date(emp.clockOut).toLocaleTimeString("en-GB") : "--:--";
       const location = emp.location || "N/A";
 
       let seconds = Number(emp.workingHours || 0);
@@ -340,11 +439,14 @@ export default function AttendanceManagement() {
 
       return [
         `"${name.replace(/"/g, '""')}"`,
+        `"${empId.replace(/"/g, '""')}"`,
         `"${dept.replace(/"/g, '""')}"`,
+        `"${dateStr}"`,
         `"${status.replace(/"/g, '""')}"`,
         `"${clockIn.replace(/"/g, '""')}"`,
+        `"${clockOut.replace(/"/g, '""')}"`,
         `"${location.replace(/"/g, '""')}"`,
-        `"${formattedTime}"`
+        `"${formattedTime}"`,
       ].join(",");
     });
 
@@ -352,7 +454,7 @@ export default function AttendanceManagement() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Attendance_Report_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `Attendance_Report_${timeFilter}_${new Date().toISOString().split("T")[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -772,15 +874,24 @@ export default function AttendanceManagement() {
 
               </h2>
 
-              <p className="text-gray-500 text-xs mt-0.5">
-
-                Realtime employee monitoring & status
-
-              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <p className="text-gray-500 text-xs">
+                  Realtime employee monitoring & status
+                </p>
+                {filterDateRange?.label && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 shadow-xs">
+                    <Calendar className="w-3 h-3 text-blue-500" />
+                    <span>{filterDateRange.label}</span>
+                    <span className="bg-blue-200/70 text-blue-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                      {filteredEmployees.length}
+                    </span>
+                  </span>
+                )}
+              </div>
 
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
 
               {/* SEARCH */}
               <div className="relative">
@@ -790,7 +901,7 @@ export default function AttendanceManagement() {
                   placeholder="Search employee..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-blue-500 w-44"
+                  className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-blue-500 w-40 sm:w-48"
                 />
               </div>
 
@@ -798,18 +909,36 @@ export default function AttendanceManagement() {
               <select
                 value={timeFilter}
                 onChange={(e) => setTimeFilter(e.target.value)}
-                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
               >
-                <option value="all">All Records</option>
-                <option value="week">This Week</option>
+                <option value="today">Today</option>
+                <option value="week">This Week (Mon - Sun)</option>
+                <option value="last_week">Last Week</option>
                 <option value="month">This Month</option>
-                <option value="year">This Year</option>
+                <option value="last_month">Last Month</option>
+                <option value="select_month">🗓️ Choose Month...</option>
                 <option value="custom">📅 Custom Date Range</option>
+                <option value="year">This Year</option>
+                <option value="all">All Records</option>
               </select>
+
+              {/* MONTH PICKER */}
+              {timeFilter === "select_month" && (
+                <div className="flex items-center gap-1.5 bg-blue-50/80 px-2.5 py-1.5 rounded-xl border border-blue-200 shadow-xs">
+                  <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    title="Select specific month"
+                  />
+                </div>
+              )}
 
               {/* CUSTOM DATE RANGE PICKERS */}
               {timeFilter === "custom" && (
-                <div className="flex items-center gap-2 bg-blue-50/60 p-1 rounded-xl border border-blue-100">
+                <div className="flex items-center gap-2 bg-blue-50/60 p-1 rounded-xl border border-blue-100 shadow-xs">
                   <input
                     type="date"
                     value={customStartDate}
@@ -860,6 +989,12 @@ export default function AttendanceManagement() {
 
                   <th className="pb-3 px-3 font-bold">
 
+                    Date
+
+                  </th>
+
+                  <th className="pb-3 px-3 font-bold">
+
                     Status
 
                   </th>
@@ -896,12 +1031,12 @@ export default function AttendanceManagement() {
 
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="py-10 text-center text-gray-400">
+                    <td colSpan="7" className="py-10 text-center text-gray-400">
                       No matching employee records found
                     </td>
                   </tr>
                 ) : (
-                  filteredEmployees.map((employee) => {
+                  filteredEmployees.map((employee, index) => {
                     const empName = employee.employee_name || employeeMap[employee.employee_uid] || "Employee";
                     return (
 
@@ -944,23 +1079,41 @@ export default function AttendanceManagement() {
 
                     </td>
 
+                    {/* DATE */}
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      {(() => {
+                        const recDate = getRecordDate(employee);
+                        if (!recDate) return <span className="text-gray-400 text-xs">--</span>;
+                        const dayName = recDate.toLocaleDateString("en-US", { weekday: "short" });
+                        const dateFormatted = recDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-semibold text-[#0f172a]">{dateFormatted}</span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 uppercase">
+                              {dayName}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </td>
+
                     {/* STATUS */}
 
                     <td className="py-3 px-3 whitespace-nowrap">
 
                       <span className={`
                         px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5
-                        ${employee.attendanceState === 'working'
+                        ${(employee.attendanceState || '').toLowerCase() === 'working'
                           ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                          : employee.status === 'break'
+                          : (employee.status || (employee.attendanceState || '')).toLowerCase() === 'break'
                             ? 'bg-amber-50 text-amber-600 border border-amber-200'
                             : 'bg-rose-50 text-rose-500 border border-rose-200'
                         }
                       `}>
                         <span className={`w-1.5 h-1.5 rounded-full ${
-                          employee.attendanceState === 'working' ? 'bg-emerald-500 animate-pulse' : employee.status === 'break' ? 'bg-amber-500' : 'bg-rose-400'
+                          (employee.attendanceState || '').toLowerCase() === 'working' ? 'bg-emerald-500 animate-pulse' : (employee.status || (employee.attendanceState || '')).toLowerCase() === 'break' ? 'bg-amber-500' : 'bg-rose-400'
                         }`}></span>
-                        {employee.attendanceState.toLowerCase() == "working" ? "Online" : employee.attendanceState.toLowerCase() == "break" ? "Break" : "Offline"}
+                        {(employee.attendanceState || '').toLowerCase() === "working" ? "Online" : (employee.attendanceState || '').toLowerCase() === "break" ? "Break" : "Offline"}
 
                       </span>
 
@@ -970,12 +1123,9 @@ export default function AttendanceManagement() {
 
                     <td className="py-3 px-3 font-semibold text-[#0f172a] text-xs whitespace-nowrap">
 
-                      {
-                        new Date(
-                          employee.clockIn
-
-                        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
-                      }
+                      {employee.clockIn
+                        ? new Date(employee.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+                        : "--:--"}
 
                     </td>
 

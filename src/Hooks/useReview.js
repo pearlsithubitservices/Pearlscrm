@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../config/api";
 
-const API = "http://localhost:5000/api/review";
-// const API = "https://pearlscrm.onrender.com/api/review";
+const API = apiUrl("/review");
 
 export default function useReview() {
     const [loading, setLoading] = useState(false);
@@ -140,7 +140,9 @@ export default function useReview() {
                 method: "DELETE",
             });
 
-            return await handleResponse(res);
+            const data = await handleResponse(res);
+            setReview((prev) => (Array.isArray(prev) ? prev.filter((r) => r._id !== id && r.id !== id && r.employee_uid !== id) : []));
+            return data;
         } catch (err) {
             setError(err.message || "Failed to delete review");
             console.error("Delete review error:", err);

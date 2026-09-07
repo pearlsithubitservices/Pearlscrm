@@ -25,6 +25,7 @@ const notificationSchema = new mongoose.Schema(
         "Reimbursement",
         "Meeting",
         "Lead",
+        "Feedback",
         "General",
       ],
       default: "General",

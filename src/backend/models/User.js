@@ -98,6 +98,10 @@ const userSchema = new mongoose.Schema(
         netSalary: Number,
       },
     },
+    salary: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     timestamps: true,

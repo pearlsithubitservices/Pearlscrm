@@ -1,113 +1,173 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
     User,
     Building2,
-    BadgeCheck,
     X,
+    Calendar,
+    Clock,
+    Briefcase,
 } from "lucide-react";
 
 import InputField from "../../components/InputField.jsx";
-import useLeave from '../../Hooks/useLeave.js'
+import useLeave from '../../Hooks/useLeave.js';
 import { useAuth } from "../../context/AuthContext";
-
+import useEmployees from "../../Hooks/useEmployees";
 
 const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
-
-
-    const leaveOptions = [
-        "Casual Leave",
-        "Sick Leave",
-        "Annual Leave",
-        "Emergency Leave",
-    ];
-
-
-    const initialDetails =
-        editingRequest && typeof editingRequest === "object"
-            ? { ...editingRequest }
-            : {
-                  employeeName: "",
-                  employeeId: "",
-                  department: "",
-                  managerId: "",
-                  managerName: "",
-                  leaveTitle: "",
-                  leaveType: "",
-                  leaveFrom: "",
-                  leaveTo: "",
-                  leaveReason: "",
-              };
-
-    const [formdetails, setFormdetails] = useState(initialDetails);
     const { user } = useAuth();
+    const { employees = [] } = useEmployees();
+    const { submitLeave, updateLeave, loading, error, getLeaves } = useLeave();
 
+    const [formdetails, setFormdetails] = useState({
+        employeeName: "",
+        employeeId: "",
+        department: "",
+        managerId: "",
+        managerName: "",
+        leaveTitle: "",
+        leaveType: "Annual Leave",
+        leaveFrom: "",
+        leaveTo: "",
+        leaveReason: "",
+    });
+
+    const [submitting, setSubmitting] = useState(false);
+    const [formError, setFormError] = useState("");
+
+    const isViewOnly = editingRequest === true;
+    const isEditing = editingRequest && typeof editingRequest === "object" && (editingRequest.id || editingRequest._id);
+
+    // Populate current logged-in employee details
     useEffect(() => {
         if (!editingRequest && user) {
-            setFormdetails((previous) => ({
-                ...previous,
+            setFormdetails((prev) => ({
+                ...prev,
                 employeeId: user.profile?.empId || user.empId || user.id || user.uid || user._id || "",
                 employeeName: user.name || "",
-                department: user.industry || "General",
+                department: user.industry || user.department || "General",
             }));
         }
     }, [editingRequest, user]);
 
+    // Populate when editing
     useEffect(() => {
         if (editingRequest && typeof editingRequest === "object") {
-            setFormdetails({ ...editingRequest });
-        } else if (editingRequest === true && onEdit && typeof onEdit === "object") {
-            // view-only mode with provided details via onEdit
-            setFormdetails({ ...onEdit });
+            setFormdetails({
+                ...editingRequest,
+                // normalize leave type label if needed
+                leaveType: editingRequest.leaveType || "Annual Leave",
+            });
         }
-    }, [editingRequest, onEdit]);
+    }, [editingRequest]);
 
+    // Manager dropdown options
+    const managerOptions = useMemo(() => {
+        const currentEmpId = formdetails.employeeId;
+        const potentialManagers = (employees || []).filter(
+            (e) => String(e.uid || e._id || e.id) !== String(currentEmpId)
+        );
+        const source = potentialManagers.length > 0 ? potentialManagers : employees;
+        return (source || []).map((m) => ({
+            value: m.name || m.employeeName,
+            label: `${m.name || m.employeeName} (${m.role || "Manager"})`,
+            id: m.uid || m._id || m.id || m.empId || "",
+        }));
+    }, [employees, formdetails.employeeId]);
 
-    const { submitLeave, updateLeave, loading, error, leaves, getLeaves } = useLeave();
-    const isViewOnly = editingRequest === true;
-    const isEditing = editingRequest && typeof editingRequest === "object" && (editingRequest.id || editingRequest._id);
     const formChange = (name, value) => {
         setFormdetails((prev) => ({
             ...prev,
             [name]: value,
         }));
     };
+
+    const handleManagerSelect = (e) => {
+        const val = e.target.value;
+        const found = managerOptions.find((m) => m.value === val);
+        setFormdetails((prev) => ({
+            ...prev,
+            managerName: val,
+            managerId: found?.id || prev.managerId || "",
+        }));
+    };
+
+    // Calculate duration in days
+    const calculatedDuration = useMemo(() => {
+        if (!formdetails.leaveFrom || !formdetails.leaveTo) return 0;
+        const from = new Date(formdetails.leaveFrom);
+        const to = new Date(formdetails.leaveTo);
+        if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to < from) return 0;
+        return Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+    }, [formdetails.leaveFrom, formdetails.leaveTo]);
+
     const handleSubmit = async () => {
+        setFormError("");
+
+        if (!formdetails.leaveTitle.trim()) {
+            setFormError("Please enter a leave title.");
+            return;
+        }
+        if (!formdetails.leaveFrom || !formdetails.leaveTo) {
+            setFormError("Please select both start and end dates.");
+            return;
+        }
+        if (new Date(formdetails.leaveTo) < new Date(formdetails.leaveFrom)) {
+            setFormError("End date cannot be earlier than start date.");
+            return;
+        }
+        if (!formdetails.leaveReason.trim()) {
+            setFormError("Please state a reason for your leave request.");
+            return;
+        }
+
         try {
+            setSubmitting(true);
+            const activeEmpId = formdetails.employeeId || user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id || "";
+            const activeEmpName = formdetails.employeeName || user?.name || "";
+            const activeDept = formdetails.department || user?.industry || user?.department || "General";
+
+            const payload = {
+                ...formdetails,
+                employeeId: activeEmpId,
+                employeeName: activeEmpName,
+                department: activeDept,
+                leaveDays: calculatedDuration || 1,
+            };
+
             let result;
             if (isEditing) {
-                result = await updateLeave(editingRequest.id || editingRequest._id, formdetails);
+                result = await updateLeave(editingRequest.id || editingRequest._id, payload);
             } else {
-                result = await submitLeave(formdetails);
+                result = await submitLeave(payload);
             }
 
             if (!result.success) {
-                throw new Error(result.error);
+                throw new Error(result.error || "Failed to submit leave request");
             }
 
-            alert(isEditing ? "Leave Request Updated Successfully" : "Leave Request Submitted Successfully");
             getLeaves();
 
-            if (isEditing) {
-                // update local list
-                onSave((prev) =>
-                    prev.map((req) => ((req.id || req._id) === (editingRequest.id || editingRequest._id) ? { ...formdetails, id: editingRequest.id || editingRequest._id } : req))
-                );
-            } else {
-                onSave((prev) => [
-                    {
-                        ...result.data.leave,
-                        id: result.data.leave?._id,
-                    },
-                    ...prev,
-                ]);
+            if (onSave) {
+                if (isEditing) {
+                    onSave((prev) =>
+                        prev.map((req) =>
+                            ((req.id || req._id) === (editingRequest.id || editingRequest._id)
+                                ? { ...formdetails, id: editingRequest.id || editingRequest._id }
+                                : req)
+                        )
+                    );
+                } else if (result.data?.leave) {
+                    onSave((prev) => [result.data.leave, ...prev]);
+                }
             }
 
-
             onClose();
-        } catch (error) {
-            console.error(error);
-            alert(error.message);
+        } catch (err) {
+            console.error(err);
+            setFormError(err.message || "Failed to submit leave request.");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -115,42 +175,48 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-h-screen overflow-y-auto no-scrollbar bg-[#f6f4ef] p-6"
+            className="max-h-screen overflow-y-auto no-scrollbar bg-black/40 backdrop-blur-sm fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-            <div className="relative max-w-6xl mx-auto bg-[#efede8] rounded-[28px] p-10 shadow-sm">
-
+            <div className="relative max-w-4xl w-full bg-[#efede8] rounded-[28px] p-8 md:p-10 shadow-xl border border-white/40 max-h-[90vh] overflow-y-auto no-scrollbar">
+                {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-8 right-2 bg-red-600 text-white p-1 rounded hover:scale-105 transition"
+                    className="absolute top-6 right-6 w-9 h-9 rounded-full bg-red-100 hover:bg-red-200 text-red-700 flex items-center justify-center transition cursor-pointer"
                 >
                     <X size={18} />
                 </button>
 
-                {/* Employee Details */}
-
-                <div className="flex items-center gap-4 mb-8">
-                    <h3 className="text-xs tracking-[3px] text-gray-500 uppercase whitespace-nowrap">
-                        Employee Details
-                    </h3>
-                    <div className="h-px bg-gray-400 flex-1" />
+                {/* Form Title */}
+                <div className="mb-8">
+                    <h2 className="text-2xl md:text-3xl font-bold text-[#0B2B57]">
+                        {isEditing ? "Edit Leave Request" : isViewOnly ? "View Leave Request" : "Apply for Leave"}
+                    </h2>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Submit your time-off request for review and approval
+                    </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                {/* Error Banner */}
+                {formError && (
+                    <div className="mb-6 p-3 rounded-xl bg-red-100 border border-red-200 text-red-700 text-xs font-semibold">
+                        {formError}
+                    </div>
+                )}
 
-                    <InputField
-                        label="Employee ID"
-                        name="employeeId"
-                        value={formdetails.employeeId}
-                        //onChange={(e) => formChange("employeeId", e.target.value)}
-                        disabled={isViewOnly}
-                        Icon={BadgeCheck}
-                    />
+                {/* Employee Details Section */}
+                <div className="flex items-center gap-4 mb-6">
+                    <h3 className="text-xs tracking-[3px] text-gray-500 uppercase whitespace-nowrap font-bold">
+                        Employee & Manager Information
+                    </h3>
+                    <div className="h-px bg-gray-300 flex-1" />
+                </div>
 
+                <div className="grid md:grid-cols-3 gap-5">
                     <InputField
                         label="Full Name"
                         name="employeeName"
                         value={formdetails.employeeName}
-                        onChange={(e) => formChange('employeeName', e.target.value)}
+                        onChange={(e) => formChange("employeeName", e.target.value)}
                         disabled={isViewOnly}
                         Icon={User}
                     />
@@ -165,39 +231,29 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                     />
 
                     <InputField
-                        label="Manager ID"
-                        name="managerId"
-                        value={formdetails.managerId}
-                        onChange={(e) => formChange("managerId", e.target.value)}
-                        disabled={isViewOnly}
-                        Icon={BadgeCheck}
-                    />
-
-                    <InputField
-                        label="Manager Name"
+                        label="Reporting Manager"
                         name="managerName"
                         value={formdetails.managerName}
-                        onChange={(e) => formChange("managerName", e.target.value)}
+                        onChange={handleManagerSelect}
                         disabled={isViewOnly}
-                        Icon={User}
+                        type="select"
+                        Icon={Briefcase}
+                        options={managerOptions}
                     />
-
-                    
-
                 </div>
 
-                {/* Leave Details */}
-
+                {/* Leave Details Section */}
                 <div className="flex items-center gap-4 my-8">
-                    <h3 className="text-xs tracking-[3px] text-gray-500 uppercase whitespace-nowrap">
+                    <h3 className="text-xs tracking-[3px] text-gray-500 uppercase whitespace-nowrap font-bold">
                         Leave Details
                     </h3>
-                    <div className="h-px bg-gray-400 flex-1" />
+                    <div className="h-px bg-gray-300 flex-1" />
                 </div>
-                <div className="grid md:grid-cols-2 gap-6">
 
+                <div className="grid md:grid-cols-2 gap-5">
                     <InputField
                         label="Leave Title"
+                        placeholder="e.g. Family Vacation, Fever Recovery..."
                         name="leaveTitle"
                         value={formdetails.leaveTitle}
                         onChange={(e) => formChange("leaveTitle", e.target.value)}
@@ -213,83 +269,93 @@ const LeaveApplicationForm = ({ onClose, onSave, editingRequest, onEdit }) => {
                         disabled={isViewOnly}
                         type="select"
                         options={[
-                            { value: "annual", label: "Annual Leave" },
-                            { value: "sick", label: "Sick Leave" },
-                            { value: "personal", label: "Personal Leave" },
+                            { value: "Annual Leave", label: "Annual Leave" },
+                            { value: "Sick Leave", label: "Sick Leave" },
+                            { value: "Casual Leave", label: "Casual Leave" },
+                            { value: "Emergency Leave", label: "Emergency Leave" },
                         ]}
-
                     />
-
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-
+                <div className="grid md:grid-cols-2 gap-5 mt-5">
                     <InputField
                         label="From Date"
                         name="leaveFrom"
-                        value={formdetails.leaveFrom}
+                        value={formdetails.leaveFrom ? formdetails.leaveFrom.split("T")[0] : ""}
                         onChange={(e) => formChange("leaveFrom", e.target.value)}
                         disabled={isViewOnly}
                         type="date"
+                        Icon={Calendar}
                     />
 
                     <InputField
                         label="To Date"
                         name="leaveTo"
-                        value={formdetails.leaveTo}
+                        value={formdetails.leaveTo ? formdetails.leaveTo.split("T")[0] : ""}
                         onChange={(e) => formChange("leaveTo", e.target.value)}
                         disabled={isViewOnly}
                         type="date"
+                        Icon={Calendar}
                     />
-
                 </div>
 
+                {/* Duration Badge */}
+                {calculatedDuration > 0 && (
+                    <div className="mt-3 flex items-center gap-2">
+                        <span className="text-xs bg-blue-100 text-[#0B2B57] font-bold px-3 py-1.5 rounded-xl border border-blue-200">
+                            Total Duration: {calculatedDuration} {calculatedDuration === 1 ? "day" : "days"}
+                        </span>
+                    </div>
+                )}
+
                 {/* Reason */}
-
                 <div className="mt-6">
-                    <div className="flex justify-between mb-3">
-                        <label className="font-bold text-[#0b2b57]">
-                            Reason For Leave
+                    <div className="flex justify-between mb-2">
+                        <label className="font-bold text-[#0b2b57] text-sm">
+                            Reason for Leave
                         </label>
-
                         <span className="text-xs text-gray-400">
                             {(formdetails.leaveReason || "").length}/500
                         </span>
                     </div>
 
                     <textarea
-                        rows={5}
+                        rows={4}
                         maxLength={500}
+                        placeholder="Please provide details regarding your leave request..."
                         name="leaveReason"
                         value={formdetails.leaveReason}
                         onChange={(e) => formChange("leaveReason", e.target.value)}
                         disabled={isViewOnly}
-                        className="w-full bg-white rounded-2xl border border-gray-200 p-5 resize-none outline-none"
+                        className="w-full bg-white rounded-2xl border border-gray-300 p-4 resize-none outline-none text-sm text-gray-700"
                     />
                 </div>
 
                 {/* Buttons */}
-
-                <div className="flex flex-col sm:flex-row gap-4 mt-10">
-
+                <div className="flex flex-col sm:flex-row gap-3 mt-8">
                     <button
+                        type="button"
                         onClick={onClose}
-                        className="sm:w-[150px] h-[56px] border border-gray-400 rounded-2xl text-gray-600 font-medium hover:bg-gray-100 transition"
+                        className="sm:w-[130px] h-[50px] border border-gray-400 rounded-2xl text-gray-700 font-semibold hover:bg-gray-200 transition cursor-pointer"
                     >
                         Cancel
                     </button>
 
                     {!isViewOnly && (
                         <button
-                            className="flex-1 h-[56px] bg-[#2568ad] text-white rounded-2xl font-semibold hover:bg-[#1f5a98] transition"
+                            type="button"
+                            disabled={submitting}
+                            className="flex-1 h-[50px] bg-[#2568ad] text-white rounded-2xl font-semibold hover:bg-[#1f5a98] transition cursor-pointer disabled:opacity-50"
                             onClick={handleSubmit}
                         >
-                            {isEditing ? "Update Request" : "Submit Request"}
+                            {submitting
+                                ? "Saving..."
+                                : isEditing
+                                ? "Update Request"
+                                : "Submit Request"}
                         </button>
                     )}
-
                 </div>
-
             </div>
         </motion.div>
     );

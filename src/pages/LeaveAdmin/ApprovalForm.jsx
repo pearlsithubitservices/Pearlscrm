@@ -48,19 +48,6 @@ export default function ApprovalForm({
                     </div>
                 </div>
 
-                {/* Employee ID */}
-                <div>
-                    <label className="text-gray-500 uppercase tracking-widest font-bold text-sm mb-2 block">
-                        Employee ID
-                    </label>
-
-                    <div className="h-14 rounded-2xl bg-white border border-gray-200 flex items-center px-5">
-                        <span className="text-[#12345B] text-md">
-                            {leave.employeeId}
-                        </span>
-                    </div>
-                </div>
-
                 {/* Department */}
                 <div>
                     <label className="text-gray-500 uppercase tracking-widest font-bold text-sm mb-2 block">
@@ -70,7 +57,7 @@ export default function ApprovalForm({
                     <div className="flex items-center gap-3 h-14 rounded-2xl bg-white border border-gray-200 px-5">
                         <Building2 className="w-5 h-5 text-gray-400" />
                         <span className="text-[#12345B] text-xl">
-                            {leave.department}
+                            {leave?.department || "General"}
                         </span>
                     </div>
                 </div>
@@ -83,7 +70,20 @@ export default function ApprovalForm({
 
                     <div className="h-14 rounded-2xl bg-white border border-gray-200 flex items-center px-5">
                         <span className="text-[#12345B] text-xl">
-                            {leave.leaveType}
+                            {leave?.leaveType}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Duration */}
+                <div>
+                    <label className="text-gray-500 uppercase tracking-widest font-bold text-sm mb-2 block">
+                        Duration
+                    </label>
+
+                    <div className="h-14 rounded-2xl bg-white border border-gray-200 flex items-center px-5">
+                        <span className="text-[#12345B] text-xl font-medium">
+                            {leave?.leaveDays || 1} {(leave?.leaveDays || 1) === 1 ? "day" : "days"}
                         </span>
                     </div>
                 </div>

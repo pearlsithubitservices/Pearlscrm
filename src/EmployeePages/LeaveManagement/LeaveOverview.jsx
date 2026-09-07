@@ -80,17 +80,14 @@ const LeaveOverview = ({ onApplyLeave, setFormDetails, setEditingRequest, editin
                     
                 </motion.div>
             </div>
-            {/**Leave Form */}
-
+            {/* Leave Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto  no-scrollbar">
-                    <LeaveForm
-                        onSave={setFormDetails}
-                        editingRequest={editingRequest}
-                        onEdit={setFormDetails}
-                        onClose={handleCloseForm}
-                    />
-                </div>
+                <LeaveForm
+                    onSave={setFormDetails}
+                    editingRequest={editingRequest}
+                    onEdit={setFormDetails}
+                    onClose={handleCloseForm}
+                />
             )}
         </div>
     );
