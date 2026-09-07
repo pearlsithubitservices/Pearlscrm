@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import {
   Smile,
   Paperclip,
@@ -8,6 +9,7 @@ import {
 import {
   sendAdminMessage,
   takeOverConversation,
+  createHumanHandoff,
 } from "../services/api";
 
 
@@ -29,34 +31,97 @@ export default function ChatWindow({ conversation }) {
   const handleTakeOver = async () => {
 
     if (!conversation?.id) {
+
       console.error(
         "Cannot take over: conversation ID is missing"
       );
 
       return;
+
     }
 
     try {
 
       setTakingOver(true);
 
+
       console.log(
         "Taking over conversation:",
         conversation.id
       );
+
+
+      // =================================================
+      // STEP 1: CHANGE CONVERSATION TO HUMAN HANDLED
+      // =================================================
 
       const result =
         await takeOverConversation(
           conversation.id
         );
 
+
       console.log(
         "Conversation taken over successfully:",
         result
       );
 
-      // Temporary refresh for testing
+
+      // =================================================
+      // STEP 2: GET LAST MESSAGE
+      // =================================================
+
+      const lastMessage =
+        conversation.messages &&
+        conversation.messages.length > 0
+          ? conversation.messages[
+              conversation.messages.length - 1
+            ]
+          : null;
+
+
+      // =================================================
+      // STEP 3: CREATE HUMAN HANDOFF REQUEST
+      // SAME CONVERSATION ID
+      // =================================================
+
+      const handoffData =
+        await createHumanHandoff({
+
+          conversation_id:
+            conversation.id,
+
+
+          employee_name:
+            conversation.name ||
+            conversation.contactName ||
+            "Unknown Employee",
+
+
+          message:
+            lastMessage?.text ||
+            lastMessage?.message ||
+            "Conversation requires human assistance.",
+
+
+          source:
+            "conversation",
+
+        });
+
+
+      console.log(
+        "Human Handoff created successfully:",
+        handoffData
+      );
+
+
+      // =================================================
+      // STEP 4: REFRESH
+      // =================================================
+
       window.location.reload();
+
 
     } catch (error) {
 
@@ -65,15 +130,18 @@ export default function ChatWindow({ conversation }) {
         error
       );
 
+
       alert(
-        "Failed to take over conversation. Please try again."
+        "Failed to move conversation to Human Handoff. Please try again."
       );
+
 
     } finally {
 
       setTakingOver(false);
 
     }
+
   };
 
 
@@ -84,14 +152,19 @@ export default function ChatWindow({ conversation }) {
   if (!conversation) {
 
     return (
+
       <div className="chat-window">
 
         <div className="empty-chat">
+
           Select a conversation
+
         </div>
 
       </div>
+
     );
+
   }
 
 
@@ -104,9 +177,13 @@ export default function ChatWindow({ conversation }) {
     const trimmedMessage =
       message.trim();
 
+
     if (!trimmedMessage) {
+
       return;
+
     }
+
 
     if (!conversation.id) {
 
@@ -115,30 +192,37 @@ export default function ChatWindow({ conversation }) {
       );
 
       return;
+
     }
+
 
     try {
 
       setSending(true);
+
 
       console.log(
         "Sending admin message:",
         conversation.id
       );
 
+
       await sendAdminMessage(
         conversation.id,
         trimmedMessage
       );
 
+
       setMessage("");
+
 
       console.log(
         "Admin message sent successfully"
       );
 
-      // Temporary refresh for testing
+
       window.location.reload();
+
 
     } catch (error) {
 
@@ -147,15 +231,18 @@ export default function ChatWindow({ conversation }) {
         error
       );
 
+
       alert(
         "Failed to send message. Please try again."
       );
+
 
     } finally {
 
       setSending(false);
 
     }
+
   };
 
 
@@ -174,22 +261,34 @@ export default function ChatWindow({ conversation }) {
 
       <div className="chat-header">
 
+
         <div className="chat-user">
+
+
+          {/* AVATAR */}
 
           <div className="chat-avatar">
 
-            {conversation.name
-              ?.charAt(0)
+            {(
+              conversation.name ||
+              conversation.contactName ||
+              "U"
+            )
+              .charAt(0)
               .toUpperCase()}
 
           </div>
 
 
+          {/* USER DETAILS */}
+
           <div>
+
 
             <div className="chat-user-name">
 
               {conversation.name ||
+                conversation.contactName ||
                 "Unknown Contact"}
 
             </div>
@@ -202,7 +301,9 @@ export default function ChatWindow({ conversation }) {
 
             </div>
 
+
           </div>
+
 
         </div>
 
@@ -251,7 +352,9 @@ export default function ChatWindow({ conversation }) {
             type="button"
             className="view-contact-btn"
           >
+
             View Contact
+
           </button>
 
 
@@ -261,10 +364,14 @@ export default function ChatWindow({ conversation }) {
             type="button"
             className="more-btn"
           >
+
             ⋮
+
           </button>
 
+
         </div>
+
 
       </div>
 
@@ -275,31 +382,42 @@ export default function ChatWindow({ conversation }) {
 
       <div className="messages">
 
+
         {!conversation.messages ||
         conversation.messages.length === 0 ? (
 
           <div className="empty-chat">
+
             No messages in this conversation
+
           </div>
 
         ) : (
 
           conversation.messages.map(
-            (message, index) => {
+            (chatMessage, index) => {
+
+
+              // CUSTOMER MESSAGE
 
               const isUser =
-                message.from === "user";
+                chatMessage.from === "user" ||
+                chatMessage.sender === "customer";
+
+
+              // HUMAN / ADMIN MESSAGE
 
               const isHuman =
-                message.from === "human";
+                chatMessage.from === "human" ||
+                chatMessage.sender === "agent";
 
 
               return (
 
                 <div
                   key={
-                    message.timestamp
-                      ? `${message.timestamp}-${index}`
+                    chatMessage.timestamp
+                      ? `${chatMessage.timestamp}-${index}`
                       : index
                   }
                   className={`message-row ${
@@ -308,6 +426,7 @@ export default function ChatWindow({ conversation }) {
                       : "message-right"
                   }`}
                 >
+
 
                   <div
                     className={`message-bubble ${
@@ -319,28 +438,35 @@ export default function ChatWindow({ conversation }) {
                     }`}
                   >
 
+
                     <div className="message-text">
 
-                      {message.text}
+                      {chatMessage.text ||
+                        chatMessage.message ||
+                        ""}
 
                     </div>
 
 
                     <div className="message-time">
 
-                      {message.time || ""}
+                      {chatMessage.time || ""}
 
                     </div>
 
+
                   </div>
+
 
                 </div>
 
               );
+
             }
           )
 
         )}
+
 
       </div>
 
@@ -353,6 +479,7 @@ export default function ChatWindow({ conversation }) {
 
 
         <div className="chat-input">
+
 
           <input
             type="text"
@@ -383,7 +510,9 @@ export default function ChatWindow({ conversation }) {
             type="button"
             disabled={sending}
           >
+
             <Smile size={20} />
+
           </button>
 
 
@@ -393,8 +522,11 @@ export default function ChatWindow({ conversation }) {
             type="button"
             disabled={sending}
           >
+
             <Paperclip size={20} />
+
           </button>
+
 
         </div>
 
@@ -411,6 +543,7 @@ export default function ChatWindow({ conversation }) {
           }
         >
 
+
           <span>
 
             {sending
@@ -422,10 +555,15 @@ export default function ChatWindow({ conversation }) {
 
           <Send size={17} />
 
+
         </button>
+
 
       </div>
 
+
     </div>
+
   );
+
 }
