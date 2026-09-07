@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const API_BASE = "https://pearlscrm.onrender.com/api/whatsapp";
+const API_BASE = "https://pearlscrm-1.onrender.com/api/whatsapp";
 //const API_BASE = "http://localhost:5000/api/whatsapp";
 
 const useWhatsApp = () => {

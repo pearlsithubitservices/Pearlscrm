@@ -1,177 +1,153 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-const API_URL = "https://pearlscrm.onrender.com/api/contribution";
+const API_URL = "https://pearlscrm-1.onrender.com/api/contribution";
 
 export default function useContribution() {
-    const { user } = useAuth();
+  const { user } = useAuth();
 
-    const [contributions, setContributions] = useState([]);
-    const [employeeContributions, setEmployeeContributions] =
-        useState([]);
+  const [contributions, setContributions] = useState([]);
+  const [employeeContributions, setEmployeeContributions] = useState([]);
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-    // Create
-    const createContribution = async (formData) => {
-        console.log(formData);
-        try {
-            setLoading(true);
+  // Create
+  const createContribution = async (formData) => {
+    console.log(formData);
+    try {
+      setLoading(true);
 
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          employeeId: user.uid,
+        }),
+      });
 
-            const response = await fetch(API_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    employeeId: user.uid,
-                }),
-            });
+      const data = await response.json();
 
-            const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
 
-            if (!response.ok)
-                throw new Error(data.message);
+      setContributions((prev) => [data.contribution, ...prev]);
 
-            setContributions((prev) => [
-                data.contribution,
-                ...prev,
-            ]);
+      return {
+        success: true,
+        contribution: data.contribution,
+      };
+    } catch (err) {
+      setError(err.message);
 
-            return {
-                success: true,
-                contribution: data.contribution,
-            };
-        } catch (err) {
-            setError(err.message);
+      return {
+        success: false,
+        error: err.message,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            return {
-                success: false,
-                error: err.message,
-            };
-        } finally {
-            setLoading(false);
-        }
-    };
+  // Get All
+  const getContributions = async () => {
+    try {
+      setLoading(true);
 
-    // Get All
-    const getContributions = async () => {
-        try {
-            setLoading(true);
+      const response = await fetch(API_URL);
 
-            const response = await fetch(API_URL);
+      const data = await response.json();
 
-            const data = await response.json();
+      setContributions(data);
 
-            setContributions(data);
+      return data;
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            return data;
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+  // Get By Employee
+  const getContributionsByEmployee = async (employeeId) => {
+    try {
+      setLoading(true);
 
-    // Get By Employee
-    const getContributionsByEmployee = async (
-        employeeId
-    ) => {
-        try {
-            setLoading(true);
+      const response = await fetch(`${API_URL}/by-employee`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employeeId,
+        }),
+      });
 
-            const response = await fetch(
-                `${API_URL}/by-employee`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        employeeId,
-                    }),
-                }
-            );
+      const data = await response.json();
 
-            const data = await response.json();
+      setEmployeeContributions(data.contributions || []);
 
-            setEmployeeContributions(
-                data.contributions || []
-            );
+      return data;
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            return data;
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+  // Update
+  const updateContribution = async (id, formData) => {
+    try {
+      setLoading(true);
 
-    // Update
-    const updateContribution = async (
-        id,
-        formData
-    ) => {
-        try {
-            setLoading(true);
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-            const response = await fetch(
-                `${API_URL}/${id}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(formData),
-                }
-            );
+      const data = await response.json();
 
-            const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
 
-            if (!response.ok)
-                throw new Error(data.message);
+      setContributions((prev) =>
+        prev.map((item) => (item._id === id ? data.contribution : item)),
+      );
 
-            setContributions((prev) =>
-                prev.map((item) =>
-                    item._id === id
-                        ? data.contribution
-                        : item
-                )
-            );
+      return {
+        success: true,
+        contribution: data.contribution,
+      };
+    } catch (err) {
+      setError(err.message);
 
-            return {
-                success: true,
-                contribution: data.contribution,
-            };
-        } catch (err) {
-            setError(err.message);
+      return {
+        success: false,
+        error: err.message,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            return {
-                success: false,
-                error: err.message,
-            };
-        } finally {
-            setLoading(false);
-        }
-    };
+  useEffect(() => {
+    getContributions();
+  }, []);
 
-    useEffect(() => {
-        getContributions();
-    }, []);
+  return {
+    loading,
+    error,
 
-    return {
-        loading,
-        error,
+    contributions,
+    employeeContributions,
 
-        contributions,
-        employeeContributions,
-
-        createContribution,
-        getContributions,
-        getContributionsByEmployee,
-        updateContribution,
-    };
+    createContribution,
+    getContributions,
+    getContributionsByEmployee,
+    updateContribution,
+  };
 }

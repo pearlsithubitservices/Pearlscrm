@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 ========================================================= */
 
 //const API_BASE_URL = "http://localhost:5000/api";
-const API_BASE_URL = "https://pearlscrm.onrender.com/api";
+const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
 
 /* =========================================================
    ACTION OPTIONS
@@ -37,10 +37,7 @@ const messageConditions = [
   "Talk to HR",
 ];
 
-const timeConditions = [
-  "Working Hours",
-  "Outside Working Hours",
-];
+const timeConditions = ["Working Hours", "Outside Working Hours"];
 
 /* =========================================================
    EMPTY FORM
@@ -86,14 +83,10 @@ export default function AutomationRules() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/automation-rules`
-      );
+      const response = await fetch(`${API_BASE_URL}/automation-rules`);
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to fetch automation rules: ${response.status}`
-        );
+        throw new Error(`Failed to fetch automation rules: ${response.status}`);
       }
 
       const data = await response.json();
@@ -101,18 +94,15 @@ export default function AutomationRules() {
       const rulesData = Array.isArray(data)
         ? data
         : Array.isArray(data.data)
-        ? data.data
-        : [];
+          ? data.data
+          : [];
 
       setRules(rulesData);
     } catch (error) {
-      console.error(
-        "Fetch automation rules error:",
-        error
-      );
+      console.error("Fetch automation rules error:", error);
 
       setError(
-        "Failed to load automation rules. Please check the backend server."
+        "Failed to load automation rules. Please check the backend server.",
       );
     } finally {
       setLoading(false);
@@ -198,14 +188,8 @@ export default function AutomationRules() {
   const handleSaveRule = async (e) => {
     e.preventDefault();
 
-    if (
-      !form.name.trim() ||
-      !form.condition ||
-      !form.action
-    ) {
-      setError(
-        "Please fill Rule Name, Condition and Action."
-      );
+    if (!form.name.trim() || !form.condition || !form.action) {
+      setError("Please fill Rule Name, Condition and Action.");
 
       return;
     }
@@ -219,8 +203,7 @@ export default function AutomationRules() {
       ===================================================== */
 
       if (editingRule) {
-        const ruleId =
-          editingRule._id || editingRule.id;
+        const ruleId = editingRule._id || editingRule.id;
 
         const response = await fetch(
           `${API_BASE_URL}/automation-rules/${ruleId}`,
@@ -238,44 +221,35 @@ export default function AutomationRules() {
               action: form.action,
               status: form.status,
             }),
-          }
+          },
         );
 
         if (!response.ok) {
-          throw new Error(
-            `Failed to update rule: ${response.status}`
-          );
+          throw new Error(`Failed to update rule: ${response.status}`);
         }
-      }
+      } else {
 
       /* =====================================================
          CREATE NEW RULE
       ===================================================== */
+        const response = await fetch(`${API_BASE_URL}/automation-rules`, {
+          method: "POST",
 
-      else {
-        const response = await fetch(
-          `${API_BASE_URL}/automation-rules`,
-          {
-            method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
 
-            headers: {
-              "Content-Type": "application/json",
-            },
-
-            body: JSON.stringify({
-              name: form.name.trim(),
-              trigger: form.trigger,
-              condition: form.condition,
-              action: form.action,
-              status: form.status,
-            }),
-          }
-        );
+          body: JSON.stringify({
+            name: form.name.trim(),
+            trigger: form.trigger,
+            condition: form.condition,
+            action: form.action,
+            status: form.status,
+          }),
+        });
 
         if (!response.ok) {
-          throw new Error(
-            `Failed to create rule: ${response.status}`
-          );
+          throw new Error(`Failed to create rule: ${response.status}`);
         }
       }
 
@@ -283,14 +257,9 @@ export default function AutomationRules() {
 
       closeModal();
     } catch (error) {
-      console.error(
-        "Save automation rule error:",
-        error
-      );
+      console.error("Save automation rule error:", error);
 
-      setError(
-        "Failed to save automation rule."
-      );
+      setError("Failed to save automation rule.");
     } finally {
       setSaving(false);
     }
@@ -301,16 +270,12 @@ export default function AutomationRules() {
   ========================================================= */
 
   const toggleStatus = async (rule) => {
-    const newStatus =
-      rule.status === "Active"
-        ? "Inactive"
-        : "Active";
+    const newStatus = rule.status === "Active" ? "Inactive" : "Active";
 
     try {
       setError("");
 
-      const ruleId =
-        rule._id || rule.id;
+      const ruleId = rule._id || rule.id;
 
       const response = await fetch(
         `${API_BASE_URL}/automation-rules/${ruleId}/status`,
@@ -324,25 +289,18 @@ export default function AutomationRules() {
           body: JSON.stringify({
             status: newStatus,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to update status: ${response.status}`
-        );
+        throw new Error(`Failed to update status: ${response.status}`);
       }
 
       await fetchRules();
     } catch (error) {
-      console.error(
-        "Toggle automation rule status error:",
-        error
-      );
+      console.error("Toggle automation rule status error:", error);
 
-      setError(
-        "Failed to update rule status."
-      );
+      setError("Failed to update rule status.");
     }
   };
 
@@ -352,7 +310,7 @@ export default function AutomationRules() {
 
   const deleteRule = async (rule) => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this automation rule?"
+      "Are you sure you want to delete this automation rule?",
     );
 
     if (!confirmed) {
@@ -362,32 +320,24 @@ export default function AutomationRules() {
     try {
       setError("");
 
-      const ruleId =
-        rule._id || rule.id;
+      const ruleId = rule._id || rule.id;
 
       const response = await fetch(
         `${API_BASE_URL}/automation-rules/${ruleId}`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to delete rule: ${response.status}`
-        );
+        throw new Error(`Failed to delete rule: ${response.status}`);
       }
 
       await fetchRules();
     } catch (error) {
-      console.error(
-        "Delete automation rule error:",
-        error
-      );
+      console.error("Delete automation rule error:", error);
 
-      setError(
-        "Failed to delete automation rule."
-      );
+      setError("Failed to delete automation rule.");
     }
   };
 
@@ -396,43 +346,28 @@ export default function AutomationRules() {
   ========================================================= */
 
   const filteredRules = rules.filter((rule) => {
-    const searchText =
-      search.toLowerCase().trim();
+    const searchText = search.toLowerCase().trim();
 
     const matchesSearch =
-      (rule.name || "")
-        .toLowerCase()
-        .includes(searchText) ||
-      (rule.trigger || "")
-        .toLowerCase()
-        .includes(searchText) ||
-      (rule.condition || "")
-        .toLowerCase()
-        .includes(searchText) ||
-      (rule.action || "")
-        .toLowerCase()
-        .includes(searchText);
+      (rule.name || "").toLowerCase().includes(searchText) ||
+      (rule.trigger || "").toLowerCase().includes(searchText) ||
+      (rule.condition || "").toLowerCase().includes(searchText) ||
+      (rule.action || "").toLowerCase().includes(searchText);
 
     const matchesStatus =
-      statusFilter === "All" ||
-      rule.status === statusFilter;
+      statusFilter === "All" || rule.status === statusFilter;
 
-    return (
-      matchesSearch &&
-      matchesStatus
-    );
+    return matchesSearch && matchesStatus;
   });
 
   /* =========================================================
      COUNTS
   ========================================================= */
 
-  const activeCount = rules.filter(
-    (rule) => rule.status === "Active"
-  ).length;
+  const activeCount = rules.filter((rule) => rule.status === "Active").length;
 
   const inactiveCount = rules.filter(
-    (rule) => rule.status === "Inactive"
+    (rule) => rule.status === "Inactive",
   ).length;
 
   /* =========================================================
@@ -440,9 +375,7 @@ export default function AutomationRules() {
   ========================================================= */
 
   const conditionOptions =
-    form.trigger === "Message"
-      ? messageConditions
-      : timeConditions;
+    form.trigger === "Message" ? messageConditions : timeConditions;
 
   /* =========================================================
      UI
@@ -450,24 +383,16 @@ export default function AutomationRules() {
 
   return (
     <div style={pageStyle}>
-
       {/* =====================================================
           HEADER
       ===================================================== */}
 
       <div style={headerStyle}>
-
         <div>
-          <h2 style={titleStyle}>
-            Automation Rules
-          </h2>
+          <h2 style={titleStyle}>Automation Rules</h2>
 
-          <p
-            className="muted"
-            style={subtitleStyle}
-          >
-            Create and manage automation rules
-            for WhatsApp employee flows.
+          <p className="muted" style={subtitleStyle}>
+            Create and manage automation rules for WhatsApp employee flows.
           </p>
         </div>
 
@@ -475,21 +400,15 @@ export default function AutomationRules() {
           onClick={handleCreateRule}
           style={primaryButton}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform =
-              "translateY(-1px)";
+            e.currentTarget.style.transform = "translateY(-1px)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform =
-              "translateY(0)";
+            e.currentTarget.style.transform = "translateY(0)";
           }}
         >
-          <span style={{ fontSize: 18 }}>
-            +
-          </span>
-
+          <span style={{ fontSize: 18 }}>+</span>
           Create Rule
         </button>
-
       </div>
 
       {/* =====================================================
@@ -509,7 +428,6 @@ export default function AutomationRules() {
       ===================================================== */}
 
       <div style={summaryGridStyle}>
-
         <SummaryCard
           title="Total Rules"
           value={rules.length}
@@ -532,7 +450,6 @@ export default function AutomationRules() {
           icon="○"
           inactive
         />
-
       </div>
 
       {/* =====================================================
@@ -540,62 +457,39 @@ export default function AutomationRules() {
       ===================================================== */}
 
       <div style={filterCardStyle}>
-
         <div style={searchWrapperStyle}>
-
-          <span style={searchIconStyle}>
-            🔍
-          </span>
+          <span style={searchIconStyle}>🔍</span>
 
           <input
             type="text"
             placeholder="Search automation rules..."
             value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
+            onChange={(e) => setSearch(e.target.value)}
             style={searchInputStyle}
           />
 
           {search && (
-            <button
-              onClick={() => setSearch("")}
-              style={clearSearchButton}
-            >
+            <button onClick={() => setSearch("")} style={clearSearchButton}>
               ×
             </button>
           )}
-
         </div>
 
         <div style={filterWrapperStyle}>
-
-          <span style={filterLabelStyle}>
-            Status
-          </span>
+          <span style={filterLabelStyle}>Status</span>
 
           <select
             value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value)
-            }
+            onChange={(e) => setStatusFilter(e.target.value)}
             style={filterSelectStyle}
           >
-            <option value="All">
-              All Status
-            </option>
+            <option value="All">All Status</option>
 
-            <option value="Active">
-              Active
-            </option>
+            <option value="Active">Active</option>
 
-            <option value="Inactive">
-              Inactive
-            </option>
+            <option value="Inactive">Inactive</option>
           </select>
-
         </div>
-
       </div>
 
       {/* =====================================================
@@ -603,59 +497,32 @@ export default function AutomationRules() {
       ===================================================== */}
 
       <div style={tableCardStyle}>
-
         <div style={tableHeaderStyle}>
-
           <div>
-            <h3 style={tableTitleStyle}>
-              Automation Rules
-            </h3>
+            <h3 style={tableTitleStyle}>Automation Rules</h3>
 
-            <span
-              className="muted"
-              style={tableSubtitleStyle}
-            >
+            <span className="muted" style={tableSubtitleStyle}>
               {filteredRules.length}{" "}
-              {filteredRules.length === 1
-                ? "rule"
-                : "rules"}{" "}
-              displayed
+              {filteredRules.length === 1 ? "rule" : "rules"} displayed
             </span>
           </div>
-
         </div>
 
         <div style={tableScrollStyle}>
-
           <table style={tableStyle}>
-
             <thead>
-
               <tr>
+                <th style={numberHeaderStyle}>#</th>
 
-                <th style={numberHeaderStyle}>
-                  #
-                </th>
+                <th style={thStyle}>Rule Name</th>
 
-                <th style={thStyle}>
-                  Rule Name
-                </th>
+                <th style={thStyle}>Trigger</th>
 
-                <th style={thStyle}>
-                  Trigger
-                </th>
+                <th style={thStyle}>Condition</th>
 
-                <th style={thStyle}>
-                  Condition
-                </th>
+                <th style={thStyle}>Action</th>
 
-                <th style={thStyle}>
-                  Action
-                </th>
-
-                <th style={thStyle}>
-                  Status
-                </th>
+                <th style={thStyle}>Status</th>
 
                 <th
                   style={{
@@ -665,26 +532,17 @@ export default function AutomationRules() {
                 >
                   Actions
                 </th>
-
               </tr>
-
             </thead>
 
             <tbody>
-
               {/* LOADING */}
 
               {loading && (
                 <tr>
-                  <td
-                    colSpan="7"
-                    style={loadingStyle}
-                  >
+                  <td colSpan="7" style={loadingStyle}>
                     <div style={loadingSpinner}>
-                      <div
-                        style={spinnerCircle}
-                      />
-
+                      <div style={spinnerCircle} />
                       Loading automation rules...
                     </div>
                   </td>
@@ -694,252 +552,131 @@ export default function AutomationRules() {
               {/* RULES */}
 
               {!loading &&
-                filteredRules.map(
-                  (rule, index) => (
-                    <tr
-                      key={
-                        rule._id ||
-                        rule.id
-                      }
-                      style={rowStyle}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background =
-                          "var(--bg-secondary)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background =
-                          "transparent";
-                      }}
-                    >
+                filteredRules.map((rule, index) => (
+                  <tr
+                    key={rule._id || rule.id}
+                    style={rowStyle}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--bg-secondary)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    {/* AUTOMATIC NUMBER */}
 
-                      {/* AUTOMATIC NUMBER */}
+                    <td style={numberCellStyle}>
+                      <span style={numberBadgeStyle}>{index + 1}</span>
+                    </td>
 
-                      <td
-                        style={
-                          numberCellStyle
-                        }
-                      >
-                        <span
-                          style={
-                            numberBadgeStyle
-                          }
-                        >
-                          {index + 1}
-                        </span>
-                      </td>
+                    {/* RULE NAME */}
 
-                      {/* RULE NAME */}
+                    <td style={tdStyle}>
+                      <div style={ruleNameWrapperStyle}>
+                        <div style={ruleIconStyle}>⚡</div>
 
-                      <td style={tdStyle}>
+                        <strong style={ruleNameStyle}>{rule.name}</strong>
+                      </div>
+                    </td>
 
-                        <div
-                          style={
-                            ruleNameWrapperStyle
-                          }
-                        >
-                          <div
-                            style={
-                              ruleIconStyle
-                            }
-                          >
-                            ⚡
-                          </div>
+                    {/* TRIGGER */}
 
-                          <strong
-                            style={
-                              ruleNameStyle
-                            }
-                          >
-                            {rule.name}
-                          </strong>
-                        </div>
+                    <td style={tdStyle}>
+                      <span style={triggerBadgeStyle}>{rule.trigger}</span>
+                    </td>
 
-                      </td>
+                    {/* CONDITION */}
 
-                      {/* TRIGGER */}
+                    <td style={tdStyle}>
+                      <span style={conditionBadge}>{rule.condition}</span>
+                    </td>
 
-                      <td style={tdStyle}>
+                    {/* ACTION */}
 
-                        <span
-                          style={
-                            triggerBadgeStyle
-                          }
-                        >
-                          {rule.trigger}
-                        </span>
+                    <td style={tdStyle}>
+                      <span style={actionTextStyle}>{rule.action}</span>
+                    </td>
 
-                      </td>
+                    {/* STATUS */}
 
-                      {/* CONDITION */}
-
-                      <td style={tdStyle}>
-
-                        <span
-                          style={
-                            conditionBadge
-                          }
-                        >
-                          {rule.condition}
-                        </span>
-
-                      </td>
-
-                      {/* ACTION */}
-
-                      <td style={tdStyle}>
-
-                        <span
-                          style={
-                            actionTextStyle
-                          }
-                        >
-                          {rule.action}
-                        </span>
-
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td style={tdStyle}>
-
-                        <span
-                          style={{
-                            ...statusBadge,
-                            ...(rule.status ===
-                            "Active"
-                              ? activeStatusStyle
-                              : inactiveStatusStyle),
-                          }}
-                        >
-                          <span
-                            style={
-                              statusDotStyle
-                            }
-                          />
-
-                          {rule.status}
-                        </span>
-
-                      </td>
-
-                      {/* ACTION BUTTONS */}
-
-                      <td
+                    <td style={tdStyle}>
+                      <span
                         style={{
-                          ...tdStyle,
-                          textAlign: "center",
-                          whiteSpace:
-                            "nowrap",
+                          ...statusBadge,
+                          ...(rule.status === "Active"
+                            ? activeStatusStyle
+                            : inactiveStatusStyle),
                         }}
                       >
+                        <span style={statusDotStyle} />
 
-                        <button
-                          onClick={() =>
-                            handleEditRule(
-                              rule
-                            )
-                          }
-                          style={
-                            editButtonStyle
-                          }
-                          title="Edit rule"
-                        >
-                          ✎ Edit
-                        </button>
+                        {rule.status}
+                      </span>
+                    </td>
 
-                        <button
-                          onClick={() =>
-                            toggleStatus(
-                              rule
-                            )
-                          }
-                          style={{
-                            ...toggleButtonStyle,
-                            ...(rule.status ===
-                            "Active"
-                              ? disableButtonStyle
-                              : enableButtonStyle),
-                          }}
-                          title={
-                            rule.status ===
-                            "Active"
-                              ? "Disable rule"
-                              : "Enable rule"
-                          }
-                        >
-                          {rule.status ===
-                          "Active"
-                            ? "Disable"
-                            : "Enable"}
-                        </button>
+                    {/* ACTION BUTTONS */}
 
-                        <button
-                          onClick={() =>
-                            deleteRule(
-                              rule
-                            )
-                          }
-                          style={
-                            deleteButtonStyle
-                          }
-                          title="Delete rule"
-                        >
-                          Delete
-                        </button>
+                    <td
+                      style={{
+                        ...tdStyle,
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <button
+                        onClick={() => handleEditRule(rule)}
+                        style={editButtonStyle}
+                        title="Edit rule"
+                      >
+                        ✎ Edit
+                      </button>
 
-                      </td>
+                      <button
+                        onClick={() => toggleStatus(rule)}
+                        style={{
+                          ...toggleButtonStyle,
+                          ...(rule.status === "Active"
+                            ? disableButtonStyle
+                            : enableButtonStyle),
+                        }}
+                        title={
+                          rule.status === "Active"
+                            ? "Disable rule"
+                            : "Enable rule"
+                        }
+                      >
+                        {rule.status === "Active" ? "Disable" : "Enable"}
+                      </button>
 
-                    </tr>
-                  )
-                )}
+                      <button
+                        onClick={() => deleteRule(rule)}
+                        style={deleteButtonStyle}
+                        title="Delete rule"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
 
               {/* NO RESULTS */}
 
-              {!loading &&
-                filteredRules.length ===
-                  0 && (
-                  <tr>
-                    <td
-                      colSpan="7"
-                      style={
-                        emptyStateStyle
-                      }
-                    >
-                      <div
-                        style={
-                          emptyIconStyle
-                        }
-                      >
-                        ⚙
-                      </div>
+              {!loading && filteredRules.length === 0 && (
+                <tr>
+                  <td colSpan="7" style={emptyStateStyle}>
+                    <div style={emptyIconStyle}>⚙</div>
 
-                      <div
-                        style={
-                          emptyTitleStyle
-                        }
-                      >
-                        No automation rules found
-                      </div>
+                    <div style={emptyTitleStyle}>No automation rules found</div>
 
-                      <div
-                        className="muted"
-                        style={
-                          emptyDescriptionStyle
-                        }
-                      >
-                        Try changing your search
-                        or status filter.
-                      </div>
-                    </td>
-                  </tr>
-                )}
-
+                    <div className="muted" style={emptyDescriptionStyle}>
+                      Try changing your search or status filter.
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
-
           </table>
-
         </div>
-
       </div>
 
       {/* =====================================================
@@ -948,43 +685,22 @@ export default function AutomationRules() {
 
       {showModal && (
         <div style={overlayStyle}>
-
           <div style={modalStyle}>
-
             {/* MODAL HEADER */}
 
             <div style={modalHeaderStyle}>
-
               <div>
+                <div style={modalIconStyle}>⚡</div>
 
-                <div
-                  style={
-                    modalIconStyle
-                  }
-                >
-                  ⚡
-                </div>
-
-                <h3
-                  style={
-                    modalTitleStyle
-                  }
-                >
+                <h3 style={modalTitleStyle}>
                   {editingRule
                     ? "Edit Automation Rule"
                     : "Create Automation Rule"}
                 </h3>
 
-                <p
-                  className="muted"
-                  style={
-                    modalSubtitleStyle
-                  }
-                >
-                  Define when the automation
-                  should run.
+                <p className="muted" style={modalSubtitleStyle}>
+                  Define when the automation should run.
                 </p>
-
               </div>
 
               <button
@@ -994,20 +710,14 @@ export default function AutomationRules() {
               >
                 ×
               </button>
-
             </div>
 
             {/* MODAL FORM */}
 
-            <form
-              onSubmit={handleSaveRule}
-            >
-
+            <form onSubmit={handleSaveRule}>
               {/* RULE NAME */}
 
-              <label style={labelStyle}>
-                Rule Name
-              </label>
+              <label style={labelStyle}>Rule Name</label>
 
               <input
                 type="text"
@@ -1021,9 +731,7 @@ export default function AutomationRules() {
 
               {/* TRIGGER */}
 
-              <label style={labelStyle}>
-                Trigger Type
-              </label>
+              <label style={labelStyle}>Trigger Type</label>
 
               <select
                 name="trigger"
@@ -1032,20 +740,14 @@ export default function AutomationRules() {
                 style={modalSelectStyle}
                 disabled={saving}
               >
-                <option value="Message">
-                  Message
-                </option>
+                <option value="Message">Message</option>
 
-                <option value="Time Based">
-                  Time Based
-                </option>
+                <option value="Time Based">Time Based</option>
               </select>
 
               {/* CONDITION */}
 
-              <label style={labelStyle}>
-                Condition
-              </label>
+              <label style={labelStyle}>Condition</label>
 
               <select
                 name="condition"
@@ -1054,27 +756,18 @@ export default function AutomationRules() {
                 style={modalSelectStyle}
                 disabled={saving}
               >
-                <option value="">
-                  Select Condition
-                </option>
+                <option value="">Select Condition</option>
 
-                {conditionOptions.map(
-                  (condition) => (
-                    <option
-                      key={condition}
-                      value={condition}
-                    >
-                      {condition}
-                    </option>
-                  )
-                )}
+                {conditionOptions.map((condition) => (
+                  <option key={condition} value={condition}>
+                    {condition}
+                  </option>
+                ))}
               </select>
 
               {/* ACTION */}
 
-              <label style={labelStyle}>
-                Action
-              </label>
+              <label style={labelStyle}>Action</label>
 
               <select
                 name="action"
@@ -1083,27 +776,18 @@ export default function AutomationRules() {
                 style={modalSelectStyle}
                 disabled={saving}
               >
-                <option value="">
-                  Select Action
-                </option>
+                <option value="">Select Action</option>
 
-                {actionOptions.map(
-                  (action) => (
-                    <option
-                      key={action}
-                      value={action}
-                    >
-                      {action}
-                    </option>
-                  )
-                )}
+                {actionOptions.map((action) => (
+                  <option key={action} value={action}>
+                    {action}
+                  </option>
+                ))}
               </select>
 
               {/* STATUS */}
 
-              <label style={labelStyle}>
-                Status
-              </label>
+              <label style={labelStyle}>Status</label>
 
               <select
                 name="status"
@@ -1112,57 +796,35 @@ export default function AutomationRules() {
                 style={modalSelectStyle}
                 disabled={saving}
               >
-                <option value="Active">
-                  Active
-                </option>
+                <option value="Active">Active</option>
 
-                <option value="Inactive">
-                  Inactive
-                </option>
+                <option value="Inactive">Inactive</option>
               </select>
 
               {/* MODAL BUTTONS */}
 
-              <div
-                style={
-                  modalFooterStyle
-                }
-              >
-
+              <div style={modalFooterStyle}>
                 <button
                   type="button"
                   onClick={closeModal}
-                  style={
-                    cancelButton
-                  }
+                  style={cancelButton}
                   disabled={saving}
                 >
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  style={
-                    primaryButton
-                  }
-                  disabled={saving}
-                >
+                <button type="submit" style={primaryButton} disabled={saving}>
                   {saving
                     ? "Saving..."
                     : editingRule
-                    ? "Save Changes"
-                    : "Create Rule"}
+                      ? "Save Changes"
+                      : "Create Rule"}
                 </button>
-
               </div>
-
             </form>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }
@@ -1171,71 +833,36 @@ export default function AutomationRules() {
    SUMMARY CARD
 ========================================================= */
 
-function SummaryCard({
-  title,
-  value,
-  description,
-  icon,
-  active,
-  inactive,
-}) {
+function SummaryCard({ title, value, description, icon, active, inactive }) {
   return (
     <div
       style={{
         ...summaryCardStyle,
-        ...(active
-          ? activeCardStyle
-          : inactive
-          ? inactiveCardStyle
-          : {}),
+        ...(active ? activeCardStyle : inactive ? inactiveCardStyle : {}),
       }}
     >
-
       <div style={summaryTopStyle}>
-
         <div>
-          <div
-            className="muted"
-            style={
-              summaryTitleStyle
-            }
-          >
+          <div className="muted" style={summaryTitleStyle}>
             {title}
           </div>
 
-          <div
-            style={
-              summaryValueStyle
-            }
-          >
-            {value}
-          </div>
+          <div style={summaryValueStyle}>{value}</div>
         </div>
 
         <div
           style={{
             ...summaryIconStyle,
-            ...(active
-              ? activeIconStyle
-              : inactive
-              ? inactiveIconStyle
-              : {}),
+            ...(active ? activeIconStyle : inactive ? inactiveIconStyle : {}),
           }}
         >
           {icon}
         </div>
-
       </div>
 
-      <div
-        className="muted"
-        style={
-          summaryDescriptionStyle
-        }
-      >
+      <div className="muted" style={summaryDescriptionStyle}>
         {description}
       </div>
-
     </div>
   );
 }
@@ -1285,8 +912,7 @@ const primaryButton = {
   justifyContent: "center",
   gap: 7,
   transition: "all 0.2s ease",
-  boxShadow:
-    "0 4px 12px rgba(0, 0, 0, 0.08)",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
 };
 
 /* =========================================================
@@ -1312,8 +938,7 @@ const errorStyle = {
 
 const summaryGridStyle = {
   display: "grid",
-  gridTemplateColumns:
-    "repeat(3, minmax(0, 1fr))",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: 16,
   marginBottom: 20,
 };
@@ -1322,22 +947,18 @@ const summaryCardStyle = {
   background: "var(--card-bg)",
   padding: "18px 20px",
   borderRadius: 12,
-  border:
-    "1px solid var(--border-color)",
+  border: "1px solid var(--border-color)",
   minHeight: 118,
   boxSizing: "border-box",
-  transition:
-    "transform 0.2s ease, box-shadow 0.2s ease",
+  transition: "transform 0.2s ease, box-shadow 0.2s ease",
 };
 
 const activeCardStyle = {
-  border:
-    "1px solid rgba(34, 197, 94, 0.25)",
+  border: "1px solid rgba(34, 197, 94, 0.25)",
 };
 
 const inactiveCardStyle = {
-  border:
-    "1px solid rgba(148, 163, 184, 0.25)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
 };
 
 const summaryTopStyle = {
@@ -1371,8 +992,7 @@ const summaryIconStyle = {
   alignItems: "center",
   justifyContent: "center",
   fontSize: 19,
-  background:
-    "var(--bg-secondary)",
+  background: "var(--bg-secondary)",
 };
 
 const activeIconStyle = {
@@ -1394,8 +1014,7 @@ const filterCardStyle = {
   marginBottom: 16,
   padding: 14,
   background: "var(--card-bg)",
-  border:
-    "1px solid var(--border-color)",
+  border: "1px solid var(--border-color)",
   borderRadius: 11,
 };
 
@@ -1419,8 +1038,7 @@ const searchInputStyle = {
   boxSizing: "border-box",
   padding: "10px 38px",
   borderRadius: 8,
-  border:
-    "1px solid var(--border-color)",
+  border: "1px solid var(--border-color)",
   background: "var(--bg-secondary)",
   color: "inherit",
   outline: "none",
@@ -1451,8 +1069,7 @@ const filterSelectStyle = {
   padding: "10px 12px",
   minWidth: 135,
   borderRadius: 8,
-  border:
-    "1px solid var(--border-color)",
+  border: "1px solid var(--border-color)",
   background: "var(--bg-secondary)",
   color: "inherit",
   cursor: "pointer",
@@ -1464,16 +1081,14 @@ const filterSelectStyle = {
 
 const tableCardStyle = {
   background: "var(--card-bg)",
-  border:
-    "1px solid var(--border-color)",
+  border: "1px solid var(--border-color)",
   borderRadius: 12,
   overflow: "hidden",
 };
 
 const tableHeaderStyle = {
   padding: "17px 18px",
-  borderBottom:
-    "1px solid var(--border-color)",
+  borderBottom: "1px solid var(--border-color)",
 };
 
 const tableTitleStyle = {
@@ -1505,8 +1120,7 @@ const thStyle = {
   fontSize: 12,
   fontWeight: 700,
   color: "inherit",
-  borderBottom:
-    "1px solid var(--border-color)",
+  borderBottom: "1px solid var(--border-color)",
   whiteSpace: "nowrap",
 };
 
@@ -1518,8 +1132,7 @@ const numberHeaderStyle = {
 
 const tdStyle = {
   padding: "14px 15px",
-  borderBottom:
-    "1px solid var(--border-color)",
+  borderBottom: "1px solid var(--border-color)",
   fontSize: 13,
 };
 
@@ -1535,15 +1148,13 @@ const numberBadgeStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  background:
-    "var(--bg-secondary)",
+  background: "var(--bg-secondary)",
   fontSize: 12,
   fontWeight: 700,
 };
 
 const rowStyle = {
-  transition:
-    "background 0.15s ease",
+  transition: "background 0.15s ease",
 };
 
 const ruleNameWrapperStyle = {
@@ -1559,8 +1170,7 @@ const ruleIconStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background:
-    "var(--bg-secondary)",
+  background: "var(--bg-secondary)",
   fontSize: 13,
 };
 
@@ -1571,8 +1181,7 @@ const ruleNameStyle = {
 const triggerBadgeStyle = {
   padding: "5px 9px",
   borderRadius: 6,
-  background:
-    "var(--bg-secondary)",
+  background: "var(--bg-secondary)",
   fontSize: 12,
   whiteSpace: "nowrap",
 };
@@ -1581,8 +1190,7 @@ const conditionBadge = {
   display: "inline-block",
   padding: "5px 9px",
   borderRadius: 6,
-  background:
-    "var(--bg-secondary)",
+  background: "var(--bg-secondary)",
   fontSize: 12,
   whiteSpace: "nowrap",
 };
@@ -1602,14 +1210,12 @@ const statusBadge = {
 };
 
 const activeStatusStyle = {
-  background:
-    "rgba(34, 197, 94, 0.12)",
+  background: "rgba(34, 197, 94, 0.12)",
   color: "#16a34a",
 };
 
 const inactiveStatusStyle = {
-  background:
-    "rgba(148, 163, 184, 0.15)",
+  background: "rgba(148, 163, 184, 0.15)",
   color: "#64748b",
 };
 
@@ -1621,14 +1227,12 @@ const statusDotStyle = {
 };
 
 const editButtonStyle = {
-  border:
-    "1px solid var(--border-color)",
+  border: "1px solid var(--border-color)",
   borderRadius: 6,
   padding: "6px 9px",
   cursor: "pointer",
   fontSize: 11,
-  background:
-    "var(--card-bg)",
+  background: "var(--card-bg)",
   color: "inherit",
 };
 
@@ -1642,14 +1246,12 @@ const toggleButtonStyle = {
 };
 
 const disableButtonStyle = {
-  background:
-    "rgba(245, 158, 11, 0.12)",
+  background: "rgba(245, 158, 11, 0.12)",
   color: "#d97706",
 };
 
 const enableButtonStyle = {
-  background:
-    "rgba(34, 197, 94, 0.12)",
+  background: "rgba(34, 197, 94, 0.12)",
   color: "#16a34a",
 };
 
@@ -1660,8 +1262,7 @@ const deleteButtonStyle = {
   cursor: "pointer",
   fontSize: 11,
   marginLeft: 5,
-  background:
-    "rgba(239, 68, 68, 0.1)",
+  background: "rgba(239, 68, 68, 0.1)",
   color: "#dc2626",
 };
 
@@ -1686,8 +1287,7 @@ const spinnerCircle = {
   width: 16,
   height: 16,
   borderRadius: "50%",
-  border:
-    "2px solid var(--border-color)",
+  border: "2px solid var(--border-color)",
   borderTopColor: "currentColor",
 };
 
@@ -1708,8 +1308,7 @@ const emptyIconStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background:
-    "var(--bg-secondary)",
+  background: "var(--bg-secondary)",
   fontSize: 21,
 };
 
@@ -1730,8 +1329,7 @@ const emptyDescriptionStyle = {
 const overlayStyle = {
   position: "fixed",
   inset: 0,
-  background:
-    "rgba(0, 0, 0, 0.48)",
+  background: "rgba(0, 0, 0, 0.48)",
   backdropFilter: "blur(3px)",
   display: "flex",
   alignItems: "center",
@@ -1749,8 +1347,7 @@ const modalStyle = {
   borderRadius: 15,
   padding: 25,
   boxSizing: "border-box",
-  boxShadow:
-    "0 25px 70px rgba(0, 0, 0, 0.25)",
+  boxShadow: "0 25px 70px rgba(0, 0, 0, 0.25)",
 };
 
 const modalHeaderStyle = {
@@ -1767,8 +1364,7 @@ const modalIconStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background:
-    "var(--bg-secondary)",
+  background: "var(--bg-secondary)",
   fontSize: 17,
   marginBottom: 10,
 };
@@ -1805,10 +1401,8 @@ const modalInputStyle = {
   boxSizing: "border-box",
   padding: "11px 12px",
   borderRadius: 8,
-  border:
-    "1px solid var(--border-color)",
-  background:
-    "var(--bg-secondary)",
+  border: "1px solid var(--border-color)",
+  background: "var(--bg-secondary)",
   color: "inherit",
   outline: "none",
   marginBottom: 16,
@@ -1819,10 +1413,8 @@ const modalSelectStyle = {
   boxSizing: "border-box",
   padding: "11px 12px",
   borderRadius: 8,
-  border:
-    "1px solid var(--border-color)",
-  background:
-    "var(--bg-secondary)",
+  border: "1px solid var(--border-color)",
+  background: "var(--bg-secondary)",
   color: "inherit",
   outline: "none",
   marginBottom: 16,
@@ -1837,8 +1429,7 @@ const modalFooterStyle = {
 };
 
 const cancelButton = {
-  border:
-    "1px solid var(--border-color)",
+  border: "1px solid var(--border-color)",
   borderRadius: 8,
   padding: "10px 16px",
   cursor: "pointer",

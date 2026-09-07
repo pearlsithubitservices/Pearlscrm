@@ -24,14 +24,14 @@ const HolidayForm = ({ onClose }) => {
     try {
       const response = await fetch(
         // "http://localhost:5000/api/holidays",
-        "https://pearlscrm.onrender.com/api/holidays",
+        "https://pearlscrm-1.onrender.com/api/holidays",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(holidayData),
-        }
+        },
       );
 
       const data = await response.json();
@@ -66,11 +66,11 @@ const HolidayForm = ({ onClose }) => {
 
       const response = await fetch(
         // "http://localhost:5000/api/holidays/bulk-upload",
-        "https://pearlscrm.onrender.com/api/holidays/bulk-upload",
+        "https://pearlscrm-1.onrender.com/api/holidays/bulk-upload",
         {
           method: "POST",
           body: formData,
-        }
+        },
       );
 
       const data = await response.json();
@@ -94,7 +94,11 @@ const HolidayForm = ({ onClose }) => {
             <h1 className="text-2xl font-bold text-[#0B2B57]">
               Company Holidays
             </h1>
-            <X size={20} className="bg-red-500 text-white rounded" onClick={() => onClose()} />
+            <X
+              size={20}
+              className="bg-red-500 text-white rounded"
+              onClick={() => onClose()}
+            />
 
             <p className="text-gray-500 mt-1">
               Add individual holidays or upload holidays in bulk.
@@ -104,7 +108,6 @@ const HolidayForm = ({ onClose }) => {
           <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white cursor-pointer hover:bg-green-700">
             <Upload size={18} />
             Bulk Upload
-
             <input
               type="file"
               accept=".xlsx,.xls"

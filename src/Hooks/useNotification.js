@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-// const API_URL = "https://pearlscrm.onrender.com/api/notification";
-const API_URL = "https://pearlscrm.onrender.com/api/notification";
+// const API_URL = "https://pearlscrm-1.onrender.com/api/notification";
+const API_URL = "https://pearlscrm-1.onrender.com/api/notification";
 
 const useNotification = (employeeId = "") => {
   const [notifications, setNotifications] = useState([]);
@@ -49,10 +49,7 @@ const useNotification = (employeeId = "") => {
       const newNotification = await res.json();
 
       // Update UI instantly
-      setNotifications((prev) => [
-        newNotification,
-        ...prev,
-      ]);
+      setNotifications((prev) => [newNotification, ...prev]);
 
       return newNotification;
     } catch (error) {
@@ -62,16 +59,12 @@ const useNotification = (employeeId = "") => {
     }
   };
 
-
   //DELETE NOTFICATION
   const deleteNotification = async (id) => {
     try {
-      const response = await fetch(
-        `${API_URL}/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
 
       const data = await response.json();
 
@@ -80,9 +73,7 @@ const useNotification = (employeeId = "") => {
       }
 
       // Update local state
-      setNotifications((prev) =>
-        prev.filter((item) => item._id !== id)
-      );
+      setNotifications((prev) => prev.filter((item) => item._id !== id));
 
       return data;
     } catch (error) {

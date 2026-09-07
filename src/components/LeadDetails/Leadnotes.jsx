@@ -13,7 +13,6 @@ export default function LeadNotesPage() {
   const [notes, setNotes] = useState([]);
   console.log(notes);
 
-
   // useEffect(() => {
   //   const fetchlead = async () => {
   //     try {
@@ -32,31 +31,20 @@ export default function LeadNotesPage() {
     fetchleads();
   }, []);
 
-  const fetchleads =
-    async () => {
+  const fetchleads = async () => {
+    try {
+      const response = await fetch(
+        "https://pearlscrm-1.onrender.com/api/leads",
+      );
 
+      const data = await response.json();
 
-      try {
-
-        const response =
-          await fetch(
-            "https://pearlscrm.onrender.com/api/leads"
-          );
-
-        const data =
-          await response.json();
-
-        console.log(data);
-        setNotes(data);
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-
-    };
+      console.log(data);
+      setNotes(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   // Form state
   const [formData, setFormData] = useState({
     title: "",
@@ -71,10 +59,7 @@ export default function LeadNotesPage() {
     });
   }
 
-
-  const currentNotes = notes.find((item) => (
-    item._id == id
-  ));
+  const currentNotes = notes.find((item) => item._id == id);
   console.log(currentNotes?.leadnotes);
   // Add note
 
@@ -109,26 +94,21 @@ export default function LeadNotesPage() {
 
       // Update the lead in state
       await fetchleads();
-
     } catch (error) {
       console.log(error);
     }
   };
   return (
     <div className="min-h-screen bg-[#f5f2ec] p-8">
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto rounded-[30px]"
       >
-
         <div className="px-5 mt-5">
-
           {/* INPUT SECTION */}
 
           <div className="flex flex-col gap-4">
-
             <input
               type="text"
               name="title"
@@ -161,10 +141,9 @@ export default function LeadNotesPage() {
             />
 
             <div className="flex justify-end">
-
               <motion.button
                 whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: .95 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handleaddNote}
                 className="
                 bg-blue-600
@@ -176,9 +155,7 @@ export default function LeadNotesPage() {
               >
                 Add Note
               </motion.button>
-
             </div>
-
           </div>
 
           {/* NOTES TIMELINE */}
@@ -188,88 +165,89 @@ export default function LeadNotesPage() {
           </h2>
 
           <div className="mt-10 relative">
-
             {/* Vertical line */}
 
             <div className="absolute top-0 left-[10px] h-full w-[2px] bg-gray-300"></div>
 
-            {currentNotes?.leadnotes?.length > 0 > 0 ? currentNotes?.leadnotes?.map((item, index) => (
-
-              <motion.div
-                key={index}
-                initial={{
-                  opacity: 0,
-                  x: -30
-                }}
-                animate={{
-                  opacity: 1,
-                  x: 0
-                }}
-                transition={{
-                  delay: index * .1
-                }}
-                className="
+            {currentNotes?.leadnotes?.length > 0 > 0 ? (
+              currentNotes?.leadnotes?.map((item, index) => (
+                <motion.div
+                  key={index}
+                  initial={{
+                    opacity: 0,
+                    x: -30,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    x: 0,
+                  }}
+                  transition={{
+                    delay: index * 0.1,
+                  }}
+                  className="
                 relative
                 flex
                 gap-6
                 mb-10
                 "
-              >
+                >
+                  <X
+                    className="absolute top-2 right-2 text-red-600"
+                    onClick={() => handleDeleteNote(item._id)}
+                  />
+                  {/* Dot */}
 
-                <X className="absolute top-2 right-2 text-red-600" onClick={() => handleDeleteNote(item._id)} />
-                {/* Dot */}
+                  <div className="w-5 h-5 rounded-full bg-blue-600 mt-2 z-10"></div>
 
-                <div className="w-5 h-5 rounded-full bg-blue-600 mt-2 z-10"></div>
+                  {/* Content */}
 
-                {/* Content */}
-
-                <div className="
+                  <div
+                    className="
                 bg-white
                 p-5
                 rounded-xl
                 shadow-sm
                 w-full
-                ">
-
-                  <h1 className="
+                "
+                  >
+                    <h1
+                      className="
                   text-lg
                   font-bold
                   text-[#082f57]
-                  ">
-                    {item.title}
-                  </h1>
+                  "
+                    >
+                      {item.title}
+                    </h1>
 
-                  <p className="
+                    <p
+                      className="
                   text-gray-500
                   mt-2
                   leading-7
-                  ">
-                    {item.description}
-                  </p>
+                  "
+                    >
+                      {item.description}
+                    </p>
 
-                  <p className="
+                    <p
+                      className="
                   text-sm
                   text-gray-400
                   mt-3
-                  ">
-                    {item.date}
-                  </p>
-
-                </div>
-
-              </motion.div>
-
-            ))
-              :
-              <p>
-                No notes</p>}
-
+                  "
+                    >
+                      {item.date}
+                    </p>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <p>No notes</p>
+            )}
           </div>
-
         </div>
-
       </motion.div>
-
     </div>
   );
 }

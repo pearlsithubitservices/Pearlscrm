@@ -10,8 +10,8 @@ export default function useLeave() {
   const [leaves, setLeaves] = useState([]);
 
   const { user } = useAuth();
-  const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
-
+  const employeeId =
+    user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
 
   // CREATE LEAVE
   const submitLeave = async (formData) => {
@@ -22,14 +22,21 @@ export default function useLeave() {
       const startDate = new Date(formData.leaveFrom);
       const endDate = new Date(formData.leaveTo);
 
-      if (!formData.leaveTitle || !formData.leaveType || !formData.leaveReason || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate) {
-        throw new Error("Please complete all leave fields and select a valid date range");
+      if (
+        !formData.leaveTitle ||
+        !formData.leaveType ||
+        !formData.leaveReason ||
+        Number.isNaN(startDate.getTime()) ||
+        Number.isNaN(endDate.getTime()) ||
+        endDate < startDate
+      ) {
+        throw new Error(
+          "Please complete all leave fields and select a valid date range",
+        );
       }
 
       const leaveDays =
-        Math.ceil(
-          (endDate - startDate) / (1000 * 60 * 60 * 24)
-        ) + 1;
+        Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
       const payload = {
         ...formData,
@@ -41,23 +48,18 @@ export default function useLeave() {
         managerId: formData.managerId || "",
       };
 
-      const response = await fetch(
-        apiUrl("/leave"),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(apiUrl("/leave"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to submit leave request"
-        );
+        throw new Error(data.message || "Failed to submit leave request");
       }
 
       return {
@@ -84,22 +86,17 @@ export default function useLeave() {
     }
   }, [employeeId]);
 
-
   const getLeaves = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        apiUrl("/leave")
-      );
+      const response = await fetch(apiUrl("/leave"));
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to fetch leaves"
-        );
+        throw new Error(data.message || "Failed to fetch leaves");
       }
 
       setLeaves(Array.isArray(data) ? data : []);
@@ -112,7 +109,6 @@ export default function useLeave() {
       return [];
     } finally {
       setLoading(false);
-
     }
   };
 
@@ -121,7 +117,7 @@ export default function useLeave() {
       setLoading(true);
 
       const response = await fetch(
-        "https://pearlscrm.onrender.com/api/holidays"
+        "https://pearlscrm-1.onrender.com/api/holidays",
       );
 
       const data = await response.json();
@@ -145,14 +141,21 @@ export default function useLeave() {
       const startDate = new Date(formData.leaveFrom);
       const endDate = new Date(formData.leaveTo);
 
-      if (!formData.leaveTitle || !formData.leaveType || !formData.leaveReason || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate) {
-        throw new Error("Please complete all leave fields and select a valid date range");
+      if (
+        !formData.leaveTitle ||
+        !formData.leaveType ||
+        !formData.leaveReason ||
+        Number.isNaN(startDate.getTime()) ||
+        Number.isNaN(endDate.getTime()) ||
+        endDate < startDate
+      ) {
+        throw new Error(
+          "Please complete all leave fields and select a valid date range",
+        );
       }
 
       const leaveDays =
-        Math.ceil(
-          (endDate - startDate) / (1000 * 60 * 60 * 24)
-        ) + 1;
+        Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
       const payload = {
         ...formData,
@@ -164,16 +167,13 @@ export default function useLeave() {
         managerId: formData.managerId || "",
       };
 
-      const response = await fetch(
-        apiUrl(`/leave/${id}`),
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(apiUrl(`/leave/${id}`), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const data = await response.json();
 
@@ -204,14 +204,14 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        "https://pearlscrm.onrender.com/api/holidays",
+        "https://pearlscrm-1.onrender.com/api/holidays",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(formData),
-        }
+        },
       );
 
       const data = await response.json();
@@ -239,14 +239,14 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `https://pearlscrm.onrender.com/api/holidays/${id}`,
+        `https://pearlscrm-1.onrender.com/api/holidays/${id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(formData),
-        }
+        },
       );
 
       const data = await response.json();
@@ -255,11 +255,7 @@ export default function useLeave() {
         throw new Error(data.message || "Failed to update holiday");
       }
 
-      setHolidays((prev) =>
-        prev.map((h) =>
-          h._id === id ? data.holiday : h
-        )
-      );
+      setHolidays((prev) => prev.map((h) => (h._id === id ? data.holiday : h)));
 
       return { success: true, data: data.holiday };
     } catch (err) {
@@ -278,10 +274,10 @@ export default function useLeave() {
       setError(null);
 
       const response = await fetch(
-        `https://pearlscrm.onrender.com/api/holidays/${id}`,
+        `https://pearlscrm-1.onrender.com/api/holidays/${id}`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       const data = await response.json();
@@ -290,9 +286,7 @@ export default function useLeave() {
         throw new Error(data.message || "Failed to delete holiday");
       }
 
-      setHolidays((prev) =>
-        prev.filter((h) => h._id !== id)
-      );
+      setHolidays((prev) => prev.filter((h) => h._id !== id));
 
       return { success: true };
     } catch (err) {
@@ -303,9 +297,6 @@ export default function useLeave() {
     }
   };
 
-
-
-
   //UPDATE STATUS
 
   const updateLeaveStatus = async (id, status) => {
@@ -313,16 +304,13 @@ export default function useLeave() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        apiUrl(`/leave/${id}/status`),
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status }),
-        }
-      );
+      const response = await fetch(apiUrl(`/leave/${id}/status`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
 
       const data = await response.json();
 
@@ -332,9 +320,7 @@ export default function useLeave() {
 
       // optional: update local state instantly
       setLeaves((prev) =>
-        prev.map((leave) =>
-          leave._id === id ? data.leave : leave
-        )
+        prev.map((leave) => (leave._id === id ? data.leave : leave)),
       );
 
       return {
@@ -357,9 +343,12 @@ export default function useLeave() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(apiUrl(`/leave/${id}`), { method: "DELETE" });
+      const response = await fetch(apiUrl(`/leave/${id}`), {
+        method: "DELETE",
+      });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to cancel leave request");
+      if (!response.ok)
+        throw new Error(data.message || "Failed to cancel leave request");
       setLeaves((prev) => prev.filter((leave) => leave._id !== id));
       return { success: true, data: data.leave };
     } catch (err) {
@@ -369,8 +358,6 @@ export default function useLeave() {
       setLoading(false);
     }
   };
-
-
 
   return {
     submitLeave,
