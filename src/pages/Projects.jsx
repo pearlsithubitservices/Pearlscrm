@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useMemo
 } from 'react';
+import { getProjectHealthStatus } from '../utils/projectHealth';
 
 
 import {
@@ -171,7 +172,7 @@ export default function ProjectManagement() {
     }
   };
 
-  const buttons = ["All", "Pending", "on Track", "At Risk", "Completed"];
+  const buttons = ["All", "Pending", "On Track", "At Risk", "Completed"];
 
   const projectfilter = useProjectFilter(project, search, buttons[active]);
 
@@ -185,16 +186,12 @@ export default function ProjectManagement() {
 
   const pendingCount = project.filter((p) => {
     const st = (p.status || "").toLowerCase();
-    return st === "pending" || st === "in progress" || st === "planning" || (st !== "completed" && (Number(p.progress) || 0) < 100);
+    const prog = Number(p.progress) || 0;
+    return st !== "completed" && prog < 100;
   }).length;
 
-  const onTrackCount = project.filter(
-    (p) => new Date(p.dueDate) >= new Date() && (p.status || "").toLowerCase() !== "completed"
-  ).length;
-
-  const atRiskCount = project.filter(
-    (p) => new Date(p.dueDate) < new Date() && (p.status || "").toLowerCase() !== "completed"
-  ).length;
+  const atRiskCount = project.filter((p) => getProjectHealthStatus(p) === "At Risk").length;
+  const onTrackCount = project.filter((p) => getProjectHealthStatus(p) === "On Track").length;
 
   const stats = [
     {
@@ -233,7 +230,7 @@ export default function ProjectManagement() {
 
 
   return (
-    <div className="text-black max-h-screen overflow-y-auto no-scrollbar">
+    <div className="w-full min-h-screen overflow-y-auto custom-scrollbar bg-[#f5f3ef] text-black pb-12">
 
       {/* TOPBAR */}
       <div className="w-full bg-white border-b border-black/10 px-8 py-6 flex items-center justify-between">
@@ -357,7 +354,7 @@ export default function ProjectManagement() {
           className="space-y-4">
 
           {currentFiles.length > 0 ? (currentFiles.map((p) => {
-            const isOverdue = p.dueDate && new Date(p.dueDate) <= new Date();
+            const healthLabel = getProjectHealthStatus(p);
 
             return (
               <div
@@ -405,8 +402,11 @@ export default function ProjectManagement() {
                         {p.status || "Active"}
                       </span>
 
-                      <span className={`text-xs px-3 py-1 rounded font-semibold ${isOverdue ? "text-red-600 bg-red-100" : "text-green-600 bg-green-100"}`}>
-                        {isOverdue ? "At Risk" : "On Track"}
+                      <span className={`text-xs px-3 py-1 rounded font-semibold ${
+                        healthLabel === "Completed" ? "bg-purple-100 text-purple-700" :
+                        healthLabel === "At Risk" ? "text-red-600 bg-red-100" : "text-green-600 bg-green-100"
+                      }`}>
+                        {healthLabel}
                       </span>
                     </div>
 
@@ -497,7 +497,7 @@ export default function ProjectManagement() {
                   </div>
 
                   <div className="text-xs font-bold">
-                    <div className={`flex items-center gap-1.5 ${isOverdue ? "text-red-600" : "text-[#2563a9]"}`}>
+                    <div className={`flex items-center gap-1.5 ${healthLabel === "At Risk" ? "text-red-600" : "text-[#2563a9]"}`}>
                       <Calendar size={16} className='text-[#0b2b57]' />
                       <p>{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "No Due Date"}</p>
                     </div>

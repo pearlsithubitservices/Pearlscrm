@@ -42,14 +42,19 @@ export default function CompanyInfoSection({ clients }) {
       value: clients[0]?.budget,
     },
     {
+      label: "Health Score",
+      value: `${clients[0]?.healthScore ?? 0}%`,
+      blue: true,
+    },
+    {
       label: "Start Date",
-      value: clients[0]?.foundeddate
+      value: clients[0]?.projectstartdate
         ? new Date(clients[0].projectstartdate).toLocaleDateString()
         : "-",
     },
     {
       label: "Due Date",
-      value: clients[0]?.foundeddate
+      value: clients[0]?.duedate
         ? new Date(clients[0].duedate).toLocaleDateString()
         : "-",
     },

@@ -6,7 +6,8 @@ import {
     User,
     BadgeDollarSign,
     Clock,
-    X
+    X,
+    Trash2,
 } from "lucide-react";
 
 
@@ -31,29 +32,46 @@ import EmployeeBenefits from "./Benifits/EmployeeBenefits";
 export default function PayslipAdmin() {
     const [activeTab, setActiveTab] = useState("Payslips");
     const { id } = useParams();
-    const { payslips } = usePayslip();
+    const { payslips, updatePayslipStatus, deletePayslip } = usePayslip();
     const navigate = useNavigate();
     const EmpPayslip = payslips.find((item) => (
         item._id == id
     ));
     const currentPayslip = payslips.filter((item) => (
-        item.employeeId == EmpPayslip.employeeId
+        item.employeeId == EmpPayslip?.employeeId
     ));
     const PendingPayslip = currentPayslip
         ?.filter((p) => p?.status?.toLowerCase() === "pending")
-        ?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+        ?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || EmpPayslip;
 
     const { employees } = useEmployees();
-    //GETTING EMPLOYEES NAME
+    // GETTING EMPLOYEES NAME & ID
     const employeeMap = useMemo(() => {
-        return employees.reduce((map, employee) => {
-            map[employee.uid] = {
-                name: employee.name,
-                role: employee.role, // or employee.employeeRole if that's your field
+        const map = {};
+        employees.forEach((employee) => {
+            const info = {
+                name: employee.name || employee.employeeName || (employee.email ? employee.email.split('@')[0] : "Employee"),
+                role: employee.employeeRole || employee.role || "Employee",
+                empId: employee.empId || employee.profile?.empId || employee.employeeCode || `EMP-${String(employee._id || employee.uid || employee.id || "").slice(-4).toUpperCase()}`,
             };
-            return map;
-        }, {});
+            if (employee.uid) map[employee.uid] = info;
+            if (employee._id) map[employee._id] = info;
+            if (employee.id) map[employee.id] = info;
+            if (employee.email) map[employee.email.toLowerCase()] = info;
+            if (employee.profile?.empId) map[employee.profile.empId] = info;
+        });
+        return map;
     }, [employees]);
+
+    const handleToggleStatus = async () => {
+        if (!PendingPayslip?._id) return;
+        const newStatus = PendingPayslip.status === "Paid" ? "Pending" : "Paid";
+        try {
+            await updatePayslipStatus(PendingPayslip._id, newStatus);
+        } catch (err) {
+            console.error("Failed to update status", err);
+        }
+    };
 
 
     const renderTab = () => {
@@ -85,69 +103,69 @@ export default function PayslipAdmin() {
     };
 
     return (
-        <div className="bg-[#f3f0eb] max-h-screen overflow-y-auto no-scrollbar">
+        <div className="bg-[#f3f0eb] max-h-screen overflow-y-auto custom-scrollbar">
 
             {/* Header */}
 
-            <header className="flex justify-between items-center p-6 bg-white shadow">
+            <header className="flex justify-between items-center p-4 sm:p-6 bg-white shadow">
                 <div>
-                    <h1 className="text-2xl font-bold">
+                    <h1 className="text-xl sm:text-2xl font-bold">
                         Admin — Payroll & Benefits
                     </h1>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs sm:text-sm text-gray-500">
                         Manage payroll for all employees
                     </p>
                 </div>
 
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 cursor-pointer">
                     <Bell className="w-6 h-6 bg-blue-700 text-white rounded p-1" />
-                    <X className="w-6 h-6 text-red-700" onClick={() => navigate(-1)} />
+                    <X className="w-6 h-6 text-red-700 hover:scale-110 transition" onClick={() => navigate(-1)} />
                 </div>
             </header>
 
-            <div className="p-10">
+            <div className="p-4 sm:p-8">
 
                 {/* Summary */}
 
-                <div className=" space-y-6">
+                <div className="space-y-6">
 
                     {/* TOP CARDS */}
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                        <motion.div className="bg-white p-4 rounded-xl shadow">
+                        <motion.div className="bg-white p-4 rounded-xl shadow border border-gray-100">
                             <div className="flex justify-between">
-                                <Wallet />
-                                <span className="text-green-500 text-xs">Month</span>
+                                <Wallet className="text-blue-600" />
+                                <span className="text-green-500 text-xs font-semibold">Month</span>
                             </div>
                             <p className="text-gray-500 text-sm mt-2">Gross Amount</p>
-                            <h2 className="text-xl font-bold text-blue-600">₹ 10,200</h2>
+                            <h2 className="text-xl font-bold text-blue-600">₹ {PendingPayslip?.gross || 0}</h2>
                         </motion.div>
 
-                        <motion.div className="bg-white p-4 rounded-xl shadow">
+                        <motion.div className="bg-white p-4 rounded-xl shadow border border-gray-100">
                             <div className="flex justify-between">
-                                <User />
-                                <span className="text-green-500 text-xs">Month</span>
+                                <User className="text-red-500" />
+                                <span className="text-green-500 text-xs font-semibold">Month</span>
                             </div>
                             <p className="text-gray-500 text-sm mt-2">Deductions</p>
-                            <h2 className="text-xl font-bold text-red-500">₹ 1,750</h2>
+                            <h2 className="text-xl font-bold text-red-500">₹ {PendingPayslip?.totalDeductions || PendingPayslip?.deductions || 0}</h2>
                         </motion.div>
 
-                        <motion.div className="bg-white p-4 rounded-xl shadow">
+                        <motion.div className="bg-white p-4 rounded-xl shadow border border-gray-100">
                             <div className="flex justify-between">
-                                <BadgeDollarSign />
-                                <span className="text-green-500 text-xs">Month</span>
+                                <BadgeDollarSign className="text-green-600" />
+                                <span className="text-green-500 text-xs font-semibold">Month</span>
                             </div>
                             <p className="text-gray-500 text-sm mt-2">Net Salary</p>
-                            <h2 className="text-xl font-bold text-green-600">₹ 8,450</h2>
+                            <h2 className="text-xl font-bold text-green-600">₹ {PendingPayslip?.net || 0}</h2>
                         </motion.div>
 
-                        <motion.div className="bg-white p-4 rounded-xl shadow">
+                        <motion.div className="bg-white p-4 rounded-xl shadow border border-gray-100">
                             <div className="flex justify-between">
-                                <Clock />
-                                <span className="text-green-500 text-xs">Year</span>
+                                <Clock className="text-amber-500" />
+                                <span className="text-amber-500 text-xs font-semibold">Status</span>
                             </div>
-                            <p className="text-gray-500 text-sm mt-2">Total Amounts</p>
-                            <h2 className="text-xl font-bold">₹ 4,800</h2>
+                            <p className="text-gray-500 text-sm mt-2">Payment Status</p>
+                            <h2 className="text-xl font-bold text-amber-600">{PendingPayslip?.status || "Pending"}</h2>
                         </motion.div>
 
                     </div>
@@ -160,43 +178,66 @@ export default function PayslipAdmin() {
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="bg-white rounded-2xl shadow mt-8 p-6 flex justify-between items-center"
+                        className="bg-white rounded-2xl shadow mt-8 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-gray-100"
                     >
 
                         <div className="flex items-center gap-4">
 
-                            <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-xl font-bold">
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-200 flex items-center justify-center text-xl font-bold text-blue-800 shrink-0">
 
-                                {(employeeMap[PendingPayslip?.employeeId]?.name || "Ragavi")?.charAt(0).toUpperCase()}
+                                {(employeeMap[PendingPayslip?.employeeId]?.name || "Employee")?.charAt(0).toUpperCase()}
 
                             </div>
 
                             <div>
 
-                                <h2 className="text-2xl font-semibold">
-                                    {employeeMap[PendingPayslip?.employeeId]?.name || "Ragavi"}
+                                <h2 className="text-xl sm:text-2xl font-semibold">
+                                    {employeeMap[PendingPayslip?.employeeId]?.name || PendingPayslip?.employeeName || "Employee"}
                                 </h2>
 
-                                <p className="text-gray-500">
-                                    {employeeMap[PendingPayslip?.employeeId]?.role || ""} • {PendingPayslip?.employeeId?.slice(0, 5)}
+                                <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">
+                                    {employeeMap[PendingPayslip?.employeeId]?.role || "Team Member"} • ID: <span className="font-mono text-slate-700">{employeeMap[PendingPayslip?.employeeId]?.empId || (PendingPayslip?.employeeId ? `EMP-${String(PendingPayslip.employeeId).slice(-4).toUpperCase()}` : "EMP ID")}</span>
                                 </p>
 
                             </div>
 
                         </div>
 
-                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold">
-
-                            Pending
-
-                        </button>
+                        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                            <button
+                                onClick={handleToggleStatus}
+                                className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm font-semibold text-white transition shadow-sm ${
+                                    PendingPayslip?.status === "Paid"
+                                        ? "bg-green-600 hover:bg-green-700"
+                                        : "bg-amber-500 hover:bg-amber-600"
+                                }`}
+                            >
+                                Mark as {PendingPayslip?.status === "Paid" ? "Pending" : "Paid"} ({PendingPayslip?.status || "Pending"})
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm("Are you sure you want to delete this payslip record?")) {
+                                        try {
+                                            await deletePayslip(PendingPayslip._id);
+                                            navigate("/payroll");
+                                        } catch (err) {
+                                            alert(err.message || "Failed to delete");
+                                        }
+                                    }
+                                }}
+                                className="p-2.5 sm:p-3 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition border border-red-200"
+                                title="Delete Payslip"
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
 
                     </motion.div>
                 )}
 
                 {/* Tabs */}
 
-                <div className="flex items-center justify-between  gap-12 mt-10   text-xl bg-white p-2 rounded">
+                <div className="flex items-center overflow-x-auto custom-scrollbar gap-2 sm:gap-4 mt-8 text-base sm:text-lg bg-white p-2 rounded-2xl border border-gray-200 whitespace-nowrap">
 
                     {[
                         "Payslips",
@@ -209,11 +250,11 @@ export default function PayslipAdmin() {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-4 transition-all mx-4 font-medium mt-2
+                            className={`pb-3 pt-2 px-4 transition-all font-semibold rounded-xl text-sm sm:text-base
 
               ${activeTab === tab
-                                    ? "border-b-4 border-blue-600 text-blue-700"
-                                    : "text-gray-500"
+                                    ? "bg-blue-50 text-blue-700 font-bold border-b-2 border-blue-600"
+                                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
                                 }
               
               `}

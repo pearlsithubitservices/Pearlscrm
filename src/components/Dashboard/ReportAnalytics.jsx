@@ -1,11 +1,209 @@
 import { Check, Clock4, Mail, MoveUp, Phone } from 'lucide-react';
 import React, { useEffect, useState } from 'react'
-import { Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart } from "recharts";
+import { Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart } from "recharts";
+import { apiUrl } from '../../config/api.js';
 
 
 const Hotleads = () => {
     const [selectedPeriod, setSelectedPeriod] =
         useState("thismonth");
+    const [followups, setFollowups] = useState([]);
+    const [tasks, setTasks] = useState([]);
+    const [leads, setLeads] = useState([]);
+
+    useEffect(() => {
+        const fetchFollowups = async () => {
+            try {
+                const response = await fetch(apiUrl('/followups'));
+                if (!response.ok) throw new Error('Failed to fetch followups');
+                const data = await response.json();
+                setFollowups(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Error fetching followups:', error);
+                setFollowups([]);
+            }
+        };
+
+        const fetchTasks = async () => {
+            try {
+                const response = await fetch(apiUrl('/tasks'));
+                if (!response.ok) throw new Error('Failed to fetch tasks');
+                const data = await response.json();
+                setTasks(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+                setTasks([]);
+            }
+        };
+
+        const fetchLeads = async () => {
+            try {
+                const response = await fetch(apiUrl('/leads'));
+                if (!response.ok) throw new Error('Failed to fetch leads');
+                const data = await response.json();
+                setLeads(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Error fetching leads for funnel:', error);
+                setLeads([]);
+            }
+        };
+
+        fetchFollowups();
+        fetchTasks();
+        fetchLeads();
+    }, []);
+
+    const now = new Date();
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(now.getDate() - 7);
+
+    const thisWeekFollowups = followups.filter((followup) => {
+        const rawDate = followup?.createdAt || followup?.date || followup?.nextFollowupDate;
+        if (!rawDate) return false;
+        const date = new Date(rawDate);
+        return !Number.isNaN(date.getTime()) && date >= oneWeekAgo && date <= now;
+    });
+
+    const emailFollowupsSent = thisWeekFollowups.filter((followup) =>
+        /email|mail/i.test(followup?.type || '') || /email|mail/i.test(followup?.notes || '')
+    ).length;
+
+    const salesCallsLogged = thisWeekFollowups.filter((followup) =>
+        /call|phone|sales/i.test(followup?.type || '') || /call|phone|sales/i.test(followup?.notes || '')
+    ).length;
+
+    const overdueFollowups = thisWeekFollowups.filter((followup) => {
+        const isCompleted = Boolean(followup?.isCompleted) || String(followup?.status || '').toLowerCase() === 'completed';
+        const nextFollowupDate = followup?.nextFollowupDate || followup?.date;
+        if (isCompleted || !nextFollowupDate) return false;
+        const date = new Date(nextFollowupDate);
+        return !Number.isNaN(date.getTime()) && date < now;
+    }).length;
+
+    const completedFollowups = thisWeekFollowups.filter((followup) =>
+        Boolean(followup?.isCompleted) || String(followup?.status || '').toLowerCase() === 'completed'
+    ).length;
+
+    const clampPercent = (value) => Math.min(100, Math.max(0, value));
+
+    const emailRate = thisWeekFollowups.length
+        ? clampPercent(Math.round((emailFollowupsSent / thisWeekFollowups.length) * 100))
+        : 0;
+
+    const salesRate = thisWeekFollowups.length
+        ? clampPercent(Math.round((salesCallsLogged / thisWeekFollowups.length) * 100))
+        : 0;
+
+    const overdueRate = thisWeekFollowups.length
+        ? clampPercent(Math.round((overdueFollowups / thisWeekFollowups.length) * 100))
+        : 0;
+
+    const followUpRate = thisWeekFollowups.length
+        ? clampPercent(Math.round((completedFollowups / thisWeekFollowups.length) * 100))
+        : 0;
+
+    const taskCount = tasks.length;
+    const completedTasks = tasks.filter((task) => String(task?.status || '').toLowerCase() === 'completed').length;
+    const taskCompletionRate = taskCount ? clampPercent(Math.round((completedTasks / taskCount) * 100)) : 0;
+
+    const followUpStats = [
+        {
+            icon: Mail,
+            title: "E-mail Follow-ups Sent",
+            avg: `Week total: ${thisWeekFollowups.length}`,
+            percentage: emailRate,
+            total: emailFollowupsSent
+        },
+        {
+            icon: Phone,
+            title: "Sales call logged",
+            avg: `Calls this week: ${salesCallsLogged}`,
+            percentage: salesRate,
+            total: salesCallsLogged
+        },
+        {
+            icon: Clock4,
+            title: "Overdue follow-ups",
+            avg: "Past due follow-ups",
+            percentage: overdueRate,
+            total: overdueFollowups
+        },
+        {
+            icon: Check,
+            title: "Follow ups Completed",
+            avg: `${followUpRate}% on-time rate this week`,
+            percentage: followUpRate,
+            total: completedFollowups
+        }
+    ];
+
+    const handleFullReport = () => {
+        const summaryRows = [
+            ["Section", "Metric", "Value"],
+            ["Follow-up", "This week total", thisWeekFollowups.length],
+            ["Follow-up", "Email follow-ups sent", emailFollowupsSent],
+            ["Follow-up", "Sales calls logged", salesCallsLogged],
+            ["Follow-up", "Overdue follow-ups", overdueFollowups],
+            ["Follow-up", "Completed follow-ups", completedFollowups],
+            ["Follow-up", "Completion rate", `${followUpRate}%`],
+            ["Task", "Total tasks", taskCount],
+            ["Task", "Completed tasks", completedTasks],
+            ["Task", "Completion rate", `${taskCompletionRate}%`],
+        ];
+
+        const csv = summaryRows
+            .map((row) => row.map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(","))
+            .join("\n");
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = "crm-full-report.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const leadFunnelStages = [
+        { name: "New Leads", key: "new", color: "bg-purple-500" },
+        { name: "contacted", key: "contacted", color: "bg-orange-500" },
+        { name: "Qualified", key: "qualified", color: "bg-yellow-500" },
+        { name: "Proposal", key: "proposal", color: "bg-green-500" },
+        { name: "converted", key: "converted", color: "bg-green-500" },
+    ];
+
+    const leadStageCounts = leadFunnelStages.reduce((acc, stage) => {
+        acc[stage.key] = leads.filter((lead) => {
+            const status = String(lead?.status || "").trim().toLowerCase();
+            if (stage.key === "new") {
+                return status === "new" || status === "lead" || status === "fresh" || status === "";
+            }
+            if (stage.key === "contacted") {
+                return status === "contacted" || status === "follow-up" || status === "in progress" || status === "pending";
+            }
+            if (stage.key === "qualified") {
+                return status === "qualified" || status === "warm" || status === "active";
+            }
+            if (stage.key === "proposal") {
+                return status === "proposal" || status === "negotiation" || status === "quote";
+            }
+            if (stage.key === "converted") {
+                return status === "converted" || status === "won" || status === "closed" || status === "customer";
+            }
+            return false;
+        }).length;
+        return acc;
+    }, {});
+
+    const leadFunnelData = leadFunnelStages.map((stage) => {
+        const count = leadStageCounts[stage.key] || 0;
+        const maxCount = Math.max(1, ...Object.values(leadStageCounts));
+        const width = leads.length ? Math.max(8, (count / maxCount) * 100) : 0;
+        return { ...stage, count, width };
+    });
+
     const monthdata = [
         { month: "Jan", revenue: 20000, target: 15000 },
         { month: "Feb", revenue: 30000, target: 25000 },
@@ -90,43 +288,14 @@ const Hotleads = () => {
 
                             <div className='flex gap-12 items-center justify-between '>
                                 <h1 className='text-blue-700 font-bold text-xl tracking-wide'>LEAD FUNNEL</h1>
-                                <button className='text-blue-700 underline tracking-wide cursor-pointer'>Full Report</button>
+                                <button
+                                    onClick={handleFullReport}
+                                    className='text-blue-700 underline tracking-wide cursor-pointer'>Full Report</button>
 
                             </div>
                             <div className="w-full   ">
 
-                                {[
-                                    {
-                                        name: "New Leads",
-                                        color: "bg-purple-500",
-                                        revenue: "118K",
-                                        progress: "80%",
-                                    },
-                                    {
-                                        name: "contacted",
-                                        color: "bg-orange-500",
-                                        progress: "60%",
-                                        revenue: "98K",
-                                    },
-                                    {
-                                        name: "Qualified",
-                                        color: "bg-yellow-500",
-                                        progress: "40%",
-                                        revenue: "62K",
-                                    },
-                                    {
-                                        name: "Proposal",
-                                        color: "bg-green-500",
-                                        progress: "25%",
-                                        revenue: "34K",
-                                    },
-                                    {
-                                        name: "converted",
-                                        color: "bg-green-500",
-                                        progress: "45%",
-                                        revenue: "34K",
-                                    },
-                                ].map((item, index) => (
+                                {leadFunnelData.map((item, index) => (
 
                                     <div key={index} className="mb-6">
 
@@ -137,7 +306,7 @@ const Hotleads = () => {
                                             </span>
 
                                             <span className="text-black text-md">
-                                                {item.width}
+                                                {item.count}
                                             </span>
 
                                         </div>
@@ -146,7 +315,7 @@ const Hotleads = () => {
 
                                             <div
                                                 className={`h-3 ${item.color} rounded-full`}
-                                                style={{ width: item.progress }}
+                                                style={{ width: `${item.width}%` }}
                                             />
 
                                         </div>
@@ -173,28 +342,13 @@ const Hotleads = () => {
                                 FOLLOW-UP METRICS - This Week
                             </h2>
 
-                            <button className='text-blue-700 underline cursor-pointer tracking-wide'>
+                            <button 
+                                onClick={handleFullReport}
+                                className='text-blue-700 underline cursor-pointer tracking-wide'>
                                 Full Report
                             </button>
                         </div>
-                        {[
-                            {
-                                icon: Mail, title: "E-mail Follow-ups Sent", avg: "Avg response time: 3.2 hrs", percentage: "3", total: "142"
-
-                            },
-                            {
-                                icon: Phone, title: "Sales call logged", avg: " Avg call duration: 11 min", percentage: "3", total: "142"
-
-                            },
-                            {
-                                icon: Clock4, title: "Overdue follow-ups", avg: "Oldest: 4 days overdue", percentage: "3", total: "142"
-
-                            },
-                            {
-                                icon: Check, title: "Follow ups Completed", avg: "89% on-time rate this week", percentage: "3", total: "142"
-
-                            }
-                        ].map((ev, i) => (
+                        {followUpStats.map((ev, i) => (
                             <div
                                 key={i}
                                 className=' relative flex items-start justify-normal bg-white text-blue-950 gap-4 p-4 w-[550px] ml-8 rounded '>
@@ -214,9 +368,6 @@ const Hotleads = () => {
                                     </div>
                                     <p className='text-blue-950 font-bold ml-4'>{ev.total}</p>
                                 </div>
-
-
-
                             </div>
                         ))}
 
@@ -225,7 +376,9 @@ const Hotleads = () => {
                     <div className=' flex flex-col  p-2 rounded-xl absolute right-2 top-0  '>
                         <div className='flex justify-between  bg-white w-[300px] rounded-xl p-2 '>
                             <h1 className='text-blue-700 font-bold text-xl tracking-wide'>Top Performers</h1>
-                            <button className='text-blue-700 underline tracking-wide cursor-pointer'>Full Report</button>
+                            <button
+                                onClick={handleFullReport}
+                                className='text-blue-700 underline tracking-wide cursor-pointer'>Full Report</button>
 
                         </div>
                         <div className=' flex flex-col gap-2 bg-white w-[300px] rounded-lg  mt-4 p-2'>

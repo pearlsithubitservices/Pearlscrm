@@ -65,6 +65,7 @@ const userSchema = new mongoose.Schema(
       joiningDate: { type: Date },
       reportingManager: { type: String, default: "" },
       workLocation: { type: String, default: "" },
+      description: { type: String, default: "" },
       documents: {
         resume: { fileName: String, fileUrl: String, publicId: String },
         panCard: { fileName: String, fileUrl: String, publicId: String },

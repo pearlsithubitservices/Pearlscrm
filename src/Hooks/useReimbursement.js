@@ -1,16 +1,11 @@
-// Hooks/useReimbursementClaim.js
-
 import { useState } from "react";
-
-const API_URL =
-    "https://pearlscrm.onrender.com/api/reimbursement";
+import { apiUrl } from "../config/api";
 
 export default function useReimbursement() {
-    const [loading, setLoading] =
-        useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const [error, setError] =
-        useState(null);
+    const getAPIUrl = () => apiUrl("/reimbursement");
 
     const request = async (
         url,
@@ -23,7 +18,7 @@ export default function useReimbursement() {
             setError(null);
 
             const response = await fetch(
-                `${API_URL}${url}`,
+                `${getAPIUrl()}${url}`,
                 {
                     method,
 
@@ -42,13 +37,13 @@ export default function useReimbursement() {
                 }
             );
 
-            const data =
-                await response.json();
+            const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
                 throw new Error(
                     data.message ||
-                    data.error
+                    data.error ||
+                    "Reimbursement API error"
                 );
             }
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { apiUrl } from "../../config/api";
 
 export default function MilestonesContent({ projects, project, fetchProjects }) {
@@ -60,6 +60,25 @@ export default function MilestonesContent({ projects, project, fetchProjects }) 
     }
   };
 
+  const deleteMilestone = async (index) => {
+    if (!currentProject._id) return;
+    const updatedMilestones = milestones.filter((_, i) => i !== index);
+
+    try {
+      const res = await fetch(apiUrl(`/projects/${currentProject._id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ milestones: updatedMilestones }),
+      });
+
+      if (res.ok && fetchProjects) {
+        fetchProjects();
+      }
+    } catch (err) {
+      console.error("Error deleting milestone:", err);
+    }
+  };
+
   const completedCount = milestones.filter((m) => m.completed).length;
 
   return (
@@ -96,7 +115,7 @@ export default function MilestonesContent({ projects, project, fetchProjects }) 
               whileHover={{
                 scale: 1.01,
               }}
-              className="bg-[#FAFAFA] border border-gray-100 rounded-xl px-6 py-4 flex items-center justify-between shadow-2xs"
+              className="bg-[#FAFAFA] border border-gray-100 rounded-xl px-6 py-4 flex items-center justify-between shadow-2xs group"
             >
               {/* Left */}
               <div className="flex items-center gap-5">
@@ -123,10 +142,20 @@ export default function MilestonesContent({ projects, project, fetchProjects }) 
                 </h3>
               </div>
 
-              {/* Date */}
-              <p className="text-[14px] md:text-[16px] text-gray-400 font-medium">
-                {item.date || "Scheduled"}
-              </p>
+              {/* Right: Date & Delete */}
+              <div className="flex items-center gap-4">
+                <p className="text-[14px] md:text-[16px] text-gray-400 font-medium">
+                  {item.date || "Scheduled"}
+                </p>
+
+                <button
+                  onClick={() => deleteMilestone(index)}
+                  className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-rose-500 p-1"
+                  title="Delete Milestone"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </motion.div>
           ))
         ) : (

@@ -13,38 +13,29 @@ import {
 import useTaxDocuments from "../../../Hooks/useTaxDocument";
 import TaxDocumentForm from "./TaxDocumentForm";
 
-const documents = [
+const defaultTaxCatalog = [
     {
-        id: 1,
+        _id: "def-1",
         title: "Form 16",
         description: "TDS certificate from employer · FY 2025–26",
-        icon: FileText,
     },
     {
-        id: 2,
-        title: "Annual Tax Statement",
-        description: "Form 26AS · full year TDS summary",
-        icon: Shield,
-    },
-    {
-        id: 3,
-        title: "Annual Tax Statement",
-        description: "Form 26AS · full year TDS summary",
-        icon: FileSpreadsheet,
-    },
-    {
-        id: 4,
+        _id: "def-2",
         title: "Form 16A",
         description: "TDS on non-salary income · FY 2025–26",
-        icon: FileText,
+    },
+    {
+        _id: "def-3",
+        title: "Annual Tax Statement",
+        description: "Form 26AS · full year TDS summary",
     },
 ];
 
 export default function TaxDocuments() {
 
 
-    const { documents, deleteDocument, fetchDocuments } = useTaxDocuments();
-    console.log(documents);
+    const { documents: fetchedDocs, deleteDocument, fetchDocuments } = useTaxDocuments();
+    const documents = (fetchedDocs && fetchedDocs.length > 0) ? fetchedDocs : defaultTaxCatalog;
 
     const [openForm, setOpenForm] = useState(false);
 
@@ -81,77 +72,77 @@ export default function TaxDocuments() {
     };
     return (
         <motion.div
-            initial={{ opacity: 0, y: 25 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="min-h-screen bg-[#F6F2EB] p-5"
+            transition={{ duration: 0.3 }}
+            className="min-h-screen bg-[#F6F2EB] p-4 sm:p-6 custom-scrollbar"
         >
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto space-y-6">
 
                 {/* Header */}
 
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-6 py-5 flex items-center justify-between">
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 
-                    <h1 className="text-4xl font-bold text-black">
-                        Tax documents
-                    </h1>
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                            Tax documents
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-1">Manage and publish tax forms for employees</p>
+                    </div>
 
                     <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: .95 }}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: .97 }}
                         onClick={handleAdd}
-                        className="flex items-center gap-2 bg-[#E9EDF5] hover:bg-[#dfe5ef] text-gray-700 px-6 py-3 rounded-xl font-medium"
+                        className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold transition shadow-sm w-full sm:w-auto"
                     >
                         <Plus size={18} />
-                        Add New
+                        <span>Add New</span>
                     </motion.button>
 
                 </div>
 
                 {/* Cards */}
 
-                <div className="mt-6 space-y-5">
+                <div className="space-y-4">
 
-                    {documents?.map((doc) => {
+                    {documents?.map((doc, idx) => {
 
-                        const Icon = iconMap[doc.title];
-
+                        const Icon = iconMap[doc.title] || FileText;
+                        const docUrl = doc.documentUrl
+                            ? (doc.documentUrl.startsWith("http") ? doc.documentUrl : `http://localhost:5000${doc.documentUrl.startsWith("/") ? doc.documentUrl : `/${doc.documentUrl}`}`)
+                            : "#";
 
                         return (
 
                             <motion.div
-                                key={doc.id}
-                                whileHover={{
-                                    y: -3,
-                                    scale: 1.01,
-                                }}
-                                transition={{
-                                    duration: .2,
-                                }}
-                                className="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 py-6 flex items-center justify-between"
+                                key={doc._id || doc.id || idx}
+                                whileHover={{ y: -2 }}
+                                transition={{ duration: 0.2 }}
+                                className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                             >
 
                                 {/* Left */}
 
-                                <div className="flex items-center gap-5">
+                                <div className="flex items-center gap-4">
 
-                                    <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">
+                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 shrink-0">
 
                                         <Icon
-                                            size={30}
-                                            className="text-[#2B6CB0]"
+                                            size={26}
+                                            className="text-blue-700"
                                         />
 
                                     </div>
 
                                     <div>
 
-                                        <h2 className="text-3xl font-bold text-gray-900">
+                                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                                             {doc.title}
                                         </h2>
 
-                                        <p className="text-xl text-gray-500 mt-1">
-                                            {doc.description}
+                                        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                                            {doc.description || "Official Tax Document"}
                                         </p>
 
                                     </div>
@@ -160,41 +151,43 @@ export default function TaxDocuments() {
 
                                 {/* Right */}
 
-                                <div className="flex items-center gap-5">
+                                <div className="flex items-center gap-3 self-end sm:self-center">
 
                                     <motion.a
-                                        // href={`http://localhost:5000${doc.documentUrl}`}
-                                        href={`https://pearlscrm.onrender.com${doc.documentUrl}`}
+                                        href={docUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        whileHover={{ scale: 1.12 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center"
+                                        whileHover={{ scale: 1.08 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition"
+                                        title="View Document"
                                     >
-                                        <Eye size={20} className="text-gray-600" />
+                                        <Eye size={18} className="text-gray-600" />
                                     </motion.a>
 
                                     <motion.button
-                                        whileHover={{ scale: 1.12 }}
-                                        whileTap={{ scale: .9 }}
+                                        whileHover={{ scale: 1.08 }}
+                                        whileTap={{ scale: .95 }}
                                         onClick={() => handleEdit(doc)}
-                                        className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center"
+                                        className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center transition"
+                                        title="Edit Document"
                                     >
                                         <SquarePen
-                                            size={20}
-                                            className="text-green-700"
+                                            size={18}
+                                            className="text-emerald-700"
                                         />
                                     </motion.button>
 
                                     <motion.button
-                                        whileHover={{ scale: 1.12 }}
-                                        whileTap={{ scale: .9 }}
+                                        whileHover={{ scale: 1.08 }}
+                                        whileTap={{ scale: .95 }}
                                         onClick={() => handleDelete(doc._id)}
-                                        className="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center"
+                                        className="w-10 h-10 rounded-xl bg-red-50 hover:bg-red-100 flex items-center justify-center transition"
+                                        title="Delete Document"
                                     >
                                         <Trash2
-                                            size={20}
-                                            className="text-red-500"
+                                            size={18}
+                                            className="text-red-600"
                                         />
                                     </motion.button>
 

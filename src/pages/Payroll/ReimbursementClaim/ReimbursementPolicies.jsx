@@ -8,39 +8,30 @@ import {
 import PolicyForm from "./PolicyForm";
 import usePolicies from "../../../Hooks/usePolicies";
 
-const policie = [
-    {
-        id: 1,
-        name: "Travel (local)",
-        amount: "₹5,000-month",
-    },
-    {
-        id: 2,
-        name: "Medical",
-        amount: "₹5,000-year",
-    },
-    {
-        id: 3,
-        name: "Training / Courses",
-        amount: "₹10,000-year",
-    },
-    {
-        id: 4,
-        name: "Equipment (WFH)",
-        amount: "₹5,000-year",
-    },
+const defaultPolicies = [
+    { _id: "def-pol-1", name: "Travel (local)", amount: "₹5,000-month" },
+    { _id: "def-pol-2", name: "Medical", amount: "₹5,000-year" },
+    { _id: "def-pol-3", name: "Training / Courses", amount: "₹10,000-year" },
+    { _id: "def-pol-4", name: "Equipment (WFH)", amount: "₹5,000-year" },
 ];
 
 export default function ReimbursementPolicies() {
 
     const [form, setForm] = useState(false);
-    const { policies, fetchPolicies, updatePolicy, deletePolicy } = usePolicies();
+    const { policies, fetchPolicies, deletePolicy } = usePolicies();
     const [editData, setEditData] = useState(null);
 
     const handleEdit = (policy) => {
         setEditData(policy);
         setForm(true);
     };
+
+    const handleOpenAdd = () => {
+        setEditData(null);
+        setForm(true);
+    };
+
+    const displayPolicies = (policies && policies.length > 0) ? policies : defaultPolicies;
     return (
         <motion.div
             initial={{ opacity: 0, y: 25 }}
@@ -64,7 +55,7 @@ export default function ReimbursementPolicies() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: .95 }}
                         className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-gray-700 px-5 py-3 rounded-xl font-medium transition"
-                        onClick={() => setForm(true)}
+                        onClick={handleOpenAdd}
                     >
                         <SquarePen size={18} />
                         Add New
@@ -101,10 +92,10 @@ export default function ReimbursementPolicies() {
 
                         <tbody>
 
-                            {policies?.map((policy) => (
+                            {displayPolicies?.map((policy, idx) => (
 
                                 <motion.tr
-                                    key={policy.id}
+                                    key={policy._id || policy.id || idx}
                                     whileHover={{
                                         backgroundColor: "#fafafa",
                                     }}
@@ -160,20 +151,14 @@ export default function ReimbursementPolicies() {
                     </table>
                 </motion.div>
                 {form && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-
-                        <div className="bg-white w-[400px] max-h-[80vh] overflow-y-auto rounded-xl shadow-lg p-5 relative">
-
-                            {/* Close button */}
-
-
-                            {/* Your form */}
-                            <PolicyForm onClose={() => setForm(false)}
-                                editData={editData}
-                                getPolicy={fetchPolicies} />
-                        </div>
-
-                    </div>
+                    <PolicyForm
+                        onClose={() => {
+                            setForm(false);
+                            setEditData(null);
+                        }}
+                        editData={editData}
+                        getPolicy={fetchPolicies}
+                    />
                 )}
 
             </div>

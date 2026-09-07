@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
+
 import StatCard from "./components/StatCard";
-import { fetchStats } from "./services/api";
+
+import {
+  fetchStats,
+  fetchConversations,
+} from "./services/api";
 
 import {
   MessageCircle,
@@ -10,6 +15,7 @@ import {
 } from "lucide-react";
 
 import {
+  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
@@ -21,23 +27,6 @@ import {
   Cell,
 } from "recharts";
 
-const trendData = [
-  { day: "12 Aug", conversations: 190 },
-  { day: "13 Aug", conversations: 150 },
-  { day: "14 Aug", conversations: 160 },
-  { day: "15 Aug", conversations: 240 },
-  { day: "16 Aug", conversations: 300 },
-  { day: "17 Aug", conversations: 330 },
-  { day: "18 Aug", conversations: 360 },
-];
-
-const intentData = [
-  { name: "Attendance Query", value: 35, count: 438 },
-  { name: "Leave Request", value: 25, count: 313 },
-  { name: "Order Status", value: 15, count: 188 },
-  { name: "General Query", value: 15, count: 188 },
-  { name: "Others", value: 10, count: 125 },
-];
 
 const COLORS = [
   "#2563EB",
@@ -47,142 +36,583 @@ const COLORS = [
   "#9CA3AF",
 ];
 
+
 export default function Dashboard() {
-  const [stats, setStats] = useState(null);
+
+  const [stats, setStats] =
+    useState(null);
+
+  const [conversations, setConversations] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState(null);
+
+
+  /* =====================================================
+     LOAD DASHBOARD DATA
+  ===================================================== */
 
   useEffect(() => {
-    fetchStats().then((s) => setStats(s));
+
+    async function loadDashboard() {
+
+      try {
+
+        setLoading(true);
+
+        const [
+          statsData,
+          conversationsData,
+        ] = await Promise.all([
+
+          fetchStats(),
+
+          fetchConversations(),
+
+        ]);
+
+
+        setStats(
+          statsData
+        );
+
+        setConversations(
+          conversationsData
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Dashboard load error:",
+          error
+        );
+
+        setError(
+          "Failed to load dashboard data."
+        );
+
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    }
+
+
+    loadDashboard();
+
+
   }, []);
 
-  if (!stats) {
-    return <div>Loading...</div>;
+
+
+  /* =====================================================
+     CALCULATE AI / HUMAN HANDLED
+  ===================================================== */
+
+  const aiHandled =
+    conversations.filter(
+      (conversation) =>
+        String(
+          conversation.handledBy
+        ).toLowerCase() === "ai"
+    ).length;
+
+
+  const humanHandled =
+    conversations.filter(
+      (conversation) => {
+
+        const handledBy =
+          String(
+            conversation.handledBy
+          ).toLowerCase();
+
+        return (
+          handledBy === "human" ||
+          handledBy === "agent"
+        );
+
+      }
+    ).length;
+
+
+
+  /* =====================================================
+     ACTIVE CONVERSATIONS
+  ===================================================== */
+
+  const activeConversations =
+    conversations.filter(
+      (conversation) => {
+
+        const status =
+          String(
+            conversation.status
+          ).toLowerCase();
+
+        return (
+          status === "in progress" ||
+          status === "active"
+        );
+
+      }
+    ).length;
+
+
+
+  /* =====================================================
+     BUILD TREND DATA
+  ===================================================== */
+
+  const trendMap = {};
+
+
+  conversations.forEach(
+    (conversation) => {
+
+      const messages =
+        conversation.messages || [];
+
+
+      let date = null;
+
+
+      if (
+        messages.length > 0
+      ) {
+
+        const lastMessage =
+          messages[
+            messages.length - 1
+          ];
+
+        if (
+          lastMessage.timestamp
+        ) {
+
+          date =
+            new Date(
+              lastMessage.timestamp
+            );
+
+        }
+
+      }
+
+
+      if (!date) {
+
+        return;
+
+      }
+
+
+      const day =
+        date.toLocaleDateString(
+          "en-IN",
+          {
+            day: "2-digit",
+            month: "short",
+          }
+        );
+
+
+      if (!trendMap[day]) {
+
+        trendMap[day] = 0;
+
+      }
+
+
+      trendMap[day] += 1;
+
+    }
+  );
+
+
+  const trendData =
+    Object.keys(
+      trendMap
+    ).map(
+      (day) => ({
+
+        day:
+
+          day,
+
+        conversations:
+
+          trendMap[
+            day
+          ],
+
+      })
+    );
+
+
+
+  /* =====================================================
+     INTENT DISTRIBUTION
+  ===================================================== */
+
+  const intentMap = {};
+
+
+  conversations.forEach(
+    (conversation) => {
+
+      const intent =
+        conversation.intent ||
+        "Others";
+
+
+      if (
+        !intentMap[
+          intent
+        ]
+      ) {
+
+        intentMap[
+          intent
+        ] = 0;
+
+      }
+
+
+      intentMap[
+        intent
+      ] += 1;
+
+    }
+  );
+
+
+  const totalConversations =
+    conversations.length;
+
+
+  const intentData =
+    Object.entries(
+      intentMap
+    ).map(
+      ([name, count]) => ({
+
+        name,
+
+        count,
+
+        value:
+
+          totalConversations > 0
+
+            ? Math.round(
+                (
+                  count /
+                  totalConversations
+                ) * 100
+              )
+
+            : 0,
+
+      })
+    );
+
+
+
+  /* =====================================================
+     RECENT CONVERSATIONS
+  ===================================================== */
+
+  const recentConversations =
+    [...conversations]
+
+      .sort(
+        (a, b) => {
+
+          const aMessages =
+            a.messages || [];
+
+          const bMessages =
+            b.messages || [];
+
+
+          const aLast =
+            aMessages[
+              aMessages.length - 1
+            ];
+
+          const bLast =
+            bMessages[
+              bMessages.length - 1
+            ];
+
+
+          const aTime =
+            aLast?.timestamp
+              ? new Date(
+                  aLast.timestamp
+                ).getTime()
+              : 0;
+
+
+          const bTime =
+            bLast?.timestamp
+              ? new Date(
+                  bLast.timestamp
+                ).getTime()
+              : 0;
+
+
+          return (
+            bTime - aTime
+          );
+
+        }
+      )
+
+      .slice(
+        0,
+        5
+      );
+
+
+
+  /* =====================================================
+     LOADING
+  ===================================================== */
+
+  if (loading) {
+
+    return (
+
+      <div>
+        Loading dashboard...
+      </div>
+
+    );
+
   }
 
+
+
+  /* =====================================================
+     ERROR
+  ===================================================== */
+
+  if (error) {
+
+    return (
+
+      <div>
+        {error}
+      </div>
+
+    );
+
+  }
+
+
+
   return (
+
     <div>
 
-      {/* ================= STAT CARDS ================= */}
+
+      {/* =================================================
+          STAT CARDS
+      ================================================= */}
 
       <div className="cards">
 
+
         <StatCard
           title="Total Conversations"
-          value="1,250"
-          trend="↑"
-          muted="12.5% from last week"
-          trendType="positive"
+          value={
+            stats?.total ??
+            conversations.length
+          }
+          muted="All conversations"
           color="#2563EB"
-          icon={<MessageCircle size={22} color="#ffffff" />}
+          icon={
+            <MessageCircle
+              size={22}
+              color="#ffffff"
+            />
+          }
         />
+
 
         <StatCard
           title="AI Handled"
-          value="980"
-          trend="↑"
-          muted="18.3% from last week"
-          trendType="positive"
+          value={
+            aiHandled
+          }
+          muted="Handled automatically"
           color="#16A34A"
-          icon={<Bot size={22} color="#ffffff" />}
+          icon={
+            <Bot
+              size={22}
+              color="#ffffff"
+            />
+          }
         />
+
 
         <StatCard
           title="Human Handled"
-          value="270"
-          trend="↓"
-          muted="4.6% from last week"
-          trendType="negative"
+          value={
+            humanHandled
+          }
+          muted="Handled by human"
           color="#7C3AED"
-          icon={<Users size={22} color="#ffffff" />}
+          icon={
+            <Users
+              size={22}
+              color="#ffffff"
+            />
+          }
         />
+
 
         <StatCard
           title="Active Conversations"
-          value="32"
+          value={
+            activeConversations
+          }
           muted="Currently in progress"
           color="#F59E0B"
-          icon={<Activity size={22} color="#ffffff" />}
+          icon={
+            <Activity
+              size={22}
+              color="#ffffff"
+            />
+          }
         />
+
 
       </div>
 
-      {/* ================= CHARTS ================= */}
+
+
+      {/* =================================================
+          CHARTS
+      ================================================= */}
 
       <div className="dashboard-charts">
+
 
         {/* CONVERSATION TREND */}
 
         <div className="chart-card">
 
-          <h3>Conversations Trend</h3>
 
-          <LineChart
-            width={500}
+          <h3>
+            Conversations Trend
+          </h3>
+
+
+          <ResponsiveContainer
+            width="100%"
             height={280}
-            data={trendData}
-            margin={{
-              top: 10,
-              right: 20,
-              left: 0,
-              bottom: 10,
-            }}
           >
 
-            <CartesianGrid
-              stroke="#E5EAF2"
-              strokeDasharray="3 3"
-            />
-
-            <XAxis
-              dataKey="day"
-              tick={{
-                fill: "#64748B",
-                fontSize: 12,
+            <LineChart
+              data={
+                trendData
+              }
+              margin={{
+                top: 10,
+                right: 20,
+                left: 0,
+                bottom: 10,
               }}
-            />
+            >
 
-            <YAxis
-              domain={[0, 500]}
-              ticks={[0, 100, 200, 300, 400, 500]}
-              tick={{
-                fill: "#64748B",
-                fontSize: 12,
-              }}
-            />
 
-            <Tooltip />
+              <CartesianGrid
+                stroke="#E5EAF2"
+                strokeDasharray="3 3"
+              />
 
-            <Line
-              type="monotone"
-              dataKey="conversations"
-              stroke="#2563EB"
-              strokeWidth={3}
-              dot={{
-                r: 5,
-                fill: "#2563EB",
-              }}
-              activeDot={{
-                r: 7,
-              }}
-            />
 
-          </LineChart>
+              <XAxis
+                dataKey="day"
+                tick={{
+                  fill: "#64748B",
+                  fontSize: 12,
+                }}
+              />
+
+
+              <YAxis
+                tick={{
+                  fill: "#64748B",
+                  fontSize: 12,
+                }}
+              />
+
+
+              <Tooltip />
+
+
+              <Line
+                type="monotone"
+                dataKey="conversations"
+                stroke="#2563EB"
+                strokeWidth={3}
+                dot={{
+                  r: 5,
+                  fill: "#2563EB",
+                }}
+                activeDot={{
+                  r: 7,
+                }}
+              />
+
+
+            </LineChart>
+
+          </ResponsiveContainer>
+
 
         </div>
+
+
 
         {/* INTENT DISTRIBUTION */}
 
         <div className="chart-card">
 
-          <h3>Intent Distribution</h3>
+
+          <h3>
+            Intent Distribution
+          </h3>
+
 
           <div className="donut-container">
 
+
             <div className="donut-chart">
 
-              <PieChart width={220} height={220}>
+
+              <PieChart
+                width={220}
+                height={220}
+              >
+
 
                 <Pie
-                  data={intentData}
+                  data={
+                    intentData
+                  }
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -192,325 +622,436 @@ export default function Dashboard() {
                   paddingAngle={3}
                 >
 
-                  {intentData.map((item, index) => (
-                    <Cell
-                      key={item.name}
-                      fill={COLORS[index]}
-                    />
-                  ))}
+
+                  {intentData.map(
+                    (
+                      item,
+                      index
+                    ) => (
+
+                      <Cell
+                        key={
+                          item.name
+                        }
+                        fill={
+                          COLORS[
+                            index %
+                            COLORS.length
+                          ]
+                        }
+                      />
+
+                    )
+                  )}
+
 
                 </Pie>
 
+
+                <Tooltip />
+
+
               </PieChart>
+
+
 
               <div className="donut-center">
 
+
                 <div className="donut-total">
-                  1,250
+
+                  {
+                    totalConversations
+                  }
+
                 </div>
 
+
                 <div className="donut-label">
+
                   Total
+
                 </div>
+
 
               </div>
 
+
             </div>
+
+
 
             <div className="intent-list">
 
-              {intentData.map((item, index) => (
 
-                <div
-                  className="intent-item"
-                  key={item.name}
-                >
+              {intentData.length === 0 ? (
 
-                  <span
-                    className="intent-dot"
-                    style={{
-                      backgroundColor: COLORS[index],
-                    }}
-                  />
-
-                  <span className="intent-name">
-                    {item.name}
-                  </span>
-
-                  <span className="intent-percentage">
-                    {item.value}%
-                  </span>
-
-                  <span className="intent-count">
-                    ({item.count})
-                  </span>
-
+                <div>
+                  No intent data available
                 </div>
 
-              ))}
+              ) : (
+
+                intentData.map(
+                  (
+                    item,
+                    index
+                  ) => (
+
+                    <div
+                      className="intent-item"
+                      key={
+                        item.name
+                      }
+                    >
+
+
+                      <span
+                        className="intent-dot"
+                        style={{
+                          backgroundColor:
+                            COLORS[
+                              index %
+                              COLORS.length
+                            ],
+                        }}
+                      />
+
+
+                      <span className="intent-name">
+
+                        {
+                          item.name
+                        }
+
+                      </span>
+
+
+                      <span className="intent-percentage">
+
+                        {
+                          item.value
+                        }%
+
+                      </span>
+
+
+                      <span className="intent-count">
+
+                        (
+                        {
+                          item.count
+                        }
+                        )
+
+                      </span>
+
+
+                    </div>
+
+                  )
+                )
+
+              )}
+
 
             </div>
 
+
           </div>
+
 
         </div>
 
+
       </div>
 
-      {/* ================= RECENT CONVERSATIONS ================= */}
+
+
+      {/* =================================================
+          RECENT CONVERSATIONS
+      ================================================= */}
 
       <div className="recent-conversations">
 
-        <h3>Recent Conversations</h3>
-        
-        
+
+        <h3>
+          Recent Conversations
+        </h3>
+
 
         <div className="table-wrapper">
 
+
           <table className="recent-table">
 
+
             <thead>
+
               <tr>
-                <th>Contact</th>
-                <th>Last Message</th>
-                <th>Intent</th>
-                <th>Handled By</th>
-                <th>Time</th>
-                <th>Status</th>
-                <th>Action</th>
+
+                <th>
+                  Contact
+                </th>
+
+                <th>
+                  Last Message
+                </th>
+
+                <th>
+                  Intent
+                </th>
+
+                <th>
+                  Handled By
+                </th>
+
+                <th>
+                  Time
+                </th>
+
+                <th>
+                  Status
+                </th>
+
               </tr>
+
             </thead>
+
+
 
             <tbody>
 
-              <tr>
 
-                <td>
-                  <div className="contact-info">
-                    <div className="avatar avatar-blue">
-                      J
-                    </div>
+              {recentConversations.length === 0 ? (
 
-                    <div>
-                      <strong>John Smith</strong>
-                      <small>+91 9876543210</small>
-                    </div>
-                  </div>
-                </td>
+                <tr>
 
-                <td>
-                  What is my attendance today?
-                </td>
+                  <td
+                    colSpan="6"
+                    style={{
+                      textAlign:
+                        "center",
+                      padding:
+                        "20px",
+                    }}
+                  >
 
-                <td>
-                  <span className="intent-badge attendance">
-                    ATTENDANCE_STATUS
-                  </span>
-                </td>
+                    No conversations found.
 
-                <td>AI</td>
+                  </td>
 
-                <td>2 mins ago</td>
+                </tr>
 
-                <td>
-                  <span className="status-badge completed">
-                    ● Completed
-                  </span>
-                </td>
+              ) : (
 
-                <td>
-                  <div className="action-buttons">
-                    <button>🔗</button>
-                    <button>▣</button>
-                  </div>
-                </td>
+                recentConversations.map(
+                  (
+                    conversation
+                  ) => {
 
-              </tr>
 
-              <tr>
+                    const initial =
+                      conversation.name
+                        ? conversation.name
+                            .charAt(0)
+                            .toUpperCase()
+                        : "?";
 
-                <td>
-                  <div className="contact-info">
-                    <div className="avatar avatar-pink">
-                      S
-                    </div>
 
-                    <div>
-                      <strong>Sarah Johnson</strong>
-                      <small>+91 412545600</small>
-                    </div>
-                  </div>
-                </td>
+                    const latestMessage =
+                      conversation.message ||
+                      "No messages";
 
-                <td>
-                  I want leave tomorrow.
-                </td>
 
-                <td>
-                  <span className="intent-badge leave">
-                    APPLY_LEAVE
-                  </span>
-                </td>
+                    const latestMessageData =
+                      conversation.messages?.[
+                        conversation.messages.length - 1
+                      ];
 
-                <td>AI</td>
 
-                <td>5 mins ago</td>
+                    const timestamp =
+                      latestMessageData?.timestamp;
 
-                <td>
-                  <span className="status-badge completed">
-                    ● Completed
-                  </span>
-                </td>
 
-                <td>
-                  <div className="action-buttons">
-                    <button>🔗</button>
-                    <button>▣</button>
-                  </div>
-                </td>
+                    const formattedTime =
+                      timestamp
 
-              </tr>
+                        ? new Date(
+                            timestamp
+                          ).toLocaleString(
+                            "en-IN"
+                          )
 
-              <tr>
+                        : "-";
 
-                <td>
-                  <div className="contact-info">
-                    <div className="avatar avatar-purple">
-                      A
-                    </div>
 
-                    <div>
-                      <strong>Arun Kumar</strong>
-                      <small>+91 808678655</small>
-                    </div>
-                  </div>
-                </td>
+                    return (
 
-                <td>
-                  Where is my order?
-                </td>
+                      <tr
+                        key={
+                          conversation.id
+                        }
+                      >
 
-                <td>
-                  <span className="intent-badge order">
-                    ORDER_STATUS
-                  </span>
-                </td>
 
-                <td>AI</td>
+                        {/* CONTACT */}
 
-                <td>10 mins ago</td>
+                        <td>
 
-                <td>
-                  <span className="status-badge completed">
-                    ● Completed
-                  </span>
-                </td>
+                          <div className="contact-info">
 
-                <td>
-                  <div className="action-buttons">
-                    <button>🔗</button>
-                    <button>▣</button>
-                  </div>
-                </td>
 
-              </tr>
+                            <div className="avatar avatar-blue">
 
-              <tr>
+                              {
+                                initial
+                              }
 
-                <td>
-                  <div className="contact-info">
-                    <div className="avatar avatar-red">
-                      P
-                    </div>
+                            </div>
 
-                    <div>
-                      <strong>Priya Sharma</strong>
-                      <small>+91 9234567890</small>
-                    </div>
-                  </div>
-                </td>
 
-                <td>
-                  I need help with login.
-                </td>
+                            <div>
 
-                <td>
-                  <span className="intent-badge general">
-                    GENERAL_QUERY
-                  </span>
-                </td>
 
-                <td>Human</td>
+                              <strong>
 
-                <td>15 mins ago</td>
+                                {
+                                  conversation.name ||
+                                  "Unknown"
+                                }
 
-                <td>
-                  <span className="status-badge progress">
-                    ● In Progress
-                  </span>
-                </td>
+                              </strong>
 
-                <td>
-                  <div className="action-buttons">
-                    <button>🔗</button>
-                    <button>▣</button>
-                  </div>
-                </td>
 
-              </tr>
+                              <small>
 
-              <tr>
+                                {
+                                  conversation.phone ||
+                                  "-"
+                                }
 
-                <td>
-                  <div className="contact-info">
-                    <div className="avatar avatar-orange">
-                      R
-                    </div>
+                              </small>
 
-                    <div>
-                      <strong>Rahul Verma</strong>
-                      <small>+91 9871254567</small>
-                    </div>
-                  </div>
-                </td>
 
-                <td>
-                  Can you help me?
-                </td>
+                            </div>
 
-                <td>
-                  <span className="intent-badge general">
-                    GENERAL_QUERY
-                  </span>
-                </td>
 
-                <td>AI</td>
+                          </div>
 
-                <td>20 mins ago</td>
+                        </td>
 
-                <td>
-                  <span className="status-badge completed">
-                    ● Completed
-                  </span>
-                </td>
 
-                <td>
-                  <div className="action-buttons">
-                    <button>🔗</button>
-                    <button>▣</button>
-                  </div>
-                </td>
 
-              </tr>
+                        {/* LAST MESSAGE */}
+
+                        <td>
+
+                          {
+                            latestMessage
+                          }
+
+                        </td>
+
+
+
+                        {/* INTENT */}
+
+                        <td>
+
+                          <span className="intent-badge general">
+
+                            {
+                              conversation.intent ||
+                              "GENERAL"
+                            }
+
+                          </span>
+
+                        </td>
+
+
+
+                        {/* HANDLED BY */}
+
+                        <td>
+
+                          {
+                            conversation.handledBy ||
+                            "AI"
+                          }
+
+                        </td>
+
+
+
+                        {/* TIME */}
+
+                        <td>
+
+                          {
+                            formattedTime
+                          }
+
+                        </td>
+
+
+
+                        {/* STATUS */}
+
+                        <td>
+
+                          <span
+                            className={`status-badge ${
+                              String(
+                                conversation.status
+                              )
+                                .toLowerCase()
+                                .replace(
+                                  /\s/g,
+                                  ""
+                                )
+                            }`}
+                          >
+
+                            ●
+
+                            {" "}
+
+                            {
+                              conversation.status ||
+                              "Unknown"
+                            }
+
+                          </span>
+
+                        </td>
+
+
+                      </tr>
+
+                    );
+
+                  }
+                )
+
+              )}
+
 
             </tbody>
 
+
           </table>
+
 
         </div>
 
+
       </div>
 
+
     </div>
+
   );
+
 }

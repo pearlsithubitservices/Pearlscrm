@@ -1,6 +1,5 @@
 import React, {
   Activity,
-  useEffect,
   useState,
 } from "react";
 
@@ -17,20 +16,14 @@ import {
   Mail,
 } from "lucide-react";
 
-import {
-  collection,
-  getDocs,
-} from "firebase/firestore";
-
-import { db } from "../lib/firebase";
-
 import InputField from "../components/InputField";
 import { apiUrl } from "../config/api";
+import useEmployees from "../Hooks/useEmployees";
 
 export default function CreateLead({ onClose, fetchleads }) {
   const navigate = useNavigate();
 
-  const [employees, setEmployees] = useState([]);
+  const { employees } = useEmployees();
 
   const [lead, setLead] = useState({
     name: "",
@@ -46,32 +39,6 @@ export default function CreateLead({ onClose, fetchleads }) {
     followUpCount: 0,
     notes: "",
   });
-
-  // FETCH EMPLOYEES
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
-    try {
-      const snapshot = await getDocs(
-        collection(db, "employees")
-      );
-
-      const employeeList = [];
-
-      snapshot.forEach((doc) => {
-        employeeList.push({
-          id: doc.id,
-          ...doc.data(),
-        });
-      });
-
-      setEmployees(employeeList);
-    } catch (error) {
-      console.error("Failed to fetch employees:", error);
-    }
-  };
 
   // HANDLE CHANGE
   const handleChange = (e) => {
@@ -188,9 +155,9 @@ export default function CreateLead({ onClose, fetchleads }) {
           placeholder="Agent"
           Icon={Users}
           type="select"
-          options={employees.map((employee) => ({
+          options={employees.filter((employee) => String(employee.role).toLowerCase() !== "admin").map((employee) => ({
             label: employee.name,
-            value: employee.uid,
+            value: employee.id || employee._id || employee.uid,
           }))}
         />
 

@@ -18,9 +18,13 @@ const EmployeeDetails = () => {
   const currentEmployee = employees?.find((item) => (
     String(item.id) === String(id) || String(item._id) === String(id) || String(item.uid) === String(id)
   ));
+  const employeeStatus = currentEmployee?.status || currentEmployee?.employeeStatus || "Active";
   const currentSalary = currentEmployee?.profile?.salary || {};
   const [editingSalary, setEditingSalary] = useState(false);
   const [savingSalary, setSavingSalary] = useState(false);
+  const [description, setDescription] = useState("");
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [savingDescription, setSavingDescription] = useState(false);
   const [salaryForm, setSalaryForm] = useState({ basicSalary: "", grossSalary: "", netSalary: "", allowances: "", deductions: "" });
 
   useEffect(() => {
@@ -32,6 +36,22 @@ const EmployeeDetails = () => {
       deductions: Object.entries(currentSalary.deductions || {}).map(([key, value]) => `${key}: ${value}`).join(", "),
     });
   }, [currentEmployee]);
+
+  useEffect(() => {
+    setDescription(currentEmployee?.profile?.description || currentEmployee?.description || currentEmployee?.notes || "");
+  }, [currentEmployee]);
+
+  const updateDescription = async () => {
+    setSavingDescription(true);
+    try {
+      await api.put(`/auth/users/${id}/description`, { description });
+      alert("Employee description updated successfully");
+    } catch (error) {
+      alert(error.response?.data?.message || "Unable to update description");
+    } finally {
+      setSavingDescription(false);
+    }
+  };
 
   const updateSalary = async (event) => {
     event.preventDefault();
@@ -72,10 +92,10 @@ const EmployeeDetails = () => {
   return (
     <div className="p-6 bg-[#efede8] max-h-screen overflow-y-auto no-scrollbar">
       {/* HEADER */}
-      <div className="flex justify-between items-start gap-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start gap-6 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
 
         {/* LEFT SECTION */}
-        <div className="flex items-start gap-4  w-full max-w-[700px] p-4 rounded-md ">
+        <div className="flex items-start gap-4 w-full min-w-0">
 
           {/* Avatar */}
           <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl uppercase">
@@ -84,17 +104,23 @@ const EmployeeDetails = () => {
 
           {/* Info */}
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold">{currentEmployee?.name || currentEmployee?.employeeName}</h1>
-            <p className="text-gray-500">{currentEmployee?.role || currentEmployee?.employeeRole}</p>
+            <h1 className="text-2xl font-semibold text-gray-900 truncate">{currentEmployee?.name || currentEmployee?.employeeName || "Employee"}</h1>
+            <p className="text-sm text-gray-500 mt-1">{currentEmployee?.role || currentEmployee?.employeeRole || "Employee"}</p>
+            {(currentEmployee?.email || currentEmployee?.department) && (
+              <p className="text-xs text-gray-400 mt-1 truncate">
+                {[currentEmployee.department, currentEmployee.email].filter(Boolean).join(" • ")}
+              </p>
+            )}
 
             {/* ACTION BUTTONS */}
-            <div className="flex gap-2 mt-3 flex-wrap">
+            <div className="flex gap-2 mt-4 flex-wrap">
               {buttons.map((btn, i) => (
                 <motion.button
                   key={i}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleButton(btn.label)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                 >
                   <btn.icon size={16} />
                   {btn.label}
@@ -104,24 +130,14 @@ const EmployeeDetails = () => {
           </div>
         </div>
         {/* RIGHT STATUS */}
-        <div className="relative flex flex-col gap-3  h-[130px]">
-          <div className="flex gap-4 items-center">
-            <span className="px-3 py-1 text-xs bg-blue-100 text-blue-600 rounded-full">
-              Active
+        <div className="flex w-full lg:w-auto flex-col gap-4 lg:items-end">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+              {employeeStatus}
             </span>
-
-            <span className="px-3 py-1 text-xs bg-green-100 text-green-600 rounded-full">
-              Top performer
-            </span>
-            <span>
-              <X size={20} className="bg-red-500 rounded text-white hover:bg-white hover:text-red-700" onClick={() => navigate(-1)} />
-            </span>
+            
           </div>
-          <div>
-            <button className=" absolute bottom-6 right-5 flex items-center gap-1 px-3 py-1 border border-black/80 rounded-md text-sm hover:bg-gray-100 transition">
-              <Edit3 size={14} /> Edit
-            </button>
-          </div>
+        
         </div>
       </div>
 
@@ -148,7 +164,18 @@ const EmployeeDetails = () => {
         className="mt-6"
       >
         {activeTab === "overview" && <>
-          <Employeehome employees={currentEmployee} />
+          <Employeehome
+            employees={currentEmployee}
+            editableDescription={editingDescription}
+            descriptionValue={description}
+            onDescriptionChange={(event) => setDescription(event.target.value)}
+            onDescriptionSave={async () => {
+              await updateDescription();
+              setEditingDescription(false);
+            }}
+            savingDescription={savingDescription}
+            onDescriptionEdit={() => setEditingDescription(true)}
+          />
           <section className="bg-white rounded-xl border border-gray-200 p-5 mt-6">
             <div className="flex items-center justify-between gap-4">
               <div><h3 className="font-bold text-gray-700">Salary Updates</h3><p className="text-sm text-gray-500">Update this employee&apos;s stored salary details.</p></div>
@@ -162,12 +189,11 @@ const EmployeeDetails = () => {
           </section>
         </>}
 
-        {activeTab === "performance" && <EmployeePerformancePage
-        />}
+        {activeTab === "performance" && <EmployeePerformancePage employee={currentEmployee} />}
 
-        {activeTab === "assigned work" && <EmployeeWork />}
+        {activeTab === "assigned work" && <EmployeeWork employee={currentEmployee} />}
 
-        {activeTab === "activity" && <EmployeeActivity />}
+        {activeTab === "activity" && <EmployeeActivity employee={currentEmployee} />}
       </motion.div>
     </div>
   );

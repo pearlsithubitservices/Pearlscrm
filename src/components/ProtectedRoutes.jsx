@@ -6,12 +6,9 @@ export default function ProtectedRoute({
     children,
     role,
 }) {
-    const { user, loading } = useAuth();
+    const { user, loading, isAdmin } = useAuth();
     const { employees, loading: employeesLoading } = useEmployees();
 
-    console.log(employees);
-
-    console.log(user)
     // Wait for auth to complete
     if (loading) {
         return (
@@ -26,6 +23,16 @@ export default function ProtectedRoute({
         return <Navigate to="/login" replace />;
     }
 
+    // Protect admin-only routes
+    if (role === "admin" && !isAdmin) {
+        return <Navigate to="/employee-dashboard" replace />;
+    }
+
+    // Protect employee routes  
+    if (role === "employee" && isAdmin) {
+        return <Navigate to="/" replace />;
+    }
+
     // Wait until employees are loaded
     if (employeesLoading) {
         return (
@@ -34,12 +41,12 @@ export default function ProtectedRoute({
             </div>
         );
     }
-    console.log(employees);
-    // Find logged-in employee
+
+    // Find logged-in employee (optional - for getting additional employee details)
     const userIds = [user.uid, user.id, user._id]
         .filter(Boolean)
         .map(String);
-    const employee = employees.find((item) => {
+    const employee = employees?.find((item) => {
         const employeeIds = [item.uid, item.id, item._id]
             .filter(Boolean)
             .map(String);
@@ -48,34 +55,10 @@ export default function ProtectedRoute({
             (item.email && user.email && item.email.toLowerCase() === user.email.toLowerCase());
     });
 
-    console.log(employee);
-    // Employee document not found
-    if (!employee) {
-        return (
-            <div className="h-screen flex items-center justify-center">
-                Employee profile not found...
-            </div>
-        );
-    }
-
-    // Get employee role
-    const employeeRole = (
-        employee.role ||
-        employee.employeeRole ||
-        ""
-    ).toLowerCase();
-    console.log(employeeRole);
-    console.log(role);
-    
-
-    // Protect admin-only routes
-    if (role === "admin" && employeeRole !== "admin") {
-        return <Navigate to="/employee/dashboard" replace />;
-    }
-
-    // Protect employee routes (optional)
-    if (role === "employee" && employeeRole === "admin") {
-        return <Navigate to="/" replace />;
+    // Allow users through even if employee profile is not found
+    // (useful for newly created admin users)
+    if (!employee && role === "employee") {
+        return <Navigate to="/employee-dashboard" replace />;
     }
 
     return children;

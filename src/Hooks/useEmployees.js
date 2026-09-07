@@ -80,7 +80,17 @@ const useEmployees = () => {
                 }
             });
 
-            setEmployees(Array.from(map.values()));
+            const mergedList = Array.from(map.values()).map((emp, index) => {
+                const existingEmpId = emp.profile?.empId || emp.empId || emp.employeeCode;
+                const finalEmpId = existingEmpId || `EMP-${1001 + index}`;
+                return {
+                    ...emp,
+                    empId: finalEmpId,
+                    displayEmpId: finalEmpId,
+                };
+            });
+
+            setEmployees(mergedList);
         } catch (err) {
             console.error("Fetch employees/users error:", err);
         } finally {

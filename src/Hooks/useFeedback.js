@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import apiUrl from "../config/api";
 
-const BASE_URL = "https://pearlscrm.onrender.com/api/feedback";
+const BASE_URL = apiUrl("/feedback");
 
 export default function useFeedback() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -22,7 +23,7 @@ export default function useFeedback() {
       }
 
       const data = await res.json();
-      setFeedbacks(data);
+      setFeedbacks(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -35,9 +36,12 @@ export default function useFeedback() {
     try {
       setError(null);
 
+      const empName = user?.displayName || user?.name || (user?.email ? user.email.split("@")[0] : "Employee");
+
       const requestData = {
         ...payload,
-        employeeId: user?.uid,
+        employeeId: user?.uid || user?.id,
+        employeeName: empName,
       };
 
       const res = await fetch(BASE_URL, {
@@ -63,6 +67,30 @@ export default function useFeedback() {
     }
   };
 
+  // UPDATE FEEDBACK STATUS
+  const updateFeedbackStatus = async (id, payload) => {
+    try {
+      const res = await fetch(`${BASE_URL}/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to update feedback status");
+
+      const updatedItem = await res.json();
+      setFeedbacks((prev) =>
+        prev.map((fb) => (fb._id === id || fb.id === id ? updatedItem : fb))
+      );
+      return updatedItem;
+    } catch (err) {
+      console.error("Update feedback status error:", err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchFeedbacks();
   }, []);
@@ -73,5 +101,6 @@ export default function useFeedback() {
     error,
     createFeedback,
     fetchFeedbacks,
+    updateFeedbackStatus,
   };
 }

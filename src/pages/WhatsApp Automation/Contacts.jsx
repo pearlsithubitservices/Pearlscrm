@@ -77,22 +77,11 @@ export default function Contacts() {
   // VIEW CONTACT
   // =====================================================
 
-  const handleViewContact = async (id) => {
-    try {
-      setDetailsLoading(true);
-      setAdding(false);
-      setEditing(false);
-
-      const contact = await fetchContactById(id);
-
-      setSelectedContact(contact);
-    } catch (error) {
-      console.error("Failed to load contact details:", error);
-      alert("Failed to load contact details.");
-    } finally {
-      setDetailsLoading(false);
-    }
-  };
+const handleViewContact = (contact) => {
+  setAdding(false);
+  setEditing(false);
+  setSelectedContact(contact);
+};
 
   // =====================================================
   // CLOSE DETAILS
@@ -416,7 +405,7 @@ export default function Contacts() {
         <button
           type="button"
           style={viewButton}
-          onClick={() => handleViewContact(contact._id)}
+          onClick={() => handleViewContact(contact)}
         >
           View Details →
         </button>

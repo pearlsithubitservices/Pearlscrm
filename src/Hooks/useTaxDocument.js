@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../config/api";
 
 export default function useTaxDocument() {
 
-    const API = "https://pearlscrm.onrender.com/api/taxdocuments";
+    const API = apiUrl("/taxdocuments");
 
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(false);

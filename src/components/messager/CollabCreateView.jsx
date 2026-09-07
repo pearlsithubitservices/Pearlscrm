@@ -1,15 +1,35 @@
-import React from "react";
-import { Camera, Lock, ChevronRight, AlertCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Camera, Lock, ChevronRight, AlertCircle, Search, Check, Users } from "lucide-react";
 
 const CollabCreateView = ({
   collabNameInput,
   setCollabNameInput,
   collabDescriptionInput,
   setCollabDescriptionInput,
+  employeeList = [],
+  selectedEmpIds = [],
+  toggleEmpSelection,
+  loadingModalData = false,
   onOpenAccessPermissions,
   onCancel,
   onCreateCollab
 }) => {
+  const [userSearch, setUserSearch] = useState("");
+
+  const filteredUsers = (employeeList || []).filter((emp) => {
+    if (!emp) return false;
+    const name = emp.employeeName || emp.name || emp.displayName || emp.username || "";
+    const email = emp.email || "";
+    const role = emp.role || emp.department || emp.designation || "";
+    const q = userSearch.toLowerCase();
+
+    return (
+      name.toLowerCase().includes(q) ||
+      email.toLowerCase().includes(q) ||
+      role.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="flex-1 flex flex-col bg-[#F0F5FA] p-6 md:p-8 overflow-y-auto relative">
       <div className="max-w-2xl w-full mx-auto bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 space-y-6 animate-in fade-in zoom-in-95 duration-200">
@@ -30,7 +50,7 @@ const CollabCreateView = ({
 
         {/* Subtitle Callout Banner */}
         <p className="text-xs md:text-sm font-semibold text-[#0B2B57]/80 leading-relaxed">
-          Collab is a shared workspace for collaborating with external guests and customers.
+          Collab is a shared workspace for collaborating with team members, external guests, and customers.
         </p>
 
         {/* Collab Description */}
@@ -42,9 +62,81 @@ const CollabCreateView = ({
             value={collabDescriptionInput}
             onChange={(e) => setCollabDescriptionInput(e.target.value)}
             placeholder="Tell other users what this collab is about..."
-            rows={3}
+            rows={2}
             className="w-full bg-[#F8FAFC] border border-gray-200/80 rounded-2xl p-3.5 text-xs text-gray-800 outline-none focus:border-blue-500 transition resize-none"
           />
+        </div>
+
+        {/* Dynamic User Selection Section (Fetched from DB) */}
+        <div className="space-y-2.5 bg-[#F8FAFC] p-4 rounded-2xl border border-gray-200/80">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-[#0B2B57] flex items-center gap-2">
+              <Users size={16} className="text-[#1D61E7]" />
+              Select Collaborators (Users DB)
+            </label>
+            <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
+              {selectedEmpIds.length} Selected
+            </span>
+          </div>
+
+          {/* User Search Input */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search user by name, email, or role..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* User Selection List */}
+          <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1 pt-1 no-scrollbar">
+            {loadingModalData ? (
+              <p className="text-center text-xs text-gray-400 py-4">Loading users from DB...</p>
+            ) : filteredUsers.length === 0 ? (
+              <p className="text-center text-xs text-gray-400 py-4">No users found</p>
+            ) : (
+              filteredUsers.map((emp) => {
+                const empId = emp._id || emp.id || emp.uid || emp.email;
+                const name = emp.employeeName || emp.name || emp.displayName || (emp.email ? emp.email.split("@")[0] : "User");
+                const isSelected = selectedEmpIds.includes(empId);
+
+                return (
+                  <div
+                    key={empId}
+                    onClick={() => toggleEmpSelection && toggleEmpSelection(empId)}
+                    className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition border ${
+                      isSelected
+                        ? "bg-blue-50/90 border-blue-300 text-blue-900 font-bold shadow-xs"
+                        : "bg-white border-gray-100 hover:bg-gray-100/80 text-gray-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                        isSelected ? "bg-[#1D61E7] text-white" : "bg-gray-100 text-gray-600"
+                      }`}>
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-bold leading-tight truncate">{name}</p>
+                        <p className="text-[10px] text-gray-400 font-medium truncate">
+                          {emp.email || emp.role || emp.department || "Employee"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition ${
+                      isSelected ? "bg-[#1D61E7] border-[#1D61E7] text-white" : "border-gray-300 bg-white"
+                    }`}>
+                      {isSelected && <Check size={13} strokeWidth={3} />}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Access Permissions Card */}

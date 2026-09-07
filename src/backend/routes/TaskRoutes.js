@@ -14,6 +14,7 @@ router.post("/", async (req, res) => {
     if (io) {
       io.emit("taskUpdated", task);
       io.emit("taskCreated", task);
+      io.emit("projectUpdated", task);
     }
 
     // Create Notification for Assigned Employee
@@ -171,6 +172,7 @@ router.put("/:id", async (req, res) => {
     const io = getIO();
     if (io) {
       io.emit("taskUpdated", updatedTask);
+      io.emit("projectUpdated", updatedTask);
     }
 
     res.json(updatedTask);

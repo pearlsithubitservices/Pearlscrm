@@ -108,22 +108,17 @@ const AttendanceCamera = ({
     try {
       setLoading(true);
 
-      /*
-        Upload image to Firebase Storage here
-
-        Example:
-
-        const imageUrl =
-        await uploadAttendancePhoto(
-          capturedImage
-        );
-      */
+      if (capturedImage) {
+        localStorage.setItem("userSelfie", capturedImage);
+      }
 
       await new Promise((resolve) =>
-        setTimeout(resolve, 1000)
+        setTimeout(resolve, 500)
       );
 
-      setPhotoSubmitted(true);
+      if (typeof setPhotoSubmitted === "function") {
+        setPhotoSubmitted(capturedImage || true);
+      }
 
       alert(
         "Attendance photo submitted successfully"

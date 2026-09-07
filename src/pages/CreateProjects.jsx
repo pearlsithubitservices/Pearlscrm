@@ -17,9 +17,11 @@ import useEmployees from "../Hooks/useEmployees.js";
 
 export default function ProjectForm({ onClose, fetchProjects }) {
   const { employees } = useEmployees();
+  const [clients, setClients] = useState([]);
   const [project, setProject] = useState({
     company: "",
     companylocation: "",
+    clientId: "",
     title: "",
     description: "",
     members: [],
@@ -31,6 +33,21 @@ export default function ProjectForm({ onClose, fetchProjects }) {
     priority: "Medium",
     progress: 0,
   });
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const res = await fetch(apiUrl('/clients'));
+        if (res.ok) {
+          const data = await res.json();
+          setClients(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error("Error fetching clients for project creation:", err);
+      }
+    };
+    fetchClients();
+  }, []);
 
   // EMPLOYEE MAP
   const employeeMap = useMemo(() => {
@@ -48,6 +65,18 @@ export default function ProjectForm({ onClose, fetchProjects }) {
       alert("Please enter a project title");
       return;
     }
+    if (!project.company.trim()) {
+      alert("Please enter a company name");
+      return;
+    }
+
+    const payload = { ...project };
+    if (!payload.companylocation || !payload.companylocation.trim()) {
+      payload.companylocation = "Main Office";
+    }
+    if (!payload.clientId) delete payload.clientId;
+    if (!payload.assignedDate) delete payload.assignedDate;
+    if (!payload.dueDate) delete payload.dueDate;
 
     try {
       const response = await fetch(apiUrl("/projects"), {
@@ -55,7 +84,7 @@ export default function ProjectForm({ onClose, fetchProjects }) {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(project)
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -84,7 +113,7 @@ export default function ProjectForm({ onClose, fetchProjects }) {
 
   return (
 
-    <div className="max-w-5xl mx-auto bg-[#e9e7e2] p-10 rounded-[40px] relative">
+    <div className="max-w-5xl mx-auto bg-[#e9e7e2] p-6 sm:p-10 rounded-[40px] relative max-h-[90vh] overflow-y-auto modal-scrollbar shadow-2xl">
 
       {/* CLOSE BUTTON */}
 
@@ -146,7 +175,7 @@ export default function ProjectForm({ onClose, fetchProjects }) {
         <div>
 
           <label className="font-bold text-[#0b2b57]">
-            Add Project Members (From Database)
+            Add Project Members
           </label>
 
           <div className="bg-white rounded-xl p-3 border relative">
@@ -350,6 +379,56 @@ export default function ProjectForm({ onClose, fetchProjects }) {
           />
 
         </div>
+
+        {/* PROGRESS */}
+
+        <div className="grid md:grid-cols-2 gap-5">
+
+          <InputField
+            label="Project Progress (%)"
+            name="progress"
+            value={project.progress}
+            onChange={handleChange}
+            placeholder="0"
+            type="number"
+            min="0"
+            max="100"
+          />
+
+          <InputField
+            label="Project Status"
+            name="status"
+            value={project.status}
+            onChange={handleChange}
+            type="select"
+            options={[
+              { label: "In Progress", value: "In Progress" },
+              { label: "Pending", value: "Pending" },
+              { label: "Completed", value: "Completed" },
+              { label: "On Hold", value: "On Hold" }
+            ]}
+          />
+
+        </div>
+
+        {/* PRIORITY */}
+
+        <InputField
+          label="Project Priority"
+          name="priority"
+          value={project.priority}
+          onChange={handleChange}
+          type="select"
+          options={[
+            { label: "🔥 Urgent", value: "Urgent" },
+            { label: "🔥 Hot", value: "Hot" },
+            { label: "⚡ High", value: "High" },
+            { label: "⚡ Medium", value: "Medium" },
+            { label: "⚡ Warm", value: "Warm" },
+            { label: "🌱 Low", value: "Low" },
+            { label: "❄️ Cold", value: "Cold" }
+          ]}
+        />
 
         {/* BUTTONS */}
 

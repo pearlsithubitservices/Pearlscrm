@@ -16,7 +16,10 @@ export default function ProjectDetailsPage({ projects }) {
   const { employees } = useEmployees();
 
   const currentProject = projects[0] || {};
-  const progressVal = Number(currentProject.progress) || 0;
+  const milestones = currentProject.milestones || [];
+  const totalMs = milestones.length;
+  const completedMs = milestones.filter((m) => m.completed).length;
+  const progressVal = totalMs > 0 ? Math.round((completedMs / totalMs) * 100) : (Number(currentProject.progress) || 0);
 
   const employeeMap = useMemo(() => {
     return employees.reduce((map, employee) => {
@@ -141,7 +144,11 @@ export default function ProjectDetailsPage({ projects }) {
                 Project Completion: {progressVal}%
               </p>
               <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">
-                {progressVal === 100 ? "Project is fully completed!" : "In active development milestone phase"}
+                {totalMs > 0
+                  ? `Completed ${completedMs} of ${totalMs} Milestones`
+                  : progressVal === 100
+                  ? "Project is fully completed!"
+                  : "In active development milestone phase"}
               </p>
             </div>
 

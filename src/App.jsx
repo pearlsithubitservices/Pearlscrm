@@ -84,9 +84,13 @@ import EmpSettings from './EmployeePages/Settings/settings.jsx';
 import EmpDashboard from './EmployeePages/Dashboard/Dashboard.jsx';
 
 import EmpFollowUps from './EmployeePages/FollowUps/FollowUps.jsx';
+import EmpProjects from './EmployeePages/Projects/EmpProjects.jsx';
+import EmployeeOverview from './pages/employee/EmployeeOverview.jsx';
 import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.jsx';
 import EmpLead from './EmployeePages/Leads/Lead.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx';
+import EmpProjectDetails from './EmployeePages/Projects/EmpProjectDetails.jsx';
+import Messager from './pages/Messager.jsx';
 
 // ============================================================
 // EXISTING WHATSAPP CAMPAIGN
@@ -330,6 +334,13 @@ export default function App() {
                 element={<AdminCommunication />}
               />
 
+              {/* COLLABORATION */}
+
+              <Route
+                path="/collaboration"
+                element={<Messager />}
+              />
+
               {/* LEAVE */}
 
               <Route
@@ -495,6 +506,11 @@ export default function App() {
               />
 
               <Route
+                path="/employee/projects"
+                element={<EmpProjects />}
+              />
+
+              <Route
                 path="/employee/marketing-activities"
                 element={<MarketingActivities />}
               />
@@ -527,6 +543,11 @@ export default function App() {
               <Route
                 path="/employee/communication"
                 element={<EmpCommunication />}
+              />
+
+              <Route
+                path="/employee/collaboration"
+                element={<Messager />}
               />
 
               <Route
@@ -565,6 +586,11 @@ export default function App() {
               />
 
               <Route
+                path="/employee/overview"
+                element={<EmployeeOverview />}
+              />
+
+              <Route
                 path="/employee/follow-ups"
                 element={<EmpFollowUps />}
               />
@@ -582,6 +608,21 @@ export default function App() {
               <Route
                 path="/employee/document"
                 element={<EmpDocument />}
+              />
+
+              <Route
+                path="/employee/projects"
+                element={<EmpProjects />}
+              />
+
+              <Route
+                path="/employee/projectDetails/:id"
+                element={<EmpProjectDetails />}
+              />
+
+              <Route
+                path="/employee/projects/:id"
+                element={<EmpProjectDetails />}
               />
 
             </Route>

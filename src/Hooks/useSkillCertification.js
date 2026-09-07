@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-const BASE_URL = "https://pearlscrm.onrender.com/api/skillscertification";
-// const BASE_URL = "http://localhost:5000/api/skillscertification";
+// const BASE_URL = "https://pearlscrm.onrender.com/api/skillscertification";
+const BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/skillscertification`;
 
 export default function useSkillCertification() {
     const [loading, setLoading] = useState(false);
@@ -23,11 +23,12 @@ export default function useSkillCertification() {
                 );
             }
 
-            setData(json.data);
+            setData(json?.data ?? json);
             return json;
         } catch (err) {
-            setError(err.message);
-            return null;
+            const message = err?.message || "Something went wrong";
+            setError(message);
+            throw err;
         } finally {
             setLoading(false);
         }

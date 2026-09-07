@@ -1,240 +1,203 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  LayoutDashboard,
-  CheckSquare,
-  Calendar,
-  BadgeIndianRupee,
-  MessageSquare,
-  Users,
-  Briefcase,
-  ClipboardList,
-  LogOut,
-  Bell,
-  Megaphone,
-  MessageCircleMore,
-  Building2,
-  ClipboardCheck,
-  Search,
-  ChevronDown,
-  Mail,
-  MapPin,
-  CircleHelp,
-  PenSquare,
-} from "lucide-react";
+import { Search, Mail, MapPin, Loader2, User } from "lucide-react";
 import EmployeeDetails from "./EmployeeDetails";
 import useEmployees from "../../../Hooks/useEmployees";
 
-
 export default function CompanyDirectory() {
-
-  const filterdata = [
-    { name: "All Department", value: "all" },
-    { name: "Engineeing", value: "Engineering Team" },
-    { name: "Design Team", value: "Design Team" },
-    { name: "HR Department", value: "HR Department" },
-    { name: "Finance Team", value: "finance" },
-    { name: "Sales Team", value: "Sales Team" },
-    { name: "Operations Team", value: "operations" },
-  ];
-
-
-
-  const employee = [
-    {
-      name: "Sarah Chen",
-      role: "Principal Engineer",
-      dept: "Engineering Team",
-      email: "sarah.c@nexus.com",
-      location: "San Francisco, CA",
-      image:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300",
-      status: "bg-green-500",
-      id: "NX-402",
-    },
-    {
-      name: "Marcus Aris",
-      role: "Senior UI Designer",
-      dept: "Design Team",
-      email: "m.aris@nexus.com",
-      location: "London, UK",
-      image:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300",
-      status: "bg-slate-400",
-      id: "NX-381",
-    },
-    {
-      name: "Elena",
-      role: "HR Manager",
-      dept: "HR Department",
-      email: "elena.w@nexus.com",
-      location: "San Francisco, CA",
-      image:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300",
-      status: "bg-green-500",
-      id: "NX-112",
-    },
-    {
-      name: "Tariq Khan",
-      role: "Marketing Lead",
-      dept: "Sales Team",
-      email: "t.khan@nexus.com",
-      location: "Dubai, UAE",
-      image:
-        "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300",
-      status: "bg-yellow-400",
-      id: "NX-519",
-    },
-  ];
-  const { employees } = useEmployees();
-
-  const [activeTab, setACtiveTab] = useState("all");
-  const [employeesdata, setEmployeesdata] = useState();
+  const { employees, loading } = useEmployees();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDept, setSelectedDept] = useState("all");
   const [showDetails, setShowDetails] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const handleTab = (department) => {
-    setACtiveTab(department);
 
-    if (department === "all") {
-      setEmployeesdata(employees);
-      return;
-    }
-    console.log(department);
+  const departments = [
+    { name: "All Departments", value: "all" },
+    { name: "Engineering", value: "engineering" },
+    { name: "Design", value: "design" },
+    { name: "HR Department", value: "hr" },
+    { name: "Finance", value: "finance" },
+    { name: "Sales & Marketing", value: "sales" },
+    { name: "Operations", value: "operations" },
+  ];
 
-    const filtered = employees.filter(
-      (emp) => emp.dept === department
-    );
+  // Filter employees dynamically based on Search & Department
+  const filteredEmployees = employees.filter((emp) => {
+    const empDept = (emp.dept || emp.department || emp.employeeDepartment || "").toLowerCase();
+    const matchesDept =
+      selectedDept === "all" || empDept.includes(selectedDept.toLowerCase());
 
-    setEmployeesdata(filtered);
+    if (!searchQuery.trim()) return matchesDept;
+
+    const q = searchQuery.toLowerCase();
+    const empName = (emp.name || emp.employeeName || "").toLowerCase();
+    const empRole = (emp.role || emp.employeeRole || "").toLowerCase();
+    const empEmail = (emp.email || "").toLowerCase();
+
+    const matchesSearch =
+      empName.includes(q) ||
+      empRole.includes(q) ||
+      empDept.includes(q) ||
+      empEmail.includes(q);
+
+    return matchesDept && matchesSearch;
+  });
+
+  const handleOpenDetails = (emp) => {
+    setSelectedEmployee(emp);
+    setShowDetails(true);
   };
 
-  // const handledetails = (id) => {
-  //   setShowDetails(true);
-
-  //   const emp = employees.find((e) => e.id === id);
-  //   setSelectedEmployee(emp);
-  // };
   return (
-    <div className="min-h-screen bg-[#efede8] flex">
-
-
-
-      {/* CONTENT */}
+    <div className="min-h-screen bg-[#efede8] p-3 rounded-2xl">
       <main className="flex-1">
-        {/* DIRECTORY */}
-        <div className="bg-[#efede8] rounded-2xl  p-3">
-          <div className="flex justify-between items-center bg-white p-1 rounded-lg">
-            <h2 className="text-2xl font-bold">
-              Company Directory
-            </h2>
+        <div className="bg-[#efede8] rounded-2xl space-y-6">
+          {/* HEADER & CONTROLS */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
+            <div>
+              <h2 className="text-2xl font-bold text-[#0b2b57]">
+                Company Directory (Admin)
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Manage and view profile information of all organization members ({filteredEmployees.length} members)
+              </p>
+            </div>
 
-            <div className="flex gap-4">
-              <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-4 py-3">
-                <Search size={18} />
+            <div className="flex flex-wrap items-center gap-3">
+              {/* SEARCH INPUT */}
+              <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3.5 py-2.5 border border-slate-200/60 focus-within:ring-2 focus-within:ring-blue-500 transition">
+                <Search size={17} className="text-slate-400" />
                 <input
-                  placeholder="Search Project..."
-                  className="bg-transparent outline-none"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, role, email..."
+                  className="bg-transparent outline-none text-xs text-slate-800 w-48 sm:w-60 placeholder-slate-400"
                 />
               </div>
 
-              <button className="flex items-center gap-2 border rounded-xl px-4 overflow-hidden">
-                <select
-                  value={activeTab}
-                  onChange={(e) => handleTab(e.target.value)}
-                  placeholder="Select Department"
-                  className=" w-full appearance-none rounded-xl bg-white px-4 py-3 pr-10 text-slate-700 shadow-sm outline-none transition-all duration-200      
-                       hover:border-slate-400 cursor-pointer">
-                  {filterdata.map((item, i) => (
-                    <option
-                      key={i}
-                      value={item.value}
-                      onClick={() => handleTab(item.value)}>{item.name}</option>
-                  ))}
-                </select>
-
-              </button>
+              {/* DEPARTMENT SELECTOR */}
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                className="rounded-xl bg-slate-100 border border-slate-200/60 px-3.5 py-2.5 text-xs text-slate-700 font-semibold outline-none cursor-pointer hover:bg-slate-200 transition"
+              >
+                {departments.map((dept, i) => (
+                  <option key={i} value={dept.value}>
+                    {dept.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-6 mt-6">
-            {employees.length > 0 ? employees.map((emp, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ y: -4 }}
-                className="bg-white border rounded-2xl p-5 shadow-sm cursor-pointer"
-                onClick={() => setSelectedEmployee(emp) || setShowDetails(true)}
-              >
-                <div className="flex justify-between">
-                  <div className="relative">
-                    {/* <img
-                      src={emp.image}
-                      alt=""
-                      className="w-16 h-16 rounded-2xl object-cover"
-                    /> */}
-                    <span className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold shadow-md">
-                      {emp?.name?.charAt(0)?.toUpperCase() || emp?.employeeName?.charAt(0)?.toUpperCase()}
-                    </span>
-                    <span
-                      className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${emp.status}`}
-                    />
-                  </div>
+          {/* LOADING STATE */}
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center text-slate-500 bg-white rounded-2xl border border-slate-200/80">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
+              <p className="text-sm font-medium">Fetching directory from database...</p>
+            </div>
+          ) : filteredEmployees.length > 0 ? (
+            /* DIRECTORY CARDS GRID */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredEmployees.map((emp, i) => {
+                const displayName = emp.name || emp.employeeName || emp.displayName || "Employee";
+                const displayRole = emp.role || emp.employeeRole || emp.designation || "Team Member";
+                const displayDept = emp.dept || emp.department || emp.employeeDepartment || "General";
+                const displayEmail = emp.email || "N/A";
+                const displayLocation = emp.location || emp.city || "Chennai, TN";
+                const empInitial = displayName.charAt(0).toUpperCase();
+                const empIdCode = emp._id ? String(emp._id).slice(-5).toUpperCase() : "EMP";
 
-                  <span className="text-slate-500">
-                    ID: {emp?.id?.slice(0, 5)}
-                  </span>
-                </div>
+                return (
+                  <motion.div
+                    key={emp.id || emp._id || i}
+                    whileHover={{ y: -4 }}
+                    onClick={() => handleOpenDetails(emp)}
+                    className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                  >
+                    <div>
+                      {/* CARD HEADER */}
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="relative">
+                          <span className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-lg shadow-md">
+                            {empInitial}
+                          </span>
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-emerald-500" />
+                        </div>
+                      </div>
 
-                <h3 className="text-xl font-bold text-[#1f5fa8] mt-4 ">
-                  {emp?.name || emp.employeeName}
-                </h3>
+                      {/* NAME & ROLE */}
+                      <h3 className="text-lg font-bold text-[#0b2b57] line-clamp-1">
+                        {displayName}
+                      </h3>
 
-                <p className="font-bold">{emp.role}</p>
-                <p className="text-slate-500">{emp.dept}</p>
+                      <p className="text-xs font-semibold text-blue-600 mt-0.5">
+                        {displayRole}
+                      </p>
 
-                <div className="space-y-3 mt-5">
-                  <div className="flex items-start gap-2 w-full">
-                    <Mail size={16} className="shrink-0 mt-1" />
+                      <span className="inline-block mt-2 text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
+                        {displayDept}
+                      </span>
 
-                    <span className="break-words whitespace-normal min-w-0  h-[50px]">
-                      {emp.email}
-                    </span>
-                  </div>
+                      {/* CONTACT INFO */}
+                      <div className="space-y-2 mt-4 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <Mail size={14} className="shrink-0 text-slate-400" />
+                          <span className="truncate">{displayEmail}</span>
+                        </div>
 
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} />
-                    {emp.location || "Chennai-60001"}
-                  </div>
-                </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin size={14} className="shrink-0 text-slate-400" />
+                          <span className="truncate">{displayLocation}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="flex gap-3 mt-5">
-                  <button className="flex-1 bg-blue-100 text-slate-700 py-2 rounded-xl hover:bg-blue-500 hover:text-slate-100">
-                    Email
-                  </button>
+                    {/* CARD ACTION BUTTONS */}
+                    <div className="flex gap-2 mt-5 pt-3 border-t border-slate-100">
+                      <a
+                        href={`mailto:${displayEmail}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-1 text-center bg-blue-50 text-blue-700 font-semibold py-2 rounded-xl text-xs hover:bg-blue-100 transition"
+                      >
+                        Email
+                      </a>
 
-                  <button className="flex-1 border py-2 rounded-xl  hover:bg-slate-200 ">
-                    Profile
-                  </button>
-                </div>
-              </motion.div>
-            )) :
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDetails(emp);
+                        }}
+                        className="flex-1 border border-slate-200 text-slate-700 font-semibold py-2 rounded-xl text-xs hover:bg-slate-50 transition"
+                      >
+                        View Profile
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            /* EMPTY STATE */
+            <div className="py-20 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300">
+              <User className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+              <h3 className="text-base font-bold text-slate-700">No Employees Found</h3>
+              <p className="text-xs text-slate-400 mt-1">Try adjusting your search or department filter.</p>
+            </div>
+          )}
 
-              <div className="w-full h-[100px] items-center flex justify-center font-bold ml-80">
-
-                <p> No Employees Data Found</p>
-              </div>}
-          </div>
-          {showDetails && (
-            <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
+          {/* EMPLOYEE DETAILS MODAL */}
+          {showDetails && selectedEmployee && (
+            <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
               <EmployeeDetails
                 empId={selectedEmployee}
-                onClose={() => setShowDetails(false)} />
+                onClose={() => setShowDetails(false)}
+              />
             </div>
           )}
         </div>
-
       </main>
     </div>
   );
 }
-

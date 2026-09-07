@@ -125,7 +125,7 @@ export default function Tasks() {
   }
 
   return (
-    <div className="flex max-h-screen bg-gray-100 overflow-y-auto no-scrollbar">
+    <div className="w-full min-h-screen bg-gray-100 overflow-y-auto custom-scrollbar pb-12">
 
       {/* MAIN */}
       <div className="flex-1 flex flex-col">

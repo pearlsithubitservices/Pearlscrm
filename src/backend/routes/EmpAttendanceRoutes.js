@@ -1,32 +1,61 @@
+
 const express = require("express");
 const router = express.Router();
 
 const EmpAttendanceModel = require("../models/EmpAttendanceModel");
 const { calculateAttendanceStatus } = require("../../Utils/formatNumber");
+const { getIO } = require("../Socket");
+const { cleanupOldPhotos } = require("../services/attendancePhotoCleanupScheduler");
+
+// =====================================================
+// DATE HELPERS
+// =====================================================
 
 const parseDateOnly = (dateString) => {
   if (!dateString) return null;
-  const parts = dateString.split("-");
-  if (parts.length !== 3) return null;
 
-  const year = Number(parts[0]);
-  const month = Number(parts[1]) - 1;
-  const day = Number(parts[2]);
-  const parsed = new Date(year, month, day);
+  if (typeof dateString === "string") {
+    const parts = dateString.split("-");
 
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+    if (parts.length === 3) {
+      const year = Number(parts[0]);
+      const month = Number(parts[1]) - 1;
+      const day = Number(parts[2]);
+
+      const parsed = new Date(year, month, day);
+
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+  }
+
+  const d = new Date(dateString);
+
+  if (isNaN(d.getTime())) return null;
+
+  return new Date(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate()
+  );
 };
 
 const findAttendanceForDate = async (employee_uid, dateString) => {
-  const startOfDay = parseDateOnly(dateString);
-  if (!startOfDay) return null;
+  const startOfDay =
+    parseDateOnly(dateString) || parseDateOnly(new Date());
+
+  if (!startOfDay) {
+    return null;
+  }
 
   const endOfDay = new Date(startOfDay);
   endOfDay.setDate(endOfDay.getDate() + 1);
 
   let attendance = await EmpAttendanceModel.findOne({
     employee_uid,
-    date: { $gte: startOfDay, $lt: endOfDay },
+    date: {
+      $gte: startOfDay,
+      $lt: endOfDay,
+    },
   });
 
   if (!attendance) {
@@ -36,12 +65,25 @@ const findAttendanceForDate = async (employee_uid, dateString) => {
     });
   }
 
+  if (!attendance) {
+    attendance = await EmpAttendanceModel.findOne({
+      employee_uid,
+      clockIn: { $ne: null },
+      clockOut: null,
+    }).sort({ clockIn: -1 });
+  }
+
   return attendance;
 };
 
-/* Get All Attendance */
+// =====================================================
+// GET ALL ATTENDANCE
+// =====================================================
+
 router.get("/", async (req, res) => {
   try {
+    cleanupOldPhotos().catch(() => {});
+
     const attendances = await EmpAttendanceModel.find()
       .sort({ createdAt: -1 });
 
@@ -51,6 +93,8 @@ router.get("/", async (req, res) => {
       data: attendances,
     });
   } catch (err) {
+    console.error("Failed to get attendance:", err);
+
     res.status(500).json({
       success: false,
       message: err.message,
@@ -58,40 +102,122 @@ router.get("/", async (req, res) => {
   }
 });
 
-/* Clock In */
+// =====================================================
+// GET ACTIVE ATTENDANCE
+// =====================================================
+
+router.get("/active", async (req, res) => {
+  try {
+    const attendances = await EmpAttendanceModel.find({
+      isOnline: true,
+    }).sort({
+      clockIn: -1,
+    });
+
+    res.status(200).json(attendances);
+  } catch (err) {
+    console.error("Failed to get active attendance:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+// =====================================================
+// GET ATTENDANCE HISTORY
+// =====================================================
+
+router.get("/history", async (req, res) => {
+  try {
+    const attendances = await EmpAttendanceModel.find()
+      .sort({
+        date: -1,
+        clockIn: -1,
+      });
+
+    res.status(200).json(attendances);
+  } catch (err) {
+    console.error("Failed to get attendance history:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+// =====================================================
+// CLOCK IN
+// =====================================================
+
 router.post("/clock-in", async (req, res) => {
   try {
-    const { employee_uid, employee_name, department, date } = req.body;
+    const {
+      employee_uid,
+      employee_name,
+      department,
+      date,
+      location,
+      photo,
+    } = req.body;
+
     const startOfDay = parseDateOnly(date);
 
-    let attendance = await findAttendanceForDate(employee_uid, date);
-
-    // if (attendance?.clockIn && !attendance.clockOut) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Already clocked in",
-    //   });
-    // }
+    let attendance = await findAttendanceForDate(
+      employee_uid,
+      date
+    );
 
     if (!attendance) {
       attendance = new EmpAttendanceModel({
         employee_uid,
         employee_name,
         department,
-        date: startOfDay,
+        date: startOfDay || new Date(),
         clockIn: new Date(),
         isOnline: true,
-        status: "present",
-        attendanceState:"working"
+        status: calculateAttendanceStatus(
+          new Date(),
+          null,
+          0
+        ),
+        attendanceState: "working",
+        location: location || "Office",
+        photo: photo || null,
+        photoStatus: photo ? "submitted" : null,
       });
     } else {
       attendance.clockIn = new Date();
       attendance.isOnline = true;
-      attendance.status = "present";
+
+      attendance.status = calculateAttendanceStatus(
+        attendance.clockIn,
+        attendance.clockOut,
+        attendance.workingHours
+      );
+
       attendance.attendanceState = "working";
+
+      if (location) {
+        attendance.location = location;
+      }
+
+      if (photo) {
+        attendance.photo = photo;
+        attendance.photoStatus = "submitted";
+      }
     }
 
     await attendance.save();
+
+    try {
+      getIO()?.emit("attendanceUpdated", {
+        employee_uid,
+        attendance,
+      });
+    } catch (e) {}
 
     res.status(200).json({
       success: true,
@@ -99,6 +225,8 @@ router.post("/clock-in", async (req, res) => {
       data: attendance,
     });
   } catch (err) {
+    console.error("Clock in failed:", err);
+
     res.status(500).json({
       success: false,
       error: err.message,
@@ -106,22 +234,35 @@ router.post("/clock-in", async (req, res) => {
   }
 });
 
-/* Clock Out */
+// =====================================================
+// CLOCK OUT
+// =====================================================
+
 router.post("/clock-out", async (req, res) => {
   try {
-    const { employee_uid, date } = req.body;
-    console.log(req.body);
-
-    const attendance = await EmpAttendanceModel.findOne({
+    const {
       employee_uid,
-      clockIn: { $ne: null },
-      /*clockOut: null,*/
-    }).sort({ clockIn: -1 });
+      date,
+    } = req.body;
+
+    let attendance = await findAttendanceForDate(
+      employee_uid,
+      date
+    );
+
+    if (!attendance) {
+      attendance = await EmpAttendanceModel.findOne({
+        employee_uid,
+        clockIn: { $ne: null },
+      }).sort({
+        clockIn: -1,
+      });
+    }
 
     if (!attendance) {
       return res.status(404).json({
         success: false,
-        message: "Attendance not found",
+        message: "Attendance record not found for clock out",
       });
     }
 
@@ -132,28 +273,87 @@ router.post("/clock-out", async (req, res) => {
       });
     }
 
-
     attendance.clockOut = new Date();
-
     attendance.isOnline = false;
     attendance.attendanceState = "clocked_out";
-
 
     let totalBreakSeconds = 0;
 
     attendance.breaks.forEach((b) => {
-      totalBreakSeconds += b.duration || 0;
+      const bStart = b.start
+        ? new Date(b.start).getTime()
+        : NaN;
+
+      if (
+        !b.end &&
+        !isNaN(bStart) &&
+        bStart > 100000000000
+      ) {
+        b.end = attendance.clockOut;
+
+        b.duration = Math.min(
+          86400,
+          Math.max(
+            0,
+            Math.floor(
+              (
+                new Date(b.end).getTime() -
+                bStart
+              ) / 1000
+            )
+          )
+        );
+      } else if (b.start && b.end) {
+        const bEnd = new Date(b.end).getTime();
+
+        if (
+          !isNaN(bStart) &&
+          bStart > 100000000000 &&
+          !isNaN(bEnd) &&
+          bEnd >= bStart
+        ) {
+          b.duration = Math.min(
+            86400,
+            Math.max(
+              0,
+              Math.floor(
+                (bEnd - bStart) / 1000
+              )
+            )
+          );
+        } else {
+          b.duration = 0;
+        }
+      }
+
+      totalBreakSeconds += Math.min(
+        86400,
+        b.duration || 0
+      );
     });
 
-    attendance.workingHours =
-      Math.max(
-        0,
-        (attendance.clockOut - attendance.clockIn) / 1000 -
-        totalBreakSeconds
-      );
-    attendance.status = calculateAttendanceStatus(attendance.clockIn, attendance.clockOut, attendance.workingHours);
+    const totalSeconds =
+      (attendance.clockOut - attendance.clockIn) / 1000;
+
+    attendance.workingHours = Math.max(
+      0,
+      Math.floor(totalSeconds - totalBreakSeconds)
+    );
+
+    attendance.status = calculateAttendanceStatus(
+      attendance.clockIn,
+      attendance.clockOut,
+      attendance.workingHours
+    );
 
     await attendance.save();
+
+    try {
+      getIO()?.emit("attendanceUpdated", {
+        employee_uid,
+        attendance,
+      });
+    } catch (e) {}
 
     res.status(200).json({
       success: true,
@@ -161,6 +361,8 @@ router.post("/clock-out", async (req, res) => {
       data: attendance,
     });
   } catch (err) {
+    console.error("Clock out failed:", err);
+
     res.status(500).json({
       success: false,
       error: err.message,
@@ -168,12 +370,21 @@ router.post("/clock-out", async (req, res) => {
   }
 });
 
-/* Start Break */
+// =====================================================
+// START BREAK
+// =====================================================
+
 router.post("/break/start", async (req, res) => {
   try {
-    const { employee_uid, date } = req.body;
+    const {
+      employee_uid,
+      date,
+    } = req.body;
 
-    const attendance = await findAttendanceForDate(employee_uid, date);
+    const attendance = await findAttendanceForDate(
+      employee_uid,
+      date
+    );
 
     if (!attendance) {
       return res.status(404).json({
@@ -203,13 +414,21 @@ router.post("/break/start", async (req, res) => {
 
     await attendance.save();
 
+    try {
+      getIO()?.emit("attendanceUpdated", {
+        employee_uid,
+        attendance,
+      });
+    } catch (e) {}
+
     res.status(200).json({
       success: true,
       message: "Break started",
-
       data: attendance,
     });
   } catch (err) {
+    console.error("Break start failed:", err);
+
     res.status(500).json({
       success: false,
       error: err.message,
@@ -217,12 +436,21 @@ router.post("/break/start", async (req, res) => {
   }
 });
 
-/* End Break */
+// =====================================================
+// END BREAK
+// =====================================================
+
 router.post("/break/end", async (req, res) => {
   try {
-    const { employee_uid, date } = req.body;
+    const {
+      employee_uid,
+      date,
+    } = req.body;
 
-    const attendance = await findAttendanceForDate(employee_uid, date);
+    const attendance = await findAttendanceForDate(
+      employee_uid,
+      date
+    );
 
     if (!attendance) {
       return res.status(404).json({
@@ -243,14 +471,26 @@ router.post("/break/end", async (req, res) => {
     }
 
     activeBreak.end = new Date();
-    activeBreak.duration =
-      Math.floor((activeBreak.end - activeBreak.start) / 1000);
+
+    activeBreak.duration = Math.floor(
+      (
+        activeBreak.end -
+        activeBreak.start
+      ) / 1000
+    );
 
     attendance.status = "present";
     attendance.isOnline = true;
-    attendance.attendanceState = "working"
+    attendance.attendanceState = "working";
 
     await attendance.save();
+
+    try {
+      getIO()?.emit("attendanceUpdated", {
+        employee_uid,
+        attendance,
+      });
+    } catch (e) {}
 
     res.status(200).json({
       success: true,
@@ -258,6 +498,8 @@ router.post("/break/end", async (req, res) => {
       data: attendance,
     });
   } catch (err) {
+    console.error("Break end failed:", err);
+
     res.status(500).json({
       success: false,
       error: err.message,
@@ -265,15 +507,21 @@ router.post("/break/end", async (req, res) => {
   }
 });
 
+// =====================================================
+// GET ATTENDANCE BY EMPLOYEE UID
+// =====================================================
 
-// GET Attendance by Employee UID
 router.get("/employee/:employee_uid", async (req, res) => {
   try {
-    const { employee_uid } = req.params;
+    const {
+      employee_uid,
+    } = req.params;
 
     const attendance = await EmpAttendanceModel.find({
       employee_uid,
-    }).sort({ date: -1 });
+    }).sort({
+      date: -1,
+    });
 
     res.status(200).json({
       success: true,
@@ -281,6 +529,11 @@ router.get("/employee/:employee_uid", async (req, res) => {
       data: attendance,
     });
   } catch (err) {
+    console.error(
+      "Failed to get employee attendance:",
+      err
+    );
+
     res.status(500).json({
       success: false,
       message: err.message,
@@ -288,9 +541,10 @@ router.get("/employee/:employee_uid", async (req, res) => {
   }
 });
 
-//UPDATE ATTENDANCE
+// =====================================================
+// UPDATE ATTENDANCE
+// =====================================================
 
-/* Update Attendance */
 router.put("/:id", async (req, res) => {
   try {
     const {
@@ -301,7 +555,8 @@ router.put("/:id", async (req, res) => {
       isOnline,
     } = req.body;
 
-    const attendance = await EmpAttendanceModel.findById(req.params.id);
+    const attendance =
+      await EmpAttendanceModel.findById(req.params.id);
 
     if (!attendance) {
       return res.status(404).json({
@@ -318,22 +573,24 @@ router.put("/:id", async (req, res) => {
       ? new Date(clockOut)
       : attendance.clockOut;
 
-    attendance.breaks = breaks || attendance.breaks;
-
-
+    attendance.breaks =
+      breaks || attendance.breaks;
 
     attendance.isOnline =
       isOnline !== undefined
         ? isOnline
         : attendance.isOnline;
 
-    /* Recalculate break durations */
+    // Recalculate break durations
     attendance.breaks.forEach((b) => {
       if (b.start && b.end) {
         b.duration = Math.max(
           0,
           Math.floor(
-            (new Date(b.end) - new Date(b.start)) / 1000
+            (
+              new Date(b.end) -
+              new Date(b.start)
+            ) / 1000
           )
         );
       } else {
@@ -341,15 +598,20 @@ router.put("/:id", async (req, res) => {
       }
     });
 
-    /* Recalculate working hours */
-    if (attendance.clockIn && attendance.clockOut) {
+    // Recalculate working hours
+    if (
+      attendance.clockIn &&
+      attendance.clockOut
+    ) {
       let totalBreakSeconds = 0;
 
       attendance.breaks.forEach((b) => {
-        totalBreakSeconds += b.duration || 0;
+        totalBreakSeconds +=
+          b.duration || 0;
       });
 
-      attendance.workingHours = Math.max(0,
+      attendance.workingHours = Math.max(
+        0,
         Math.floor(
           (
             attendance.clockOut -
@@ -358,25 +620,35 @@ router.put("/:id", async (req, res) => {
         ) - totalBreakSeconds
       );
     }
+
     if (status) {
       attendance.status = status;
     } else {
-      attendance.status = calculateAttendanceStatus(
-        attendance.clockIn,
-        attendance.clockOut,
-        attendance.workingHours
-      );
+      attendance.status =
+        calculateAttendanceStatus(
+          attendance.clockIn,
+          attendance.clockOut,
+          attendance.workingHours
+        );
     }
 
     await attendance.save();
+
+    try {
+      getIO()?.emit("attendanceUpdated", {
+        employee_uid: attendance.employee_uid,
+        attendance,
+      });
+    } catch (e) {}
 
     res.status(200).json({
       success: true,
       message: "Attendance updated successfully",
       data: attendance,
     });
-
   } catch (err) {
+    console.error("Attendance update failed:", err);
+
     res.status(500).json({
       success: false,
       error: err.message,
@@ -384,11 +656,15 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-//Absent marker
+// =====================================================
+// MARK ABSENT
+// =====================================================
 
 router.post("/mark-absent", async (req, res) => {
   try {
-    const { employee_uid } = req.body;
+    const {
+      employee_uid,
+    } = req.body;
 
     if (!employee_uid) {
       return res.status(400).json({
@@ -397,14 +673,21 @@ router.post("/mark-absent", async (req, res) => {
       });
     }
 
-    // Today's date
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+
+    today.setHours(
+      0,
+      0,
+      0,
+      0
+    );
 
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Check if attendance already exists
+    tomorrow.setDate(
+      tomorrow.getDate() + 1
+    );
+
     const existingAttendance =
       await EmpAttendanceModel.findOne({
         employee_uid,
@@ -422,7 +705,6 @@ router.post("/mark-absent", async (req, res) => {
       });
     }
 
-    // Create absent record
     const attendance =
       await EmpAttendanceModel.create({
         employee_uid,
@@ -439,10 +721,18 @@ router.post("/mark-absent", async (req, res) => {
       data: attendance,
     });
   } catch (err) {
+    console.error("Mark absent failed:", err);
+
     res.status(500).json({
       success: false,
       error: err.message,
     });
   }
 });
+
+// =====================================================
+// EXPORT ROUTER
+// =====================================================
+
 module.exports = router;
+

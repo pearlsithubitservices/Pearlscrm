@@ -31,13 +31,23 @@ export default function useChat(userId, activeChatId) {
       const response = await fetch(apiUrl(`/chat?userId=${encodeURIComponent(currentUserId)}`));
       const result = await response.json();
       if (result.data && Array.isArray(result.data)) {
-        setChats(result.data);
-      } else if (!isSilent) {
-        setChats([]);
+        const serverChats = result.data;
+        setChats((prev) => {
+          // Keep any optimistic chats created locally that haven't synced yet
+          const tempChats = prev.filter(
+            (pc) => typeof pc._id === "string" && pc._id.startsWith("chat_")
+          );
+          const combined = [...serverChats];
+          tempChats.forEach((tc) => {
+            if (!combined.some((sc) => String(sc._id) === String(tc._id))) {
+              combined.push(tc);
+            }
+          });
+          return combined;
+        });
       }
     } catch (error) {
       console.log("Error fetching chats:", error);
-      if (!isSilent) setChats([]);
     } finally {
       if (!isSilent) setLoadingChats(false);
     }
@@ -103,6 +113,7 @@ export default function useChat(userId, activeChatId) {
   }, [fetchChats]);
 
   useEffect(() => {
+    setMessages([]);
     knownMsgIdsRef.current.clear();
     fetchMessages(false);
   }, [activeChatId, fetchMessages]);
@@ -320,8 +331,9 @@ export default function useChat(userId, activeChatId) {
     const type = chatType || (isGroup ? "group" : "direct");
     const name = chatName || (type === "collab" ? "Collab Room" : type === "task" ? "Task Chat" : "Group Chat");
 
+    const tempId = "chat_" + Date.now();
     const newChatObj = {
-      _id: "chat_" + Date.now(),
+      _id: tempId,
       chatName: name,
       isGroup: isGroup || type === "group" || type === "collab" || type === "task",
       chatType: type,
@@ -351,12 +363,12 @@ export default function useChat(userId, activeChatId) {
       const result = await response.json();
       if (result?.data?._id) {
         setChats((prev) =>
-          prev.map((c) => (c._id === newChatObj._id ? result.data : c))
+          prev.map((c) => (c._id === tempId ? result.data : c))
         );
         return result.data;
       }
     } catch (error) {
-      console.log("Created chat locally:", error);
+      console.log("Created chat error:", error);
     }
 
     return newChatObj;

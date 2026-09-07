@@ -40,6 +40,7 @@ const updateProfile = async (req, res) => {
     const {
       firstName, lastName, email, dob, gender, phone, emergencyNo, empId, address,
       designation, department, joiningDate, reportingManager, workLocation,
+      description,
       bankDetails,
     } = req.body;
     const isBankOnlyUpdate = bankDetails && typeof bankDetails === "object" && !firstName && !email;
@@ -79,6 +80,7 @@ const updateProfile = async (req, res) => {
       "profile.emergencyNo": String(emergencyNo || "").trim(),
       "profile.empId": String(empId || "").trim(),
       "profile.address": String(address || "").trim(),
+      "profile.description": String(description || "").trim(),
       "profile.designation": String(designation || "").trim(),
       "profile.department": String(department || "").trim(),
       "profile.joiningDate": joiningDate || null,
@@ -98,6 +100,23 @@ const updateProfile = async (req, res) => {
     }
     console.error("Profile update error:", error.message);
     return res.status(500).json({ success: false, message: "Unable to save profile right now" });
+  }
+};
+
+const updateDescription = async (req, res) => {
+  try {
+    const description = String(req.body.description || "").trim();
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: { "profile.description": description } },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    return res.json({ success: true, message: "Description updated successfully", user: serializeUser(user) });
+  } catch (error) {
+    console.error("Description update error:", error.message);
+    return res.status(500).json({ success: false, message: "Unable to update description" });
   }
 };
 
@@ -177,4 +196,4 @@ const deleteDocument = async (req, res) => {
   return res.json({ success: true, message: "Document deleted successfully" });
 };
 
-module.exports = { getProfile, updateProfile, uploadDocument, uploadAvatar, deleteDocument };
+module.exports = { getProfile, updateProfile, updateDescription, uploadDocument, uploadAvatar, deleteDocument };

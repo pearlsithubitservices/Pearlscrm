@@ -13,35 +13,53 @@ import useEmpAttendance from "../../Hooks/useEmpAttendance";
 import AttendanceEdit from "./AttendanceEdit";
 import { calculateAttendanceStatus } from "../../Utils/formatNumber";
 import { useAuth } from "../../context/AuthContext";
+import socket from "../../config/socket";
 
-const AttendanceCalendar = () => {
-  const [filter, setFilter] =
-    useState("week");
-
-  const [search, setSearch] =
-    useState("");
-
+const AttendanceCalendar = ({ refreshTrigger }) => {
+  const [filter, setFilter] = useState("month");
+  const [customStartDate, setCustomStartDate] = useState(
+    new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split("T")[0]
+  );
+  const [customEndDate, setCustomEndDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [search, setSearch] = useState("");
 
   const [attendance, setAttendances] = useState([]);
-  console.log(attendance);
   const [selectedattendance, setSelectedAttendances] = useState();
   const [showForm, setShowform] = useState(false);
   const { getAttendanceById } = useEmpAttendance();
   const [showEdit, setShowEdit] = useState(false);
   const { user } = useAuth();
-  console.log(user.uid);
-  
+  const userId = user?.uid || user?._id || user?.id || "";
 
   useEffect(() => {
-    
-    fetchAttendancebyId();
-  }, []);
+    if (userId) {
+      fetchAttendancebyId();
 
- 
+      if (socket) {
+        socket.on("attendanceUpdated", fetchAttendancebyId);
+      }
+
+      // Auto-refresh every 10 seconds in background
+      const interval = setInterval(() => {
+        fetchAttendancebyId();
+      }, 10000);
+
+      return () => {
+        if (socket) {
+          socket.off("attendanceUpdated", fetchAttendancebyId);
+        }
+        clearInterval(interval);
+      };
+    }
+  }, [userId, refreshTrigger]);
+
   const fetchAttendancebyId = async () => {
+    if (!userId) return;
     try {
-      const res = await getAttendanceById(user.uid);
-       setAttendances(res.data || []);
+      const res = await getAttendanceById(userId);
+      setAttendances(res?.data || []);
       console.log(res);
     } catch (err) {
       console.error("Error fetching attendances:", err.message);
@@ -52,58 +70,83 @@ const AttendanceCalendar = () => {
 
   const filteredData = useMemo(() => {
     const now = new Date();
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
 
-    // Remove time from today's date
-    now.setHours(0, 0, 0, 0);
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
 
-    return attendance.filter((item) => {
-      const attendanceDate = new Date(item.date);
+    const sorted = [...(attendance || [])].sort((a, b) => {
+      const dateA = a.clockIn ? new Date(a.clockIn) : new Date(a.date);
+      const dateB = b.clockIn ? new Date(b.clockIn) : new Date(b.date);
+      return dateB - dateA;
+    });
 
-      // Remove time portion
-      attendanceDate.setHours(0, 0, 0, 0);
+    return sorted.filter((item) => {
+      const itemDateRaw = item.clockIn || item.date;
+      if (!itemDateRaw) return false;
+      const attendanceDate = new Date(itemDateRaw);
 
       let matchPeriod = true;
 
       if (filter === "week") {
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 6);
-
-        matchPeriod =
-          attendanceDate >= weekAgo &&
-          attendanceDate <= now;
-      }
-
-      if (filter === "month") {
+        const weekAgo = new Date(startOfToday);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        matchPeriod = attendanceDate >= weekAgo && attendanceDate <= endOfToday;
+      } else if (filter === "month") {
         matchPeriod =
           attendanceDate.getMonth() === now.getMonth() &&
           attendanceDate.getFullYear() === now.getFullYear();
-      }
-
-      if (filter === "year") {
-        matchPeriod =
-          attendanceDate.getFullYear() === now.getFullYear();
+      } else if (filter === "year") {
+        matchPeriod = attendanceDate.getFullYear() === now.getFullYear();
+      } else if (filter === "custom") {
+        let afterStart = true;
+        let beforeEnd = true;
+        if (customStartDate) {
+          const s = new Date(customStartDate);
+          s.setHours(0, 0, 0, 0);
+          afterStart = attendanceDate >= s;
+        }
+        if (customEndDate) {
+          const e = new Date(customEndDate);
+          e.setHours(23, 59, 59, 999);
+          beforeEnd = attendanceDate <= e;
+        }
+        matchPeriod = afterStart && beforeEnd;
+      } else if (filter === "all") {
+        matchPeriod = true;
       }
 
       const formattedDate = attendanceDate
         .toLocaleDateString("en-GB")
-        .replace(/\//g, "-"); // DD-MM-YYYY
+        .replace(/\//g, "-");
 
       const matchSearch =
         !search.trim() ||
-        formattedDate.includes(search.trim());
+        formattedDate.includes(search.trim()) ||
+        (item.status && item.status.toLowerCase().includes(search.trim().toLowerCase())) ||
+        (item.location && item.location.toLowerCase().includes(search.trim().toLowerCase()));
 
       return matchPeriod && matchSearch;
     });
   }, [attendance, filter, search]);
+
   const formatDuration = (seconds) => {
-    if (!seconds || isNaN(seconds)) {
-      return "0h 0m";
+    if (!seconds || isNaN(seconds) || seconds <= 0) {
+      return "0m";
     }
 
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
 
-    return `${hours}h ${minutes}m`;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    }
+    return `${secs}s`;
   };
 
   const statusStyle = {
@@ -169,7 +212,7 @@ const AttendanceCalendar = () => {
               />
             </div>
 
-            <div className="mt-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
 
               <select
                 value={filter}
@@ -178,8 +221,12 @@ const AttendanceCalendar = () => {
                     e.target.value
                   )
                 }
-                className=" bg-gray-100 rounded-xl px-5 py-3 pr-10 outline-none"
+                className=" bg-gray-100 rounded-xl px-5 py-3 pr-10 outline-none cursor-pointer text-sm font-semibold"
               >
+                <option value="all">
+                  All Time
+                </option>
+
                 <option value="week">
                   This Week
                 </option>
@@ -191,14 +238,33 @@ const AttendanceCalendar = () => {
                 <option value="year">
                   This Year
                 </option>
+
+                <option value="custom">
+                  📅 Custom Date Range
+                </option>
               </select>
 
+              {filter === "custom" && (
+                <div className="flex items-center gap-2 bg-blue-50/60 p-1.5 rounded-xl border border-blue-100">
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none"
+                    title="From Date"
+                  />
+                  <span className="text-xs text-gray-400 font-bold">to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none"
+                    title="To Date"
+                  />
+                </div>
+              )}
 
             </div>
-
-            <button className="bg-gray-100 p-3 rounded-xl w-[50px] h-[45px] mt-2 " onClick={() => setShowform(true)}>
-              <PencilLine size={18} className="hover:scale-125 transition-transform duration-100" />
-            </button>
 
           </div>
 
@@ -266,35 +332,53 @@ const AttendanceCalendar = () => {
                   No attendance records found
                 </td>
               </tr>
-                : filteredData.slice(0, 7).map(
+                : filteredData.map(
                   (row, index) => (
                     <tr
                       key={index}
                       className="border-b hover:bg-gray-50"
                     >
                       <td className="text-center py-6 font-bold">
-                        {new Date(row.date).toLocaleDateString("en-GB")}
+                        {new Date(row.clockIn || row.date).toLocaleDateString("en-GB")}
                       </td>
 
                       {(() => {
                         const clockInDate = row.clockIn ? new Date(row.clockIn) : null;
                         const clockOutDate = row.clockOut ? new Date(row.clockOut) : null;
-                        const totalBreakSeconds = row.breaks?.reduce(
-                          (sum, breakItem) => sum + (breakItem?.duration || 0),
-                          0
-                        );
+                        const totalBreakSeconds = (row.breaks || []).reduce((sum, breakItem) => {
+                          if (typeof breakItem?.duration === "number" && breakItem.duration > 0 && breakItem.duration < 86400) {
+                            return sum + breakItem.duration;
+                          }
+                          const startMs = breakItem?.start ? new Date(breakItem.start).getTime() : NaN;
+                          const endMs = breakItem?.end ? new Date(breakItem.end).getTime() : Date.now();
+
+                          if (!isNaN(startMs) && startMs > 100000000000 && !isNaN(endMs) && endMs >= startMs) {
+                            const diffSecs = Math.floor((endMs - startMs) / 1000);
+                            return sum + Math.min(86400, Math.max(0, diffSecs));
+                          }
+                          return sum;
+                        }, 0);
+                        const nowMs = Date.now();
+                        const clockInMs = clockInDate ? clockInDate.getTime() : null;
+                        const clockOutMs = clockOutDate
+                          ? clockOutDate.getTime()
+                          : (row.attendanceState === "working" || row.attendanceState === "break" ? nowMs : null);
+
                         const totalDurationSeconds =
-                          clockInDate && clockOutDate
-                            ? Math.max(0, (clockOutDate - clockInDate) / 1000)
+                          clockInMs && clockOutMs && clockOutMs >= clockInMs
+                            ? Math.min(86400, Math.max(0, Math.floor((clockOutMs - clockInMs) / 1000)))
                             : 0;
-                        const workingSeconds =
-                          typeof row.workingHours === "number"
-                            ? row.workingHours
-                            : Math.max(0, totalDurationSeconds - totalBreakSeconds);
+
+                        const workingSeconds = Math.max(0, totalDurationSeconds - totalBreakSeconds);
 
                         const displayHours = formatDuration(totalDurationSeconds);
                         const displayBreakHours = formatDuration(totalBreakSeconds);
                         const displayWorkingHours = formatDuration(workingSeconds);
+
+                        const actualDate = row.clockIn ? new Date(row.clockIn) : (row.date ? new Date(row.date) : null);
+                        const isToday =
+                          actualDate &&
+                          actualDate.toDateString() === new Date().toDateString();
 
                         return (
                           <>
@@ -308,7 +392,7 @@ const AttendanceCalendar = () => {
                             </td>
 
                             <td className="text-center">
-                              {clockOutDate
+                              {clockOutDate && (!isToday || row.attendanceState === "clocked_out")
                                 ? clockOutDate.toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
@@ -341,20 +425,25 @@ const AttendanceCalendar = () => {
                         </div>
                       </td>
 
-                      <td className="text-center">
+                      <td className="text-center py-5">
+                        <div className="flex items-center justify-center gap-2">
+                          <span
+                            className={`px-5 py-2 rounded-full font-sm ${statusStyle[row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours)?.toLowerCase()] || "bg-gray-100 text-gray-600"}`}
+                          >
+                            ● {row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours) || "present"}
+                          </span>
 
-                        <span
-                          className={`px-5 py-2 rounded-full font-sm ${statusStyle[row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours)?.toLowerCase()] || "bg-gray-100 text-gray-600"}`}
-                        >
-                          ● {row.status ? row.status : calculateAttendanceStatus(row.clockIn, row.clockOut, row.workingHours) || "present"}
-                        </span>
-
-                      </td>
-                      <td className="py-5 text-[#0b2b57] font-bold text-sm">
-                        <Edit size={16} className="mr-2" onClick={() => {
-                          setSelectedAttendances(row);
-                          setShowEdit(true);
-                        }} />
+                          <button
+                            onClick={() => {
+                              setSelectedAttendances(row);
+                              setShowform(true);
+                            }}
+                            className="p-2 hover:bg-gray-200 rounded-xl text-[#0b2b57] transition border border-gray-200 bg-white shadow-sm"
+                            title="Request Attendance Correction"
+                          >
+                            <PencilLine size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -377,7 +466,11 @@ const AttendanceCalendar = () => {
             className="w-full max-w-6xl max-h-[90vh]  overflow-y-auto overflow-x-hidden no-scrollbar"
           >
             <AttendanceCorrection
-              onClose={() => setShowform(false)}
+              selectedRecord={selectedattendance}
+              onClose={() => {
+                setShowform(false);
+                setSelectedAttendances(null);
+              }}
             />
           </motion.div>
         </div>
@@ -392,7 +485,7 @@ const AttendanceCalendar = () => {
           >
             <AttendanceEdit
               attendance={selectedattendance}
-              onSuccess={fetchAttendances}
+              onSuccess={fetchAttendancebyId}
               onClose={() => setShowEdit(false)}
             />
           </motion.div>

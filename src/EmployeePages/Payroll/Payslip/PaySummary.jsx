@@ -5,24 +5,37 @@ import SummarySkeleton from "./SummarySkeleton";
 import { useAuth } from "../../../context/AuthContext";
 
 const PaySummary = () => {
-    const { payslips = [] } = usePayslip();
+    const { payslips = [], loading } = usePayslip();
     const { user } = useAuth();
-    const payslipById = payslips.filter((item) =>
-        item.employeeId == user?.uid);
-    console.log(payslipById);
+    const userUid = user?.uid || user?.id || user?._id;
+    const userEmpId = user?.profile?.empId || user?.empId;
+
+    const empPayslips = (payslips || []).filter((item) =>
+        item.employeeId == userUid ||
+        item.employeeId == userEmpId ||
+        item.employeeId?.toLowerCase() == user?.email?.toLowerCase() ||
+        item.employeeName == user?.name ||
+        item.employeeName == user?.profile?.name
+    );
 
     // Latest payslip
-    const payslip = payslipById?.[0];
-    console.log(payslip);
+    const payslip = empPayslips?.[0];
 
     const monthyear = new Date().toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
     });
 
+    if (loading) {
+        return <SummarySkeleton />;
+    }
+
     if (!payslip) {
         return (
-            <SummarySkeleton />
+            <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center text-gray-500 shadow-sm">
+                <p className="text-lg font-bold text-gray-700">No pay summary available.</p>
+                <p className="text-xs text-gray-400 mt-1">Detailed monthly earnings and deductions will appear once salary is processed.</p>
+            </div>
         );
     }
 
@@ -41,7 +54,7 @@ const PaySummary = () => {
         },
         {
             title: "Conveyance",
-            amount: payslip.convayance || 0,
+            amount: payslip.conveyance || payslip.convayance || 0,
         },
     ];
 

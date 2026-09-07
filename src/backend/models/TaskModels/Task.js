@@ -30,7 +30,11 @@ const taskSchema = new mongoose.Schema(
       default: "New"
     },
 
-    dueDate: Date
+    dueDate: Date,
+    projectId: {
+      type: String,
+      default: ""
+    }
   },
   { timestamps: true }
 );

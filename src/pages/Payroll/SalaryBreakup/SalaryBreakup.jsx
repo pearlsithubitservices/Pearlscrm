@@ -36,11 +36,12 @@ const SalaryBreakup = ({ currentPayslip }) => {
         <p>Loading</p>
     }
 
-    const annualSummary = currentPayslip?.reduce(
+    const safePayslips = Array.isArray(currentPayslip) ? currentPayslip : [];
+    const latestPayslip = safePayslips[0] || {};
+
+    const annualSummary = safePayslips.reduce(
         (totals, slip) => {
             totals.basicSalary += Number(slip.basicSalary || 0);
-            totals.medical += Number(slip.medical || 0);
-            totals.performanceBonus += Number(slip.performanceBonus || 0);
             totals.conveyance += Number(slip.conveyance || 0);
             totals.medical += Number(slip.medical || 0);
             totals.performanceBonus += Number(slip.performanceBonus || 0);
@@ -57,8 +58,6 @@ const SalaryBreakup = ({ currentPayslip }) => {
         },
         {
             basicSalary: 0,
-            medical: 0,
-            performanceBonus: 0,
             conveyance: 0,
             medical: 0,
             performanceBonus: 0,
@@ -73,22 +72,18 @@ const SalaryBreakup = ({ currentPayslip }) => {
         }
     );
 
-    console.log(annualSummary);
-    console.log(payslips);
-
-
     const salaryData = [
-        ["Basic salary", currentPayslip[0]?.basicSalary, annualSummary.basicSalary],
-        ["Conveyance allowance", currentPayslip[0]?.conveyance, annualSummary.conveyance],
-        ["Medical allowance", currentPayslip[0]?.medical, annualSummary.medical],
-        ["Performance bonus (variable)", currentPayslip[0]?.performanceBonus, annualSummary.performanceBonus],
+        ["Basic salary", latestPayslip?.basicSalary || 0, annualSummary.basicSalary],
+        ["Conveyance allowance", latestPayslip?.conveyance || 0, annualSummary.conveyance],
+        ["Medical allowance", latestPayslip?.medical || 0, annualSummary.medical],
+        ["Performance bonus (variable)", latestPayslip?.performanceBonus || 0, annualSummary.performanceBonus],
     ];
 
     const deductionData = [
-        ["Provident Fund (PF)", currentPayslip[0]?.pf, annualSummary.pf],
-        ["ESIC", currentPayslip[0]?.esi, annualSummary?.esi],
-        ["Income Tax (TDS)", currentPayslip[0]?.tds, annualSummary.tds],
-        ["Professional Tax", currentPayslip[0]?.professionalTax, annualSummary.professionalTax],
+        ["Provident Fund (PF)", latestPayslip?.pf || 0, annualSummary.pf],
+        ["ESIC", latestPayslip?.esi || 0, annualSummary?.esi],
+        ["Income Tax (TDS)", latestPayslip?.tds || 0, annualSummary.tds],
+        ["Professional Tax", latestPayslip?.professionalTax || 0, annualSummary.professionalTax],
     ];
 
     const totalSalaryMonth = salaryData.reduce((sum, item) => sum + Number(item[1]), 0);

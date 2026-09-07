@@ -11,39 +11,73 @@ import AttendanceCamera from "./AttendanceCamera";
 import AttendanceDashboard from "./AttendanceDashboard";
 import AttendanceCalendar from "./AttendanceCalendar";
 
+import useEmpAttendance from "../../Hooks/useEmpAttendance";
+import { useAuth } from "../../context/AuthContext";
+
 const Attendance = () => {
     const [photoSubmitted, setPhotoSubmitted] = useState(false);
     const [clockedIn, setClockedIn] = useState(false);
 
     const [clockInTime, setClockInTime] = useState(null);
     const [clockOutTime, setClockOutTime] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    const [hours, setHours] = useState("");
-
-    console.log(hours);
-    // ✅ IMPORTANT: history state (FIX)
-    const [attendanceRecords, setAttendanceRecords] = useState([
-        {
-            clockIn: "9:30 AM",
-            clockOut: "6:30 PM",
-            date: "6/2/2026",
-            hours: 9,
-            breakHours: 1,
-            totalWorkingHours: 8,
-            status: "Present",
-            color: "bg-green-100 text-green-600",
-        }
-    ]);
-
-    const summary = {
-        present: 22,
-        absent: 2,
-        late: 3,
-        workingDays: 24,
+    const handleAttendanceChange = () => {
+        setRefreshKey(prev => prev + 1);
     };
 
-    // optional: latest record view
-    const calendarData = attendanceRecords;
+    const [hours, setHours] = useState("");
+    const [attendanceRecords, setAttendanceRecords] = useState([]);
+
+    const { getAttendanceById } = useEmpAttendance();
+    const { user } = useAuth();
+    const [summary, setSummary] = useState({
+        present: 0,
+        absent: 0,
+        late: 0,
+        workingDays: 0,
+    });
+
+    React.useEffect(() => {
+        const fetchMonthlyStats = async () => {
+            const userId = user?.uid || user?._id || user?.id || "";
+            if (!userId) return;
+
+            try {
+                const res = await getAttendanceById(userId);
+                const records = res?.data || [];
+                const now = new Date();
+
+                const currentMonthRecords = records.filter((item) => {
+                    if (!item.date) return false;
+                    const d = new Date(item.date);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                });
+
+                let present = 0;
+                let absent = 0;
+                let late = 0;
+
+                currentMonthRecords.forEach((rec) => {
+                    const st = (rec.status || "").toLowerCase();
+                    if (st === "present" || rec.clockIn) present++;
+                    if (st === "absent") absent++;
+                    if (st === "late" || st === "late comer") late++;
+                });
+
+                setSummary({
+                    present,
+                    absent,
+                    late,
+                    workingDays: currentMonthRecords.length,
+                });
+            } catch (err) {
+                console.error("Error fetching attendance stats:", err);
+            }
+        };
+
+        fetchMonthlyStats();
+    }, [user, refreshKey]);
 
     return (
         <div className="max-h-screen overflow-auto no-scrollbar bg-[#f4f1eb]  ">
@@ -125,8 +159,6 @@ const Attendance = () => {
                 >
                     <div className="bg-white rounded-3xl  shadow-sm  h-full ">
 
-                        
-
                         <AttendanceDashboard
                             photoSubmitted={photoSubmitted}
                             clockedIn={clockedIn}
@@ -140,6 +172,7 @@ const Attendance = () => {
                             hours={hours}
                             setAttendanceRecords={setAttendanceRecords}
                             attendanceRecords={attendanceRecords}
+                            onAttendanceChange={handleAttendanceChange}
                         />
 
                     </div>
@@ -154,10 +187,9 @@ const Attendance = () => {
             >
                 <div className="bg-[#f4f1eb] rounded-3xl border shadow-sm p-6">
 
-                    
-
                     <AttendanceCalendar
                         attendanceData={attendanceRecords}
+                        refreshTrigger={refreshKey}
                     />
 
                 </div>

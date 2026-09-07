@@ -76,10 +76,10 @@ export default function Attendance() {
     return `${hrs
       .toString()
       .padStart(2, '0')}:${mins
-      .toString()
-      .padStart(2, '0')}:${secs
-      .toString()
-      .padStart(2, '0')}`;
+        .toString()
+        .padStart(2, '0')}:${secs
+          .toString()
+          .padStart(2, '0')}`;
 
   };
 
@@ -91,7 +91,7 @@ export default function Attendance() {
 
       const response =
         await axios.post(
-            'https://pearlscrm.onrender.com/api/attendance/login',
+          'https://pearlscrm.onrender.com/api/attendance/login',
           {
             employee_uid:
               user.uid,
@@ -144,7 +144,7 @@ export default function Attendance() {
 
     setIsBreak(false);
 
-  handleLogout()
+    handleLogout()
 
   };
 
@@ -355,12 +355,11 @@ export default function Attendance() {
 
               <div className={`
                 px-4 py-2 rounded-2xl text-sm font-semibold
-                ${
-                  isWorking
-                    ? isBreak
-                      ? 'bg-yellow-100 text-yellow-600'
-                      : 'bg-green-100 text-green-600'
-                    : 'bg-red-100 text-red-500'
+                ${isWorking
+                  ? isBreak
+                    ? 'bg-yellow-100 text-yellow-600'
+                    : 'bg-green-100 text-green-600'
+                  : 'bg-red-100 text-red-500'
                 }
               `}>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API = "https://pearlscrm.onrender.com/api/mygoal";
+const API = `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/mygoal`;
 
 export default function useGoals() {
   const [loading, setLoading] = useState(false);
@@ -29,6 +29,7 @@ export default function useGoals() {
       return await fn();
     } catch (err) {
       setError(err.message);
+      throw err;
     } finally {
       setLoading(false);
     }

@@ -4,32 +4,8 @@ import { CircleDot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getFinancialYear } from '../../../Utils/formatNumber';
 import useGoals from '../../../Hooks/useGoals';
-const goals = [
-    {
-        title: "React 18 migration",
-        alignedTo: "Team OKR",
-        progress: 75,
-        status: "On Track",
-        due: "Due Jun 30, 2026",
-    },
-    {
-        title: "AWS Solutions Architect certification",
-        alignedTo: "Personal Growth",
-        progress: 75,
-        status: "On Track",
-        due: "Due Jun 20, 2026",
-    },
-    {
-        title: "Deliver mobile app v2.0",
-        alignedTo: "Company OKR",
-        progress: 100,
-        status: "Completed",
-        due: "Due Sep 30, 2026",
-    },
 
-];
-
-const MyGoals = () => {
+const MyGoals = ({ newGoal, refreshKey = 0 }) => {
     const navigate = useNavigate();
     const financialyear = getFinancialYear();
     const [goal, setGoal]=useState([]);
@@ -39,17 +15,25 @@ const MyGoals = () => {
         const fetchgoals = async () => {
             try {
                 const data = await getGoals();
-                setGoal(data);
-                if (data) {
-                    console.log(data);
-                }
+                setGoal(data || []);
             } catch (err) {
                 console.log(err);
             }
         };
 
         fetchgoals();
-    }, []);
+    }, [refreshKey, getGoals]);
+
+    useEffect(() => {
+        if (!newGoal) return;
+
+        setGoal((prevGoals) => {
+            const hasGoal = prevGoals.some((item) => item?._id === newGoal?._id);
+            if (hasGoal) return prevGoals;
+
+            return [newGoal, ...prevGoals];
+        });
+    }, [newGoal]);
 
     return (
         <>
@@ -60,7 +44,7 @@ const MyGoals = () => {
                 </h2>
 
                 <span className="bg-gray-100 px-5 py-2 rounded-full font-semibold text-gray-600">
-                    <p>{goals.length} Goals</p>
+                    <p>{goal?.length || 0} Goals</p>
                 </span>
             </div>
 
@@ -95,17 +79,20 @@ const MyGoals = () => {
 
                             <div className="text-right flex h-fit items-center justify-center gap-4">
                                 <span
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${goal.status === "Completed"
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
+                                        goal.status === "Completed"
                                         ? "bg-blue-50 text-[#0b2b57]"
-                                        : "bg-green-50 text-green-600"
+                                        : goal.status === "On Track"
+                                        ? "bg-green-50 text-green-600"
+                                        : "bg-yellow-50 text-yellow-600"
                                         }`}
                                 >
                                     <CircleDot size={12} />
-                                    {"on Track"}
+                                    {goal.status || "On Track"}
                                 </span>
 
                                 <p className="text-gray-500 ">
-                                    {new Date(goal.dueDate).toLocaleDateString('en-GB')}
+                                    {goal.dueDate ? new Date(goal.dueDate).toLocaleDateString('en-GB') : "No due date"}
                                 </p>
                             </div>
                         </div>

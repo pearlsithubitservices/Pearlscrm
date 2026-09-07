@@ -12,14 +12,14 @@ const LeaveBalance = () => {
   const { getTotalLeave } = useTotalLeave();
   const [totalLeave, setTotalLeave] = useState(null);
   const { leaves } = useLeave();
+  const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
   const leave = leaves.filter(
-    (item) => item.employeeId === user.uid
+    (item) => String(item.employeeId) === String(employeeId) && item.status?.toLowerCase() === "approved"
   );
-  console.log(leave);
   useEffect(() => {
     const fetchTotalLeave = async () => {
       try {
-        const data = await getTotalLeave(user?.uid);
+        const data = await getTotalLeave();
         setTotalLeave(data);
       } catch (error) {
         console.log(error.message);
@@ -27,27 +27,27 @@ const LeaveBalance = () => {
       }
     };
 
-    if (user?.uid) {
+    if (employeeId) {
       fetchTotalLeave();
     }
-  }, [user?.uid]);
+  }, [employeeId]);
   const totalPersonal = totalLeave?.personalLeave ?? 10;
   const totalSick = totalLeave?.sickLeave ?? 15;
   const totalAnnual = totalLeave?.annualLeave ?? 12;
   const balances = [
     {
       title: "Annual Leave",
-      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "annual")).length || 0,
+      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "annual")).reduce((sum, item) => sum + (item.leaveDays || 0), 0),
       total: totalAnnual,
     },
     {
       title: "Sick Leave",
-      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "sick")).length || 0,
+      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "sick")).reduce((sum, item) => sum + (item.leaveDays || 0), 0),
       total: totalSick,
     },
     {
       title: "Personal Leave",
-      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "personal")).length || 0,
+      used: leave.filter((item) => (item.leaveType?.toLowerCase() == "personal")).reduce((sum, item) => sum + (item.leaveDays || 0), 0),
       total: totalPersonal,
     },
   ];

@@ -33,16 +33,26 @@ export default function ReimbursementClaimForm({ onClose, getclaims }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data={
-      ...formData,
-      employee_uid:user.uid,
-       employee_name:user.displayname || "Deepan"
-    }
-    await submitClaim( data );
-    await getclaims();
-    onClose();
+    try {
+      const uid = user?.uid || user?.id || user?._id || "EMP001";
+      const empName = user?.displayName || user?.name || user?.email || "Employee";
+      const cleanAmount = String(formData.amount || "").replace(/[^0-9.]/g, "");
 
-    
+      const data = {
+        ...formData,
+        amount: cleanAmount,
+        employee_uid: uid,
+        employee_name: empName,
+      };
+      await submitClaim(data);
+      if (typeof getclaims === "function") {
+        await getclaims();
+      }
+      onClose();
+    } catch (err) {
+      console.error("Submit Claim Error:", err);
+      alert(err.message || "Failed to submit claim");
+    }
   };
 
   return (
@@ -98,7 +108,7 @@ export default function ReimbursementClaimForm({ onClose, getclaims }) {
           name="amount"
           value={formData.amount}
           onChange={handleChange}
-          placeholder="09:00 AM"
+          placeholder=""
         />
 
         <InputField
@@ -166,9 +176,9 @@ export default function ReimbursementClaimForm({ onClose, getclaims }) {
               Supported: JPG, PNG, PDF (Max 5MB)
             </p>
 
-            {formData.file && (
+            {formData.receipt && (
               <p className="mt-2 text-sm font-medium text-green-600">
-                {formData.receipt.name}
+                Selected: {formData.receipt.name}
               </p>
             )}
           </div>
@@ -188,9 +198,10 @@ export default function ReimbursementClaimForm({ onClose, getclaims }) {
 
         <button
           type="submit"
-          className="flex-1 py-4 rounded-2xl bg-[#1f66b2] text-white font-semibold text-lg"
+          disabled={loading}
+          className="flex-1 py-4 rounded-2xl bg-[#1f66b2] hover:bg-[#185392] text-white font-semibold text-lg transition disabled:opacity-50"
         >
-          Submit Claim
+          {loading ? "Submitting Claim..." : "Submit Claim"}
         </button>
       </div>
     </motion.form>

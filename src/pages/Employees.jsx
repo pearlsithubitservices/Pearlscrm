@@ -4,14 +4,6 @@ import React, {
   useEffect,
 
 } from 'react';
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
 
 import {
   Plus,
@@ -58,7 +50,6 @@ import LoadingPage from '../components/Dashboard/Loading';
 import Createemployee from './Createemployee';
 import AnimateModals from '../components/Dashboard/AnimateModals';
 import useEmployees from '../Hooks/useEmployees';
-import { db } from '../lib/firebase';
 
 
 export default function ClientManagement() {
@@ -140,68 +131,6 @@ export default function ClientManagement() {
 
     }
   ];
-  const [users, setUsers] = useState();
-  
-
-  // const sortedUsers = [...users]?.sort((a, b) => {
-  //   const aTime = a.createdAt?.seconds || 0;
-  //   const bTime = b.createdAt?.seconds || 0;
-
-  //   return bTime - aTime; // Newest first
-  // });
-
-  
-  // useEffect(() => {
-  //   const deleteUserByEmail = async () => {
-  //     try {
-  //       const snapshot = await getDocs(collection(db, "users"));
-
-  //       const userDoc = snapshot.docs.find(
-  //         (doc) => doc.data().email === "vishnuravichandran007@gmail.com"
-  //       );
-
-  //       if (!userDoc) {
-  //         console.log("User not found");
-  //         return;
-  //       }
-
-  //       await deleteDoc(doc(db, "users", userDoc.id));
-
-  //       console.log("User deleted successfully");
-  //     } catch (error) {
-  //       console.error("Error deleting user:", error);
-  //     }
-  //   };
-
-  //   deleteUserByEmail();
-  // }, []);
-
-
-  const fetchUsers = async () => {
-    setLoading(true);
-
-    try {
-      const snapshot = await getDocs(collection(db, "users"));
-
-      const usersData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setUsers(usersData);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers()
-
-  }, []);
-
-
   return (
     <div className="text-black max-h-screen overflow-y-auto no-scrollbar">
 
@@ -332,9 +261,9 @@ export default function ClientManagement() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="overflow-x-auto bg-white border border-black/10 rounded">
-            <table className="w-full min-w-[760px] text-left">
-              <thead className="bg-[#082f57] text-white text-xs uppercase tracking-wide">
-                <tr><th className="px-5 py-4">Name</th><th className="px-5 py-4">Emp ID</th><th className="px-5 py-4">Activity</th><th className="px-5 py-4">Role</th><th className="px-5 py-4">SME</th><th className="px-5 py-4 text-right">Action</th></tr>
+            <table className="w-full min-w-[760px] text-left text-white">
+              <thead className="bg-[#2563a9] text-white text-xs uppercase tracking-wide">
+                <tr><th className="px-5 text-white py-4">Name</th><th className="px-5 py-4 text-white">Emp ID</th><th className="px-5 py-4 text-white">Activity</th><th className="px-5 py-4 text-white">Role</th><th className="px-5 py-4 text-white">SME</th><th className="px-5 py-4 text-right text-white ">Action</th></tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {currentFiles.map((employee) => {

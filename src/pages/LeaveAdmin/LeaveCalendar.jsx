@@ -2,42 +2,14 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 
-const employees = [
-    {
-        id: 1,
-        name: "Suhail",
-        role: "Front end developer",
-        image: "https://randomuser.me/api/portraits/men/32.jpg",
-        date: "Aug 12 - Aug 13, 2024",
-        days: "1 Day",
-    },
-    {
-        id: 2,
-        name: "Abu",
-        role: "UI Designer",
-        image: "https://randomuser.me/api/portraits/men/45.jpg",
-        date: "Aug 12 - Aug 13, 2024",
-        days: "1 Day",
-    },
-    {
-        id: 3,
-        name: "Zara",
-        role: "Marketing",
-        image: "https://randomuser.me/api/portraits/women/65.jpg",
-        date: "Aug 12 - Aug 13, 2024",
-        days: "1 Day",
-    },
-];
-
 export default function LeaveCalendar({ leaves }) {
 
 
     const { user } = useAuth();
-    console.log(user.uid)
+    const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
     const otherLeaves = leaves.filter(
-        (item) => item.employeeId !== user.uid
+        (item) => String(item.employeeId) !== String(employeeId)
     );
-    console.log(otherLeaves)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

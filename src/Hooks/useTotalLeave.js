@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { apiUrl } from "../config/api";
 
 export default function useTotalLeave() {
     const { user } = useAuth();
@@ -8,14 +9,15 @@ export default function useTotalLeave() {
     const [error, setError] = useState(null);
     const [totalLeave, setTotalLeave] = useState(null);
 
-    const BASE_URL = "https://pearlscrm.onrender.com/api/totalLeave";
+    const BASE_URL = apiUrl("/totalLeave");
+    const employeeId = user?.profile?.empId || user?.empId || user?.id || user?.uid || user?._id;
 
     // ================= GET =================
     const getTotalLeave = async () => {
         try {
             setLoading(true);
 
-            const res = await fetch(`${BASE_URL}/${user.uid}`);
+            const res = await fetch(`${BASE_URL}/${employeeId}`);
             const data = await res.json();
 
             if (!res.ok) throw new Error(data.message);
@@ -60,7 +62,7 @@ export default function useTotalLeave() {
         try {
             setLoading(true);
 
-            const res = await fetch(`${BASE_URL}/${user.uid}`, {
+            const res = await fetch(`${BASE_URL}/${employeeId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

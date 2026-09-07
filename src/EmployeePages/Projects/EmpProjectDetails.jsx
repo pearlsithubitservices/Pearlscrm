@@ -11,27 +11,33 @@ import {
   Paperclip,
   Activity,
   X,
+  Star,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useEmployees from '../../Hooks/useEmployees';
+import { useAuth } from '../../context/AuthContext';
 import { apiUrl } from '../../config/api';
+import { socket } from '../../config/socket';
 import ProjectOverview from '../../components/ProjectDetails/ProjectOverview';
 import ProjectMilestone from '../../components/ProjectDetails/ProjectMilestone';
 import ProjectNotes from '../../components/ProjectDetails/ProjectNotes';
 import ProjectTeam from '../../components/ProjectDetails/ProjectTeam';
 import ProjectActivity from '../../components/ProjectDetails/ProjectActivity';
+import ProjectTasks from '../../components/ProjectDetails/ProjectTasks';
+import ProjectDocuments from '../../components/ProjectDetails/ProjectDocuments';
 
 export default function EmpProjectDetails() {
   const [activeTab, setActiveTab] = useState('Overview');
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
   const { employees } = useEmployees();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground) setLoading(true);
       const res = await fetch(apiUrl('/projects'));
       if (res.ok) {
         const data = await res.json();
@@ -40,12 +46,24 @@ export default function EmpProjectDetails() {
     } catch (error) {
       console.error('Error fetching project details for employee:', error);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProjects();
+
+    if (socket) {
+      const handleSync = () => fetchProjects(true);
+      socket.on('projectUpdated', handleSync);
+      socket.on('taskUpdated', handleSync);
+      socket.on('taskCreated', handleSync);
+      return () => {
+        socket.off('projectUpdated', handleSync);
+        socket.off('taskUpdated', handleSync);
+        socket.off('taskCreated', handleSync);
+      };
+    }
   }, [id]);
 
   const projectById = useMemo(() => {
@@ -54,18 +72,43 @@ export default function EmpProjectDetails() {
 
   const projectObj = projectById[0] || {};
 
-  const tabs = ['Overview', 'Milestones', 'Notes', 'Team', 'Activity'];
+  const isLeader = useMemo(() => {
+    if (!user || !projectObj._id) return false;
+    const uId = String(user._id || user.uid || user.id || '').toLowerCase();
+    const uName = String(user.displayName || user.name || user.employeeName || '').toLowerCase();
+
+    if (projectObj.leader && String(projectObj.leader).toLowerCase().includes(uName || uId)) {
+      return true;
+    }
+
+    const members = Array.isArray(projectObj.members) ? projectObj.members : [];
+    return members.some((m) => {
+      if (typeof m === 'object') {
+        const mId = String(m._id || m.id || m.uid || '').toLowerCase();
+        const mName = String(m.name || m.employeeName || '').toLowerCase();
+        const isUser = (uId && mId === uId) || (uName && mName && mName.includes(uName));
+        return isUser && String(m.role || '').toLowerCase() === 'leader';
+      }
+      return false;
+    });
+  }, [user, projectObj]);
+
+  const tabs = ['Overview', 'Milestones', 'Notes', 'Tasks', 'Documents', 'Team', 'Activity'];
 
   const renderTab = () => {
     switch (activeTab) {
       case 'Overview':
         return <ProjectOverview projects={projectById} />;
       case 'Milestones':
-        return <ProjectMilestone project={projectObj} projects={projectById} fetchProjects={fetchProjects} />;
+        return <ProjectMilestone project={projectObj} projects={projectById} fetchProjects={fetchProjects} isLeader={isLeader} user={user} />;
       case 'Notes':
-        return <ProjectNotes project={projectObj} projects={projectById} fetchProjects={fetchProjects} />;
+        return <ProjectNotes project={projectObj} projects={projectById} fetchProjects={fetchProjects} user={user} />;
+      case 'Tasks':
+        return <ProjectTasks project={projectObj} projects={projectById} fetchProjects={fetchProjects} isLeader={isLeader} user={user} />;
+      case 'Documents':
+        return <ProjectDocuments project={projectObj} projects={projectById} fetchProjects={fetchProjects} isLeader={isLeader} user={user} />;
       case 'Team':
-        return <ProjectTeam projects={projectById} fetchProjects={fetchProjects} />;
+        return <ProjectTeam projects={projectById} fetchProjects={fetchProjects} isLeader={isLeader} user={user} />;
       case 'Activity':
         return <ProjectActivity project={projectObj} projects={projectById} />;
       default:
@@ -74,7 +117,7 @@ export default function EmpProjectDetails() {
   };
 
   return (
-    <div className="flex max-h-screen overflow-y-auto no-scrollbar bg-[#f3f0eb] p-4 md:p-8 relative">
+    <div className="w-full min-h-screen overflow-y-auto custom-scrollbar bg-[#f5f3ef] p-4 md:p-8 flex justify-center pb-12 relative">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -105,6 +148,13 @@ export default function EmpProjectDetails() {
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
+              {isLeader && (
+                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1 border border-amber-300 shadow-2xs">
+                  <Star size={14} className="fill-amber-500 text-amber-600" />
+                  <span>PROJECT LEADER</span>
+                </span>
+              )}
+
               <span
                 className={`px-4 py-1.5 rounded-full text-xs font-bold ${
                   (projectObj.status || '').toLowerCase() === 'completed'

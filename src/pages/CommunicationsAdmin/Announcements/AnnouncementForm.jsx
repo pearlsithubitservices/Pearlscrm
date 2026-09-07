@@ -15,11 +15,13 @@ const AnnouncementForm = ({ onClose, fetchAnnouncements }) => {
   const { createAnnouncement } = useAnnouncement();
   const { user } = useAuth();
 
+  const defaultAuthor = user?.displayName || (user?.email ? user.email.split("@")[0] : "Admin");
+
   const [form, setForm] = useState({
     priority: "Med",
     title: "",
     description: "",
-    author: user?.uid || "",
+    author: defaultAuthor,
     role: "",
     date: new Date().toLocaleDateString(),
   });
@@ -35,14 +37,17 @@ const AnnouncementForm = ({ onClose, fetchAnnouncements }) => {
     e.preventDefault();
 
     try {
-      await createAnnouncement(form);
+      await createAnnouncement({
+        ...form,
+        author: form.author || defaultAuthor,
+      });
       await fetchAnnouncements();
 
       setForm({
         priority: "Med",
         title: "",
         description: "",
-        author: user?.uid || "",
+        author: defaultAuthor,
         role: "",
         date: new Date().toLocaleDateString(),
       });

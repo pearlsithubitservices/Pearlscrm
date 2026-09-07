@@ -116,7 +116,7 @@ export default function CreateTask({ onClose, onSuccess }) {
 
   return (
 
-    <div className="max-w-5xl mx-auto bg-[#e9e7e2] rounded-[40px] p-10 relative">
+    <div className="max-w-5xl mx-auto bg-[#e9e7e2] rounded-[40px] p-6 sm:p-10 relative max-h-[90vh] overflow-y-auto modal-scrollbar shadow-2xl">
       <div className='absolute top-5 right-5 text-red-600 font-bold w-25 h-25 hover:bg-white rounded'>
         <X size={22} strokeWidth='3px' onClick={onClose} />
       </div>

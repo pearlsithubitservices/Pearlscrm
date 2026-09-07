@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 
 const Project = require("../models/Projects");
 
@@ -24,6 +25,12 @@ router.get("/", async (req, res) => {
 // ======================
 router.get("/:id", async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({
+                message: "Project not found",
+            });
+        }
+
         const project = await Project.findById(req.params.id);
 
         if (!project) {
@@ -41,6 +48,29 @@ router.get("/:id", async (req, res) => {
 });
 
 const { getIO } = require("../Socket");
+
+const Notification = require("../models/CommunicationModels/Notifications");
+
+// Helper function to send notification to team member
+const sendProjectNotification = async (empId, title, sub = "Project Management") => {
+    if (!empId) return;
+    try {
+        const notif = await Notification.create({
+            title,
+            sub,
+            notificationType: "General",
+            employeeId: String(empId),
+        });
+
+        const io = getIO();
+        if (io) {
+            io.to(`user_${empId}`).emit("newNotification", notif);
+            io.to(String(empId)).emit("newNotification", notif);
+        }
+    } catch (err) {
+        console.warn("Could not create project notification:", err.message);
+    }
+};
 
 // ======================
 // CREATE PROJECT
@@ -68,12 +98,42 @@ router.post("/", async (req, res) => {
             ];
         }
 
+        // Clean empty ObjectId / Date fields
+        if (!bodyData.clientId || bodyData.clientId === "") {
+            delete bodyData.clientId;
+        }
+        if (!bodyData.assignedDate || bodyData.assignedDate === "") {
+            delete bodyData.assignedDate;
+        }
+        if (!bodyData.dueDate || bodyData.dueDate === "") {
+            delete bodyData.dueDate;
+        }
+
+        if (!bodyData.company || !bodyData.company.trim()) {
+            return res.status(400).json({ message: "Company name is required" });
+        }
+        if (!bodyData.companylocation || !bodyData.companylocation.trim()) {
+            bodyData.companylocation = "Location Not Specified";
+        }
+        if (!bodyData.title || !bodyData.title.trim()) {
+            return res.status(400).json({ message: "Project title is required" });
+        }
+
         const project = await Project.create(bodyData);
         const io = getIO();
         if (io) {
             io.emit("projectCreated", project);
             io.emit("projectUpdated", project);
         }
+
+        // Send notifications to assigned members
+        if (Array.isArray(project.members)) {
+            project.members.forEach((m) => {
+                const targetId = m.uid || m._id || m.id;
+                sendProjectNotification(targetId, `Assigned to new Project: ${project.title}`);
+            });
+        }
+
         res.status(201).json(project);
     } catch (error) {
         res.status(400).json({
@@ -87,12 +147,25 @@ router.post("/", async (req, res) => {
 // ======================
 router.put("/:id", async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ message: "Project not found" });
+        }
         const existing = await Project.findById(req.params.id);
         if (!existing) {
             return res.status(404).json({ message: "Project not found" });
         }
 
         const updateData = { ...req.body };
+
+        if (!updateData.clientId || updateData.clientId === "") {
+            delete updateData.clientId;
+        }
+        if (!updateData.assignedDate || updateData.assignedDate === "") {
+            delete updateData.assignedDate;
+        }
+        if (!updateData.dueDate || updateData.dueDate === "") {
+            delete updateData.dueDate;
+        }
 
         // If notes were added, append activity log if not provided
         if (updateData.notes && Array.isArray(updateData.notes) && updateData.notes.length > (existing.notes || []).length) {
@@ -106,7 +179,7 @@ router.put("/:id", async (req, res) => {
             updateData.activities = [newActivity, ...(existing.activities || updateData.activities || [])];
         }
 
-        // If milestones were updated, append milestone activity log
+        // If milestones were updated, append milestone activity log & auto-calculate progress
         if (updateData.milestones && Array.isArray(updateData.milestones)) {
             const newCount = updateData.milestones.length;
             const oldCount = (existing.milestones || []).length;
@@ -119,6 +192,12 @@ router.put("/:id", async (req, res) => {
                     iconType: "note",
                 };
                 updateData.activities = [msActivity, ...(existing.activities || updateData.activities || [])];
+            }
+
+            // Auto progress calculation
+            if (newCount > 0) {
+                const completedCount = updateData.milestones.filter((m) => m.completed).length;
+                updateData.progress = Math.round((completedCount / newCount) * 100);
             }
         }
 
@@ -149,6 +228,9 @@ router.put("/:id", async (req, res) => {
 // ======================
 router.delete("/:id", async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ message: "Project not found" });
+        }
         const project = await Project.findByIdAndDelete(req.params.id);
 
         if (!project) {
@@ -265,6 +347,11 @@ router.put("/:projectId/member", async (req, res) => {
             io.emit("projectUpdated", project);
         }
 
+        const targetId = member.uid || member._id || member.id;
+        if (targetId) {
+            sendProjectNotification(targetId, `You were added to Project: ${project.title} (${member.role || "Developer"})`);
+        }
+
         res.json(project);
     } catch (error) {
         res.status(400).json({
@@ -273,11 +360,111 @@ router.put("/:projectId/member", async (req, res) => {
     }
 });
 
+// ======================
+// ADD DOCUMENT TO PROJECT
+// ======================
+router.post("/:projectId/documents", async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { name, url, type, size, uploadedBy } = req.body;
+
+        if (!name || !url) {
+            return res.status(400).json({ message: "Document name and URL are required" });
+        }
+
+        const newDoc = {
+            name,
+            url,
+            type: type || "file",
+            size: size || "N/A",
+            uploadedBy: uploadedBy || "User",
+            date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        };
+
+        const docActivity = {
+            title: `Document Uploaded: ${name}`,
+            desc: `Uploaded by ${newDoc.uploadedBy}`,
+            time: new Date().toLocaleString(),
+            iconType: "note",
+        };
+
+        const project = await Project.findByIdAndUpdate(
+            projectId,
+            {
+                $push: {
+                    documents: newDoc,
+                    activities: {
+                        $each: [docActivity],
+                        $position: 0,
+                    },
+                },
+            },
+            { new: true }
+        );
+
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        const io = getIO();
+        if (io) {
+            io.emit("projectUpdated", project);
+        }
+
+        res.status(201).json(project);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// ======================
+// DELETE DOCUMENT FROM PROJECT
+// ======================
+router.delete("/:projectId/documents/:documentId", async (req, res) => {
+    try {
+        const { projectId, documentId } = req.params;
+
+        const removeDocActivity = {
+            title: "Document Removed",
+            desc: "A document was deleted from this project",
+            time: new Date().toLocaleString(),
+            iconType: "user_remove",
+        };
+
+        const project = await Project.findByIdAndUpdate(
+            projectId,
+            {
+                $pull: {
+                    documents: { _id: documentId },
+                },
+                $push: {
+                    activities: {
+                        $each: [removeDocActivity],
+                        $position: 0,
+                    },
+                },
+            },
+            { new: true }
+        );
+
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        const io = getIO();
+        if (io) {
+            io.emit("projectUpdated", project);
+        }
+
+        res.json(project);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
 // TEST
 router.get("/test", (req, res) => {
     res.send("Projects route working");
 });
-
-
 
 module.exports = router;

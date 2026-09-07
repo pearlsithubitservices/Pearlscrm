@@ -68,5 +68,63 @@ router.delete("/:id", async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+// GET SINGLE EMPLOYEE
+router.get("/:id", async (req, res) => {
+    try {
+        const employee = await Employee.findById(req.params.id)
+            .populate("tasks");
 
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found",
+            });
+        }
+
+        res.status(200).json(employee);
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+});
+// UPDATE EMPLOYEE
+router.put("/:id", async (req, res) => {
+    try {
+        const updatedEmployee =
+            await Employee.findByIdAndUpdate(
+                req.params.id,
+                {
+                    employeeName: req.body.employeeName,
+                    employeeRole: req.body.employeeRole,
+                    contact: req.body.contact,
+                    email: req.body.email,
+                    location: req.body.location,
+                    joinDate: req.body.joinDate,
+                    notes: req.body.notes,
+                },
+                {
+                    new: true,
+                    runValidators: true,
+                }
+            );
+
+        if (!updatedEmployee) {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found",
+            });
+        }
+
+        res.status(200).json(updatedEmployee);
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+});
 module.exports = router;

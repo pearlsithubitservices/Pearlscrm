@@ -41,12 +41,12 @@ export default function EmployeeDetails({ onClose, empId }) {
 
           {/* ID */}
           <div className="mt-3 px-3 py-1 rounded-lg bg-white/60 backdrop-blur text-xs font-medium text-[#123861]">
-            ID : #{employee?.id?.slice(0, 5) || "N/A"}
+            ID : #{employee?._id ? String(employee._id).slice(-5).toUpperCase() : employee?.id || "EMP"}
           </div>
 
           {/* NAME */}
           <h2 className="mt-3 text-lg font-bold text-[#123861] text-center break-words">
-            {employee?.name || "Unknown Employee"}
+            {employee?.name || employee?.employeeName || "Unknown Employee"}
           </h2>
         </div>
       </div>
@@ -58,19 +58,22 @@ export default function EmployeeDetails({ onClose, empId }) {
         </h3>
 
         <div className="space-y-1">
-          <Field label="Name" value={employee?.name} />
-          <Field label="Department" value={employee?.dept} />
-          <Field label="Role" value={employee?.role} />
-          <Field label="Location" value={employee?.location} />
-          <Field label="Work Mode" value={employee?.workMode} />
-          <Field label="Phone" value={employee?.phone} />
+          <Field label="Name" value={employee?.name || employee?.employeeName} />
+          <Field label="Department" value={employee?.dept || employee?.department || "General"} />
+          <Field label="Role" value={employee?.role || employee?.employeeRole || "Employee"} />
+          <Field label="Location" value={employee?.location || employee?.city || "Chennai, TN"} />
+          <Field label="Work Mode" value={employee?.workMode || "On-Site"} />
+          <Field label="Phone" value={employee?.phone || employee?.mobileNumber || "-"} />
           <Field label="Email" value={employee?.email} />
         </div>
 
         {/* BUTTON */}
-        <button className="w-full mt-6 py-3 rounded-xl bg-[#1f5fa8] text-white font-medium hover:bg-[#174b85] transition">
+        <a
+          href={`mailto:${employee?.email}`}
+          className="block text-center w-full mt-6 py-3 rounded-xl bg-[#1f5fa8] text-white font-medium hover:bg-[#174b85] transition"
+        >
           Send Email
-        </button>
+        </a>
       </div>
     </motion.div>
   );

@@ -2,7 +2,12 @@ const mongoose = require("mongoose");
 
 const totalLeaveSchema = new mongoose.Schema(
   {
-   
+    employeeId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
 
     personalLeave: {
       type: Number,

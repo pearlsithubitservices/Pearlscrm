@@ -141,7 +141,6 @@ const HolidayForm = ({ onClose }) => {
               name="holidayName"
               value={holidayData.holidayName}
               onChange={handleChange}
-              placeholder="Enter holiday name"
               className="w-full border rounded-xl px-4 py-3 outline-none"
               required
             />
@@ -190,7 +189,6 @@ const HolidayForm = ({ onClose }) => {
               name="description"
               value={holidayData.description}
               onChange={handleChange}
-              placeholder="Description"
               className="w-full border rounded-xl px-4 py-3"
             />
           </div>

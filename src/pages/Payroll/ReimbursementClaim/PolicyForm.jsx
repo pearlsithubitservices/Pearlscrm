@@ -46,10 +46,10 @@ export default function PolicyForm({ onClose, editData, getPolicy }) {
         try {
             if (isEdit) {
                 await updatePolicy(editData._id, payload);
-                await getPolicy();
+                if (typeof getPolicy === "function") await getPolicy();
             } else {
                 await addPolicy(payload);
-                await getPolicy();
+                if (typeof getPolicy === "function") await getPolicy();
             }
 
             onClose?.();

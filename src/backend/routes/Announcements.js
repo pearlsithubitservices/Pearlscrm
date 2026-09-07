@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const announcementSchema = require('../models/CommunicationModels/Announcements');
+const notificationSchema = require('../models/CommunicationModels/Notifications');
 
 //Get Announcements
 router.get("/", async (req, res) => {
@@ -20,7 +21,21 @@ router.post("/", async (req, res) => {
     try {
         const result = await announcementSchema.create(
             req.body
-        )
+        );
+
+        // Auto create system notification for employees
+        try {
+            await notificationSchema.create({
+                title: req.body.title ? `Announcement: ${req.body.title}` : "New Company Announcement",
+                sub: req.body.role || req.body.author || "HR Manager",
+                notificationType: "General",
+                isImportant: true,
+                isRead: false
+            });
+        } catch (notifErr) {
+            console.error("Error creating auto notification:", notifErr);
+        }
+
         res.status(200).json(result);
     }
     catch (error) {

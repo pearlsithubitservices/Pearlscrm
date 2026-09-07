@@ -18,7 +18,9 @@ import LoadingPage from '../../components/Dashboard/Loading';
 import Pagination from '../../components/Pagination';
 import { useAuth } from '../../context/AuthContext';
 import useEmployees from '../../Hooks/useEmployees';
+import { getProjectHealthStatus } from '../../Utils/projectHealth';
 import { apiUrl } from '../../config/api';
+import { socket } from '../../config/socket';
 
 export default function EmpProjects() {
   const navigate = useNavigate();
@@ -32,9 +34,9 @@ export default function EmpProjects() {
 
   const buttons = ['All', 'Pending', 'On Track', 'At Risk', 'Completed'];
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground) setLoading(true);
       const res = await fetch(apiUrl('/projects'));
       if (res.ok) {
         const data = await res.json();
@@ -43,12 +45,28 @@ export default function EmpProjects() {
     } catch (error) {
       console.error('Error fetching projects for employee:', error);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProjects();
+
+    if (socket) {
+      const handleSync = () => fetchProjects(true);
+      socket.on('projectCreated', handleSync);
+      socket.on('projectUpdated', handleSync);
+      socket.on('projectDeleted', handleSync);
+      socket.on('taskCreated', handleSync);
+      socket.on('taskUpdated', handleSync);
+      return () => {
+        socket.off('projectCreated', handleSync);
+        socket.off('projectUpdated', handleSync);
+        socket.off('projectDeleted', handleSync);
+        socket.off('taskCreated', handleSync);
+        socket.off('taskUpdated', handleSync);
+      };
+    }
   }, []);
 
   const employeeMap = useMemo(() => {
@@ -95,28 +113,33 @@ export default function EmpProjects() {
   }, [user, projects]);
 
   const filteredProjects = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return userProjects.filter((p) => {
       const titleMatch = (p.title || '').toLowerCase().includes(search.toLowerCase());
       const companyMatch = (p.company || '').toLowerCase().includes(search.toLowerCase());
       const matchesSearch = titleMatch || companyMatch;
 
-      const isOverdue = p.dueDate && new Date(p.dueDate) <= new Date();
-      const statusStr = (p.status || '').toLowerCase();
-
+      const health = getProjectHealthStatus(p);
+      const activeTab = buttons[active];
       let matchesStatus = true;
-      if (buttons[active] === 'Pending') {
-        matchesStatus = statusStr === 'pending' || statusStr === 'in progress' || statusStr === 'planning' || (statusStr !== 'completed' && Number(p.progress || 0) < 100);
-      } else if (buttons[active] === 'On Track') {
-        matchesStatus = !isOverdue && statusStr !== 'completed';
-      } else if (buttons[active] === 'At Risk') {
-        matchesStatus = isOverdue && statusStr !== 'completed';
-      } else if (buttons[active] === 'Completed') {
-        matchesStatus = statusStr === 'completed' || Number(p.progress || 0) === 100;
+
+      if (activeTab === 'Pending') {
+        const st = (p.status || '').toLowerCase();
+        const prog = Number(p.progress || 0);
+        matchesStatus = st !== 'completed' && prog < 100;
+      } else if (activeTab === 'On Track' || activeTab === 'on Track') {
+        matchesStatus = health === 'On Track';
+      } else if (activeTab === 'At Risk') {
+        matchesStatus = health === 'At Risk';
+      } else if (activeTab === 'Completed') {
+        matchesStatus = health === 'Completed';
       }
 
       return matchesSearch && matchesStatus;
     });
-  }, [userProjects, search, active]);
+  }, [userProjects, search, active, buttons]);
 
   /* PAGINATION */
   const filesPerPage = 5;
@@ -127,20 +150,13 @@ export default function EmpProjects() {
 
   const pendingCount = userProjects.filter((p) => {
     const st = (p.status || '').toLowerCase();
-    return st === 'pending' || st === 'in progress' || st === 'planning' || (st !== 'completed' && Number(p.progress || 0) < 100);
+    const prog = Number(p.progress || 0);
+    return st !== 'completed' && prog < 100;
   }).length;
 
-  const onTrackCount = userProjects.filter(
-    (p) => new Date(p.dueDate) > new Date() && (p.status || '').toLowerCase() !== 'completed'
-  ).length;
-
-  const atRiskCount = userProjects.filter(
-    (p) => new Date(p.dueDate) <= new Date() && (p.status || '').toLowerCase() !== 'completed'
-  ).length;
-
-  const completedCount = userProjects.filter(
-    (p) => (p.status || '').toLowerCase() === 'completed'
-  ).length;
+  const atRiskCount = userProjects.filter((p) => getProjectHealthStatus(p) === 'At Risk').length;
+  const onTrackCount = userProjects.filter((p) => getProjectHealthStatus(p) === 'On Track').length;
+  const completedCount = userProjects.filter((p) => getProjectHealthStatus(p) === 'Completed').length;
 
   const stats = [
     {
@@ -174,7 +190,7 @@ export default function EmpProjects() {
   ];
 
   return (
-    <div className="flex max-h-screen overflow-y-auto custom-scrollbar bg-[#f3f0eb] overflow-x-hidden">
+    <div className="flex w-full min-h-screen overflow-y-auto custom-scrollbar bg-[#f3f0eb] overflow-x-hidden pb-12">
       <div className="flex-1 flex flex-col min-h-screen">
         {/* TOPBAR */}
         <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20 shadow-2xs">
@@ -256,15 +272,15 @@ export default function EmpProjects() {
               No projects found matching filter.
             </div>
           ) : (
-            <div className="max-h-[620px] overflow-y-auto pr-2 no-scrollbar">
+            <div className="w-full pr-2">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4"
               >
                 {currentFiles.map((p) => {
-                  const isOverdue = p.dueDate && new Date(p.dueDate) <= new Date();
-                  const progressVal = Number(p.progress) || 0;
+                  const healthLabel = getProjectHealthStatus(p);
+                  const progressVal = Number(p?.progress) || 0;
 
                   return (
                     <div
@@ -298,10 +314,14 @@ export default function EmpProjects() {
 
                           <span
                             className={`text-xs px-3 py-1 rounded-full font-bold ${
-                              isOverdue ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+                              healthLabel === 'Completed'
+                                ? 'bg-purple-100 text-purple-700'
+                                : healthLabel === 'At Risk'
+                                ? 'bg-rose-100 text-rose-700'
+                                : 'bg-emerald-100 text-emerald-700'
                             }`}
                           >
-                            {isOverdue ? 'At Risk' : 'On Track'}
+                            {healthLabel}
                           </span>
                         </div>
                       </div>

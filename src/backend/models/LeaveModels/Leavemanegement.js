@@ -49,7 +49,7 @@ const leaveSchema = new mongoose.Schema(
 
         managerName: {
             type: String,
-            required: true,
+            default: "",
             trim: true,
         },
          department: {
@@ -60,8 +60,7 @@ const leaveSchema = new mongoose.Schema(
 
         managerId: {
             type: String,
-           
-            required: true,
+            default: "",
         },
 
         status: {

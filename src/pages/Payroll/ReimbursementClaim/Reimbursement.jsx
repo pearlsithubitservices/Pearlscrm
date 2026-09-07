@@ -15,7 +15,8 @@ const Reimbursement = ({ currentPayslip }) => {
     const fetchClaims = async () => {
         try {
             const data = await getClaims();
-            setClaims(data.data);
+            const list = Array.isArray(data) ? data : data?.data || [];
+            setClaims(list);
         } catch (error) {
             console.error("Error fetching claims:", error);
         }
@@ -25,7 +26,9 @@ const Reimbursement = ({ currentPayslip }) => {
             <ReimbursementClaim
                 claims={claims}
                 currentpayslip={currentPayslip}
-                getClaims={getClaims} />
+                getClaims={fetchClaims}
+                onRefresh={fetchClaims}
+            />
             <ReimbursementPolicies />
         </div>
     )

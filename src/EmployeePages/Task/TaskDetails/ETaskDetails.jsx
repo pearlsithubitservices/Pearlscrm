@@ -190,7 +190,7 @@ export default function ETaskDetails() {
     const pr = (task?.priority || "Medium").toLowerCase();
 
     return (
-        <div className="max-h-screen overflow-y-auto custom-scrollbar bg-[#f3f0eb] p-2 md:p-6 relative min-h-screen">
+        <div className="w-full min-h-screen overflow-y-auto custom-scrollbar bg-[#f3f0eb] p-2 md:p-6 relative pb-12">
             {/* CLOSE BUTTON */}
             <div
                 className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white border border-gray-200 text-gray-600 flex items-center justify-center cursor-pointer hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-xs"
