@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+build-output.txt
 
 # Editor directories and files
 .vscode/*
@@ -23,8 +24,9 @@ dist-ssr
 *.sln
 *.sw?
 
-# WhatsApp AI Automation secrets
-src/backend/whatsapp Automation backend/.env
+# Backend
+backend/.env
+backend/node_modules
 
 # Python generated files
 __pycache__/
