@@ -14,11 +14,16 @@ export default function ImportantNotifications() {
   console.log(notifications);
 
   const { user } = useAuth();
-  console.log(user.uid);
-  const empnotification = notifications.filter((item) =>
-    item.employeeId == user.uid
-  );
-  console.log(empnotification);
+  const currentUserId = user?.uid || user?.id || user?._id;
+
+  // Show notifications targeted to this employee AND general broadcast notifications
+  const empnotification = notifications.filter((item) => {
+    if (!item) return false;
+    if (item.employeeId === "admin") return false;
+    if (currentUserId && String(item.employeeId) === String(currentUserId)) return true;
+    if (!item.employeeId && item.senderId !== String(currentUserId) && !item.title?.startsWith("New Feedback:")) return true;
+    return false;
+  });
   const today = new Date();
 
   const todayNotificationCount = empnotification.filter((item) => {

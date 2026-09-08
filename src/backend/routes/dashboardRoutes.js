@@ -4,7 +4,7 @@ const router = express.Router();
 
 const Lead = require("../models/Leads");
 const Task = require("../models/TaskModels/Task");
-const Followup = require("../models/Followup");
+const Payment = require("../models/Payment");
 
 router.get("/", async (req, res) => {
 
@@ -23,8 +23,24 @@ router.get("/", async (req, res) => {
         status: "Completed",
       });
 
-    const followupsToday =
-      await Followup.countDocuments();
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const monthlyRevenueResult = await Payment.aggregate([
+      {
+        $match: {
+          issuedDate: { $gte: monthStart },
+          status: { $nin: ["Cancelled", "cancelled"] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$budget" },
+        },
+      },
+    ]);
 
     const recentLeads =
       await Lead.find()
@@ -40,7 +56,7 @@ router.get("/", async (req, res) => {
       totalLeads,
       pendingTasks,
       completedTasks,
-      followupsToday,
+      monthlyRevenue: monthlyRevenueResult[0]?.total || 0,
       recentLeads,
       todayTasks,
     });

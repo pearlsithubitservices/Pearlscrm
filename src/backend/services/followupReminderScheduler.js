@@ -34,10 +34,25 @@ const checkFollowupReminders = async () => {
     for (const item of pendingFollowups) {
       let isDue = false;
 
-      // Check date string or nextFollowupDate
-      if (item.date && item.date <= todayStr) {
-        isDue = true;
-      } else if (item.nextFollowupDate && new Date(item.nextFollowupDate) <= now) {
+      // Robust check for date, nextFollowupDate, or fallback to today
+      if (item.date) {
+        const itemDateStr = String(item.date).split("T")[0];
+        // If date format is YYYY-MM-DD or earlier
+        if (itemDateStr <= todayStr) {
+          isDue = true;
+        } else {
+          // Try parsing date string
+          const parsed = new Date(item.date);
+          if (!isNaN(parsed.getTime()) && parsed <= now) {
+            isDue = true;
+          }
+        }
+      } else if (item.nextFollowupDate) {
+        if (new Date(item.nextFollowupDate) <= now) {
+          isDue = true;
+        }
+      } else {
+        // Fallback: If no date specified, pending followup is due for today
         isDue = true;
       }
 
@@ -57,24 +72,10 @@ const checkFollowupReminders = async () => {
 
             if (io) {
               io.to(`user_${item.assignedTo}`).emit("newNotification", notif);
-              io.to(String(item.assignedTo)).emit("newNotification", notif);
-              io.to(`user_${item.assignedTo}`).emit("followupReminder", {
-                followup: item,
-                notification: notif,
-              });
             }
           } catch (nErr) {
             console.warn("Error creating reminder notification:", nErr.message);
           }
-        }
-
-        // Broadcast live socket reminder event globally
-        if (io) {
-          io.emit("followupReminder", {
-            followup: item,
-            title: notifTitle,
-            message: notifMsg,
-          });
         }
 
         // Mark reminderSent as true so it doesn't duplicate
@@ -90,18 +91,7 @@ const checkFollowupReminders = async () => {
 };
 
 const startFollowupReminderScheduler = () => {
-  if (schedulerStarted) {
-    return;
-  }
-
-  schedulerStarted = true;
-  console.log("⏰ [FollowupScheduler] Starting automated follow-up reminder service...");
-  
-  // Initial check after 10 seconds
-  setTimeout(async function runReminderCheck() {
-    await checkFollowupReminders();
-    setTimeout(runReminderCheck, 60000); // Every 60 seconds
-  }, 10000);
+  console.log("⏰ [FollowupScheduler] Automated background follow-up scheduler disabled (Page notifications active).");
 };
 
 module.exports = { startFollowupReminderScheduler, checkFollowupReminders };

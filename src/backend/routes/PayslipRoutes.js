@@ -3,6 +3,7 @@ const router = express.Router();
 const Payslip = require("../models/Payroll&Benefits/Payslip");
 const Notification = require("../models/CommunicationModels/Notifications");
 const { getIO } = require("../Socket");
+const { protect, adminOnly } = require("../middlewares/authMiddleware");
 
 // CREATE PAYSLIP
 router.post("/", async (req, res) => {
@@ -54,6 +55,24 @@ router.patch("/:id/status", async (req, res) => {
     if (!payslip) {
       return res.status(404).json({ message: "Payslip not found" });
     }
+
+    const empId = payslip.employeeId || payslip.employee_uid || payslip.uid;
+    if (empId) {
+      const notifData = {
+        title: `Payslip ${status}`,
+        sub: `Your payslip for ${payslip.month || payslip.payPeriod || "the pay period"} is now ${status.toLowerCase()}.`,
+        notificationType: "Payroll",
+        employeeId: empId,
+      };
+      await Notification.create(notifData).catch((err) => console.error("Notification creation failed:", err));
+
+      const io = getIO();
+      if (io) {
+        io.to("user_" + empId).emit("newNotification", notifData);
+        io.emit("newNotification", notifData);
+      }
+    }
+
     res.json(payslip);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -61,7 +80,7 @@ router.patch("/:id/status", async (req, res) => {
 });
 
 // UPDATE PAYSLIP FULL
-router.put("/:id", async (req, res) => {
+router.put("/:id", protect, adminOnly, async (req, res) => {
   try {
     const payslip = await Payslip.findByIdAndUpdate(
       req.params.id,

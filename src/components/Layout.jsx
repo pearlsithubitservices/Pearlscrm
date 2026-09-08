@@ -1,11 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './sidebar';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { socket } from '../config/socket';
 
 export default function Layout() {
   const { user, isAdmin, loading } = useAuth();
+
+  // Keep the global socket connected for real-time updates across the app
+  useEffect(() => {
+    if (!socket) return;
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+  }, []);
 
   if (loading) {
     return (

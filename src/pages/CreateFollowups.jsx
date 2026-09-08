@@ -33,6 +33,7 @@ export default function CreateFollowups({ onClose, fetchdata }) {
     assignedTo: "",
     followupCount: "1",
     followupTime: "",
+    date: new Date().toISOString().split("T")[0],
   });
 
   const handleChange = (e) => {
@@ -127,6 +128,13 @@ export default function CreateFollowups({ onClose, fetchdata }) {
       name: "followupTime",
       placeholder: "e.g. 10:30 AM",
       type: "text",
+    },
+    {
+      label: "Follow-ups Date",
+      Icon: CalendarDays,
+      name: "date",
+      type: "date",
+      placeholder: "Select Date",
     },
   ];
 

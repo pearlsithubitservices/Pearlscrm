@@ -44,13 +44,21 @@ export default function CreateLead({ onClose, fetchleads }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setLead((prev) => ({
-      ...prev,
-      [name]:
-        name === "followUpCount"
-          ? Number(value)
-          : value,
-    }));
+    if (name === "assignedTo") {
+      const selectedEmp = employees.find(
+        (emp) => String(emp.id || emp._id || emp.uid) === String(value)
+      );
+      setLead((prev) => ({
+        ...prev,
+        assignedTo: value,
+        assignedEmployee: selectedEmp ? selectedEmp.name : value,
+      }));
+    } else {
+      setLead((prev) => ({
+        ...prev,
+        [name]: name === "followUpCount" ? Number(value) : value,
+      }));
+    }
   };
 
   // ADD LEAD

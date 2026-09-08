@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Employee = require("../models/Employee");
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -15,7 +16,7 @@ const generateToken = (user) => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, industry } = req.body;
+    const { name, email, password, role, industry, department } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -26,6 +27,7 @@ const register = async (req, res) => {
 
     const normalizedEmail = String(email).trim().toLowerCase();
     const safeRole = role === "Admin" || role === "Employee" ? role : "Employee";
+    const safeDepartment = String(department || "Engineering").trim() || "Engineering";
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -42,6 +44,10 @@ const register = async (req, res) => {
       password: hashedPassword,
       role: safeRole,
       industry: industry || "IT",
+      department: safeDepartment,
+      profile: {
+        department: safeDepartment,
+      },
     });
 
     const token = generateToken(user);
@@ -56,6 +62,7 @@ const register = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
+        department: user.department || user.profile?.department || "Engineering",
         avatar: user.avatar,
       },
     });
@@ -116,6 +123,7 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
+        department: user.department || user.profile?.department || "Engineering",
         avatar: user.avatar,
       },
     });
@@ -147,6 +155,7 @@ const getMe = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
+        department: user.department || user.profile?.department || "Engineering",
         avatar: user.avatar,
       },
     });
@@ -192,24 +201,145 @@ const toggleUserStatus = async (req, res) => {
 const updateUserSalary = async (req, res) => {
   try {
     const { basicSalary, grossSalary, netSalary, allowances, deductions } = req.body;
-    const salary = {
-      basicSalary: Number(basicSalary) || 0,
-      grossSalary: Number(grossSalary) || 0,
-      netSalary: Number(netSalary) || 0,
-      allowances: allowances || {},
-      deductions: deductions || {},
-    };
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: { "profile.salary": salary } },
-      { new: true, runValidators: true }
-    ).select("-password");
 
-    if (!user) return res.status(404).json({ success: false, message: "Employee not found" });
-    return res.status(200).json({ success: true, message: "Salary updated successfully", user });
+    const parseFlexible = (value, defaultKey = "Allowance") => {
+      if (!value && value !== 0) return {};
+      if (typeof value === "number") return value > 0 ? { [defaultKey]: value } : {};
+      if (typeof value === "object" && !Array.isArray(value)) {
+        const out = {};
+        Object.entries(value).forEach(([k, v]) => {
+          if (k && String(k).trim()) {
+            const num = Number(String(v).replace(/[^0-9.]/g, "")) || 0;
+            if (num > 0) out[String(k).trim()] = num;
+          }
+        });
+        return out;
+      }
+      const str = String(value).trim();
+      if (!str || str === "{}" || str === "[]") return {};
+
+      // If JSON string
+      if (str.startsWith("{") || str.startsWith("[")) {
+        try {
+          return parseFlexible(JSON.parse(str), defaultKey);
+        } catch (_) {}
+      }
+
+      // If pure number or currency e.g. "50,000" or "50000"
+      const cleanNum = str.replace(/[^0-9.]/g, "");
+      if (cleanNum && !str.includes(":") && !str.includes("=") && !str.includes("-")) {
+        const n = Number(cleanNum) || 0;
+        return n > 0 ? { [defaultKey]: n } : {};
+      }
+
+      const out = {};
+      const items = str.split(/;|\n|,\s*(?=[A-Za-z])/);
+      items.forEach((item) => {
+        const trimmed = item.trim();
+        if (!trimmed) return;
+        const match = trimmed.match(/^([^:=0-9]+)\s*[:=\-]?\s*([₹$\s]*[0-9,]+(\.[0-9]+)?.*)$/);
+        if (match) {
+          const k = match[1].trim();
+          const v = Number(match[2].replace(/[^0-9.]/g, "")) || 0;
+          if (k && v > 0) out[k] = v;
+        } else {
+          const n = Number(trimmed.replace(/[^0-9.]/g, "")) || 0;
+          if (n > 0) out[defaultKey] = n;
+        }
+      });
+      return Object.keys(out).length > 0 ? out : (Number(cleanNum) > 0 ? { [defaultKey]: Number(cleanNum) } : {});
+    };
+
+    const cleanAllowances = parseFlexible(allowances, "Allowance");
+    const cleanDeductions = parseFlexible(deductions, "Deduction");
+
+    const totalAllowances = Object.values(cleanAllowances).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    const totalDeductions = Object.values(cleanDeductions).reduce((sum, val) => sum + (Number(val) || 0), 0);
+
+    const numBasic = Number(String(basicSalary || 0).replace(/[^0-9.]/g, "")) || 0;
+    const numGrossProvided = Number(String(grossSalary || 0).replace(/[^0-9.]/g, "")) || 0;
+    const numNetProvided = Number(String(netSalary || 0).replace(/[^0-9.]/g, "")) || 0;
+
+    const numGross = numGrossProvided > 0 ? numGrossProvided : (numBasic + totalAllowances);
+    const numNet = numNetProvided > 0 ? numNetProvided : Math.max(0, numGross - totalDeductions);
+
+    const salary = {
+      basicSalary: numBasic,
+      grossSalary: numGross,
+      netSalary: numNet,
+      allowances: cleanAllowances,
+      deductions: cleanDeductions,
+    };
+
+    const mongoose = require("mongoose");
+    const targetId = req.params.id;
+    let user = null;
+    let employeeDoc = null;
+
+    if (mongoose.Types.ObjectId.isValid(targetId)) {
+      user = await User.findByIdAndUpdate(
+        targetId,
+        { $set: { "profile.salary": salary, salary } },
+        { new: true }
+      ).select("-password");
+
+      employeeDoc = await Employee.findByIdAndUpdate(
+        targetId,
+        { $set: { "profile.salary": salary, salary } },
+        { new: true }
+      );
+    }
+
+    if (!user && !employeeDoc) {
+      const query = {
+        $or: [
+          { email: String(targetId).toLowerCase() },
+          { empId: targetId },
+          { "profile.empId": targetId },
+        ],
+      };
+
+      user = await User.findOneAndUpdate(
+        query,
+        { $set: { "profile.salary": salary, salary } },
+        { new: true }
+      ).select("-password");
+
+      employeeDoc = await Employee.findOneAndUpdate(
+        query,
+        { $set: { "profile.salary": salary, salary } },
+        { new: true }
+      );
+    }
+
+    // If ID was in Employee but User exists with same email, sync User too
+    if (!user && employeeDoc?.email) {
+      user = await User.findOneAndUpdate(
+        { email: employeeDoc.email.toLowerCase() },
+        { $set: { "profile.salary": salary, salary } },
+        { new: true }
+      ).select("-password");
+    } else if (user?.email && !employeeDoc) {
+      employeeDoc = await Employee.findOneAndUpdate(
+        { email: user.email.toLowerCase() },
+        { $set: { "profile.salary": salary, salary } },
+        { new: true }
+      );
+    }
+
+    if (!user && !employeeDoc) {
+      return res.status(404).json({ success: false, message: "Employee not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Salary updated successfully",
+      salary,
+      user: user || employeeDoc,
+    });
   } catch (error) {
     console.error("Update employee salary error:", error);
-    return res.status(500).json({ success: false, message: "Unable to update salary" });
+    return res.status(500).json({ success: false, message: "Unable to update salary: " + error.message });
   }
 };
 

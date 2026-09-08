@@ -148,7 +148,7 @@ export default function LeadDetails() {
       case "Activity":
         return <ActivityTab lead={lead} fetchLead={fetchLead} />;
       case "Notes":
-        return <NotesTab lead={lead} />;
+        return <NotesTab lead={lead} fetchLead={fetchLead} />;
       case "Documents":
         return <DocumentsTab lead={lead} fetchLead={fetchLead} />;
       case "Next Action":

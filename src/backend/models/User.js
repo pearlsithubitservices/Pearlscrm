@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
       enum: ["IT", "Clinic", "Real Estate"],
       default: "IT",
     },
+    department: {
+      type: String,
+      default: "Engineering",
+    },
     phone: {
       type: String,
       default: "",
@@ -93,6 +97,10 @@ const userSchema = new mongoose.Schema(
         deductions: { type: mongoose.Schema.Types.Mixed },
         netSalary: Number,
       },
+    },
+    salary: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
   },
   {

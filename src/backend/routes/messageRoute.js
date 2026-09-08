@@ -7,7 +7,30 @@ const cloudinary = require("../cloudinary");
 
 const Message = require("../models/Message/message");
 const Chat = require("../models/Chat/Chat");
+const User = require("../models/User");
+const Notification = require("../models/CommunicationModels/Notifications");
 const { getIO } = require("../Socket");
+const mongoose = require("mongoose");
+
+// Figure out whether a chat participant id represents the Admin or a specific Employee
+async function resolveRecipientChannel(participantId) {
+  if (!participantId || participantId === "admin") {
+    return { employeeId: null }; // Admin's notification center
+  }
+
+  if (mongoose.Types.ObjectId.isValid(participantId)) {
+    try {
+      const account = await User.findById(participantId).select("role");
+      if (account && account.role === "Admin") {
+        return { employeeId: null };
+      }
+    } catch (err) {
+      // ignore lookup errors, fall back to treating as an employee below
+    }
+  }
+
+  return { employeeId: String(participantId) };
+}
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -161,9 +184,9 @@ router.post("/:chatId", async (req, res) => {
     });
 
     // Keep parent chat preview updated if valid ObjectId
-    const mongoose = require("mongoose");
+    let chatDoc = null;
     if (mongoose.Types.ObjectId.isValid(chatId)) {
-      await Chat.findByIdAndUpdate(chatId, {
+      chatDoc = await Chat.findByIdAndUpdate(chatId, {
         lastMessage: text && text.length > 0 ? text : "Sent an attachment",
         lastMessageAt: message.createdAt,
       });
@@ -180,15 +203,32 @@ router.post("/:chatId", async (req, res) => {
         lastMessageAt: message.createdAt,
       });
 
-      // Create Notification in DB for recipient alerts
-      const Notification = require("../models/CommunicationModels/Notifications");
-      const notif = await Notification.create({
-        title: `New message in chat`,
-        sub: text && text.length > 0 ? text : "Sent an attachment",
-        notificationType: "General",
-        employeeId: null,
-      });
-      io.emit("newNotification", notif);
+      // Notify every other participant of this chat (Admin -> Employee, Employee -> Admin,
+      // or group/collab members), not just a single global alert.
+      const recipients = (chatDoc?.participants || []).filter(
+        (p) => String(p) !== String(senderId)
+      );
+
+      for (const recipient of recipients) {
+        const { employeeId } = await resolveRecipientChannel(recipient);
+
+        const notif = await Notification.create({
+          title: chatDoc?.isGroup
+            ? `New message in ${chatDoc.chatName || "group chat"}`
+            : "New message",
+          sub: text && text.length > 0 ? text : "Sent an attachment",
+          notificationType: "General",
+          employeeId,
+          senderId,
+        });
+
+        if (employeeId) {
+          io.to(`user_${employeeId}`).emit("newNotification", notif);
+          io.to(String(employeeId)).emit("newNotification", notif);
+        } else {
+          io.emit("newNotification", notif);
+        }
+      }
     } catch (err) {
       console.error("Socket emit error:", err);
     }

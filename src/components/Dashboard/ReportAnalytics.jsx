@@ -1,5 +1,5 @@
 import { Check, Clock4, Mail, MoveUp, Phone } from 'lucide-react';
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart } from "recharts";
 import { apiUrl } from '../../config/api.js';
 
@@ -10,6 +10,7 @@ const Hotleads = () => {
     const [followups, setFollowups] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [leads, setLeads] = useState([]);
+    const [payments, setPayments] = useState([]);
 
     useEffect(() => {
         const fetchFollowups = async () => {
@@ -48,9 +49,22 @@ const Hotleads = () => {
             }
         };
 
+        const fetchPayments = async () => {
+            try {
+                const response = await fetch(apiUrl('/payment'));
+                if (!response.ok) throw new Error('Failed to fetch payments');
+                const data = await response.json();
+                setPayments(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Error fetching payments:', error);
+                setPayments([]);
+            }
+        };
+
         fetchFollowups();
         fetchTasks();
         fetchLeads();
+        fetchPayments();
     }, []);
 
     const now = new Date();
@@ -204,23 +218,29 @@ const Hotleads = () => {
         return { ...stage, count, width };
     });
 
-    const monthdata = [
-        { month: "Jan", revenue: 20000, target: 15000 },
-        { month: "Feb", revenue: 30000, target: 25000 },
-        { month: "Mar", revenue: 25000, target: 20000 },
-        { month: "Apr", revenue: 45000, target: 35000 },
-        { month: "May", revenue: 35000, target: 30000 },
-        { month: "Jun", revenue: 50000, target: 40000 }
-    ];
+    const validPayments = payments.filter((payment) =>
+        String(payment?.status || '').toLowerCase() !== 'cancelled'
+    );
+    const monthdata = Array.from({ length: 12 }, (_, monthIndex) => ({
+        month: new Date(2000, monthIndex, 1).toLocaleString('en-US', { month: 'short' }),
+        revenue: validPayments
+            .filter((payment) => {
+                const date = new Date(payment?.issuedDate || payment?.createdAt);
+                return date.getFullYear() === new Date().getFullYear() && date.getMonth() === monthIndex;
+            })
+            .reduce((total, payment) => total + (Number(payment?.budget) || 0), 0),
+    }));
 
-    const yeardata = [
-        { year: "2020", revenue: 250000, target: 220000 },
-        { year: "2021", revenue: 320000, target: 300000 },
-        { year: "2022", revenue: 410000, target: 380000 },
-        { year: "2023", revenue: 530000, target: 500000 },
-        { year: "2024", revenue: 620000, target: 580000 },
-        { year: "2025", revenue: 750000, target: 700000 }
-    ];
+    const currentYear = new Date().getFullYear();
+    const yeardata = Array.from({ length: 6 }, (_, index) => {
+        const year = currentYear - 5 + index;
+        return {
+            year: String(year),
+            revenue: validPayments
+                .filter((payment) => new Date(payment?.issuedDate || payment?.createdAt).getFullYear() === year)
+                .reduce((total, payment) => total + (Number(payment?.budget) || 0), 0),
+        };
+    });
 
     return (
 
@@ -264,13 +284,6 @@ const Hotleads = () => {
                                 <Bar
                                     dataKey="revenue"
                                     fill="#ddead1"
-                                    radius={[8, 8, 0, 0]}
-                                />
-
-                                {/* Target → Red */}
-                                <Bar
-                                    dataKey="target"
-                                    fill="#2563a9"
                                     radius={[8, 8, 0, 0]}
                                 />
 

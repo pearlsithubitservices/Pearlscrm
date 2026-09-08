@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Star, ChevronDown, User, MessageSquare } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, ChevronDown, User, MessageSquare, CheckCircle2, X } from "lucide-react";
+import toast from "react-hot-toast";
 import useFeedback from "../../../Hooks/useFeedback";
 import { useAuth } from "../../../context/AuthContext";
 
 export default function FeedbackPage() {
   const [rating, setRating] = useState(4);
   const [submitting, setSubmitting] = useState(false);
+  const [submittedNotification, setSubmittedNotification] = useState(null);
   const { createFeedback, feedbacks, fetchFeedbacks } = useFeedback();
   const { user } = useAuth();
 
-  const currentUserId = user?.uid || user?.id;
+  const currentUserId = user?.uid || user?.id || user?._id;
   const currentUserName = user?.displayName || user?.name || (user?.email ? user.email.split("@")[0] : "Employee");
 
   const [form, setForm] = useState({
@@ -27,21 +29,65 @@ export default function FeedbackPage() {
 
   const handleSubmit = async () => {
     if (!form.subject.trim() || !form.comments.trim()) {
-      alert("Please fill in the subject and comments field.");
+      toast.error("Please fill in the subject and comments field.");
       return;
     }
 
     try {
       setSubmitting(true);
 
-      await createFeedback({
+      const submittedSubject = form.subject.trim();
+      const submittedType = form.feedbackType;
+      const submittedRating = rating;
+
+      const created = await createFeedback({
         ...form,
-        rating,
+        subject: submittedSubject,
+        rating: submittedRating,
         employeeId: currentUserId,
         employeeName: form.anonymous ? "Employee" : currentUserName,
       });
 
-      alert("Thank you! Your feedback has been submitted successfully.");
+      // Show toast notification
+      toast.success("Thank you! Your feedback has been submitted successfully.", {
+        icon: "🎉",
+        duration: 4000,
+      });
+
+      // Register ONLY newly created feedback in localStorage so bell notification shows it
+      const createdId = created?._id || created?.id;
+      if (createdId) {
+        try {
+          const current = JSON.parse(localStorage.getItem("crm_new_feedback_ids") || "[]");
+          if (!current.includes(createdId)) {
+            const updated = [...current, createdId];
+            localStorage.setItem("crm_new_feedback_ids", JSON.stringify(updated));
+            // Trigger custom event so Communication module bell updates instantly
+            window.dispatchEvent(
+              new CustomEvent("new-feedback-submitted", {
+                detail: {
+                  ...created,
+                  _id: createdId,
+                  subject: submittedSubject,
+                  rating: submittedRating,
+                  feedbackType: submittedType,
+                  createdAt: new Date().toISOString(),
+                },
+              })
+            );
+          }
+        } catch (e) {
+          console.error("Error saving new feedback id:", e);
+        }
+      }
+
+      // Show inline notification banner
+      setSubmittedNotification({
+        subject: submittedSubject,
+        type: submittedType,
+        rating: submittedRating,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      });
 
       // reset form
       setForm({
@@ -56,7 +102,7 @@ export default function FeedbackPage() {
       await fetchFeedbacks();
     } catch (err) {
       console.error("Feedback submit error:", err);
-      alert("Failed to submit feedback. Please try again.");
+      toast.error("Failed to submit feedback. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -66,7 +112,7 @@ export default function FeedbackPage() {
   const myFeedbacks = (feedbacks || []).filter((item) => {
     if (!currentUserId && !currentUserName) return true;
     return (
-      (currentUserId && item.employeeId === currentUserId) ||
+      (currentUserId && (item.employeeId === currentUserId || item.employeeId === user?._id)) ||
       (currentUserName && item.employeeName?.toLowerCase() === currentUserName.toLowerCase())
     );
   });
@@ -91,6 +137,50 @@ export default function FeedbackPage() {
               </p>
             </div>
           </div>
+
+          {/* REAL-TIME SUBMISSION NOTIFICATION BANNER */}
+          <AnimatePresence>
+            {submittedNotification && (
+              <motion.div
+                initial={{ opacity: 0, y: -12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.98 }}
+                transition={{ duration: 0.25 }}
+                className="bg-emerald-50/90 border border-emerald-200 text-emerald-950 rounded-2xl p-4 mb-6 flex items-start justify-between gap-3 shadow-sm"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl mt-0.5 shrink-0">
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                        Notification
+                      </span>
+                      <span className="text-[11px] text-emerald-600 font-medium">
+                        Just Now • {submittedNotification.time}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-emerald-900 mt-1">
+                      Feedback Submitted Successfully!
+                    </h4>
+                    <p className="text-xs text-emerald-800/90 mt-0.5 leading-relaxed">
+                      Your feedback on <span className="font-bold text-emerald-950">"{submittedNotification.subject}"</span> ({submittedNotification.rating}★, {submittedNotification.type}) has been submitted. A new notification has also been added to your communication bell.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSubmittedNotification(null)}
+                  className="text-emerald-500 hover:text-emerald-800 p-1 rounded-lg hover:bg-emerald-100/60 transition cursor-pointer"
+                  title="Close notification"
+                >
+                  <X size={16} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* AUTOMATIC LOGGED-IN EMPLOYEE BANNER */}
           <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-200/70 flex items-center justify-between gap-4">

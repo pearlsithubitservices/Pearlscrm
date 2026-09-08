@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Send } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import useActivity from "../../Hooks/useActivity";
 import useEmployees from "../../Hooks/useEmployees";
@@ -17,6 +17,7 @@ export default function TaskActivityFeed() {
     createActivity,
     getActivities,
     getAllActivities,
+    deleteActivity,
   } = useActivity();
 
   const [activities, setActivities] = useState([]);
@@ -54,6 +55,16 @@ export default function TaskActivityFeed() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this activity?")) return;
+    try {
+      await deleteActivity(id);
+      fetchActivities();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   return (
     <div className="w-full max-w-md max-h-[530px] h-full overflow-hidden no-scrollbar mx-auto bg-white rounded-2xl  p-5 border">
       <h2 className="text-xl font-semibold text-slate-800 mb-5">
@@ -65,22 +76,31 @@ export default function TaskActivityFeed() {
 
         {activities?.map((item) => (
           <motion.div
-            key={item._id}
+            key={item._id || item.id}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             className="relative "
           >
             <span className="absolute -left-[22px] top-1 w-3 h-3 rounded-full bg-slate-900" />
 
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start gap-2">
               <div>
                 <p className="text-sm text-slate-500">{item.name}</p>
                 <p className="text-sm text-slate-800">{item.text}</p>
               </div>
 
-              <span className="text-xs text-slate-400">
-                {item.time}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">
+                  {item.time}
+                </span>
+                <button
+                  onClick={() => handleDelete(item._id || item.id)}
+                  title="Delete Activity"
+                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}

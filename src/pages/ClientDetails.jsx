@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
     Pencil,
     X,
+    Trash2,
 } from "lucide-react";
 
 import ClientOverview from "../components/ClientDetails/ClientOverview.jsx";
@@ -18,7 +19,7 @@ export default function CompanyOverview() {
 
     const [activeTab, setActiveTab] = useState("Overview");
     const [isEditing, setIsEditing] = useState(false);
-    const { clients, fetchClients } = useClients();
+    const { clients, loading, fetchClients, deleteClient } = useClients();
     const { id } = useParams();
 
     const selectedClient = clients.filter((item) => item._id === id);
@@ -32,6 +33,32 @@ export default function CompanyOverview() {
     const [button, setButton] = useState("Call");
     const head = ["Call", "Email", "Notes"];
     const navigate = useNavigate();
+
+    const getInitials = (name) => {
+        if (!name) return "CL";
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return name.slice(0, 2).toUpperCase();
+    };
+
+    const handleDelete = async () => {
+        const client = selectedClient[0];
+        if (!client) return;
+
+        const name = client.companyName || "this client";
+        const confirmed = window.confirm(`Are you sure you want to delete ${name}?`);
+        if (!confirmed) return;
+
+        try {
+            await deleteClient(client._id || client.id);
+            navigate("/clientmanagement");
+        } catch (error) {
+            console.error("Error deleting client:", error);
+            alert("Failed to delete client: " + (error.message || "Unknown error"));
+        }
+    };
 
     const handleQuickAction = (action) => {
         const client = selectedClient[0];
@@ -90,6 +117,30 @@ export default function CompanyOverview() {
     };
 
 
+    if (loading && !selectedClient[0]) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500">
+                <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-sm font-medium">Loading client details...</p>
+            </div>
+        );
+    }
+
+    if (!loading && !selectedClient[0]) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500">
+                <p className="text-lg font-bold text-gray-700 mb-2">Client Not Found</p>
+                <p className="text-sm mb-4">The requested client could not be located.</p>
+                <button
+                    onClick={() => navigate("/clientmanagement")}
+                    className="px-4 py-2 bg-[#2563a9] text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition"
+                >
+                    Back to Client Management
+                </button>
+            </div>
+        );
+    }
+
     return (
         <>
             <div className="max-h-screen overflow-y-auto no-scrollbar">
@@ -138,7 +189,7 @@ export default function CompanyOverview() {
                 font-bold
                 "
                             >
-                                TF
+                                {getInitials(selectedClient[0]?.companyName)}
                             </div>
 
                             {/* COMPANY INFO */}
@@ -202,14 +253,14 @@ export default function CompanyOverview() {
                                 {selectedClient[0]?.status}
                             </span>
                             <span>
-                                <X size={20} className="bg-red-500 rounded text-white hover:bg-white hover:text-red-700" onClick={() => navigate(-1)} />
+                                <X size={20} className="bg-red-500 rounded text-white hover:bg-white hover:text-red-700 cursor-pointer" onClick={() => navigate(-1)} />
                             </span>
 
                         </div>
 
                     </div>
 
-                    {/* ACTION BUTTONS + EDIT */}
+                    {/* ACTION BUTTONS + EDIT + DELETE */}
 
                     <div className="flex items-center justify-between mt-5 gap-4">
 
@@ -236,30 +287,57 @@ export default function CompanyOverview() {
 
                         </div>
 
-                        {/* EDIT BUTTON */}
+                        {/* EDIT & DELETE BUTTONS */}
 
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="
-              flex
-              items-center
-              gap-2
-              px-4
-              py-2
-              rounded-md
-              border
-              border-[#D8D8D8]
-              bg-[#ECEAE5]
-              text-[#777]
-              text-[12px]
-              font-medium
-              hover:bg-[#E2DED8]
-              transition
-              "
-                        >
-                            <Pencil size={13} />
-                            Edit
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="
+                  flex
+                  items-center
+                  gap-2
+                  px-4
+                  py-2
+                  rounded-md
+                  border
+                  border-[#D8D8D8]
+                  bg-[#ECEAE5]
+                  text-[#555]
+                  text-[12px]
+                  font-medium
+                  hover:bg-[#E2DED8]
+                  transition
+                  cursor-pointer
+                  "
+                            >
+                                <Pencil size={13} />
+                                Edit
+                            </button>
+
+                            <button
+                                onClick={handleDelete}
+                                className="
+                  flex
+                  items-center
+                  gap-2
+                  px-4
+                  py-2
+                  rounded-md
+                  border
+                  border-red-200
+                  bg-red-50
+                  text-red-600
+                  text-[12px]
+                  font-medium
+                  hover:bg-red-100
+                  transition
+                  cursor-pointer
+                  "
+                            >
+                                <Trash2 size={13} />
+                                Delete
+                            </button>
+                        </div>
 
                     </div>
 

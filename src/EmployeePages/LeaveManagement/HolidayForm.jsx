@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Calendar, Upload, Plus, X } from "lucide-react";
+import { apiUrl } from "../../config/api";
 
 const HolidayForm = ({ onClose }) => {
   const [holidayData, setHolidayData] = useState({
@@ -22,17 +23,13 @@ const HolidayForm = ({ onClose }) => {
     e.preventDefault();
 
     try {
-      const response = await fetch(
-        // "http://localhost:5000/api/holidays",
-        "https://pearlscrm-1.onrender.com/api/holidays",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(holidayData),
+      const response = await fetch(apiUrl("/holidays"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(holidayData),
+      });
 
       const data = await response.json();
 
@@ -64,14 +61,10 @@ const HolidayForm = ({ onClose }) => {
 
       formData.append("file", excelFile);
 
-      const response = await fetch(
-        // "http://localhost:5000/api/holidays/bulk-upload",
-        "https://pearlscrm-1.onrender.com/api/holidays/bulk-upload",
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
+      const response = await fetch(apiUrl("/holidays/bulk-upload"), {
+        method: "POST",
+        body: formData,
+      });
 
       const data = await response.json();
 

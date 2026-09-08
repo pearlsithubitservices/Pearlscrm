@@ -9,7 +9,9 @@ import {
   UserMinus,
   FileText,
   Activity,
+  Trash2,
 } from "lucide-react";
+import { apiUrl } from "../../config/api";
 
 const getIcon = (iconType) => {
   switch (iconType) {
@@ -50,9 +52,32 @@ const itemVariants = {
   },
 };
 
-export default function ActivityTimeline({ projects, project }) {
+export default function ActivityTimeline({ projects, project, fetchProjects }) {
   const currentProject = project || (projects && projects[0]) || {};
   const activities = currentProject.activities || [];
+
+  const handleDeleteActivity = async (indexToDelete) => {
+    if (!window.confirm("Are you sure you want to delete this activity log?")) return;
+    if (!currentProject._id) return;
+
+    const updatedActivities = activities.filter((_, idx) => idx !== indexToDelete);
+
+    try {
+      const res = await fetch(apiUrl(`/projects/${currentProject._id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activities: updatedActivities }),
+      });
+
+      if (res.ok) {
+        if (fetchProjects) fetchProjects();
+      } else {
+        alert("Failed to delete activity log");
+      }
+    } catch (err) {
+      console.error("Error deleting activity log from project:", err);
+    }
+  };
 
   return (
     <div className="w-full rounded-[28px] bg-[#F5F3EF] p-8">
@@ -91,9 +116,18 @@ export default function ActivityTimeline({ projects, project }) {
 
                   {/* Content */}
                   <div className="flex-1 pt-1 bg-white p-4 rounded-xl border border-gray-100 shadow-2xs">
-                    <h3 className="text-[16px] font-bold leading-tight text-[#0B2B52]">
-                      {item.title}
-                    </h3>
+                    <div className="flex items-start justify-between gap-4">
+                      <h3 className="text-[16px] font-bold leading-tight text-[#0B2B52]">
+                        {item.title}
+                      </h3>
+                      <button
+                        onClick={() => handleDeleteActivity(index)}
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer shrink-0"
+                        title="Delete Activity Log"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
 
                     {item.desc && (
                       <p className="mt-1 text-[14px] leading-relaxed text-[#666]">

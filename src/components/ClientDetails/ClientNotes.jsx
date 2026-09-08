@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { Trash2 } from "lucide-react";
 import { apiUrl } from "../../config/api.js";
 
 const normalizeNotes = (value) => {
@@ -79,6 +80,36 @@ export default function ClientNotes({ client }) {
     }
   }
 
+  async function handleDeleteNote(indexToDelete) {
+    if (!client?._id) return;
+
+    const confirmed = window.confirm("Are you sure you want to delete this note?");
+    if (!confirmed) return;
+
+    const updatedNotes = notes.filter((_, index) => index !== indexToDelete);
+
+    try {
+      setLoading(true);
+      const response = await fetch(apiUrl(`/clients/${client._id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectnotes: JSON.stringify(updatedNotes) }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete note");
+      }
+
+      setNotes(updatedNotes);
+    } catch (error) {
+      console.error("Error deleting client note:", error);
+      alert(error.message || "Failed to delete note");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f2ec] p-8">
       <motion.div
@@ -112,7 +143,7 @@ export default function ClientNotes({ client }) {
                 whileTap={{ scale: 0.95 }}
                 onClick={handleNote}
                 disabled={loading}
-                className="bg-blue-600 text-white px-6 py-3 rounded-full disabled:opacity-60"
+                className="bg-blue-600 text-white px-6 py-3 rounded-full disabled:opacity-60 cursor-pointer font-medium"
               >
                 {loading ? "Saving..." : "Add Note"}
               </motion.button>
@@ -137,10 +168,21 @@ export default function ClientNotes({ client }) {
                   transition={{ delay: index * 0.1 }}
                   className="relative flex gap-6 mb-10"
                 >
-                  <div className="w-5 h-5 rounded-full bg-blue-600 mt-2 z-10"></div>
+                  <div className="w-5 h-5 rounded-full bg-blue-600 mt-2 z-10 shrink-0"></div>
 
                   <div className="bg-white p-5 rounded-xl shadow-sm w-full">
-                    <h1 className="text-lg font-bold text-[#082f57]">{item.title || "Client Note"}</h1>
+                    <div className="flex items-start justify-between gap-4">
+                      <h1 className="text-lg font-bold text-[#082f57]">{item.title || "Client Note"}</h1>
+                      <button
+                        type="button"
+                        title="Delete note"
+                        disabled={loading}
+                        onClick={() => handleDeleteNote(index)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                     <p className="text-gray-500 mt-2 leading-7">{item.description}</p>
                     <p className="text-sm text-gray-400 mt-3">{item.date || "Just now"}</p>
                   </div>
