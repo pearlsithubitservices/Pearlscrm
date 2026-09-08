@@ -25,6 +25,8 @@ dist-ssr
 
 # WhatsApp AI Automation secrets
 src/backend/whatsapp Automation backend/.env
+backend/.env
+backend/node_modules
 
 # Python generated files
 __pycache__/

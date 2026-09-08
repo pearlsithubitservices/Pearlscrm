@@ -83,7 +83,7 @@ router.patch("/:id/status", async (req, res) => {
     if (status === "Approved" && updated.date) {
       try {
         const EmpAttendanceModel = require("../models/EmpAttendanceModel");
-        const { calculateAttendanceStatus } = require("../../Utils/formatNumber");
+        const { calculateAttendanceStatus } = require("../utils/formatNumber");
         
         const reqDate = new Date(updated.date);
         const startOfDay = new Date(reqDate.getFullYear(), reqDate.getMonth(), reqDate.getDate(), 0, 0, 0, 0);
