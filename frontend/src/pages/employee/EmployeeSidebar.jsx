@@ -236,12 +236,15 @@ export default function Sidebar() {
           </div>
           <h1 className="font-bold text-sm tracking-wide">PEARLS IT HUB</h1>
         </div>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors"
-        >
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {/* <div className="flex items-center gap-2">
+          <EmployeeNotificationBell employeeId={employeeId} />
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div> */}
       </div>
 
       {/* MOBILE OVERLAY BACKDROP */}

@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import FollowupOverview from "./EmpFollowupOverview";
 import FollowupNotes from "./EmpFollowupNotes";
 import FollowupNextAction from "./EmpFollowupNextaction";
+import TaskChat from "../../../components/TaskDetails/TaskChat";
 import { useNavigate, useParams } from "react-router-dom";
 import useFollowups from "../../../Hooks/useFollowups";
 import { useAuth } from "../../../context/AuthContext";
@@ -59,7 +60,7 @@ export default function EmpFollowupDetails() {
 
   const [activeTab, setActivetab] = useState("Overview");
 
-  const buttons = ["Overview", "Notes", "Next Action"];
+  const buttons = ["Overview", "Notes", "Next Action", "Team Chat"];
 
   const actions = [
     { label: "Call", icon: Phone, type: "Call" },
@@ -152,6 +153,16 @@ export default function EmpFollowupDetails() {
       case "Next Action":
         return <FollowupNextAction followup={followupbyId} onRefresh={fetchdata} />;
 
+      case "Team Chat":
+        return (
+          <div className="p-4">
+            <TaskChat
+              propTaskId={`followup_${followupbyId?._id || followupbyId?.id || id}`}
+              propTaskTitle={`Follow-up Chat: ${followupbyId?.clientName || "Client"} (${followupbyId?.companyName || "Follow-up"})`}
+            />
+          </div>
+        );
+
       default:
         return null;
     }
@@ -238,8 +249,12 @@ export default function EmpFollowupDetails() {
             </div>
 
             <button
-              onClick={() => navigate("/empchat", { state: { clientName: followupbyId?.clientName } })}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-600 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+              onClick={() => setActivetab("Team Chat")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-xs font-bold shadow-xs cursor-pointer ${
+                activeTab === "Team Chat"
+                  ? "bg-emerald-700 text-white border-emerald-700"
+                  : "border-emerald-600 bg-emerald-600 hover:bg-emerald-700 text-white"
+              }`}
             >
               <MessageCircle size={14} />
               Team Chat

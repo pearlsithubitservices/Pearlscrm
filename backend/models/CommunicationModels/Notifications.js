@@ -20,10 +20,12 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         "Leave",
         "Payroll",
+        "Benefits",
         "Tax",
         "Reimbursement",
         "Meeting",
         "Lead",
+        "Feedback",
         "General",
       ],
       default: "General",

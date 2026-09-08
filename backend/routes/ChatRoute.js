@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Chat = require("../models/Chat/Chat");
+const Notification = require("../models/CommunicationModels/Notifications");
 const { getIO } = require("../Socket");
 
 // GET ALL CHATS FOR A USER
@@ -184,10 +185,36 @@ router.post("/", async (req, res) => {
       createdBy: createdBy || participants[0],
     });
 
-    // Emit live newChatCreated socket event
+    // Emit live newChatCreated socket event + notify the people added to the chat
     try {
       const io = getIO();
       io.emit("newChatCreated", chat);
+
+      const creator = chat.createdBy;
+      const recipients = (chat.participants || []).filter(
+        (p) => String(p) !== String(creator)
+      );
+
+      for (const recipient of recipients) {
+        const employeeId = recipient === "admin" ? null : String(recipient);
+
+        const notif = await Notification.create({
+          title: chat.isGroup
+            ? `You were added to "${chat.chatName || "a group chat"}"`
+            : "You have a new conversation",
+          sub: "Collaboration",
+          notificationType: "General",
+          employeeId,
+          senderId: creator,
+        });
+
+        if (employeeId) {
+          io.to(`user_${employeeId}`).emit("newNotification", notif);
+          io.to(String(employeeId)).emit("newNotification", notif);
+        } else {
+          io.emit("newNotification", notif);
+        }
+      }
     } catch (err) {
       console.error("Socket emit error:", err);
     }

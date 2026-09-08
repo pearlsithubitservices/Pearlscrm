@@ -166,7 +166,7 @@ export default function ClientDetails({ tasks }) {
                     projects={projectById}
                     fetchProjects={fetchProjects} />;
             case "Activity":
-                return <ClientActivity projects={projectById} />;
+                return <ClientActivity project={currentProject} projects={projectById} fetchProjects={fetchProjects} />;
 
             default:
                 return null;

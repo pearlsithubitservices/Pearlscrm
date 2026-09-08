@@ -7,6 +7,7 @@ import {
   Navigate
 } from 'react-router-dom';
 
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { IndustryProvider } from './context/IndustryContext';
 
@@ -150,6 +151,7 @@ export default function App() {
   return (
     <AuthProvider>
       <IndustryProvider>
+        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         <BrowserRouter>
           <Routes>
 
@@ -284,7 +286,7 @@ export default function App() {
 
               <Route
                 path="/clients"
-                element={<Clients />}
+                element={<ClientManagement />}
               />
 
               <Route
@@ -528,6 +530,16 @@ export default function App() {
               <Route
                 path="/employee/followups"
                 element={<EmployeeFollowups />}
+              />
+
+              <Route
+                path="/employee/empfollowupDetails/:id"
+                element={<EmpFollowupDetails />}
+              />
+
+              <Route
+                path="/employee/followupDetails/:id"
+                element={<EmpFollowupDetails />}
               />
 
               <Route

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Upload, Plus, X } from "lucide-react";
+import { apiUrl } from "../../config/api";
 
 const HolidayForm = ({
   onClose,
@@ -87,19 +88,13 @@ const HolidayForm = ({
     }
   };
 
-  return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="relative bg-white rounded-3xl shadow-sm border  p-6">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-[#0B2B57]">
-              Company Holidays
-            </h1>
-            <X
-              size={20}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded"
-              onClick={() => onClose()}
-            />
+            const response = await fetch(
+                apiUrl("/holidays/bulk-upload"),
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
 
             <p className="text-gray-500 mt-1">
               Add individual holidays or upload holidays in bulk.

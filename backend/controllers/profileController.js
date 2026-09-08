@@ -21,6 +21,7 @@ const serializeUser = (user) => {
     email: user.email,
     role: user.role,
     industry: user.industry,
+    department: user.department || user.profile?.department || "Engineering",
     avatar: user.avatar,
     profile: user.profile || {},
   };

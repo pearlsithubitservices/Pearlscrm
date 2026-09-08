@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "../config/api";
 
-const API = "http://localhost:5000/api/review";
-// const API = "https://pearlscrm-1.onrender.com/api/review";
+const API = apiUrl("/review");
 
 export default function useReview() {
   const [loading, setLoading] = useState(false);
