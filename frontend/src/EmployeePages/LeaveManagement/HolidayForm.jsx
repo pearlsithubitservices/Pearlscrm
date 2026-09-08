@@ -24,12 +24,8 @@ const HolidayForm = ({ onClose }) => {
 
     try {
       const response = await fetch(
-<<<<<<< HEAD:src/EmployeePages/LeaveManagement/HolidayForm.jsx
-        apiUrl("/holidays"),
-=======
         // "http://localhost:5000/api/holidays",
         "https://pearlscrm-1.onrender.com/api/holidays",
->>>>>>> ac4fe3a3643270b51cfe27e563c3345cdadffb58:frontend/src/EmployeePages/LeaveManagement/HolidayForm.jsx
         {
           method: "POST",
           headers: {
@@ -70,12 +66,8 @@ const HolidayForm = ({ onClose }) => {
       formData.append("file", excelFile);
 
       const response = await fetch(
-<<<<<<< HEAD:src/EmployeePages/LeaveManagement/HolidayForm.jsx
-        apiUrl("/holidays/bulk-upload"),
-=======
         // "http://localhost:5000/api/holidays/bulk-upload",
         "https://pearlscrm-1.onrender.com/api/holidays/bulk-upload",
->>>>>>> ac4fe3a3643270b51cfe27e563c3345cdadffb58:frontend/src/EmployeePages/LeaveManagement/HolidayForm.jsx
         {
           method: "POST",
           body: formData,
