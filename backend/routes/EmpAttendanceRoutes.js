@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const EmpAttendanceModel = require("../models/EmpAttendanceModel");
-const { calculateAttendanceStatus } = require("../../Utils/formatNumber");
+const { calculateAttendanceStatus } = require("../utils/formatNumber");
 const { getIO } = require("../Socket");
 const { cleanupOldPhotos } = require("../services/attendancePhotoCleanupScheduler");
 
