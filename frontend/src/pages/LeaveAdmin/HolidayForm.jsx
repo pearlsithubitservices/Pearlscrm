@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Upload, Plus, X } from "lucide-react";
-import { apiUrl } from "../../config/api";
 
 const HolidayForm = ({
   onClose,
@@ -87,14 +86,6 @@ const HolidayForm = ({
       console.log(error);
     }
   };
-
-            const response = await fetch(
-                apiUrl("/holidays/bulk-upload"),
-                {
-                    method: "POST",
-                    body: formData,
-                }
-            );
 
             <p className="text-gray-500 mt-1">
               Add individual holidays or upload holidays in bulk.

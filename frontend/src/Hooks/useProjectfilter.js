@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { getProjectHealthStatus } from "../utils/projectHealth";
+import { getProjectHealthStatus } from "../Utils/projectHealth";
 
 export default function useProjectFilter(projects, search, active, selectedMember, priorityFilter, dateFilter) {
   return useMemo(() => {

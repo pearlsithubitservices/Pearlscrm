@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useRef
 } from 'react';
-import { getProjectHealthStatus } from '../utils/projectHealth';
+import { getProjectHealthStatus } from '../Utils/projectHealth';
 
 
 import {

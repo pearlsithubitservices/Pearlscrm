@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import useWhatsApp from "../../Hooks/useWhatsApp";
 import { useAuth } from "../../context/AuthContext";
 import StatusBadge from "./components/StatusBadge";
-import { extractTagsFromText } from "../../utils/whatsappTags";
+import { extractTagsFromText } from "../../Utils/whatsappTags";
 
 const EMPTY_FILTERS = {
   status: [],
