@@ -1,4 +1,4 @@
-const VITE_API_URL = import.meta.env.VITE_API_URL || "https://pearlscrm-1.onrender.com/api";
+const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL;
 
 /* =========================================================
    FETCH DASHBOARD STATS
@@ -469,9 +469,7 @@ export async function blockConversation(conversationId) {
 
 export async function fetchContactById(employeeId) {
   try {
-    const response = await fetch(
-      `${VITE_API_URL}/employees/${employeeId}`,
-    );
+    const response = await fetch(`${VITE_API_URL}/employees/${employeeId}`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch contact: ${response.status}`);
@@ -519,18 +517,15 @@ export async function fetchContacts() {
 
 export async function updateContact(employeeId, contactData) {
   try {
-    const response = await fetch(
-      `${VITE_API_URL}/employees/${employeeId}`,
-      {
-        method: "PUT",
+    const response = await fetch(`${VITE_API_URL}/employees/${employeeId}`, {
+      method: "PUT",
 
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify(contactData),
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+
+      body: JSON.stringify(contactData),
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to update contact: ${response.status}`);
@@ -586,12 +581,9 @@ export async function createContact(contactData) {
 
 export async function deleteContact(contactId) {
   try {
-    const response = await fetch(
-      `${VITE_API_URL}/employees/${contactId}`,
-      {
-        method: "DELETE",
-      },
-    );
+    const response = await fetch(`${VITE_API_URL}/employees/${contactId}`, {
+      method: "DELETE",
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to delete contact: ${response.status}`);

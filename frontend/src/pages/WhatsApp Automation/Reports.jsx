@@ -16,7 +16,7 @@ import {
   Legend,
 } from "recharts";
 
-const VITE_API_URL = import.meta.env.VITE_API_URL || "https://pearlscrm-1.onrender.com/api";
+const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL;
 
 // =========================================================
 // COLORS
