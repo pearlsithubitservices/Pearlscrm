@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL =
-  "http://127.0.0.1:8000/api/v1/handoff";
+const VITE_PYTHON_API_URL = `${import.meta.env.VITE_PYTHON_API_URL || "http://127.0.0.1:8000"}/api/v1/handoff`;
 
 export default function HumanHandoff() {
 

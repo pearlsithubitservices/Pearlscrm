@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
-//const API_BASE_URL = "http://localhost:5000/api";
-const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
+//const VITE_PYTHON_API_URL = "http://localhost:5000/api";
+const VITE_PYTHON_API_URL = "https://pearlscrm-2.onrender.com/api";
 
 const defaultConfig = {
   enabled: true,

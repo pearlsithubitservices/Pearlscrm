@@ -1,5 +1,5 @@
-const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
-//const API_BASE_URL = "http://localhost:5000/api";
+const VITE_PYTHON_API_URL = "https://pearlscrm-2.onrender.com/api";
+//const VITE_PYTHON_API_URL = "http://localhost:5000/api";
 
 /* =========================================================
    FETCH DASHBOARD STATS
@@ -7,7 +7,7 @@ const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
 
 export async function fetchStats() {
   try {
-    const response = await fetch(`${API_BASE_URL}/conversations`);
+    const response = await fetch(`${VITE_PYTHON_API_URL}/conversations`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch conversations: ${response.status}`);
@@ -357,7 +357,7 @@ export async function createHumanHandoff({
   source = "conversation",
 }) {
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/v1/handoff/", {
+    const response = await fetch(`${import.meta.env.VITE_PYTHON_API_URL || "http://127.0.0.1:8000"}/api/v1/handoff/`, {
       method: "POST",
 
       headers: {
