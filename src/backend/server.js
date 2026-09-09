@@ -47,6 +47,7 @@ const BenefitRoutes = require("./routes/BenefitRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
+const DocumentRoutes = require("./routes/DocumentRoutes");
 const { initSocket } = require("./Socket");
 
 const whatsappCampaignRoutes = require("./routes/WhatsAppCampaign/campaignRoutes");
@@ -76,6 +77,10 @@ const {
 const {
   startAttendancePhotoCleanupScheduler,
 } = require("./services/attendancePhotoCleanupScheduler");
+
+const {
+  startRecycleBinCleanupScheduler,
+} = require("./services/recycleBinCleanupScheduler");
 
 const app = express();
 const server = http.createServer(app);
@@ -162,6 +167,7 @@ app.use("/api/totalLeave", EmpTotalLeave);
 
 app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/documents", DocumentRoutes);
 
 // =====================================================
 // WHATSAPP CAMPAIGN ROUTES
@@ -230,6 +236,7 @@ const startServer = async () => {
       console.log("Connected to database with WebSocket support");
       // Followup reminder scheduler disabled per user request to avoid duplicate notifications
       startAttendancePhotoCleanupScheduler();
+      startRecycleBinCleanupScheduler();
     });
   } catch (error) {
     console.error(
