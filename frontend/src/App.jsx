@@ -57,6 +57,7 @@ import AcceptInvite from './components/AcceptInvite.jsx';
 import PayslipAdmin from './pages/Payroll/PayslipAdmin.jsx';
 import Performance from './pages/Performance & Growth/Performance.jsx';
 import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
+import AdminBoards from './pages/AdminBoards.jsx';
 
 import ProtectedRoute from './components/ProtectedRoutes.jsx';
 
@@ -91,6 +92,7 @@ import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.js
 import EmpLead from './EmployeePages/Leads/Lead.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx';
 import EmpProjectDetails from './EmployeePages/Projects/EmpProjectDetails.jsx';
+import EmployeeBoards from './EmployeePages/Board/index.jsx';
 import Messager from './pages/Messager.jsx';
 
 // ============================================================
@@ -374,6 +376,13 @@ export default function App() {
                 element={<Performance />}
               />
 
+              {/* BOARDS */}
+
+              <Route
+                path="/boards"
+                element={<AdminBoards />}
+              />
+
               {/* ==================================================
                   EXISTING WHATSAPP BUSINESS / CAMPAIGN
               ================================================== */}
@@ -635,6 +644,11 @@ export default function App() {
               <Route
                 path="/employee/projects/:id"
                 element={<EmpProjectDetails />}
+              />
+
+              <Route
+                path="/employee/boards"
+                element={<EmployeeBoards />}
               />
 
             </Route>
