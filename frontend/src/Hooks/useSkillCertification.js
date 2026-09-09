@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 // const BASE_URL = "https://pearlscrm-1.onrender.com/api/skillscertification";
-const BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/skillscertification`;
+const BASE_URL = `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://pearlscrm-1.onrender.com/api")}/skillscertification`;
 
 export default function useSkillCertification() {
   const [loading, setLoading] = useState(false);

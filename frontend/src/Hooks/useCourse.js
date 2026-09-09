@@ -1,7 +1,6 @@
 import { useState } from "react";
 
-const API = "http://localhost:5000/api/empCourse";
-// const API = "https://pearlscrm-1.onrender.com/api/empCourse";
+const API = `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://pearlscrm-1.onrender.com/api")}/empCourse`;
 
 export default function useCourse() {
   const [loading, setLoading] = useState(false);

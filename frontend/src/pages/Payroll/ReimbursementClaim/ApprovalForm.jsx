@@ -11,7 +11,7 @@ const getReceiptUrl = (receiptPath) => {
     const normalized = receiptPath.replace(/\\/g, "/");
     const uploadsIndex = normalized.indexOf("uploads/");
     const relativePath = uploadsIndex !== -1 ? normalized.substring(uploadsIndex) : normalized.replace(/^\/?/, "");
-    return `http://localhost:5000/${relativePath}`;
+    return `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "https://pearlscrm-1.onrender.com")}/${relativePath}`;
 };
 
 export default function ReimbursementApproval({ selectedClaims, getClaims, onClose }) {

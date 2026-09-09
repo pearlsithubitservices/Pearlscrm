@@ -25,7 +25,7 @@ export default function TaxDocument() {
   const getDocUrl = (url) => {
     if (!url) return null;
     if (url.startsWith("http")) return url;
-    return `http://localhost:5000${url.startsWith("/") ? url : `/${url}`}`;
+    return `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "https://pearlscrm-1.onrender.com")}${url.startsWith("/") ? url : `/${url}`}`;
   };
 
   return (

@@ -110,7 +110,7 @@ export default function TaxDocuments() {
 
                         const Icon = iconMap[doc.title] || FileText;
                         const docUrl = doc.documentUrl
-                            ? (doc.documentUrl.startsWith("http") ? doc.documentUrl : `http://localhost:5000${doc.documentUrl.startsWith("/") ? doc.documentUrl : `/${doc.documentUrl}`}`)
+                            ? (doc.documentUrl.startsWith("http") ? doc.documentUrl : `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "https://pearlscrm-1.onrender.com")}${doc.documentUrl.startsWith("/") ? doc.documentUrl : `/${doc.documentUrl}`}`)
                             : "#";
 
                         return (

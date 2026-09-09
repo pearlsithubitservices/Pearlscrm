@@ -120,7 +120,7 @@ export default function Dashboard() {
                             >
                                 <CourseCard
                                     id={item._id}
-                                    src={`http://localhost:5000${item.image}`}
+                                    src={`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "https://pearlscrm-1.onrender.com")}${item.image}`}
                                     title={item.title}
                                     tag={item.tag}
                                     time={item.duration}

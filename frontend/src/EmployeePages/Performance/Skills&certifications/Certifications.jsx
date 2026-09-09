@@ -130,7 +130,7 @@ const Certifications = () => {
                                 {cert.image && (
                                     <div className="mb-4">
                                         <img
-                                            src={`http://localhost:5000${cert.image}`}
+                                            src={`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "https://pearlscrm-1.onrender.com")}${cert.image}`}
                                             alt={cert.title}
                                             className="w-full h-32 object-cover rounded-lg"
                                         />

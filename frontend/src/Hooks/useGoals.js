@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API = `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/mygoal`;
+const API = `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "https://pearlscrm-1.onrender.com/api")}/mygoal`;
 
 export default function useGoals() {
   const [loading, setLoading] = useState(false);
