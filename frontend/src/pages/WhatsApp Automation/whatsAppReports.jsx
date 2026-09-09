@@ -66,7 +66,7 @@ export default function WhatsAppReports() {
     try {
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/reports/summary`);
+      const response = await fetch(`${VITE_PYTHON_API_URL}/reports/summary`);
 
       if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);

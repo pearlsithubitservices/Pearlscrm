@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
-//const API_BASE_URL = "http://localhost:5000/api";
-const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
+//const VITE_PYTHON_API_URL = "http://localhost:5000/api";
+const VITE_PYTHON_API_URL = "https://pearlscrm-2.onrender.com/api";
 
 const emptyForm = {
   name: "",
@@ -42,7 +42,7 @@ export default function MessageTemplates() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/message-templates`);
+      const response = await fetch(`${VITE_PYTHON_API_URL}/message-templates`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch templates (${response.status})`);
@@ -157,7 +157,7 @@ export default function MessageTemplates() {
         const templateId = editingTemplate._id || editingTemplate.id;
 
         response = await fetch(
-          `${API_BASE_URL}/message-templates/${templateId}`,
+          `${VITE_PYTHON_API_URL}/message-templates/${templateId}`,
           {
             method: "PUT",
             headers: {
@@ -168,7 +168,7 @@ export default function MessageTemplates() {
         );
       } else {
         /* ================= CREATE ================= */
-        response = await fetch(`${API_BASE_URL}/message-templates`, {
+        response = await fetch(`${VITE_PYTHON_API_URL}/message-templates`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -219,9 +219,12 @@ export default function MessageTemplates() {
     try {
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/message-templates/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${VITE_PYTHON_API_URL}/message-templates/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
         let errorMessage = "Unable to delete template.";
@@ -258,7 +261,7 @@ export default function MessageTemplates() {
       setError("");
 
       const response = await fetch(
-        `${API_BASE_URL}/message-templates/${templateId}/status`,
+        `${VITE_PYTHON_API_URL}/message-templates/${templateId}/status`,
         {
           method: "PATCH",
           headers: {

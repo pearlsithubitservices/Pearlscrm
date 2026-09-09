@@ -83,7 +83,7 @@ export default function AutomationRules() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/automation-rules`);
+      const response = await fetch(`${VITE_PYTHON_API_URL}/automation-rules`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch automation rules: ${response.status}`);
@@ -206,7 +206,7 @@ export default function AutomationRules() {
         const ruleId = editingRule._id || editingRule.id;
 
         const response = await fetch(
-          `${API_BASE_URL}/automation-rules/${ruleId}`,
+          `${VITE_PYTHON_API_URL}/automation-rules/${ruleId}`,
           {
             method: "PUT",
 
@@ -231,21 +231,24 @@ export default function AutomationRules() {
         /* =====================================================
          CREATE NEW RULE
       ===================================================== */
-        const response = await fetch(`${API_BASE_URL}/automation-rules`, {
-          method: "POST",
+        const response = await fetch(
+          `${VITE_PYTHON_API_URL}/automation-rules`,
+          {
+            method: "POST",
 
-          headers: {
-            "Content-Type": "application/json",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+              name: form.name.trim(),
+              trigger: form.trigger,
+              condition: form.condition,
+              action: form.action,
+              status: form.status,
+            }),
           },
-
-          body: JSON.stringify({
-            name: form.name.trim(),
-            trigger: form.trigger,
-            condition: form.condition,
-            action: form.action,
-            status: form.status,
-          }),
-        });
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to create rule: ${response.status}`);
@@ -277,7 +280,7 @@ export default function AutomationRules() {
       const ruleId = rule._id || rule.id;
 
       const response = await fetch(
-        `${API_BASE_URL}/automation-rules/${ruleId}/status`,
+        `${VITE_PYTHON_API_URL}/automation-rules/${ruleId}/status`,
         {
           method: "PATCH",
 
@@ -322,7 +325,7 @@ export default function AutomationRules() {
       const ruleId = rule._id || rule.id;
 
       const response = await fetch(
-        `${API_BASE_URL}/automation-rules/${ruleId}`,
+        `${VITE_PYTHON_API_URL}/automation-rules/${ruleId}`,
         {
           method: "DELETE",
         },

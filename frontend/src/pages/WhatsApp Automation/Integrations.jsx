@@ -50,7 +50,9 @@ export default function Integrations() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/whatsapp-integration`);
+      const response = await fetch(
+        `${VITE_PYTHON_API_URL}/whatsapp-integration`,
+      );
 
       const data = await response.json();
 
@@ -109,13 +111,16 @@ export default function Integrations() {
       setMessage("");
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/whatsapp-integration`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${VITE_PYTHON_API_URL}/whatsapp-integration`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
         },
-        body: JSON.stringify(formData),
-      });
+      );
 
       const data = await response.json();
 
@@ -152,7 +157,7 @@ export default function Integrations() {
       setError("");
 
       const response = await fetch(
-        `${API_BASE_URL}/whatsapp-integration/test`,
+        `${VITE_PYTHON_API_URL}/whatsapp-integration/test`,
         {
           method: "POST",
           headers: {

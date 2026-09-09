@@ -59,7 +59,7 @@ export async function fetchStats() {
 
 export async function fetchDashboardData() {
   try {
-    const response = await fetch(`${API_BASE_URL}/conversations`);
+    const response = await fetch(`${VITE_PYTHON_API_URL}/conversations`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch dashboard data: ${response.status}`);
@@ -195,7 +195,7 @@ export async function fetchDashboardData() {
 
 export async function fetchConversations() {
   try {
-    const response = await fetch(`${API_BASE_URL}/conversations`);
+    const response = await fetch(`${VITE_PYTHON_API_URL}/conversations`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch conversations: ${response.status}`);
@@ -281,7 +281,7 @@ export async function fetchConversations() {
 export async function sendAdminMessage(conversationId, message) {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/conversations/${conversationId}/messages`,
+      `${VITE_PYTHON_API_URL}/conversations/${conversationId}/messages`,
       {
         method: "POST",
 
@@ -320,7 +320,7 @@ export async function sendAdminMessage(conversationId, message) {
 export async function takeOverConversation(conversationId) {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/conversations/${conversationId}/take-over`,
+      `${VITE_PYTHON_API_URL}/conversations/${conversationId}/take-over`,
       {
         method: "PUT",
 
@@ -357,23 +357,26 @@ export async function createHumanHandoff({
   source = "conversation",
 }) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_PYTHON_API_URL || "http://127.0.0.1:8000"}/api/v1/handoff/`, {
-      method: "POST",
+    const response = await fetch(
+      `${import.meta.env.VITE_PYTHON_API_URL || "http://127.0.0.1:8000"}/api/v1/handoff/`,
+      {
+        method: "POST",
 
-      headers: {
-        "Content-Type": "application/json",
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          conversation_id: conversation_id,
+
+          message: message,
+
+          employee_name: employee_name,
+
+          source: source,
+        }),
       },
-
-      body: JSON.stringify({
-        conversation_id: conversation_id,
-
-        message: message,
-
-        employee_name: employee_name,
-
-        source: source,
-      }),
-    });
+    );
 
     if (!response.ok) {
       const errorData = await response.text();
@@ -402,7 +405,7 @@ export async function createHumanHandoff({
 export async function resolveConversation(conversationId) {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/conversations/${conversationId}/resolve`,
+      `${VITE_PYTHON_API_URL}/conversations/${conversationId}/resolve`,
       {
         method: "PUT",
 
@@ -435,7 +438,7 @@ export async function resolveConversation(conversationId) {
 export async function blockConversation(conversationId) {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/conversations/${conversationId}/block`,
+      `${VITE_PYTHON_API_URL}/conversations/${conversationId}/block`,
       {
         method: "PUT",
 
@@ -467,7 +470,9 @@ export async function blockConversation(conversationId) {
 
 export async function fetchContactById(employeeId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}`);
+    const response = await fetch(
+      `${VITE_PYTHON_API_URL}/employees/${employeeId}`,
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to fetch contact: ${response.status}`);
@@ -491,7 +496,7 @@ export async function fetchContactById(employeeId) {
 
 export async function fetchContacts() {
   try {
-    const response = await fetch(`${API_BASE_URL}/employees`);
+    const response = await fetch(`${VITE_PYTHON_API_URL}/employees`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch contacts: ${response.status}`);
@@ -515,15 +520,18 @@ export async function fetchContacts() {
 
 export async function updateContact(employeeId, contactData) {
   try {
-    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}`, {
-      method: "PUT",
+    const response = await fetch(
+      `${VITE_PYTHON_API_URL}/employees/${employeeId}`,
+      {
+        method: "PUT",
 
-      headers: {
-        "Content-Type": "application/json",
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(contactData),
       },
-
-      body: JSON.stringify(contactData),
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to update contact: ${response.status}`);
@@ -547,7 +555,7 @@ export async function updateContact(employeeId, contactData) {
 
 export async function createContact(contactData) {
   try {
-    const response = await fetch(`${API_BASE_URL}/employees`, {
+    const response = await fetch(`${VITE_PYTHON_API_URL}/employees`, {
       method: "POST",
 
       headers: {
@@ -579,9 +587,12 @@ export async function createContact(contactData) {
 
 export async function deleteContact(contactId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/employees/${contactId}`, {
-      method: "DELETE",
-    });
+    const response = await fetch(
+      `${VITE_PYTHON_API_URL}/employees/${contactId}`,
+      {
+        method: "DELETE",
+      },
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to delete contact: ${response.status}`);
