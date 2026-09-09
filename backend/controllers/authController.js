@@ -26,7 +26,15 @@ const register = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const safeRole = role === "Admin" || role === "Employee" ? role : "Employee";
+
+    if (role === "Admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin accounts cannot be created through registration",
+      });
+    }
+
+    const safeRole = "Employee";
     const safeDepartment = String(department || "Engineering").trim() || "Engineering";
 
     const existingUser = await User.findOne({ email: normalizedEmail });
