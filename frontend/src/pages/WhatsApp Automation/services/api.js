@@ -1,5 +1,4 @@
-const VITE_PYTHON_API_URL = "https://pearlscrm-2.onrender.com/api";
-//const VITE_PYTHON_API_URL = "http://localhost:5000/api";
+const VITE_API_URL = import.meta.env.VITE_API_URL || "https://pearlscrm-1.onrender.com/api";
 
 /* =========================================================
    FETCH DASHBOARD STATS
@@ -7,7 +6,7 @@ const VITE_PYTHON_API_URL = "https://pearlscrm-2.onrender.com/api";
 
 export async function fetchStats() {
   try {
-    const response = await fetch(`${VITE_PYTHON_API_URL}/conversations`);
+    const response = await fetch(`${VITE_API_URL}/conversations`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch conversations: ${response.status}`);
@@ -59,7 +58,7 @@ export async function fetchStats() {
 
 export async function fetchDashboardData() {
   try {
-    const response = await fetch(`${VITE_PYTHON_API_URL}/conversations`);
+    const response = await fetch(`${VITE_API_URL}/conversations`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch dashboard data: ${response.status}`);
@@ -195,7 +194,7 @@ export async function fetchDashboardData() {
 
 export async function fetchConversations() {
   try {
-    const response = await fetch(`${VITE_PYTHON_API_URL}/conversations`);
+    const response = await fetch(`${VITE_API_URL}/conversations`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch conversations: ${response.status}`);
@@ -281,7 +280,7 @@ export async function fetchConversations() {
 export async function sendAdminMessage(conversationId, message) {
   try {
     const response = await fetch(
-      `${VITE_PYTHON_API_URL}/conversations/${conversationId}/messages`,
+      `${VITE_API_URL}/conversations/${conversationId}/messages`,
       {
         method: "POST",
 
@@ -320,7 +319,7 @@ export async function sendAdminMessage(conversationId, message) {
 export async function takeOverConversation(conversationId) {
   try {
     const response = await fetch(
-      `${VITE_PYTHON_API_URL}/conversations/${conversationId}/take-over`,
+      `${VITE_API_URL}/conversations/${conversationId}/take-over`,
       {
         method: "PUT",
 
@@ -405,7 +404,7 @@ export async function createHumanHandoff({
 export async function resolveConversation(conversationId) {
   try {
     const response = await fetch(
-      `${VITE_PYTHON_API_URL}/conversations/${conversationId}/resolve`,
+      `${VITE_API_URL}/conversations/${conversationId}/resolve`,
       {
         method: "PUT",
 
@@ -438,7 +437,7 @@ export async function resolveConversation(conversationId) {
 export async function blockConversation(conversationId) {
   try {
     const response = await fetch(
-      `${VITE_PYTHON_API_URL}/conversations/${conversationId}/block`,
+      `${VITE_API_URL}/conversations/${conversationId}/block`,
       {
         method: "PUT",
 
@@ -471,7 +470,7 @@ export async function blockConversation(conversationId) {
 export async function fetchContactById(employeeId) {
   try {
     const response = await fetch(
-      `${VITE_PYTHON_API_URL}/employees/${employeeId}`,
+      `${VITE_API_URL}/employees/${employeeId}`,
     );
 
     if (!response.ok) {
@@ -496,7 +495,7 @@ export async function fetchContactById(employeeId) {
 
 export async function fetchContacts() {
   try {
-    const response = await fetch(`${VITE_PYTHON_API_URL}/employees`);
+    const response = await fetch(`${VITE_API_URL}/employees`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch contacts: ${response.status}`);
@@ -521,7 +520,7 @@ export async function fetchContacts() {
 export async function updateContact(employeeId, contactData) {
   try {
     const response = await fetch(
-      `${VITE_PYTHON_API_URL}/employees/${employeeId}`,
+      `${VITE_API_URL}/employees/${employeeId}`,
       {
         method: "PUT",
 
@@ -555,7 +554,7 @@ export async function updateContact(employeeId, contactData) {
 
 export async function createContact(contactData) {
   try {
-    const response = await fetch(`${VITE_PYTHON_API_URL}/employees`, {
+    const response = await fetch(`${VITE_API_URL}/employees`, {
       method: "POST",
 
       headers: {
@@ -588,7 +587,7 @@ export async function createContact(contactData) {
 export async function deleteContact(contactId) {
   try {
     const response = await fetch(
-      `${VITE_PYTHON_API_URL}/employees/${contactId}`,
+      `${VITE_API_URL}/employees/${contactId}`,
       {
         method: "DELETE",
       },

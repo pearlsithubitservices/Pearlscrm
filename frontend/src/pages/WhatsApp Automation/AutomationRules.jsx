@@ -4,8 +4,7 @@ import React, { useEffect, useState } from "react";
    API
 ========================================================= */
 
-//const API_BVITE_PYTHON_API_URLASE_URL = "http://localhost:5000/api";
-const VITE_PYTHON_API_URL = "https://pearlscrm-2.onrender.com/api";
+const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL;
 
 /* =========================================================
    ACTION OPTIONS
@@ -83,7 +82,7 @@ export default function AutomationRules() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${VITE_PYTHON_API_URL}/automation-rules`);
+      const response = await fetch(`${VITE_API_URL}/automation-rules`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch automation rules: ${response.status}`);
@@ -206,7 +205,7 @@ export default function AutomationRules() {
         const ruleId = editingRule._id || editingRule.id;
 
         const response = await fetch(
-          `${VITE_PYTHON_API_URL}/automation-rules/${ruleId}`,
+          `${VITE_API_URL}/automation-rules/${ruleId}`,
           {
             method: "PUT",
 
@@ -231,24 +230,21 @@ export default function AutomationRules() {
         /* =====================================================
          CREATE NEW RULE
       ===================================================== */
-        const response = await fetch(
-          `${VITE_PYTHON_API_URL}/automation-rules`,
-          {
-            method: "POST",
+        const response = await fetch(`${VITE_API_URL}/automation-rules`, {
+          method: "POST",
 
-            headers: {
-              "Content-Type": "application/json",
-            },
-
-            body: JSON.stringify({
-              name: form.name.trim(),
-              trigger: form.trigger,
-              condition: form.condition,
-              action: form.action,
-              status: form.status,
-            }),
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+
+          body: JSON.stringify({
+            name: form.name.trim(),
+            trigger: form.trigger,
+            condition: form.condition,
+            action: form.action,
+            status: form.status,
+          }),
+        });
 
         if (!response.ok) {
           throw new Error(`Failed to create rule: ${response.status}`);
@@ -280,7 +276,7 @@ export default function AutomationRules() {
       const ruleId = rule._id || rule.id;
 
       const response = await fetch(
-        `${VITE_PYTHON_API_URL}/automation-rules/${ruleId}/status`,
+        `${VITE_API_URL}/automation-rules/${ruleId}/status`,
         {
           method: "PATCH",
 
@@ -325,7 +321,7 @@ export default function AutomationRules() {
       const ruleId = rule._id || rule.id;
 
       const response = await fetch(
-        `${VITE_PYTHON_API_URL}/automation-rules/${ruleId}`,
+        `${VITE_API_URL}/automation-rules/${ruleId}`,
         {
           method: "DELETE",
         },

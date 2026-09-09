@@ -12,8 +12,7 @@ import {
   Users,
 } from "lucide-react";
 
-//const VITE_PYTHON_API_URL = "http://localhost:5000/api";
-const VITE_PYTHON_API_URL = "https://pearlscrm-2.onrender.com/api";
+const VITE_API_URL = import.meta.env.VITE_API_URL || "https://pearlscrm-1.onrender.com/api";
 
 /* =====================================================
    PERCENTAGE HELPER
@@ -66,7 +65,7 @@ export default function WhatsAppReports() {
     try {
       setError("");
 
-      const response = await fetch(`${VITE_PYTHON_API_URL}/reports/summary`);
+      const response = await fetch(`${VITE_API_URL}/reports/summary`);
 
       if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);

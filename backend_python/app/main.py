@@ -44,10 +44,10 @@ app.add_middleware(
 
 
 
-app.include_router(health.router)
+app.include_router(health.router, prefix="/api/v1")
 
-app.include_router(crm.router)
+app.include_router(crm.router, prefix="/api/v1")
 
-app.include_router(chat.router)
-app.include_router(whatsapp.router)
-app.include_router(handoff.router)
+app.include_router(chat.router, prefix="/api/v1")
+app.include_router(whatsapp.router, prefix="/api/v1")
+app.include_router(handoff.router, prefix="/api/v1")

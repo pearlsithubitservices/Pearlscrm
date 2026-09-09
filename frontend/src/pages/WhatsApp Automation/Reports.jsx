@@ -16,8 +16,7 @@ import {
   Legend,
 } from "recharts";
 
-//const VITE_PYTHON_API_URL = "http://localhost:5000/api";
-const VITE_PYTHON_API_URL = "https://pearlscrm-2.onrender.com/api";
+const VITE_API_URL = import.meta.env.VITE_API_URL || "https://pearlscrm-1.onrender.com/api";
 
 // =========================================================
 // COLORS
@@ -281,15 +280,15 @@ export default function Reports() {
         conversationsResponse,
         trendsResponse,
       ] = await Promise.all([
-        fetch(`${VITE_PYTHON_API_URL}/reports/summary${query}`),
+        fetch(`${VITE_API_URL}/reports/summary${query}`),
 
-        fetch(`${VITE_PYTHON_API_URL}/reports/conversations${query}`),
+        fetch(`${VITE_API_URL}/reports/conversations${query}`),
 
-        fetch(`${VITE_PYTHON_API_URL}/reports/messages${query}`),
+        fetch(`${VITE_API_URL}/reports/messages${query}`),
 
-        fetch(`${VITE_PYTHON_API_URL}/conversations${query}`),
+        fetch(`${VITE_API_URL}/conversations${query}`),
 
-        fetch(`${VITE_PYTHON_API_URL}/reports/trends${trendQuery}`),
+        fetch(`${VITE_API_URL}/reports/trends${trendQuery}`),
       ]);
 
       // ---------------------------------------------------
