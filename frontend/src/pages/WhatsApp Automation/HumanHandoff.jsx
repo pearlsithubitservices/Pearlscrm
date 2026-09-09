@@ -4,24 +4,20 @@ import { useNavigate } from "react-router-dom";
 const VITE_PYTHON_API_URL = `${import.meta.env.VITE_PYTHON_API_URL || "http://127.0.0.1:8000"}/api/v1/handoff`;
 
 export default function HumanHandoff() {
-
   const navigate = useNavigate();
 
   const [handoffs, setHandoffs] = useState([]);
   const [activeTab, setActiveTab] = useState("All");
   const [search, setSearch] = useState("");
-  const [selectedConversation, setSelectedConversation] =
-    useState(null);
+  const [selectedConversation, setSelectedConversation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
 
   // =====================================================
   // OPEN CONVERSATION
   // =====================================================
 
   const openConversation = (conversationId) => {
-
     if (!conversationId) {
       alert("Conversation ID is not available.");
       return;
@@ -32,10 +28,7 @@ export default function HumanHandoff() {
         conversation_id: conversationId,
       },
     });
-
   };
-
-
 
   // =====================================================
   // FETCH HANDOFF REQUESTS
@@ -46,7 +39,7 @@ export default function HumanHandoff() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/`);
+      const response = await fetch(`${VITE_PYTHON_API_URL}/`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch handoff requests");
@@ -80,13 +73,13 @@ export default function HumanHandoff() {
   const resolveHandoff = async (handoffId) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/${handoffId}/resolve`,
+        `${VITE_PYTHON_API_URL}/${handoffId}/resolve`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -95,13 +88,9 @@ export default function HumanHandoff() {
 
       const updatedHandoff = await response.json();
 
-      console.log(
-        "Resolved handoff response:",
-        updatedHandoff
-      );
+      console.log("Resolved handoff response:", updatedHandoff);
 
-      const updatedId =
-        updatedHandoff._id || updatedHandoff.id;
+      const updatedId = updatedHandoff._id || updatedHandoff.id;
 
       setHandoffs((previousHandoffs) =>
         previousHandoffs.map((handoff) => {
@@ -114,13 +103,11 @@ export default function HumanHandoff() {
                 status: "resolved",
               }
             : handoff;
-        })
+        }),
       );
 
       if (selectedConversation) {
-        const selectedId =
-          selectedConversation._id ||
-          selectedConversation.id;
+        const selectedId = selectedConversation._id || selectedConversation.id;
 
         if (String(selectedId) === String(updatedId)) {
           setSelectedConversation((previous) => ({
@@ -133,7 +120,6 @@ export default function HumanHandoff() {
 
       // Refresh from backend to make sure latest data is shown
       await fetchHandoffs();
-
     } catch (err) {
       console.error("Resolve handoff error:", err);
       alert("Unable to resolve handoff.");
@@ -187,12 +173,9 @@ export default function HumanHandoff() {
     const now = new Date();
     const createdDate = new Date(dateString);
 
-    const difference =
-      now.getTime() - createdDate.getTime();
+    const difference = now.getTime() - createdDate.getTime();
 
-    const minutes = Math.floor(
-      difference / 60000
-    );
+    const minutes = Math.floor(difference / 60000);
 
     if (minutes < 1) {
       return "Just now";
@@ -238,34 +221,21 @@ export default function HumanHandoff() {
     const query = search.toLowerCase().trim();
 
     return handoffs.filter((item) => {
-      const formattedStatus = formatStatus(
-        item.status
-      );
+      const formattedStatus = formatStatus(item.status);
 
-      const matchesTab =
-        activeTab === "All" ||
-        formattedStatus === activeTab;
+      const matchesTab = activeTab === "All" || formattedStatus === activeTab;
 
-      const employeeName =
-        item.employee_name || "";
+      const employeeName = item.employee_name || "";
 
-      const message =
-        item.message || "";
+      const message = item.message || "";
 
-      const source =
-        item.source || "";
+      const source = item.source || "";
 
       const matchesSearch =
         !query ||
-        employeeName
-          .toLowerCase()
-          .includes(query) ||
-        message
-          .toLowerCase()
-          .includes(query) ||
-        source
-          .toLowerCase()
-          .includes(query);
+        employeeName.toLowerCase().includes(query) ||
+        message.toLowerCase().includes(query) ||
+        source.toLowerCase().includes(query);
 
       return matchesTab && matchesSearch;
     });
@@ -278,15 +248,15 @@ export default function HumanHandoff() {
   const totalHandoffs = handoffs.length;
 
   const pendingCount = handoffs.filter(
-    (item) => item.status === "waiting"
+    (item) => item.status === "waiting",
   ).length;
 
   const inProgressCount = handoffs.filter(
-    (item) => item.status === "in_progress"
+    (item) => item.status === "in_progress",
   ).length;
 
   const resolvedCount = handoffs.filter(
-    (item) => item.status === "resolved"
+    (item) => item.status === "resolved",
   ).length;
 
   // =====================================================
@@ -344,8 +314,7 @@ export default function HumanHandoff() {
         minHeight: "100vh",
         background: "#ffffff",
         padding: "25px 30px 40px",
-        fontFamily:
-          "Arial, Helvetica, sans-serif",
+        fontFamily: "Arial, Helvetica, sans-serif",
         color: "#172033",
       }}
     >
@@ -372,8 +341,7 @@ export default function HumanHandoff() {
             color: "#64748b",
           }}
         >
-          Monitor and manage conversations handed off
-          from AI to human agents.
+          Monitor and manage conversations handed off from AI to human agents.
         </p>
       </div>
 
@@ -400,8 +368,7 @@ export default function HumanHandoff() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns:
-            "repeat(4, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: "16px",
         }}
       >
@@ -411,11 +378,7 @@ export default function HumanHandoff() {
           color="#3b82f6"
         />
 
-        <OverviewCard
-          title="Pending"
-          value={pendingCount}
-          color="#f59e0b"
-        />
+        <OverviewCard title="Pending" value={pendingCount} color="#f59e0b" />
 
         <OverviewCard
           title="In Progress"
@@ -423,11 +386,7 @@ export default function HumanHandoff() {
           color="#8b5cf6"
         />
 
-        <OverviewCard
-          title="Resolved"
-          value={resolvedCount}
-          color="#22c55e"
-        />
+        <OverviewCard title="Resolved" value={resolvedCount} color="#22c55e" />
       </div>
 
       {/* ================================================= */}
@@ -494,36 +453,20 @@ export default function HumanHandoff() {
               padding: "3px",
             }}
           >
-            {[
-              "All",
-              "Pending",
-              "In Progress",
-              "Resolved",
-            ].map((tab) => (
+            {["All", "Pending", "In Progress", "Resolved"].map((tab) => (
               <button
                 key={tab}
                 type="button"
-                onClick={() =>
-                  setActiveTab(tab)
-                }
+                onClick={() => setActiveTab(tab)}
                 style={{
                   border: "none",
                   borderRadius: "6px",
                   padding: "8px 15px",
-                  background:
-                    activeTab === tab
-                      ? "#edf9f0"
-                      : "#ffffff",
-                  color:
-                    activeTab === tab
-                      ? "#4d9a60"
-                      : "#475569",
+                  background: activeTab === tab ? "#edf9f0" : "#ffffff",
+                  color: activeTab === tab ? "#4d9a60" : "#475569",
                   cursor: "pointer",
                   fontSize: "11px",
-                  fontWeight:
-                    activeTab === tab
-                      ? 600
-                      : 400,
+                  fontWeight: activeTab === tab ? 600 : 400,
                 }}
               >
                 {tab}
@@ -533,9 +476,7 @@ export default function HumanHandoff() {
 
           <input
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Search employee or message..."
             style={{
               width: "240px",
@@ -615,293 +556,218 @@ export default function HumanHandoff() {
               )}
 
               {!loading &&
-                filteredHandoffs.map(
-                  (item) => {
-                    const status =
-                      formatStatus(
-                        item.status
-                      );
+                filteredHandoffs.map((item) => {
+                  const status = formatStatus(item.status);
 
-                    const handoffId =
-                      item._id || item.id;
+                  const handoffId = item._id || item.id;
 
-                    return (
-                      <tr
-                        key={handoffId}
+                  return (
+                    <tr key={handoffId}>
+                      {/* EMPLOYEE */}
+
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          borderBottom: "1px solid #edf2f7",
+                        }}
                       >
-                        {/* EMPLOYEE */}
-
-                        <td
+                        <div
                           style={{
-                            padding:
-                              "12px 14px",
-                            borderBottom:
-                              "1px solid #edf2f7",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "9px",
                           }}
                         >
                           <div
                             style={{
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "50%",
+                              background: "#65a873",
+                              color: "#ffffff",
                               display: "flex",
-                              alignItems:
-                                "center",
-                              gap: "9px",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "10px",
+                              fontWeight: 700,
                             }}
                           >
-                            <div
-                              style={{
-                                width: "32px",
-                                height: "32px",
-                                borderRadius:
-                                  "50%",
-                                background:
-                                  "#65a873",
-                                color:
-                                  "#ffffff",
-                                display:
-                                  "flex",
-                                alignItems:
-                                  "center",
-                                justifyContent:
-                                  "center",
-                                fontSize:
-                                  "10px",
-                                fontWeight:
-                                  700,
-                              }}
-                            >
-                              {getInitials(
-                                item.employee_name
-                              )}
-                            </div>
-
-                            <div
-                              style={{
-                                fontSize:
-                                  "12px",
-                                fontWeight:
-                                  600,
-                              }}
-                            >
-                              {item.employee_name ||
-                                "Unknown Employee"}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* MESSAGE */}
-
-                        <td
-                          style={{
-                            padding:
-                              "12px 14px",
-                            borderBottom:
-                              "1px solid #edf2f7",
-                            fontSize:
-                              "11px",
-                            maxWidth:
-                              "300px",
-                          }}
-                        >
-                          {item.message}
-                        </td>
-
-                        {/* SOURCE */}
-
-                        <td
-                          style={{
-                            padding:
-                              "12px 14px",
-                            borderBottom:
-                              "1px solid #edf2f7",
-                            fontSize:
-                              "11px",
-                          }}
-                        >
-                          {item.source ||
-                            "-"}
-                        </td>
-
-                        {/* STATUS */}
-
-                        <td
-                          style={{
-                            padding:
-                              "12px 14px",
-                            borderBottom:
-                              "1px solid #edf2f7",
-                          }}
-                        >
-                          <span
-                            style={badgeStyle(
-                              status
-                            )}
-                          >
-                            {status}
-                          </span>
-                        </td>
-
-                        {/* TIME */}
-
-                        <td
-                          style={{
-                            padding:
-                              "12px 14px",
-                            borderBottom:
-                              "1px solid #edf2f7",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize:
-                                "11px",
-                              fontWeight:
-                                600,
-                            }}
-                          >
-                            {formatTime(
-                              item.created_at
-                            )}
+                            {getInitials(item.employee_name)}
                           </div>
 
                           <div
                             style={{
-                              fontSize:
-                                "10px",
-                              color:
-                                "#64748b",
-                              marginTop:
-                                "3px",
+                              fontSize: "12px",
+                              fontWeight: 600,
                             }}
                           >
-                            {getTimeAgo(
-                              item.created_at
-                            )}
+                            {item.employee_name || "Unknown Employee"}
                           </div>
-                        </td>
+                        </div>
+                      </td>
 
-                        {/* VIEW */}
+                      {/* MESSAGE */}
 
-                       <td
-  style={{
-    padding: "12px 14px",
-    borderBottom: "1px solid #edf2f7",
-    display: "flex",
-    gap: "8px",
-  }}
->
-  {/* VIEW DETAILS */}
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          borderBottom: "1px solid #edf2f7",
+                          fontSize: "11px",
+                          maxWidth: "300px",
+                        }}
+                      >
+                        {item.message}
+                      </td>
 
-  <button
-    type="button"
-    onClick={() =>
-      setSelectedConversation(item)
-    }
-    style={{
-      height: "30px",
-      padding: "0 11px",
-      border: "1px solid #b9dfc4",
-      background: "#f8fffa",
-      borderRadius: "7px",
-      color: "#4f9361",
-      fontSize: "10px",
-      cursor: "pointer",
-    }}
-  >
-    View Details
-  </button>
+                      {/* SOURCE */}
 
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          borderBottom: "1px solid #edf2f7",
+                          fontSize: "11px",
+                        }}
+                      >
+                        {item.source || "-"}
+                      </td>
 
-  {/* OPEN CRM CONVERSATION */}
+                      {/* STATUS */}
 
-  {item.conversation_id && (
-    <button
-      type="button"
-      onClick={() =>
-        openConversation(
-          item.conversation_id
-        )
-      }
-      style={{
-        height: "30px",
-        padding: "0 11px",
-        border: "1px solid #b9dfc4",
-        background: "#f8fffa",
-        borderRadius: "7px",
-        color: "#4f9361",
-        fontSize: "10px",
-        cursor: "pointer",
-      }}
-    >
-      Open Conversation
-    </button>
-  )}
-</td>
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          borderBottom: "1px solid #edf2f7",
+                        }}
+                      >
+                        <span style={badgeStyle(status)}>{status}</span>
+                      </td>
 
-                        {/* ACTION */}
+                      {/* TIME */}
 
-                        <td
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          borderBottom: "1px solid #edf2f7",
+                        }}
+                      >
+                        <div
                           style={{
-                            padding:
-                              "12px 14px",
-                            borderBottom:
-                              "1px solid #edf2f7",
+                            fontSize: "11px",
+                            fontWeight: 600,
                           }}
                         >
-                          {item.status !==
-                            "resolved" && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                resolveHandoff(
-                                  handoffId
-                                )
-                              }
-                              style={{
-                                border:
-                                  "none",
-                                background:
-                                  "#65a873",
-                                color:
-                                  "#ffffff",
-                                borderRadius:
-                                  "6px",
-                                padding:
-                                  "7px 12px",
-                                fontSize:
-                                  "10px",
-                                cursor:
-                                  "pointer",
-                              }}
-                            >
-                              Resolve
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  }
-                )}
+                          {formatTime(item.created_at)}
+                        </div>
 
-              {!loading &&
-                filteredHandoffs.length ===
-                  0 && (
-                  <tr>
-                    <td
-                      colSpan="7"
-                      style={{
-                        padding: "35px",
-                        textAlign:
-                          "center",
-                        color:
-                          "#94a3b8",
-                        fontSize:
-                          "12px",
-                      }}
-                    >
-                      No handoff requests found.
-                    </td>
-                  </tr>
-                )}
+                        <div
+                          style={{
+                            fontSize: "10px",
+                            color: "#64748b",
+                            marginTop: "3px",
+                          }}
+                        >
+                          {getTimeAgo(item.created_at)}
+                        </div>
+                      </td>
+
+                      {/* VIEW */}
+
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          borderBottom: "1px solid #edf2f7",
+                          display: "flex",
+                          gap: "8px",
+                        }}
+                      >
+                        {/* VIEW DETAILS */}
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedConversation(item)}
+                          style={{
+                            height: "30px",
+                            padding: "0 11px",
+                            border: "1px solid #b9dfc4",
+                            background: "#f8fffa",
+                            borderRadius: "7px",
+                            color: "#4f9361",
+                            fontSize: "10px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          View Details
+                        </button>
+
+                        {/* OPEN CRM CONVERSATION */}
+
+                        {item.conversation_id && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openConversation(item.conversation_id)
+                            }
+                            style={{
+                              height: "30px",
+                              padding: "0 11px",
+                              border: "1px solid #b9dfc4",
+                              background: "#f8fffa",
+                              borderRadius: "7px",
+                              color: "#4f9361",
+                              fontSize: "10px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Open Conversation
+                          </button>
+                        )}
+                      </td>
+
+                      {/* ACTION */}
+
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          borderBottom: "1px solid #edf2f7",
+                        }}
+                      >
+                        {item.status !== "resolved" && (
+                          <button
+                            type="button"
+                            onClick={() => resolveHandoff(handoffId)}
+                            style={{
+                              border: "none",
+                              background: "#65a873",
+                              color: "#ffffff",
+                              borderRadius: "6px",
+                              padding: "7px 12px",
+                              fontSize: "10px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Resolve
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+
+              {!loading && filteredHandoffs.length === 0 && (
+                <tr>
+                  <td
+                    colSpan="7"
+                    style={{
+                      padding: "35px",
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      fontSize: "12px",
+                    }}
+                  >
+                    No handoff requests found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -913,71 +779,51 @@ export default function HumanHandoff() {
 
       {selectedConversation && (
         <div
-          onClick={() =>
-            setSelectedConversation(
-              null
-            )
-          }
+          onClick={() => setSelectedConversation(null)}
           style={{
             position: "fixed",
             inset: 0,
-            background:
-              "rgba(15, 23, 42, 0.35)",
+            background: "rgba(15, 23, 42, 0.35)",
             display: "flex",
             alignItems: "center",
-            justifyContent:
-              "center",
+            justifyContent: "center",
             zIndex: 2000,
           }}
         >
           <div
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onClick={(event) => event.stopPropagation()}
             style={{
               width: "450px",
               maxWidth: "90%",
-              background:
-                "#ffffff",
-              borderRadius:
-                "12px",
+              background: "#ffffff",
+              borderRadius: "12px",
               padding: "22px",
-              boxShadow:
-                "0 20px 50px rgba(0,0,0,0.18)",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
             }}
           >
             <div
               style={{
                 display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems:
-                  "center",
-                marginBottom:
-                  "20px",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "20px",
               }}
             >
               <div>
                 <div
                   style={{
-                    fontSize:
-                      "17px",
-                    fontWeight:
-                      700,
+                    fontSize: "17px",
+                    fontWeight: 700,
                   }}
                 >
-                  {selectedConversation.employee_name ||
-                    "Human Handoff"}
+                  {selectedConversation.employee_name || "Human Handoff"}
                 </div>
 
                 <div
                   style={{
-                    marginTop:
-                      "4px",
-                    fontSize:
-                      "11px",
-                    color:
-                      "#64748b",
+                    marginTop: "4px",
+                    fontSize: "11px",
+                    color: "#64748b",
                   }}
                 >
                   Handoff Request
@@ -986,23 +832,15 @@ export default function HumanHandoff() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setSelectedConversation(
-                    null
-                  )
-                }
+                onClick={() => setSelectedConversation(null)}
                 style={{
                   border: "none",
-                  background:
-                    "#f1f5f9",
-                  borderRadius:
-                    "50%",
+                  background: "#f1f5f9",
+                  borderRadius: "50%",
                   width: "30px",
                   height: "30px",
-                  cursor:
-                    "pointer",
-                  fontSize:
-                    "18px",
+                  cursor: "pointer",
+                  fontSize: "18px",
                 }}
               >
                 ×
@@ -1011,85 +849,52 @@ export default function HumanHandoff() {
 
             <div
               style={{
-                background:
-                  "#f8fafc",
-                borderRadius:
-                  "9px",
-                padding:
-                  "15px",
-                fontSize:
-                  "12px",
-                lineHeight:
-                  "1.8",
+                background: "#f8fafc",
+                borderRadius: "9px",
+                padding: "15px",
+                fontSize: "12px",
+                lineHeight: "1.8",
               }}
             >
               <div>
-                <strong>
-                  Message:
-                </strong>{" "}
-                {
-                  selectedConversation.message
-                }
+                <strong>Message:</strong> {selectedConversation.message}
               </div>
 
               <div>
-                <strong>
-                  Source:
-                </strong>{" "}
-                {
-                  selectedConversation.source ||
-                  "-"
-                }
+                <strong>Source:</strong> {selectedConversation.source || "-"}
               </div>
 
               <div>
-                <strong>
-                  Status:
-                </strong>{" "}
-                {formatStatus(
-                  selectedConversation.status
-                )}
+                <strong>Status:</strong>{" "}
+                {formatStatus(selectedConversation.status)}
               </div>
 
               <div>
-                <strong>
-                  Created:
-                </strong>{" "}
+                <strong>Created:</strong>{" "}
                 {selectedConversation.created_at
-                  ? new Date(
-                      selectedConversation.created_at
-                    ).toLocaleString()
+                  ? new Date(selectedConversation.created_at).toLocaleString()
                   : "-"}
               </div>
             </div>
 
-            {selectedConversation.status !==
-              "resolved" && (
+            {selectedConversation.status !== "resolved" && (
               <button
                 type="button"
                 onClick={() =>
                   resolveHandoff(
-                    selectedConversation._id ||
-                      selectedConversation.id
+                    selectedConversation._id || selectedConversation.id,
                   )
                 }
                 style={{
                   width: "100%",
-                  marginTop:
-                    "18px",
-                  height:
-                    "38px",
+                  marginTop: "18px",
+                  height: "38px",
                   border: "none",
-                  borderRadius:
-                    "8px",
-                  background:
-                    "#65a873",
-                  color:
-                    "#ffffff",
-                  cursor:
-                    "pointer",
-                  fontWeight:
-                    600,
+                  borderRadius: "8px",
+                  background: "#65a873",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  fontWeight: 600,
                 }}
               >
                 Mark as Resolved
@@ -1102,37 +907,25 @@ export default function HumanHandoff() {
   );
 }
 
-
 // =====================================================
 // OVERVIEW CARD COMPONENT
 // =====================================================
 
-function OverviewCard({
-  title,
-  value,
-  color,
-}) {
+function OverviewCard({ title, value, color }) {
   return (
     <div
       style={{
-        border:
-          "1px solid #e2e8f0",
-        borderRadius:
-          "10px",
-        background:
-          "#ffffff",
-        padding:
-          "18px",
-        minHeight:
-          "110px",
+        border: "1px solid #e2e8f0",
+        borderRadius: "10px",
+        background: "#ffffff",
+        padding: "18px",
+        minHeight: "110px",
       }}
     >
       <div
         style={{
-          fontSize:
-            "12px",
-          color:
-            "#64748b",
+          fontSize: "12px",
+          color: "#64748b",
         }}
       >
         {title}
@@ -1140,12 +933,9 @@ function OverviewCard({
 
       <div
         style={{
-          marginTop:
-            "15px",
-          fontSize:
-            "30px",
-          fontWeight:
-            700,
+          marginTop: "15px",
+          fontSize: "30px",
+          fontWeight: 700,
           color,
         }}
       >
@@ -1163,22 +953,14 @@ function TableHeader({ text }) {
   return (
     <th
       style={{
-        textAlign:
-          "left",
-        padding:
-          "13px 14px",
-        fontSize:
-          "11px",
-        fontWeight:
-          700,
-        color:
-          "#374151",
-        background:
-          "#fbfcfd",
-        borderBottom:
-          "1px solid #e2e8f0",
-        whiteSpace:
-          "nowrap",
+        textAlign: "left",
+        padding: "13px 14px",
+        fontSize: "11px",
+        fontWeight: 700,
+        color: "#374151",
+        background: "#fbfcfd",
+        borderBottom: "1px solid #e2e8f0",
+        whiteSpace: "nowrap",
       }}
     >
       {text}
