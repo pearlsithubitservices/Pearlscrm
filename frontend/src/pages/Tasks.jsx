@@ -457,7 +457,7 @@ export default function Tasks() {
             </button>
 
             {/* FILTER BUTTON & DROPDOWN */}
-            <div className="relative" ref={filterRef}>
+            <div className="relative" ref{filterRef}>
               <button
                 onClick={() => {
                   setShowFilterModal(!showFilterModal);

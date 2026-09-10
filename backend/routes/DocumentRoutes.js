@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const Document = require("../models/Document/Document");
+const Document = require("../models/Document");
 
 // Ensure upload directory exists
 const uploadDir = path.join(__dirname, "../uploads/documents");
@@ -25,61 +25,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage, limits: { fileSize: 50 * 1024 * 1024 } });
 
-// Default PDF mock documents for auto-seeding
-const SEED_DOCUMENTS = [
-  {
-    name: "vishnu.ppt",
-    type: "ppt",
-    extension: "ppt",
-    size: "24.82 Kb",
-    sizeBytes: 25416,
-    createdOn: "37 minutes ago",
-    modifiedOn: "Jul, 21",
-    author: "Vishnu R",
-    isRecycled: false,
-  },
-  {
-    name: "pearls.doc",
-    type: "doc",
-    extension: "doc",
-    size: "24.35 Kb",
-    sizeBytes: 24934,
-    createdOn: "today, 02:18",
-    modifiedOn: "Jun, 06",
-    author: "Vishnu R",
-    isRecycled: false,
-  },
-  {
-    name: "company.xls",
-    type: "xls",
-    extension: "xls",
-    size: "21.24 Kb",
-    sizeBytes: 21750,
-    createdOn: "today, 01:18",
-    modifiedOn: "Aug, 13",
-    author: "Vishnu R",
-    isRecycled: false,
-  },
-];
-
-const SEED_RECYCLE_BIN = [
-  {
-    name: "ai img.jpg",
-    type: "ai",
-    extension: "jpg",
-    badgeText: "Ai",
-    badgeColor: "bg-purple-700",
-    size: "18.50 Kb",
-    sizeBytes: 18944,
-    createdOn: "yesterday",
-    modifiedOn: "Aug, 10",
-    author: "Vishnu R",
-    isRecycled: true,
-    recycledAt: new Date(),
-    retentionDays: 30,
-  },
-];
-
 // Helper to format file size
 const formatFileSize = (bytes) => {
   if (!bytes || isNaN(bytes)) return "0 Kb";
@@ -89,13 +34,24 @@ const formatFileSize = (bytes) => {
   return `${mb.toFixed(2)} Mb`;
 };
 
-// GET /api/documents - Fetch active documents (auto-seeds if database is empty)
+// Helper to purge any previously auto-seeded mock documents from MongoDB
+const purgeSeedDocuments = async () => {
+  try {
+    await Document.deleteMany({
+      $or: [
+        { name: { $in: ["vishnu.ppt", "pearls.doc", "company.xls", "ai img.jpg"] } },
+        { author: "Vishnu R" },
+      ],
+    });
+  } catch (err) {
+    console.warn("Could not purge mock seed documents:", err.message);
+  }
+};
+
+// GET /api/documents - Fetch active documents
 router.get("/", async (req, res) => {
   try {
-    const totalCount = await Document.countDocuments();
-    if (totalCount === 0) {
-      await Document.insertMany([...SEED_DOCUMENTS, ...SEED_RECYCLE_BIN]);
-    }
+    await purgeSeedDocuments();
 
     const documents = await Document.find({ isRecycled: false }).sort({ createdAt: -1 });
 
@@ -117,6 +73,7 @@ router.get("/", async (req, res) => {
 // GET /api/documents/recycle-bin - Fetch deleted/recycled documents with 30-day auto-purge
 router.get("/recycle-bin", async (req, res) => {
   try {
+    await purgeSeedDocuments();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     // 1. Auto-clean expired items older than 30 days
@@ -183,6 +140,7 @@ router.get("/recycle-bin", async (req, res) => {
 // GET /api/documents/stats - Get My Drive storage & file statistics
 router.get("/stats", async (req, res) => {
   try {
+    await purgeSeedDocuments();
     const activeDocs = await Document.find({ isRecycled: false });
     const recycledDocs = await Document.find({ isRecycled: true });
 

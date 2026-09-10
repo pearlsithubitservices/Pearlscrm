@@ -1,4 +1,4 @@
-const Document = require("../models/Document/Document");
+const Document = require("../models/Document");
 const mongoose = require("mongoose");
 const path = require("path");
 const fs = require("fs");

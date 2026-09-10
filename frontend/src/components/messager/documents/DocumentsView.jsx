@@ -79,7 +79,7 @@ export default function DocumentsView({ onClose }) {
         fetchDriveStats(),
       ]);
 
-      if (docsData && docsData.length > 0) {
+      if (Array.isArray(docsData)) {
         setDocuments(docsData.map((d) => ({ ...d, id: d._id || d.id })));
       }
       if (statsData) {
@@ -105,10 +105,10 @@ export default function DocumentsView({ onClose }) {
         ]);
 
         if (isMounted) {
-          if (docsData && docsData.length > 0) {
+          if (Array.isArray(docsData)) {
             setDocuments(docsData.map((d) => ({ ...d, id: d._id || d.id })));
           }
-          if (recycledData && recycledData.length > 0) {
+          if (Array.isArray(recycledData)) {
             setRecycledItems(recycledData.map((d) => ({ ...d, id: d._id || d.id })));
           }
           if (statsData) {

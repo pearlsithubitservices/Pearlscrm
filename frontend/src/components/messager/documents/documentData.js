@@ -3,55 +3,9 @@
  * Matching the exact structure and records shown in the PDF screenshot.
  */
 
-export const INITIAL_DOCUMENTS = [
-  {
-    id: "doc-1",
-    name: "vishnu.ppt",
-    type: "ppt",
-    size: "24.82 Kb",
-    sizeBytes: 25416,
-    createdOn: "37 minutes ago",
-    modifiedOn: "Jul, 21",
-    author: "Vishnu R",
-    extension: "ppt",
-  },
-  {
-    id: "doc-2",
-    name: "pearls.doc",
-    type: "doc",
-    size: "24.35 Kb",
-    sizeBytes: 24934,
-    createdOn: "today, 02:18",
-    modifiedOn: "Jun, 06",
-    author: "Vishnu R",
-    extension: "doc",
-  },
-  {
-    id: "doc-3",
-    name: "company.xls",
-    type: "xls",
-    size: "21.24 Kb",
-    sizeBytes: 21750,
-    createdOn: "today, 01:18",
-    modifiedOn: "Aug, 13",
-    author: "Vishnu R",
-    extension: "xls",
-  },
-];
+export const INITIAL_DOCUMENTS = [];
 
-export const INITIAL_RECYCLE_BIN = [
-  {
-    id: "recycle-1",
-    name: "ai img.jpg",
-    type: "ai",
-    badgeText: "Ai",
-    badgeColor: "bg-purple-700",
-    size: "18.50 Kb",
-    deletedOn: "today, 10:45",
-    daysRemaining: 30,
-    extension: "jpg",
-  },
-];
+export const INITIAL_RECYCLE_BIN = [];
 
 /**
  * Supported document templates shown in the PDF screenshot

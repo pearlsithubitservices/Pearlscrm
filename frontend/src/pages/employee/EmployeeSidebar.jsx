@@ -17,6 +17,7 @@ import {
   X,
   Briefcase,
   UserRound,
+  KanbanSquare,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -44,6 +45,11 @@ export default function Sidebar() {
       name: 'Projects',
       icon: Briefcase,
       path: '/employee/projects',
+    },
+    {
+      name: 'Boards',
+      icon: KanbanSquare,
+      path: '/employee/boards',
     },
     {
       name: 'Leads Management',

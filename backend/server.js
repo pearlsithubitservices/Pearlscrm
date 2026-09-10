@@ -68,6 +68,7 @@ const humanHandoffRoutes = require("./routes/Whatsapp Automation/HumanHandoffRou
 
 const ReimbursementPolicyroutes = require("./routes/ReimbursementPolicyroutes");
 const TaxDocumentsRoutes = require("./routes/TaxDocumentsRoutes");
+const BoardRoutes = require("./routes/BoardRoutes");
 
 const {
   startFollowupReminderScheduler,
@@ -155,6 +156,7 @@ app.use("/api/empattendancenew", EmpAttendanceRoutes);
 app.use("/api/announcement", AnnouncementSchema);
 app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
+app.use("/api/boards", BoardRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

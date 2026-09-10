@@ -29,6 +29,7 @@ import {
   Link,
   Settings,
   Share2,
+  KanbanSquare,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -77,6 +78,11 @@ export default function Sidebar() {
       name: "Projects",
       icon: FolderOpen,
       path: "/projects",
+    },
+    {
+      name: "Boards",
+      icon: KanbanSquare,
+      path: "/boards",
     },
     {
       name: "Attendance Management",
