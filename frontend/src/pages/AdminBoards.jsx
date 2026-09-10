@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -15,6 +16,7 @@ import { apiUrl } from "../config/api.js";
 
 export default function AdminBoards() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const currentUserId = user?._id || user?.id || user?.uid || user?.email || "";
   const [boards, setBoards] = useState([]);
   const [search, setSearch] = useState("");
@@ -33,6 +35,8 @@ export default function AdminBoards() {
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [selectedBoardForUpload, setSelectedBoardForUpload] = useState(null);
   const [showBoardMenu, setShowBoardMenu] = useState(null);
+  const [creatingBoard, setCreatingBoard] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   // Fetch boards
   useEffect(() => {
@@ -75,13 +79,15 @@ export default function AdminBoards() {
 
   const handleCreateBoard = async (e) => {
     e.preventDefault();
+    setCreateError("");
 
     if (!currentUserId) {
-      alert("Please sign in again before creating a board");
+      setCreateError("Please sign in again before creating a board");
       return;
     }
 
     try {
+      setCreatingBoard(true);
       const response = await fetch(apiUrl("/boards"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,14 +137,16 @@ export default function AdminBoards() {
         if (!selectedBoardForUpload) {
           setSelectedBoardForUpload(createdBoard._id);
         }
+        navigate(`/boards/${createdBoard._id}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(errorData.message || "Unable to create board");
+        setCreateError(errorData.message || "Unable to create board");
       }
     } catch (error) {
       console.error("Error creating board:", error);
-      alert(error.message || "Unable to connect to the server. Please try again.");
+      setCreateError(error.message || "Unable to connect to the server. Please try again.");
     } finally {
+      setCreatingBoard(false);
       setUploadingFile(false);
     }
   };
@@ -550,6 +558,11 @@ export default function AdminBoards() {
                 </div>
 
                 <form onSubmit={handleCreateBoard} className="p-6">
+                  {createError && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {createError}
+                    </div>
+                  )}
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -567,20 +580,7 @@ export default function AdminBoards() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        value={formData.description}
-                        onChange={(e) =>
-                          setFormData({ ...formData, description: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                        placeholder="Describe this board..."
-                        rows="3"
-                      />
-                    </div>
+                 
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -662,7 +662,7 @@ export default function AdminBoards() {
                       </div>
                     </div>
 
-                    <div>
+                    {/* <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Assign employees
                       </label>
@@ -714,7 +714,7 @@ export default function AdminBoards() {
                           })
                         )}
                       </div>
-                    </div>
+                    </div> */}
 
                  
                   </div>
@@ -729,9 +729,10 @@ export default function AdminBoards() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      disabled={creatingBoard || uploadingFile}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Create Board
+                      {creatingBoard || uploadingFile ? "Creating..." : "Create Board"}
                     </button>
                   </div>
                 </form>

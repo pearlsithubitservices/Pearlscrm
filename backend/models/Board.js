@@ -54,6 +54,10 @@ const boardSchema = new mongoose.Schema(
       default: "Admin",
     },
     files: [boardFileSchema],
+    canvasData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     assignedTo: [
       {
         userId: String,
