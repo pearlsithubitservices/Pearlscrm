@@ -108,6 +108,7 @@ router.post("/", async (req, res) => {
       assignedTo,
       isPublic,
       projectId,
+      canvasData,
     } = req.body;
 
     if (!boardName || !createdBy) {
@@ -126,6 +127,7 @@ router.post("/", async (req, res) => {
       assignedTo: assignedTo || [],
       isPublic: isPublic || false,
       projectId,
+      canvasData: canvasData || {},
       files: [],
     });
 
@@ -154,20 +156,28 @@ router.put("/:id", async (req, res) => {
       assignedTo,
       isPublic,
       status,
+      canvasData,
     } = req.body;
 
-    const board = await Board.findByIdAndUpdate(
-      req.params.id,
-      {
-        boardName,
-        description,
-        boardCategory,
-        assignedTo,
-        isPublic,
-        status,
-      },
-      { new: true, runValidators: true }
-    );
+    const updates = {};
+    const editableFields = {
+      boardName,
+      description,
+      boardCategory,
+      assignedTo,
+      isPublic,
+      status,
+      canvasData,
+    };
+
+    Object.entries(editableFields).forEach(([field, value]) => {
+      if (value !== undefined) updates[field] = value;
+    });
+
+    const board = await Board.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!board) {
       return res.status(404).json({

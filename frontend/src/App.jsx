@@ -58,6 +58,7 @@ import PayslipAdmin from './pages/Payroll/PayslipAdmin.jsx';
 import Performance from './pages/Performance & Growth/Performance.jsx';
 import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
 import AdminBoards from './pages/AdminBoards.jsx';
+import BoardEditor from './pages/BoardEditor.jsx';
 
 import ProtectedRoute from './components/ProtectedRoutes.jsx';
 
@@ -381,6 +382,11 @@ export default function App() {
               <Route
                 path="/boards"
                 element={<AdminBoards />}
+              />
+
+              <Route
+                path="/boards/:id"
+                element={<BoardEditor />}
               />
 
               {/* ==================================================
