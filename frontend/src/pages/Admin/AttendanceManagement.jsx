@@ -29,6 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import useLeave from '../../Hooks/useLeave';
 import useEmployees from '../../Hooks/useEmployees';
 import useAttendanceCorrection from '../../Hooks/useAttendanceCorrection';
+import { DEFAULT_DEPARTMENT } from '../../data/departments';
 
 import socket from '../../config/socket';
 
@@ -463,7 +464,7 @@ export default function AttendanceManagement() {
   const downloadSingleEmployeePDF = (employee) => {
     const empUid = employee.employee_uid || employee.uid || employee._id;
     const empName = employee.employee_name || employeeMap[empUid] || "Employee";
-    const dept = employee.department || "Operations";
+    const dept = employee.department || DEFAULT_DEPARTMENT;
 
     // Gather all historical records for this employee
     let employeeRecords = (employeesdetails || []).filter((rec) => {
@@ -1161,7 +1162,7 @@ export default function AttendanceManagement() {
                               photo: imgSrc,
                               name: employee.employee_name || empInfo?.name || "Employee",
                               id: employee.employee_uid || "N/A",
-                              department: employee.department || empInfo?.department || "Operations",
+                              department: employee.department || empInfo?.department || DEFAULT_DEPARTMENT,
                               time: employee.clockIn ? new Date(employee.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : "--:--",
                               location: employee.location || "Office",
                             });
@@ -1175,7 +1176,7 @@ export default function AttendanceManagement() {
                               photo: imgSrc,
                               name: employee.employee_name || empInfo?.name || "Employee",
                               id: employee.employee_uid || "N/A",
-                              department: employee.department || empInfo?.department || "Operations",
+                              department: employee.department || empInfo?.department || DEFAULT_DEPARTMENT,
                               time: employee.clockIn ? new Date(employee.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : "--:--",
                               location: employee.location || "Office",
                             });

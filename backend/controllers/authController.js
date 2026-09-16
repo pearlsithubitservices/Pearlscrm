@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Employee = require("../models/Employee");
+const { DEFAULT_DEPARTMENT } = require("../config/departments");
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -16,7 +17,7 @@ const generateToken = (user) => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, industry, department } = req.body;
+    const { name, email, password, industry, department } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -26,8 +27,7 @@ const register = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const safeRole = role === "Admin" || role === "Employee" ? role : "Employee";
-    const safeDepartment = String(department || "Engineering").trim() || "Engineering";
+    const safeDepartment = String(department || DEFAULT_DEPARTMENT).trim() || DEFAULT_DEPARTMENT;
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -42,7 +42,7 @@ const register = async (req, res) => {
       name: String(name).trim(),
       email: normalizedEmail,
       password: hashedPassword,
-      role: safeRole,
+      role: "Employee",
       industry: industry || "IT",
       department: safeDepartment,
       profile: {
@@ -62,7 +62,7 @@ const register = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department: user.department || user.profile?.department || "Engineering",
+        department: user.department || user.profile?.department || DEFAULT_DEPARTMENT,
         avatar: user.avatar,
       },
     });
@@ -123,7 +123,7 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department: user.department || user.profile?.department || "Engineering",
+        department: user.department || user.profile?.department || DEFAULT_DEPARTMENT,
         avatar: user.avatar,
       },
     });
@@ -155,7 +155,7 @@ const getMe = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department: user.department || user.profile?.department || "Engineering",
+        department: user.department || user.profile?.department || DEFAULT_DEPARTMENT,
         avatar: user.avatar,
       },
     });

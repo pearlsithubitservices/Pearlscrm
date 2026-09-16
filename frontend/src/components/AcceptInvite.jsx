@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../lib/firebase";
 import useEmployees from "../Hooks/useEmployees";
 import { apiUrl } from "../config/api";
+import { DEFAULT_DEPARTMENT } from "../data/departments";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function AcceptInvite() {
@@ -119,7 +120,7 @@ export default function AcceptInvite() {
         const employeeName = employee.employeeName || employee.name || "Employee";
         const employeeEmail = (employee.email || "").trim().toLowerCase();
         const employeeRole = employee.employeeRole || employee.role || "Employee";
-        const employeeDept = employee.department || employee.employeeDepartment || "Engineering";
+        const employeeDept = employee.department || employee.employeeDepartment || DEFAULT_DEPARTMENT;
 
         try {
             setLoading(true);
@@ -242,7 +243,7 @@ export default function AcceptInvite() {
     const employeeEmail = employee.email || "";
     const employeeContact = employee.contact || employee.phone || "Not specified";
     const employeeRole = employee.employeeRole || employee.role || "Employee";
-    const employeeDept = employee.department || employee.employeeDepartment || "Engineering";
+    const employeeDept = employee.department || employee.employeeDepartment || DEFAULT_DEPARTMENT;
 
     return (
         <div className="min-h-screen bg-[#efede8] flex justify-center items-center p-4">

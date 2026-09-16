@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Sparkles } from 'lucide-react';
+import { DEFAULT_DEPARTMENT, DEPARTMENTS } from '../data/departments';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -10,21 +11,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState('IT');
-  const [department, setDepartment] = useState('Engineering');
-  const [role, setRole] = useState('Admin');
+  const [department, setDepartment] = useState(DEFAULT_DEPARTMENT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const departmentOptions = [
-  
-    'Engineering',
-    'Design',
-    'HR Department',
-    'Finance',
-    'Sales & Marketing',
-    'Operations',
-    'Order Management',
-  ];
+  const departmentOptions = DEPARTMENTS;
 
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading, login, register } = useAuth();
@@ -86,7 +77,7 @@ export default function Login() {
           name,
           email: normalizedEmail,
           password,
-          role,
+          role: 'Employee',
           industry,
           department,
         });
@@ -238,23 +229,6 @@ export default function Login() {
                       {option}
                     </option>
                   ))}
-                </select>
-              </div>
-            )}
-
-            {/* ROLE SELECTOR */}
-            {!isLogin && (
-              <div className="space-y-1">
-                <label className="text-xs text-gray-400 font-medium ml-1">
-                  Register As:
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl bg-white/5 border border-purple-500/50 outline-none text-white font-medium focus:border-purple-400 transition"
-                >
-                  <option value="Admin" className="bg-slate-900 text-white">Admin (Full Access Dashboard)</option>
-                  <option value="Employee" className="bg-slate-900 text-white">Employee (Portal Access)</option>
                 </select>
               </div>
             )}
