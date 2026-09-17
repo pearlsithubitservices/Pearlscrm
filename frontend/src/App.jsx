@@ -59,6 +59,8 @@ import Performance from './pages/Performance & Growth/Performance.jsx';
 import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
 import AdminBoards from './pages/AdminBoards.jsx';
 import BoardEditor from './pages/BoardEditor.jsx';
+import ESignature from './pages/ESignature.jsx';
+import ESignatureEditor from './pages/ESignatureEditor.jsx';
 
 import ProtectedRoute from './components/ProtectedRoutes.jsx';
 
@@ -387,6 +389,28 @@ export default function App() {
               <Route
                 path="/boards/:id"
                 element={<BoardEditor />}
+              />
+
+              {/* E-SIGNATURE */}
+
+              <Route
+                path="/e-signatures"
+                element={<ESignature />}
+              />
+
+              <Route
+                path="/e-signatures/editor"
+                element={<ESignatureEditor />}
+              />
+
+              <Route
+                path="/e-signatures/editor/:id"
+                element={<ESignatureEditor />}
+              />
+
+              <Route
+                path="/esignature"
+                element={<ESignature />}
               />
 
               {/* ==================================================

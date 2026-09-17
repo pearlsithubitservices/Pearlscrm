@@ -30,6 +30,7 @@ import {
   Settings,
   Share2,
   KanbanSquare,
+  PenLine,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -113,6 +114,11 @@ export default function Sidebar() {
       name: "Performance & Growth",
       icon: ChartNoAxesColumnIncreasingIcon,
       path: "/admin-performance",
+    },
+    {
+      name: "E- signatures",
+      icon: PenLine,
+      path: "/e-signatures",
     },
   ];
 
