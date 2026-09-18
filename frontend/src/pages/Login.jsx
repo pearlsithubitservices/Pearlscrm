@@ -67,7 +67,7 @@ export default function Login() {
       if (isLogin) {
         const authUser = await login(normalizedEmail, password);
 
-        if (isAdmin) {
+        if (String(authUser?.role || '').trim().toLowerCase() === 'admin') {
           navigate('/', { replace: true });
         } else {
           navigate('/employee-dashboard', { replace: true });
@@ -82,7 +82,7 @@ export default function Login() {
           department,
         });
 
-        if (isAdmin) {
+        if (String(authUser?.role || '').trim().toLowerCase() === 'admin') {
           navigate('/', { replace: true });
         } else {
           navigate('/employee-dashboard', { replace: true });
