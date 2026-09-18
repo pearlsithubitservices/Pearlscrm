@@ -131,7 +131,7 @@ export default function Login() {
           {/* TITLE */}
           <div className="mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">
-              {isLogin ? "Welcome Back 👋" : "Create Account"}
+              {isLogin ? "Welcome Back " : "Create Account"}
             </h2>
             <p className="text-gray-400 text-sm sm:text-base">
               Access your premium CRM dashboard
