@@ -226,6 +226,10 @@ export default function AdminBoards() {
     window.open(apiUrl(file.filePath), "_blank", "noopener,noreferrer");
   };
 
+  const openBoardEditor = (boardId) => {
+    navigate(`/boards/${boardId}`);
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -431,7 +435,7 @@ export default function AdminBoards() {
                       return (
                     <tr
                       key={board._id}
-                      onClick={() => setSelectedBoardForUpload(board._id)}
+                      onClick={() => openBoardEditor(board._id)}
                       className="border-b hover:bg-gray-50 transition cursor-pointer"
                     >
                       <td className="px-6 py-4">
@@ -441,10 +445,10 @@ export default function AdminBoards() {
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
-                              openBoardFile(boardFile);
+                              openBoardEditor(board._id);
                             }}
                             className="truncate text-left font-medium text-blue-700 hover:text-blue-900 hover:underline"
-                            title={boardFile ? "Open file" : "No file uploaded"}
+                            title="Open in editor"
                           >
                             {boardFile?.fileName || board.boardName}
                           </button>
@@ -479,12 +483,12 @@ export default function AdminBoards() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setSelectedBoardForUpload(board._id);
+                                  openBoardEditor(board._id);
                                   setShowBoardMenu(null);
                                 }}
                                 className="block w-full px-4 py-2 text-gray-700 hover:bg-gray-50"
                               >
-                                Open
+                                Open in editor
                               </button>
                               <button
                                 type="button"

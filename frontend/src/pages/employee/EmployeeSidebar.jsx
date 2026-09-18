@@ -18,11 +18,15 @@ import {
   Briefcase,
   UserRound,
   KanbanSquare,
+  Video,
+  Mail,
+  FileSignature,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
 import { useIndustry } from '../../context/IndustryContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { canAccessEmployeeModule } from '../../data/departmentModuleAccess';
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -40,6 +44,7 @@ export default function Sidebar() {
       name: 'Dashboard',
       icon: BarChart3,
       path: '/employee/dashboard',
+      module: 'dashboard',
     },
     {
       name: 'Projects',
@@ -55,26 +60,31 @@ export default function Sidebar() {
       name: 'Leads Management',
       icon: Users,
       path: '/employee/leads',
+      module: 'leads',
     },
     {
       name: "Tasks & Activities",
       icon: CheckSquare,
       path: '/employee/tasks',
+      module: 'tasks',
     },
     {
       name: "FollowUps",
       icon: Calendar,
-      path: '/employee/follow-ups',
+      path: '/employee/followups',
+      module: 'followUps',
     },
     {
       name: 'Leave Management',
       icon: UserX,
       path: '/employee/leave',
+      module: 'leave',
     },
     {
       name: 'Attendance Management',
       icon: CalendarDays,
       path: '/employee/attendance',
+      module: 'attendance',
     },
     {
       name: 'Communication',
@@ -87,9 +97,25 @@ export default function Sidebar() {
       path: '/employee/collaboration',
     },
     {
+      name: 'Meeting',
+      icon: Video,
+      path: '/employee/meeting',
+    },
+    {
+      name: 'Web Mail',
+      icon: Mail,
+      path: '/employee/web-mail',
+    },
+    {
+      name: 'E-Signature',
+      icon: FileSignature,
+      path: '/employee/e-signature',
+    },
+    {
       name: 'Payroll & Benefits',
       icon: CreditCardIcon,
       path: '/employee/payroll',
+      module: 'payroll',
     },
   ];
 
@@ -98,13 +124,23 @@ export default function Sidebar() {
       name: 'Performance & Growth',
       icon: CircleUser,
       path: '/employee/performance',
+      module: 'performance',
     },
     {
       name: 'Reports & Statements',
       path: '/employee/reports',
       icon: Users,
+      module: 'reports',
     },
   ];
+
+  const department = user?.department || user?.profile?.department || user?.employeeDepartment || user?.dept || 'General';
+  const visibleMainItems = mainItems.filter((item) =>
+    !item.module || canAccessEmployeeModule(item.module, department)
+  );
+  const visibleManageItems = manageItems.filter((item) =>
+    !item.module || canAccessEmployeeModule(item.module, department)
+  );
 
   const sidebarContent = (
     <div className="h-full flex flex-col justify-between overflow-y-auto sidebar-scroll pr-1">
@@ -136,7 +172,7 @@ export default function Sidebar() {
           </p>
 
           <div className="space-y-2">
-            {mainItems.map((item) => (
+            {visibleMainItems.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.path}
@@ -166,7 +202,7 @@ export default function Sidebar() {
           </p>
 
           <div className="space-y-2">
-            {manageItems.map((item) => (
+            {visibleManageItems.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.path}
@@ -223,8 +259,11 @@ export default function Sidebar() {
             <h3 className="font-semibold text-xs text-white truncate">
               {user?.name || user?.email?.split('@')[0] || 'Employee'}
             </h3>
-            <p className="text-[11px] text-gray-300 truncate capitalize">
+            {/* <p className="text-[11px] text-gray-300 truncate capitalize">
               {role || 'Employee'}
+            </p> */}
+            <p className="text-[10px] text-blue-200 truncate">
+              {department}
             </p>
           </div>
         </div>

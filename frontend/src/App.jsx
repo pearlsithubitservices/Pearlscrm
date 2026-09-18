@@ -346,6 +346,21 @@ export default function App() {
                 element={<Messager />}
               />
 
+              <Route
+                path="/meeting"
+                element={<PlaceholderPage title="Meeting" />}
+              />
+
+              <Route
+                path="/web-mail"
+                element={<PlaceholderPage title="Web Mail" />}
+              />
+
+              <Route
+                path="/e-signature"
+                element={<PlaceholderPage title="E-Signature" />}
+              />
+
               {/* LEAVE */}
 
               <Route
@@ -575,6 +590,21 @@ export default function App() {
               <Route
                 path="/employee/collaboration"
                 element={<Messager />}
+              />
+
+              <Route
+                path="/employee/meeting"
+                element={<PlaceholderPage title="Meeting" />}
+              />
+
+              <Route
+                path="/employee/web-mail"
+                element={<PlaceholderPage title="Web Mail" />}
+              />
+
+              <Route
+                path="/employee/e-signature"
+                element={<PlaceholderPage title="E-Signature" />}
               />
 
               <Route

@@ -29,9 +29,10 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Tldraw } from "tldraw";
+import { AssetRecordType, Tldraw } from "tldraw";
 import "tldraw/tldraw.css";
 import { apiUrl } from "../config/api.js";
+import { useAuth } from "../context/AuthContext";
 import {
   boardTemplateCategories,
   boardTemplates,
@@ -97,9 +98,11 @@ function EditorButton({ active, label, icon: Icon, onClick, disabled = false }) 
 export default function BoardEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const editorRef = useRef(null);
   const saveTimeoutRef = useRef(null);
   const unsubscribeRef = useRef(null);
+  const canvasDirtyRef = useRef(false);
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -116,6 +119,7 @@ export default function BoardEditor() {
     zoom: 1,
     selectedCount: 0,
   });
+  const imageFile = board?.files?.find((file) => file.fileType === "image");
 
   useEffect(() => {
     let isMounted = true;
@@ -146,6 +150,7 @@ export default function BoardEditor() {
     return () => {
       isMounted = false;
       window.clearTimeout(saveTimeoutRef.current);
+      if (canvasDirtyRef.current) saveCanvas();
       unsubscribeRef.current?.();
     };
   }, [id]);
@@ -171,6 +176,7 @@ export default function BoardEditor() {
       }
 
       setSaveState("saved");
+      canvasDirtyRef.current = false;
       return true;
     } catch (error) {
       console.error("Error saving board canvas:", error);
@@ -198,6 +204,11 @@ export default function BoardEditor() {
       });
       const formData = new FormData();
       formData.append("file", image.blob, `${board.boardName || "board"}.png`);
+      formData.append(
+        "uploadedBy",
+        user?._id || user?.id || user?.uid || user?.email || board.createdBy
+      );
+      formData.append("uploadedByName", user?.name || board.createdByName || "Admin");
 
       const existingFile = board.files?.[0];
       const endpoint = existingFile
@@ -224,6 +235,7 @@ export default function BoardEditor() {
 
   const scheduleSave = () => {
     setSaveState("unsaved");
+    canvasDirtyRef.current = true;
     window.clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = window.setTimeout(saveCanvas, 800);
   };
@@ -248,6 +260,40 @@ export default function BoardEditor() {
 
     unsubscribeRef.current = editor.store.listen(updateEditorState);
     updateEditorState();
+
+    const hasImageShape = editor
+      .getCurrentPageShapes()
+      .some((shape) => shape.type === "image");
+
+    if (imageFile && !hasImageShape) {
+      const imageElement = new Image();
+      imageElement.onload = () => {
+        const width = Math.min(imageElement.naturalWidth || 1200, 1200);
+        const height = width * ((imageElement.naturalHeight || 800) / (imageElement.naturalWidth || 1200));
+        const asset = AssetRecordType.create({
+          id: AssetRecordType.createId(),
+          type: "image",
+          props: {
+            src: apiUrl(imageFile.filePath),
+            w: width,
+            h: height,
+            mimeType: "image/png",
+            name: imageFile.fileName,
+            isAnimated: false,
+          },
+        });
+
+        editor.createAssets([asset]);
+        editor.createShape({
+          type: "image",
+          x: 0,
+          y: 0,
+          props: { assetId: asset.id, w: width, h: height },
+        });
+        editor.zoomToFit({ animation: { duration: 180 }, padding: 80 });
+      };
+      imageElement.src = apiUrl(imageFile.filePath);
+    }
   };
 
   const activateTool = (item) => {
@@ -288,8 +334,6 @@ export default function BoardEditor() {
       if (error.name !== "AbortError") setShareState("Unable to share");
     }
   };
-
-  const imageFile = board?.files?.find((file) => file.fileType === "image");
 
   const filteredTemplates = boardTemplates.filter((template) => {
     const matchesCategory =
