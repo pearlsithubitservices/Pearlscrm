@@ -11,12 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState('IT');
-<<<<<<< HEAD
   const [department, setDepartment] = useState(DEFAULT_DEPARTMENT);
-=======
-  const [department, setDepartment] = useState('Engineering');
-  const role = 'Employee';
->>>>>>> 0448e30cd419e6f7220e8af8c392b5306aca9a7c
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -238,11 +233,6 @@ export default function Login() {
               </div>
             )}
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 0448e30cd419e6f7220e8af8c392b5306aca9a7c
             {/* ERROR */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-300 text-xs sm:text-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl">
