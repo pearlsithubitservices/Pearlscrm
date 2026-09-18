@@ -92,6 +92,7 @@ const ADMIN_PATH_MODULES = {
   "/leave": "leave",
   "/admin-payroll": "payroll",
   "/admin-performance": "performance",
+  "/boards": "boards",
   "/leadDetails": "leads",
   "/taskDetails": "tasks",
   "/edit-task": "tasks",
@@ -120,7 +121,7 @@ export const canAccessEmployeeModule = (moduleName, department) =>
 
 export const canAccessAdminPath = (path, department) => {
   if (
-    path === "/boards" ||
+    pathMatches(path, "/boards") ||
     pathMatches(path, "/collaboration") ||
     pathMatches(path, "/communication") ||
     pathMatches(path, "/meeting") ||

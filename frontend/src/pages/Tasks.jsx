@@ -241,7 +241,7 @@ export default function Tasks() {
     e.stopPropagation();
     setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
     setShowNotificationMenu(false);
-    navigate(`/tasksDetails/${notif.task._id || notif.task.id}`);
+    navigate(`/taskDetails/${notif.task._id || notif.task.id || notif.task.uid}`);
   };
 
   const handleDismissNotif = (e, notifId) => {
