@@ -33,7 +33,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://pearlscrm.vercel.app",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,10 +44,10 @@ app.add_middleware(
 
 
 
-app.include_router(health.router)
+app.include_router(health.router, prefix="/api/v1")
 
-app.include_router(crm.router)
+app.include_router(crm.router, prefix="/api/v1")
 
-app.include_router(chat.router)
-app.include_router(whatsapp.router)
-app.include_router(handoff.router)
+app.include_router(chat.router, prefix="/api/v1")
+app.include_router(whatsapp.router, prefix="/api/v1")
+app.include_router(handoff.router, prefix="/api/v1")

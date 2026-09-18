@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-//const API_BASE_URL = "http://localhost:5000/api";
-const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
+const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL;
 
 const defaultConfig = {
   enabled: true,
@@ -30,7 +29,7 @@ export default function AIConfig() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/ai-config`);
+      const response = await fetch(`${VITE_API_URL}/ai-config`);
 
       if (!response.ok) {
         throw new Error("Failed to load AI configuration");
@@ -100,7 +99,7 @@ export default function AIConfig() {
       setSuccess("");
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/ai-config`, {
+      const response = await fetch(`${VITE_API_URL}/ai-config`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

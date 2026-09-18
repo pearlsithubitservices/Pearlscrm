@@ -4,8 +4,7 @@ import React, { useEffect, useState } from "react";
    API
 ========================================================= */
 
-//const API_BASE_URL = "http://localhost:5000/api";
-const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
+const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL;
 
 /* =========================================================
    ACTION OPTIONS
@@ -83,7 +82,7 @@ export default function AutomationRules() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_BASE_URL}/automation-rules`);
+      const response = await fetch(`${VITE_API_URL}/automation-rules`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch automation rules: ${response.status}`);
@@ -206,7 +205,7 @@ export default function AutomationRules() {
         const ruleId = editingRule._id || editingRule.id;
 
         const response = await fetch(
-          `${API_BASE_URL}/automation-rules/${ruleId}`,
+          `${VITE_API_URL}/automation-rules/${ruleId}`,
           {
             method: "PUT",
 
@@ -228,11 +227,10 @@ export default function AutomationRules() {
           throw new Error(`Failed to update rule: ${response.status}`);
         }
       } else {
-
-      /* =====================================================
+        /* =====================================================
          CREATE NEW RULE
       ===================================================== */
-        const response = await fetch(`${API_BASE_URL}/automation-rules`, {
+        const response = await fetch(`${VITE_API_URL}/automation-rules`, {
           method: "POST",
 
           headers: {
@@ -278,7 +276,7 @@ export default function AutomationRules() {
       const ruleId = rule._id || rule.id;
 
       const response = await fetch(
-        `${API_BASE_URL}/automation-rules/${ruleId}/status`,
+        `${VITE_API_URL}/automation-rules/${ruleId}/status`,
         {
           method: "PATCH",
 
@@ -323,7 +321,7 @@ export default function AutomationRules() {
       const ruleId = rule._id || rule.id;
 
       const response = await fetch(
-        `${API_BASE_URL}/automation-rules/${ruleId}`,
+        `${VITE_API_URL}/automation-rules/${ruleId}`,
         {
           method: "DELETE",
         },
