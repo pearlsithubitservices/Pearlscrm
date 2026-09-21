@@ -11,8 +11,6 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("IT");
-  const [department, setDepartment] = useState("Engineering");
-  const role = "Employee";
   const [department, setDepartment] = useState(DEFAULT_DEPARTMENT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
