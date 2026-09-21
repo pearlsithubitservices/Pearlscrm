@@ -7,16 +7,13 @@ import { DEFAULT_DEPARTMENT, DEPARTMENTS } from "../data/departments";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [industry, setIndustry] = useState('IT');
-<<<<<<<<< Temporary merge branch 1
-  const [department, setDepartment] = useState('Engineering');
-  const role = 'Employee';
-=========
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [industry, setIndustry] = useState("IT");
+  const [department, setDepartment] = useState("Engineering");
+  const role = "Employee";
   const [department, setDepartment] = useState(DEFAULT_DEPARTMENT);
->>>>>>>>> Temporary merge branch 2
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -82,7 +79,7 @@ export default function Login() {
         const authUser = await login(normalizedEmail, password);
 
         if (isAdmin) {
-          navigate('/', { replace: true });
+          navigate("/", { replace: true });
         } else {
           navigate("/employee-dashboard", { replace: true });
         }
@@ -97,7 +94,7 @@ export default function Login() {
         });
 
         if (isAdmin) {
-          navigate('/', { replace: true });
+          navigate("/", { replace: true });
         } else {
           navigate("/employee-dashboard", { replace: true });
         }
@@ -253,12 +250,6 @@ export default function Login() {
                 </select>
               </div>
             )}
-
-<<<<<<<<< Temporary merge branch 1
-
-
-=========
->>>>>>>>> Temporary merge branch 2
             {/* ERROR */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-300 text-xs sm:text-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl">
