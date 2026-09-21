@@ -27,7 +27,6 @@ const register = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-<<<<<<<<< Temporary merge branch 1
 
     if (role === "Admin") {
       return res.status(403).json({
@@ -37,10 +36,10 @@ const register = async (req, res) => {
     }
 
     const safeRole = "Employee";
-    const safeDepartment = String(department || "Engineering").trim() || "Engineering";
-=========
-    const safeDepartment = String(department || DEFAULT_DEPARTMENT).trim() || DEFAULT_DEPARTMENT;
->>>>>>>>> Temporary merge branch 2
+    const safeDepartment =
+      String(department || "Engineering").trim() || "Engineering";
+    const safeDepartment =
+      String(department || DEFAULT_DEPARTMENT).trim() || DEFAULT_DEPARTMENT;
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -210,21 +209,17 @@ const toggleUserStatus = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Employee not found" });
     if (user.role === "Admin")
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Admin accounts cannot be suspended",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Admin accounts cannot be suspended",
+      });
     user.status = user.status === "Suspended" ? "Active" : "Suspended";
     await user.save();
-    return res
-      .status(200)
-      .json({
-        success: true,
-        status: user.status,
-        message: `Employee ${user.status.toLowerCase()}`,
-      });
+    return res.status(200).json({
+      success: true,
+      status: user.status,
+      message: `Employee ${user.status.toLowerCase()}`,
+    });
   } catch (error) {
     console.error("Toggle employee status error:", error);
     return res
@@ -402,12 +397,10 @@ const updateUserSalary = async (req, res) => {
     });
   } catch (error) {
     console.error("Update employee salary error:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Unable to update salary: " + error.message,
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update salary: " + error.message,
+    });
   }
 };
 
@@ -424,13 +417,11 @@ const updateUserDescription = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Employee not found" });
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Description updated successfully",
-        user,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "Description updated successfully",
+      user,
+    });
   } catch (error) {
     console.error("Update employee description error:", error);
     return res
