@@ -7,12 +7,16 @@ import { DEFAULT_DEPARTMENT, DEPARTMENTS } from "../data/departments";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [industry, setIndustry] = useState("IT");
-  const [department, setDepartment] = useState("Engineering");
-  const [role, setRole] = useState("Admin");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [industry, setIndustry] = useState('IT');
+<<<<<<<<< Temporary merge branch 1
+  const [department, setDepartment] = useState('Engineering');
+  const role = 'Employee';
+=========
+  const [department, setDepartment] = useState(DEFAULT_DEPARTMENT);
+>>>>>>>>> Temporary merge branch 2
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -78,7 +82,7 @@ export default function Login() {
         const authUser = await login(normalizedEmail, password);
 
         if (isAdmin) {
-          navigate("/", { replace: true });
+          navigate('/', { replace: true });
         } else {
           navigate("/employee-dashboard", { replace: true });
         }
@@ -93,7 +97,7 @@ export default function Login() {
         });
 
         if (isAdmin) {
-          navigate("/", { replace: true });
+          navigate('/', { replace: true });
         } else {
           navigate("/employee-dashboard", { replace: true });
         }
@@ -250,27 +254,11 @@ export default function Login() {
               </div>
             )}
 
-            {/* ROLE SELECTOR */}
-            {!isLogin && (
-              <div className="space-y-1">
-                <label className="text-xs text-gray-400 font-medium ml-1">
-                  Register As:
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl bg-white/5 border border-purple-500/50 outline-none text-white font-medium focus:border-purple-400 transition"
-                >
-                  <option value="Admin" className="bg-slate-900 text-white">
-                    Admin (Full Access Dashboard)
-                  </option>
-                  <option value="Employee" className="bg-slate-900 text-white">
-                    Employee (Portal Access)
-                  </option>
-                </select>
-              </div>
-            )}
+<<<<<<<<< Temporary merge branch 1
 
+
+=========
+>>>>>>>>> Temporary merge branch 2
             {/* ERROR */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-300 text-xs sm:text-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl">

@@ -28,6 +28,10 @@ export default function ProtectedRoute({
         return <Navigate to="/employee-dashboard" replace />;
     }
 
+    if (role === "admin" && isAdmin) {
+        return children;
+    }
+
     // Protect employee routes  
     if (role === "employee" && isAdmin) {
         return <Navigate to="/" replace />;

@@ -222,6 +222,11 @@ export default function App() {
               />
 
               <Route
+                path="/tasksDetails/:id"
+                element={<TaskComponent />}
+              />
+
+              <Route
                 path="/edit-task/:id"
                 element={<TaskDetails />}
               />

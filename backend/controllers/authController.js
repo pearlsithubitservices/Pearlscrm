@@ -27,10 +27,20 @@ const register = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const safeRole =
-      role === "Admin" || role === "Employee" ? role : "Employee";
-    const safeDepartment =
-      String(department || "Engineering").trim() || "Engineering";
+<<<<<<<<< Temporary merge branch 1
+
+    if (role === "Admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin accounts cannot be created through registration",
+      });
+    }
+
+    const safeRole = "Employee";
+    const safeDepartment = String(department || "Engineering").trim() || "Engineering";
+=========
+    const safeDepartment = String(department || DEFAULT_DEPARTMENT).trim() || DEFAULT_DEPARTMENT;
+>>>>>>>>> Temporary merge branch 2
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
