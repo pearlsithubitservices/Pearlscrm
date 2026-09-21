@@ -67,6 +67,7 @@ const humanHandoffRoutes = require("./routes/Whatsapp Automation/HumanHandoffRou
 
 const ReimbursementPolicyroutes = require("./routes/ReimbursementPolicyroutes");
 const TaxDocumentsRoutes = require("./routes/TaxDocumentsRoutes");
+const BoardRoutes = require("./routes/BoardRoutes");
 
 const {
   startFollowupReminderScheduler,
@@ -83,6 +84,8 @@ initSocket(server);
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5175",
+  "http://127.0.0.1:5175",
   "http://localhost:3000",
   "https://pearlscrm.vercel.app",
 ];
@@ -150,6 +153,7 @@ app.use("/api/empattendancenew", EmpAttendanceRoutes);
 app.use("/api/announcement", AnnouncementSchema);
 app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
+app.use("/api/boards", BoardRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

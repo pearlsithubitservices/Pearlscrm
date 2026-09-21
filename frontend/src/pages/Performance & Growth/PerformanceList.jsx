@@ -10,6 +10,7 @@ import useEmployees from "../../Hooks/useEmployees";
 import useReview from "../../Hooks/useReview";
 import Pagination from "../../components/Pagination";
 import { useNavigate } from "react-router-dom";
+import { DEPARTMENTS } from "../../data/departments";
 
 export default function PerformanceList() {
 
@@ -92,7 +93,7 @@ export default function PerformanceList() {
     }, [getReviews]);
 
     const availableDepartments = useMemo(() => {
-        const set = new Set(["Engineering", "Design", "HR", "Sales", "Finance", "Marketing"]);
+        const set = new Set(DEPARTMENTS);
         employees?.forEach((emp) => {
             const dept = getEmployeeDisplay(emp, "department");
             if (dept && dept !== "-" && dept !== "Employee") {

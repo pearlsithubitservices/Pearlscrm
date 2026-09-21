@@ -36,6 +36,7 @@ export default function EmployeeOverview() {
 
   const displayName = currentEmployee?.name || currentEmployee?.employeeName || user?.displayName || "Employee";
   const role = currentEmployee?.role || currentEmployee?.employeeRole || "Employee";
+  const department = currentEmployee?.department || currentEmployee?.profile?.department || currentEmployee?.employeeDepartment || currentEmployee?.dept || "General";
   const currentDescription = currentEmployee?.profile?.description || currentEmployee?.description || currentEmployee?.notes || "";
 
   const openDescriptionEditor = () => {
@@ -66,6 +67,7 @@ export default function EmployeeOverview() {
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-gray-900 truncate">{displayName}</h1>
               <p className="text-sm text-gray-500 mt-1">{role}</p>
+              <p className="text-sm text-blue-600 font-medium mt-0.5">{department}</p>
             </div>
           </div>
 

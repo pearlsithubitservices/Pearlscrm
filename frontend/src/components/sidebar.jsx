@@ -29,12 +29,17 @@ import {
   Link,
   Settings,
   Share2,
+  KanbanSquare,
+  Video,
+  Mail,
+  FileSignature,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
 import { useIndustry } from "../context/IndustryContext";
 import useEmployees from "../Hooks/useEmployees";
 import useWhatsApp from "../Hooks/useWhatsApp";
+import { canAccessAdminModule } from "../data/departmentModuleAccess";
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
@@ -57,31 +62,42 @@ export default function Sidebar() {
       name: "Dashboard",
       icon: BarChart3,
       path: "/",
+      module: "dashboard",
     },
     {
       name: config.labels.leads,
       icon: Users,
       path: "/leads",
+      module: "leads",
     },
     {
       name: "Tasks",
       icon: CheckSquare,
       path: "/tasks",
+      module: "tasks",
     },
     {
       name: "Follow - ups",
       icon: CalendarDays,
       path: "/follow-ups",
+      module: "followUps",
     },
     {
       name: "Projects",
       icon: FolderOpen,
       path: "/projects",
+      module: "projects",
+    },
+    {
+      name: "Boards",
+      icon: KanbanSquare,
+      path: "/boards",
     },
     {
       name: "Attendance Management",
       icon: Clock3,
       path: "/attendance-management",
+      module: "attendance",
     },
     {
       name: "Communication",
@@ -94,19 +110,37 @@ export default function Sidebar() {
       path: "/collaboration",
     },
     {
+      name: "Meeting",
+      icon: Video,
+      path: "/meeting",
+    },
+    {
+      name: "Web Mail",
+      icon: Mail,
+      path: "/web-mail",
+    },
+    {
+      name: "E-Signature",
+      icon: FileSignature,
+      path: "/e-signature",
+    },
+    {
       name: "LeaveManagement",
       icon: NotebookPenIcon,
       path: "/leave",
+      module: "leave",
     },
     {
       name: "Payroll & Benefits",
       icon: Landmark,
       path: "/admin-payroll",
+      module: "payroll",
     },
     {
       name: "Performance & Growth",
       icon: ChartNoAxesColumnIncreasingIcon,
       path: "/admin-performance",
+      module: "performance",
     },
   ];
 
@@ -219,23 +253,35 @@ export default function Sidebar() {
       name: "Client Management",
       icon: CircleUser,
       path: "/clientmanagement",
+      module: "clients",
     },
     {
       name: "Employee Management",
       icon: Users,
       path: "/employees",
+      module: "employees",
     },
     {
       name: "Payments",
       icon: CreditCard,
       path: "/payments",
+      module: "payroll",
     },
     {
       name: "Reports",
       icon: FileText,
       path: "/reports",
+      module: "reports",
     },
   ];
+
+  const department = user?.department || user?.profile?.department;
+  const visibleMainItems = mainItems.filter((item) =>
+    !item.module || canAccessAdminModule(item.module, department)
+  );
+  const visibleManageItems = manageItems.filter((item) =>
+    !item.module || canAccessAdminModule(item.module, department)
+  );
 
   // ============================================================
   // EMPLOYEES
@@ -314,7 +360,7 @@ export default function Sidebar() {
             Main
           </p>
           <div className="space-y-1">
-            {mainItems.map((item) => (
+            {visibleMainItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
@@ -398,7 +444,7 @@ export default function Sidebar() {
             Manage
           </p>
           <div className="space-y-1">
-            {manageItems.map((item) => (
+            {visibleManageItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}

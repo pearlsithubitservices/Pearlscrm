@@ -57,6 +57,8 @@ import AcceptInvite from './components/AcceptInvite.jsx';
 import PayslipAdmin from './pages/Payroll/PayslipAdmin.jsx';
 import Performance from './pages/Performance & Growth/Performance.jsx';
 import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
+import AdminBoards from './pages/AdminBoards.jsx';
+import BoardEditor from './pages/BoardEditor.jsx';
 
 import ProtectedRoute from './components/ProtectedRoutes.jsx';
 
@@ -91,6 +93,7 @@ import EmpGoalDetails from './EmployeePages/Performance/MyGoals/MyGoalDetails.js
 import EmpLead from './EmployeePages/Leads/Lead.jsx';
 import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFollowupDetails.jsx';
 import EmpProjectDetails from './EmployeePages/Projects/EmpProjectDetails.jsx';
+import EmployeeBoards from './EmployeePages/Board/index.jsx';
 import Messager from './pages/Messager.jsx';
 
 // ============================================================
@@ -343,6 +346,21 @@ export default function App() {
                 element={<Messager />}
               />
 
+              <Route
+                path="/meeting"
+                element={<PlaceholderPage title="Meeting" />}
+              />
+
+              <Route
+                path="/web-mail"
+                element={<PlaceholderPage title="Web Mail" />}
+              />
+
+              <Route
+                path="/e-signature"
+                element={<PlaceholderPage title="E-Signature" />}
+              />
+
               {/* LEAVE */}
 
               <Route
@@ -374,14 +392,31 @@ export default function App() {
                 element={<Performance />}
               />
 
+              {/* BOARDS */}
+
+              <Route
+                path="/boards"
+                element={<AdminBoards />}
+              />
+
+              <Route
+                path="/boards/:id"
+                element={<BoardEditor />}
+              />
+
               {/* ==================================================
                   EXISTING WHATSAPP BUSINESS / CAMPAIGN
               ================================================== */}
 
               <Route
-                path="/whatsapp"
+                path="/whatsapp/*"
                 element={<WhatsAppLayout />}
               >
+                <Route
+                  index
+                  element={<CampaignBuilder />}
+                />
+
                 <Route
                   path="campaign"
                   element={<CampaignBuilder />}
@@ -563,6 +598,21 @@ export default function App() {
               />
 
               <Route
+                path="/employee/meeting"
+                element={<PlaceholderPage title="Meeting" />}
+              />
+
+              <Route
+                path="/employee/web-mail"
+                element={<PlaceholderPage title="Web Mail" />}
+              />
+
+              <Route
+                path="/employee/e-signature"
+                element={<PlaceholderPage title="E-Signature" />}
+              />
+
+              <Route
                 path="/employee/reports"
                 element={<EmpReports />}
               />
@@ -635,6 +685,11 @@ export default function App() {
               <Route
                 path="/employee/projects/:id"
                 element={<EmpProjectDetails />}
+              />
+
+              <Route
+                path="/employee/boards"
+                element={<EmployeeBoards />}
               />
 
             </Route>

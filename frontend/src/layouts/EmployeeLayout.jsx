@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import EmployeeSidebar from "../pages/employee/EmployeeSidebar";
 import { socket } from "../config/socket";
 import NotificationDrawer from "../components/NotificationDrawer";
+import { canAccessEmployeePath } from "../data/departmentModuleAccess";
 
 export default function EmployeeLayout() {
   const { user, isAdmin, loading } = useAuth();
+  const location = useLocation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   useEffect(() => {
@@ -42,6 +44,10 @@ export default function EmployeeLayout() {
   // If logged in user is Admin, redirect them to main Admin Dashboard
   if (isAdmin) {
     return <Navigate to="/" replace />;
+  }
+
+  if (!canAccessEmployeePath(location.pathname, user.department || user.profile?.department)) {
+    return <Navigate to="/employee/overview" replace />;
   }
 
   return (

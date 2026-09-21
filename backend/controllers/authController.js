@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Employee = require("../models/Employee");
+const { DEFAULT_DEPARTMENT } = require("../config/departments");
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -10,13 +11,13 @@ const generateToken = (user) => {
       role: user.role,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "7d" },
   );
 };
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, industry, department } = req.body;
+    const { name, email, password, industry, department } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -26,16 +27,10 @@ const register = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-
-    if (role === "Admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Admin accounts cannot be created through registration",
-      });
-    }
-
-    const safeRole = "Employee";
-    const safeDepartment = String(department || "Engineering").trim() || "Engineering";
+    const safeRole =
+      role === "Admin" || role === "Employee" ? role : "Employee";
+    const safeDepartment =
+      String(department || "Engineering").trim() || "Engineering";
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -50,7 +45,7 @@ const register = async (req, res) => {
       name: String(name).trim(),
       email: normalizedEmail,
       password: hashedPassword,
-      role: safeRole,
+      role: "Employee",
       industry: industry || "IT",
       department: safeDepartment,
       profile: {
@@ -70,7 +65,8 @@ const register = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department: user.department || user.profile?.department || "Engineering",
+        department:
+          user.department || user.profile?.department || DEFAULT_DEPARTMENT,
         avatar: user.avatar,
       },
     });
@@ -95,7 +91,9 @@ const login = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const user = await User.findOne({ email: normalizedEmail }).select("+password");
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      "+password",
+    );
 
     if (!user) {
       return res.status(401).json({
@@ -131,7 +129,8 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department: user.department || user.profile?.department || "Engineering",
+        department:
+          user.department || user.profile?.department || DEFAULT_DEPARTMENT,
         avatar: user.avatar,
       },
     });
@@ -163,7 +162,8 @@ const getMe = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department: user.department || user.profile?.department || "Engineering",
+        department:
+          user.department || user.profile?.department || DEFAULT_DEPARTMENT,
         avatar: user.avatar,
       },
     });
@@ -195,24 +195,43 @@ const getAllUsers = async (req, res) => {
 const toggleUserStatus = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: "Employee not found" });
-    if (user.role === "Admin") return res.status(400).json({ success: false, message: "Admin accounts cannot be suspended" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "Employee not found" });
+    if (user.role === "Admin")
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Admin accounts cannot be suspended",
+        });
     user.status = user.status === "Suspended" ? "Active" : "Suspended";
     await user.save();
-    return res.status(200).json({ success: true, status: user.status, message: `Employee ${user.status.toLowerCase()}` });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        status: user.status,
+        message: `Employee ${user.status.toLowerCase()}`,
+      });
   } catch (error) {
     console.error("Toggle employee status error:", error);
-    return res.status(500).json({ success: false, message: "Unable to update employee status" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Unable to update employee status" });
   }
 };
 
 const updateUserSalary = async (req, res) => {
   try {
-    const { basicSalary, grossSalary, netSalary, allowances, deductions } = req.body;
+    const { basicSalary, grossSalary, netSalary, allowances, deductions } =
+      req.body;
 
     const parseFlexible = (value, defaultKey = "Allowance") => {
       if (!value && value !== 0) return {};
-      if (typeof value === "number") return value > 0 ? { [defaultKey]: value } : {};
+      if (typeof value === "number")
+        return value > 0 ? { [defaultKey]: value } : {};
       if (typeof value === "object" && !Array.isArray(value)) {
         const out = {};
         Object.entries(value).forEach(([k, v]) => {
@@ -235,7 +254,12 @@ const updateUserSalary = async (req, res) => {
 
       // If pure number or currency e.g. "50,000" or "50000"
       const cleanNum = str.replace(/[^0-9.]/g, "");
-      if (cleanNum && !str.includes(":") && !str.includes("=") && !str.includes("-")) {
+      if (
+        cleanNum &&
+        !str.includes(":") &&
+        !str.includes("=") &&
+        !str.includes("-")
+      ) {
         const n = Number(cleanNum) || 0;
         return n > 0 ? { [defaultKey]: n } : {};
       }
@@ -245,7 +269,9 @@ const updateUserSalary = async (req, res) => {
       items.forEach((item) => {
         const trimmed = item.trim();
         if (!trimmed) return;
-        const match = trimmed.match(/^([^:=0-9]+)\s*[:=\-]?\s*([₹$\s]*[0-9,]+(\.[0-9]+)?.*)$/);
+        const match = trimmed.match(
+          /^([^:=0-9]+)\s*[:=\-]?\s*([₹$\s]*[0-9,]+(\.[0-9]+)?.*)$/,
+        );
         if (match) {
           const k = match[1].trim();
           const v = Number(match[2].replace(/[^0-9.]/g, "")) || 0;
@@ -255,21 +281,38 @@ const updateUserSalary = async (req, res) => {
           if (n > 0) out[defaultKey] = n;
         }
       });
-      return Object.keys(out).length > 0 ? out : (Number(cleanNum) > 0 ? { [defaultKey]: Number(cleanNum) } : {});
+      return Object.keys(out).length > 0
+        ? out
+        : Number(cleanNum) > 0
+          ? { [defaultKey]: Number(cleanNum) }
+          : {};
     };
 
     const cleanAllowances = parseFlexible(allowances, "Allowance");
     const cleanDeductions = parseFlexible(deductions, "Deduction");
 
-    const totalAllowances = Object.values(cleanAllowances).reduce((sum, val) => sum + (Number(val) || 0), 0);
-    const totalDeductions = Object.values(cleanDeductions).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    const totalAllowances = Object.values(cleanAllowances).reduce(
+      (sum, val) => sum + (Number(val) || 0),
+      0,
+    );
+    const totalDeductions = Object.values(cleanDeductions).reduce(
+      (sum, val) => sum + (Number(val) || 0),
+      0,
+    );
 
-    const numBasic = Number(String(basicSalary || 0).replace(/[^0-9.]/g, "")) || 0;
-    const numGrossProvided = Number(String(grossSalary || 0).replace(/[^0-9.]/g, "")) || 0;
-    const numNetProvided = Number(String(netSalary || 0).replace(/[^0-9.]/g, "")) || 0;
+    const numBasic =
+      Number(String(basicSalary || 0).replace(/[^0-9.]/g, "")) || 0;
+    const numGrossProvided =
+      Number(String(grossSalary || 0).replace(/[^0-9.]/g, "")) || 0;
+    const numNetProvided =
+      Number(String(netSalary || 0).replace(/[^0-9.]/g, "")) || 0;
 
-    const numGross = numGrossProvided > 0 ? numGrossProvided : (numBasic + totalAllowances);
-    const numNet = numNetProvided > 0 ? numNetProvided : Math.max(0, numGross - totalDeductions);
+    const numGross =
+      numGrossProvided > 0 ? numGrossProvided : numBasic + totalAllowances;
+    const numNet =
+      numNetProvided > 0
+        ? numNetProvided
+        : Math.max(0, numGross - totalDeductions);
 
     const salary = {
       basicSalary: numBasic,
@@ -288,13 +331,13 @@ const updateUserSalary = async (req, res) => {
       user = await User.findByIdAndUpdate(
         targetId,
         { $set: { "profile.salary": salary, salary } },
-        { new: true }
+        { new: true },
       ).select("-password");
 
       employeeDoc = await Employee.findByIdAndUpdate(
         targetId,
         { $set: { "profile.salary": salary, salary } },
-        { new: true }
+        { new: true },
       );
     }
 
@@ -310,13 +353,13 @@ const updateUserSalary = async (req, res) => {
       user = await User.findOneAndUpdate(
         query,
         { $set: { "profile.salary": salary, salary } },
-        { new: true }
+        { new: true },
       ).select("-password");
 
       employeeDoc = await Employee.findOneAndUpdate(
         query,
         { $set: { "profile.salary": salary, salary } },
-        { new: true }
+        { new: true },
       );
     }
 
@@ -325,18 +368,20 @@ const updateUserSalary = async (req, res) => {
       user = await User.findOneAndUpdate(
         { email: employeeDoc.email.toLowerCase() },
         { $set: { "profile.salary": salary, salary } },
-        { new: true }
+        { new: true },
       ).select("-password");
     } else if (user?.email && !employeeDoc) {
       employeeDoc = await Employee.findOneAndUpdate(
         { email: user.email.toLowerCase() },
         { $set: { "profile.salary": salary, salary } },
-        { new: true }
+        { new: true },
       );
     }
 
     if (!user && !employeeDoc) {
-      return res.status(404).json({ success: false, message: "Employee not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Employee not found" });
     }
 
     return res.status(200).json({
@@ -347,7 +392,12 @@ const updateUserSalary = async (req, res) => {
     });
   } catch (error) {
     console.error("Update employee salary error:", error);
-    return res.status(500).json({ success: false, message: "Unable to update salary: " + error.message });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Unable to update salary: " + error.message,
+      });
   }
 };
 
@@ -357,14 +407,25 @@ const updateUserDescription = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { $set: { "profile.description": description } },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).select("-password");
 
-    if (!user) return res.status(404).json({ success: false, message: "Employee not found" });
-    return res.status(200).json({ success: true, message: "Description updated successfully", user });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "Employee not found" });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        message: "Description updated successfully",
+        user,
+      });
   } catch (error) {
     console.error("Update employee description error:", error);
-    return res.status(500).json({ success: false, message: "Unable to update description" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Unable to update description" });
   }
 };
 

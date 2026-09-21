@@ -1,13 +1,15 @@
 import React, { useEffect } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './sidebar';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { socket } from '../config/socket';
+import { canAccessAdminPath, getAdminLandingPath } from '../data/departmentModuleAccess';
 
 export default function Layout() {
   const { user, isAdmin, loading } = useAuth();
+  const location = useLocation();
 
   // Keep the global socket connected for real-time updates across the app
   useEffect(() => {
@@ -36,6 +38,10 @@ export default function Layout() {
 
   if (!isAdmin) {
     return <Navigate to="/employee-dashboard" replace />;
+  }
+
+  if (!canAccessAdminPath(location.pathname, user.department || user.profile?.department)) {
+    return <Navigate to={getAdminLandingPath(user.department || user.profile?.department)} replace />;
   }
 
   return (

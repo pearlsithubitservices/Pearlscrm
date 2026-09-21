@@ -1,30 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
-import { Mail, Lock, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
+import { Mail, Lock, Sparkles } from "lucide-react";
+import { DEFAULT_DEPARTMENT, DEPARTMENTS } from "../data/departments";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [industry, setIndustry] = useState('IT');
-  const [department, setDepartment] = useState('Engineering');
-  const role = 'Employee';
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [industry, setIndustry] = useState("IT");
+  const [department, setDepartment] = useState("Engineering");
+  const [role, setRole] = useState("Admin");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const departmentOptions = [
-  
-    'Engineering',
-    'Design',
-    'HR Department',
-    'Finance',
-    'Sales & Marketing',
-    'Operations',
-    'Order Management',
-  ];
+  const departmentOptions = DEPARTMENTS;
 
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading, login, register } = useAuth();
@@ -32,41 +24,50 @@ export default function Login() {
   useEffect(() => {
     if (user && !authLoading) {
       if (isAdmin) {
-        navigate('/', { replace: true });
+        navigate("/", { replace: true });
       } else {
-        navigate('/employee-dashboard', { replace: true });
+        navigate("/employee-dashboard", { replace: true });
       }
     }
   }, [user, authLoading, isAdmin, navigate]);
 
   const getFriendlyErrorMessage = (err) => {
-    const message = err?.message || err?.response?.data?.message || 'Authentication error. Please try again.';
+    const message =
+      err?.message ||
+      err?.response?.data?.message ||
+      "Authentication error. Please try again.";
 
-    if (message.toLowerCase().includes('already registered')) {
-      return 'This email is already registered. Please click Login instead.';
+    if (message.toLowerCase().includes("already registered")) {
+      return "This email is already registered. Please click Login instead.";
     }
-    if (message.toLowerCase().includes('invalid email or password')) {
-      return 'Invalid email or password. Please check your credentials or register a new account.';
+    if (message.toLowerCase().includes("invalid email or password")) {
+      return "Invalid email or password. Please check your credentials or register a new account.";
     }
-    if (message.toLowerCase().includes('email and password are required')) {
-      return 'Please enter your email and password.';
+    if (message.toLowerCase().includes("email and password are required")) {
+      return "Please enter your email and password.";
     }
-    if (message.toLowerCase().includes('not authorized') || message.toLowerCase().includes('token')) {
-      return 'Your session has expired. Please log in again.';
+    if (
+      message.toLowerCase().includes("not authorized") ||
+      message.toLowerCase().includes("token")
+    ) {
+      return "Your session has expired. Please log in again.";
     }
-    if (message.toLowerCase().includes('forbidden') || message.toLowerCase().includes('admin access')) {
-      return 'You do not have permission to access that area.';
+    if (
+      message.toLowerCase().includes("forbidden") ||
+      message.toLowerCase().includes("admin access")
+    ) {
+      return "You do not have permission to access that area.";
     }
     return message;
   };
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password) {
-      setError('Please enter your email and password.');
+      setError("Please enter your email and password.");
       return;
     }
 
@@ -76,25 +77,25 @@ export default function Login() {
       if (isLogin) {
         const authUser = await login(normalizedEmail, password);
 
-        if (authUser?.role === 'Admin') {
-          navigate('/', { replace: true });
+        if (isAdmin) {
+          navigate("/", { replace: true });
         } else {
-          navigate('/employee-dashboard', { replace: true });
+          navigate("/employee-dashboard", { replace: true });
         }
       } else {
         const authUser = await register({
           name,
           email: normalizedEmail,
           password,
-          role,
+          role: "Employee",
           industry,
           department,
         });
 
-        if (authUser?.role === 'Admin') {
-          navigate('/', { replace: true });
+        if (isAdmin) {
+          navigate("/", { replace: true });
         } else {
-          navigate('/employee-dashboard', { replace: true });
+          navigate("/employee-dashboard", { replace: true });
         }
       }
     } catch (err) {
@@ -115,7 +116,9 @@ export default function Login() {
             <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
               <Sparkles className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             </div>
-            <h1 className="text-xl lg:text-2xl font-bold tracking-tight">Pearls CRM</h1>
+            <h1 className="text-xl lg:text-2xl font-bold tracking-tight">
+              Pearls CRM
+            </h1>
           </div>
 
           <div className="max-w-xl">
@@ -123,7 +126,8 @@ export default function Login() {
               Manage your business with premium CRM experience.
             </h2>
             <p className="text-gray-400 text-base lg:text-lg leading-relaxed font-normal">
-              Powerful analytics, lead management, automation and employee collaboration workflows.
+              Powerful analytics, lead management, automation and employee
+              collaboration workflows.
             </p>
           </div>
         </div>
@@ -140,7 +144,7 @@ export default function Login() {
           {/* TITLE */}
           <div className="mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-3">
-              {isLogin ? "Welcome Back 👋" : "Create Account"}
+              {isLogin ? "Welcome Back " : "Create Account"}
             </h2>
             <p className="text-gray-400 text-sm sm:text-base">
               Access your premium CRM dashboard
@@ -234,7 +238,11 @@ export default function Login() {
                   className="w-full px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 outline-none text-white focus:border-purple-500 transition"
                 >
                   {departmentOptions.map((option) => (
-                    <option key={option} value={option} className="bg-slate-900 text-white">
+                    <option
+                      key={option}
+                      value={option}
+                      className="bg-slate-900 text-white"
+                    >
                       {option}
                     </option>
                   ))}
@@ -242,7 +250,26 @@ export default function Login() {
               </div>
             )}
 
-
+            {/* ROLE SELECTOR */}
+            {!isLogin && (
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-medium ml-1">
+                  Register As:
+                </label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl bg-white/5 border border-purple-500/50 outline-none text-white font-medium focus:border-purple-400 transition"
+                >
+                  <option value="Admin" className="bg-slate-900 text-white">
+                    Admin (Full Access Dashboard)
+                  </option>
+                  <option value="Employee" className="bg-slate-900 text-white">
+                    Employee (Portal Access)
+                  </option>
+                </select>
+              </div>
+            )}
 
             {/* ERROR */}
             {error && (
@@ -260,7 +287,6 @@ export default function Login() {
               {loading ? "Processing..." : isLogin ? "Login" : "Register"}
             </button>
           </form>
-
         </motion.div>
       </div>
     </div>
