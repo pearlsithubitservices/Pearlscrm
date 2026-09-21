@@ -38,12 +38,12 @@ export const ADMIN_MODULE_DEPARTMENTS = {
 };
 
 export const ADMIN_LANDING_PATHS = {
-  "digital marketing": "/tasks",
-  development: "/tasks",
+  "digital marketing": "/",
+  development: "/",
   hr: "/",
   management: "/",
   marketing: "/leads",
-  designers: "/tasks",
+  designers: "/",
 };
 
 export const COMMON_EMPLOYEE_PATHS = [
@@ -142,4 +142,4 @@ export const canAccessAdminModule = (moduleName, department) =>
   ADMIN_MODULE_DEPARTMENTS[moduleName]?.includes(normalizeDepartment(department)) || false;
 
 export const getAdminLandingPath = (department) =>
-  ADMIN_LANDING_PATHS[normalizeDepartment(department)] || "/tasks";
+  ADMIN_LANDING_PATHS[normalizeDepartment(department)] || "/";

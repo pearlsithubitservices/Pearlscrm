@@ -409,9 +409,14 @@ export default function App() {
               ================================================== */}
 
               <Route
-                path="/whatsapp"
+                path="/whatsapp/*"
                 element={<WhatsAppLayout />}
               >
+                <Route
+                  index
+                  element={<CampaignBuilder />}
+                />
+
                 <Route
                   path="campaign"
                   element={<CampaignBuilder />}
