@@ -15,8 +15,8 @@ export const EMPLOYEE_MODULE_DEPARTMENTS = {
   tasks: ALL_DEPARTMENTS,
   projects: ALL_DEPARTMENTS,
   followUps: ["management", "marketing"],
-  attendance: ["hr", "management"],
-  leave: ["hr", "management"],
+  attendance: ALL_DEPARTMENTS,
+  leave: ALL_DEPARTMENTS,
   payroll: ["hr", "management", "marketing"],
   reports: ["hr", "management"],
   performance: ["hr", "management"],
@@ -56,6 +56,8 @@ export const COMMON_EMPLOYEE_PATHS = [
   "/employee/meeting",
   "/employee/web-mail",
   "/employee/e-signature",
+  "/employee/attendance",
+  "/employee/leave",
 ];
 
 const EMPLOYEE_PATH_MODULES = {

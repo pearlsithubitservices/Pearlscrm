@@ -79,13 +79,11 @@ export default function Sidebar() {
       name: 'Leave Management',
       icon: UserX,
       path: '/employee/leave',
-      module: 'leave',
     },
     {
       name: 'Attendance Management',
       icon: CalendarDays,
       path: '/employee/attendance',
-      module: 'attendance',
     },
     {
       name: 'Communication',
