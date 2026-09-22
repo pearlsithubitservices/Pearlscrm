@@ -82,6 +82,20 @@ router.get("/:id", async (req, res) => {
       });
     }
 
+    if (req.query.role === "employee") {
+      const userId = req.query.userId;
+      const canView = board.isPublic || (userId && board.assignedTo.some(
+        (member) => String(member.userId) === String(userId)
+      ));
+
+      if (!canView) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have access to this board",
+        });
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: board,

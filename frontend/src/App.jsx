@@ -693,6 +693,11 @@ export default function App() {
               />
 
               <Route
+                path="/employee/boards/:id"
+                element={<BoardEditor employeeMode />}
+              />
+
+              <Route
                 path="/employee/boards"
                 element={<EmployeeBoards />}
               />

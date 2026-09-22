@@ -95,7 +95,7 @@ function EditorButton({ active, label, icon: Icon, onClick, disabled = false }) 
   );
 }
 
-export default function BoardEditor() {
+export default function BoardEditor({ readOnly = false, employeeMode = false }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -128,7 +128,10 @@ export default function BoardEditor() {
       try {
         setLoading(true);
         setLoadError("");
-        const response = await fetch(apiUrl(`/boards/${id}`), {
+        const viewerQuery = readOnly || employeeMode
+          ? `?role=employee&userId=${encodeURIComponent(user?._id || user?.id || user?.uid || "")}`
+          : "";
+        const response = await fetch(apiUrl(`/boards/${id}${viewerQuery}`), {
           headers: getAuthHeaders(),
         });
         const data = await response.json().catch(() => ({}));
@@ -150,10 +153,10 @@ export default function BoardEditor() {
     return () => {
       isMounted = false;
       window.clearTimeout(saveTimeoutRef.current);
-      if (canvasDirtyRef.current) saveCanvas();
+      if (!readOnly && canvasDirtyRef.current) saveCanvas();
       unsubscribeRef.current?.();
     };
-  }, [id]);
+  }, [id, readOnly]);
 
   const saveCanvas = async () => {
     const editor = editorRef.current;
@@ -255,7 +258,7 @@ export default function BoardEditor() {
         zoom: editor.getZoomLevel(),
         selectedCount: editor.getSelectedShapeIds().length,
       });
-      scheduleSave();
+      if (!readOnly) scheduleSave();
     };
 
     unsubscribeRef.current = editor.store.listen(updateEditorState);
@@ -265,7 +268,7 @@ export default function BoardEditor() {
       .getCurrentPageShapes()
       .some((shape) => shape.type === "image");
 
-    if (imageFile && !hasImageShape) {
+    if (!readOnly && imageFile && !hasImageShape) {
       const imageElement = new Image();
       imageElement.onload = () => {
         const width = Math.min(imageElement.naturalWidth || 1200, 1200);
@@ -391,7 +394,7 @@ export default function BoardEditor() {
           <p className="mt-2 text-sm text-gray-600">{loadError || "Board not found"}</p>
           <button
             type="button"
-            onClick={() => navigate("/boards")}
+            onClick={() => navigate(employeeMode ? "/employee/boards" : "/boards")}
             className="mt-5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
           >
             Back to boards
@@ -407,7 +410,7 @@ export default function BoardEditor() {
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate("/boards")}
+            onClick={() => navigate(employeeMode ? "/employee/boards" : "/boards")}
             className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             aria-label="Back to boards"
           >
@@ -415,7 +418,7 @@ export default function BoardEditor() {
           </button>
           <div className="min-w-0">
             <h1 className="truncate text-sm font-semibold text-gray-900">{board.boardName}</h1>
-            <p className="text-xs text-gray-500">Board editor</p>
+            <p className="text-xs text-gray-500">{readOnly ? "Board viewer" : "Board editor"}</p>
           </div>
         </div>
 
@@ -434,24 +437,28 @@ export default function BoardEditor() {
           {saveState === "error" && (
             <span className="text-red-600">Save failed</span>
           )}
-          <button
-            type="button"
-            onClick={saveCanvas}
-            disabled={saveState === "saving"}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Save className="h-3.5 w-3.5" />
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={saveEditedFile}
-            disabled={fileSaveState === "saving"}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Save className="h-3.5 w-3.5" />
-            {fileSaveState === "saving" ? "Saving file..." : "Save file"}
-          </button>
+          {!readOnly && (
+            <>
+              <button
+                type="button"
+                onClick={saveCanvas}
+                disabled={saveState === "saving"}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Save className="h-3.5 w-3.5" />
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={saveEditedFile}
+                disabled={fileSaveState === "saving"}
+                className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {fileSaveState === "saving" ? "Saving file..." : "Save file"}
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={shareBoard}
@@ -464,7 +471,7 @@ export default function BoardEditor() {
         </div>
       </header>
 
-      <div className="border-b border-gray-200 bg-white px-3 py-2 shadow-sm">
+      {!readOnly && <div className="border-b border-gray-200 bg-white px-3 py-2 shadow-sm">
         <div className="flex items-center gap-1 overflow-x-auto">
           {toolGroups.map((group) => (
             <div key={group.label} className="flex items-center gap-1 border-r border-gray-200 pr-2 mr-1 last:border-0">
@@ -533,7 +540,7 @@ export default function BoardEditor() {
             <EditorButton label="Clear board" icon={Trash2} onClick={clearCanvas} />
           </div>
         </div>
-      </div>
+      </div>}
 
       <div className="relative min-h-0 flex-1">
         <div className="flex h-full min-h-0">
@@ -566,7 +573,7 @@ export default function BoardEditor() {
           )}
 
           <div className="relative min-w-0 flex-1">
-            <Tldraw onMount={handleEditorMount} />
+            <Tldraw readOnly={readOnly} onMount={handleEditorMount} />
 
             {showTemplates && (
           <aside className="absolute right-4 top-4 z-20 flex max-h-[calc(100%-2rem)] w-[min(22rem,calc(100%-2rem))] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">

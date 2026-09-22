@@ -10,10 +10,12 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../../config/api.js";
 
 export default function EmployeeBoards() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [boards, setBoards] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -28,8 +30,9 @@ export default function EmployeeBoards() {
   const fetchBoards = async () => {
     try {
       setLoading(true);
+      const userId = user?._id || user?.id || user?.uid || user?.email || "";
       const response = await fetch(
-        apiUrl(`/boards?role=employee&userId=${user?._id || ""}`)
+        apiUrl(`/boards?role=employee&userId=${encodeURIComponent(userId)}`)
       );
       if (response.ok) {
         const data = await response.json();
@@ -44,8 +47,8 @@ export default function EmployeeBoards() {
 
   const filteredBoards = boards.filter(
     (board) =>
-      board.boardName.toLowerCase().includes(search.toLowerCase()) ||
-      board.description.toLowerCase().includes(search.toLowerCase())
+      (board.boardName || "").toLowerCase().includes(search.toLowerCase()) ||
+      (board.description || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const formatFileSize = (bytes) => {
@@ -95,7 +98,7 @@ export default function EmployeeBoards() {
         <div>
           <h1 className="text-4xl font-bold text-gray-900">Project Boards</h1>
           <p className="text-gray-600 mt-2">
-            View and download files from project boards
+            Open boards, edit the canvas, and save board files
           </p>
         </div>
 
@@ -290,12 +293,20 @@ export default function EmployeeBoards() {
                 </div>
 
                 <div className="p-6 border-t bg-gray-50 sticky bottom-0">
-                  <button
-                    onClick={() => setShowBoardDetail(false)}
-                    className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition"
-                  >
-                    Close
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => navigate(`/employee/boards/${selectedBoard._id}`)}
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                    >
+                      Open board
+                    </button>
+                    <button
+                      onClick={() => setShowBoardDetail(false)}
+                      className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
