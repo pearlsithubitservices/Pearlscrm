@@ -129,7 +129,7 @@ export default function BoardEditor({ readOnly = false, employeeMode = false }) 
         setLoading(true);
         setLoadError("");
         const viewerQuery = readOnly || employeeMode
-          ? `?role=employee&userId=${encodeURIComponent(user?._id || user?.id || user?.uid || "")}`
+          ? `?role=employee&userId=${encodeURIComponent(user?._id || user?.id || user?.uid || user?.email || "")}`
           : "";
         const response = await fetch(apiUrl(`/boards/${id}${viewerQuery}`), {
           headers: getAuthHeaders(),
