@@ -33,6 +33,7 @@ import {
   Video,
   Mail,
   FileSignature,
+  PenLine,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -141,6 +142,11 @@ export default function Sidebar() {
       icon: ChartNoAxesColumnIncreasingIcon,
       path: "/admin-performance",
       module: "performance",
+    },
+    {
+      name: "E- signatures",
+      icon: PenLine,
+      path: "/e-signatures",
     },
   ];
 

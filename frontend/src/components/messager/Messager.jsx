@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
-  Bell,
   Send,
   Paperclip,
   Smile,
@@ -150,8 +149,6 @@ export default function Messenger() {
     loadingChats,
     loadingMessages,
     unreadCounts,
-    inAppToast,
-    dismissToast,
     sendMessage,
     editMessage,
     deleteMessage,
@@ -205,16 +202,6 @@ export default function Messenger() {
     }
     window.open(dataUrl, "_blank");
   };
-
-  // Auto-dismiss in-app toast banner after 5 seconds
-  useEffect(() => {
-    if (inAppToast) {
-      const timer = setTimeout(() => {
-        dismissToast();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [inAppToast, dismissToast]);
 
   // Dynamic Fetch employees & users from Backend API & Firestore DB
   useEffect(() => {
@@ -604,29 +591,6 @@ export default function Messenger() {
 
   return (
     <div className="relative flex flex-col h-screen w-full bg-[#F8FAFC] overflow-hidden font-sans">
-      {/* Dynamic In-App Toast Banner */}
-      {inAppToast && (
-        <div className="absolute top-16 right-8 z-50 bg-white/95 backdrop-blur-md border border-blue-200 rounded-2xl shadow-xl p-3.5 flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
-          <div className="w-9 h-9 rounded-full bg-blue-100 text-[#1D61E7] flex items-center justify-center text-sm font-bold shrink-0 shadow-xs">
-            💬
-          </div>
-          <div className="text-xs min-w-[150px] max-w-[240px]">
-            <p className="font-bold text-gray-900 truncate">
-              {getEmployeeName(inAppToast.senderId)}
-            </p>
-            <p className="text-gray-500 text-[11px] truncate mt-0.5">
-              {inAppToast.text}
-            </p>
-          </div>
-          <button
-            onClick={dismissToast}
-            className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
-          >
-            <X size={15} />
-          </button>
-        </div>
-      )}
-
       {/* Top Bar Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200/80">
         <div>
@@ -636,11 +600,6 @@ export default function Messenger() {
           <p className="text-xs text-gray-500 font-medium">
             Real-time cross-team communication
           </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="p-2.5 rounded-full bg-[#1D61E7] text-white hover:bg-blue-700 transition shadow-md shadow-blue-500/20 cursor-pointer">
-            <Bell size={18} />
-          </button>
         </div>
       </div>
 

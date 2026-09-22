@@ -82,6 +82,15 @@ export default function useGoals() {
       return handleResponse(res);
     });
 
+  const deleteProgress = (goalId, logId) =>
+    request(async () => {
+      const res = await fetch(`${API}/${goalId}/progress/${logId}`, {
+        method: "DELETE",
+      });
+
+      return handleResponse(res);
+    });
+
   const deleteGoal = (id) =>
     request(async () => {
       const res = await fetch(`${API}/${id}`, {
@@ -98,6 +107,7 @@ export default function useGoals() {
     getGoals,
     updateGoal,
     updateProgress,
+    deleteProgress,
     deleteGoal,
     getGoalById,
   };

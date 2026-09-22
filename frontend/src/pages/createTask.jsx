@@ -85,7 +85,7 @@ export default function CreateTask({ onClose, onSuccess }) {
       });
 
       if (response.ok) {
-        alert('Task Added successfully to MongoDB!');
+        alert('Task added successfully!');
         if (onSuccess) {
           onSuccess();
         } else if (onClose) {

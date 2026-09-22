@@ -46,6 +46,8 @@ const BenefitRoutes = require("./routes/BenefitRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
+const DocumentRoutes = require("./routes/DocumentRoutes");
+const emailRoutes = require("./routes/EmailRoutes");
 const { initSocket } = require("./Socket");
 
 const whatsappCampaignRoutes = require("./routes/WhatsAppCampaign/campaignRoutes");
@@ -76,6 +78,10 @@ const {
 const {
   startAttendancePhotoCleanupScheduler,
 } = require("./services/attendancePhotoCleanupScheduler");
+
+const {
+  startRecycleBinCleanupScheduler,
+} = require("./services/recycleBinCleanupScheduler");
 
 const app = express();
 const server = http.createServer(app);
@@ -174,6 +180,8 @@ app.use("/api/totalLeave", EmpTotalLeave);
 
 app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/documents", DocumentRoutes);
+app.use("/api/email", emailRoutes);
 
 // =====================================================
 // WHATSAPP CAMPAIGN ROUTES
@@ -218,9 +226,10 @@ const startServer = async () => {
 
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-      console.log("Connected to database with WebSocket support");
+      // console.log("Connected to database with WebSocket support");
       // Followup reminder scheduler disabled per user request to avoid duplicate notifications
       startAttendancePhotoCleanupScheduler();
+      startRecycleBinCleanupScheduler();
     });
   } catch (error) {
     console.error("Failed to start server:", error.message);

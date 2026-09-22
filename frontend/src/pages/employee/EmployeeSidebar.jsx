@@ -21,6 +21,7 @@ import {
   Video,
   Mail,
   FileSignature,
+  PenLine,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -116,6 +117,11 @@ export default function Sidebar() {
       icon: CreditCardIcon,
       path: '/employee/payroll',
       module: 'payroll',
+    },
+    {
+      name: 'E- signatures',
+      icon: PenLine,
+      path: '/employee/e-signatures',
     },
   ];
 

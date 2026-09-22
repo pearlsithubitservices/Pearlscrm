@@ -14,8 +14,11 @@ const progressLogSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-  },
-  { _id: false }
+    user: {
+      type: String,
+      default: "Employee",
+    },
+  }
 );
 
 const goalSchema = new mongoose.Schema(

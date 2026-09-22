@@ -15,7 +15,7 @@ import { IndustryProvider } from './context/IndustryContext';
 // ADMIN LAYOUT
 // ============================================================
 
-import Layout from './components/Layout';
+import Layout from './components/Layout'; 
 
 // ============================================================
 // ADMIN PAGES
@@ -59,6 +59,8 @@ import Performance from './pages/Performance & Growth/Performance.jsx';
 import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
 import AdminBoards from './pages/AdminBoards.jsx';
 import BoardEditor from './pages/BoardEditor.jsx';
+import ESignature from './pages/ESignature.jsx';
+import ESignatureEditor from './pages/ESignatureEditor.jsx';
 
 import ProtectedRoute from './components/ProtectedRoutes.jsx';
 
@@ -95,6 +97,7 @@ import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFol
 import EmpProjectDetails from './EmployeePages/Projects/EmpProjectDetails.jsx';
 import EmployeeBoards from './EmployeePages/Board/index.jsx';
 import Messager from './pages/Messager.jsx';
+import EmpESignature from './EmployeePages/ESignature/EmpESignature.jsx';
 
 // ============================================================
 // EXISTING WHATSAPP CAMPAIGN
@@ -170,6 +173,41 @@ export default function App() {
             <Route
               path="/accept-invite/:id"
               element={<AcceptInvite />}
+            />
+
+            {/* ==================================================
+                E-SIGNATURE STANDALONE SIGNING & EDITOR ROUTES
+                Accessible to all signers (Admin, Employee, External)
+            ================================================== */}
+
+            <Route
+              path="/e-signatures/editor"
+              element={<ESignatureEditor />}
+            />
+
+            <Route
+              path="/e-signatures/editor/:id"
+              element={<ESignatureEditor />}
+            />
+
+            <Route
+              path="/e-signatures/sign"
+              element={<ESignatureEditor />}
+            />
+
+            <Route
+              path="/e-signatures/sign/:id"
+              element={<ESignatureEditor />}
+            />
+
+            <Route
+              path="/sign"
+              element={<ESignatureEditor />}
+            />
+
+            <Route
+              path="/sign/:id"
+              element={<ESignatureEditor />}
             />
 
             {/* ==================================================
@@ -407,6 +445,18 @@ export default function App() {
               <Route
                 path="/boards/:id"
                 element={<BoardEditor />}
+              />
+
+              {/* E-SIGNATURE */}
+
+              <Route
+                path="/e-signatures"
+                element={<ESignature />}
+              />
+
+              <Route
+                path="/esignature"
+                element={<ESignature />}
               />
 
               {/* ==================================================
@@ -700,6 +750,33 @@ export default function App() {
               <Route
                 path="/employee/boards"
                 element={<EmployeeBoards />}
+              />
+
+              {/* EMPLOYEE / USER E-SIGNATURE */}
+
+              <Route
+                path="/employee/e-signatures"
+                element={<EmpESignature />}
+              />
+
+              <Route
+                path="/employee/e-signatures/sign"
+                element={<ESignatureEditor />}
+              />
+
+              <Route
+                path="/employee/e-signatures/sign/:id"
+                element={<ESignatureEditor />}
+              />
+
+              <Route
+                path="/employee/e-signatures/editor"
+                element={<ESignatureEditor />}
+              />
+
+              <Route
+                path="/employee/e-signatures/editor/:id"
+                element={<ESignatureEditor />}
               />
 
             </Route>

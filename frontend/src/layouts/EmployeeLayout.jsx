@@ -46,6 +46,15 @@ export default function EmployeeLayout() {
     return <Navigate to="/" replace />;
   }
 
+  // Full-page distraction-free signing view matching wireframes
+  const isFullPageSigner =
+    location.pathname.startsWith("/employee/e-signatures/sign") ||
+    location.pathname.startsWith("/employee/e-signatures/editor");
+
+  if (isFullPageSigner) {
+    return <Outlet />;
+  }
+
   if (!canAccessEmployeePath(location.pathname, user.department || user.profile?.department)) {
     return <Navigate to="/employee/overview" replace />;
   }
