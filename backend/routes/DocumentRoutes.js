@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -472,6 +473,207 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete document",
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================
+// E-SIGNATURE DYNAMIC ENDPOINTS
+// ============================================================
+
+// GET /api/documents/:id - Get a single document with full signature details
+router.get("/:id", async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ success: false, message: "Document not found" });
+    }
+
+    const doc = await Document.findById(req.params.id);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: "Document not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: doc,
+    });
+  } catch (error) {
+    console.error("Error fetching document:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch document",
+      error: error.message,
+    });
+  }
+});
+
+// PATCH /api/documents/:id/sign - Persist electronic signature on a document
+router.patch("/:id/sign", async (req, res) => {
+  try {
+    const { signedBy, signatureData, docName } = req.body;
+    let doc = null;
+
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      doc = await Document.findById(req.params.id);
+    }
+
+    if (!doc) {
+      // If template document ID (e.g. doc-0), create and persist signed doc in DB
+      const createdDoc = await Document.create({
+        name: docName || req.body.name || "skills module certificate",
+        type: "doc",
+        extension: "doc",
+        author: signedBy || "Employee",
+        size: "32.15 Kb",
+        isSigned: true,
+        status: "completed",
+        signedAt: new Date(),
+        signedBy: signedBy || "Employee",
+        signatureData: signatureData || null,
+        createdOn: "Today",
+        modifiedOn: "Just now",
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Document successfully signed and saved",
+        data: createdDoc,
+      });
+    }
+
+    doc.isSigned = true;
+    doc.status = "completed";
+    doc.signedAt = new Date();
+    doc.signedBy = signedBy || "Admin";
+    if (signatureData) {
+      doc.signatureData = signatureData;
+    }
+    doc.modifiedOn = "Today";
+
+    // Mark any placed signature field as signed
+    if (Array.isArray(doc.placedFields) && doc.placedFields.length > 0) {
+      doc.placedFields = doc.placedFields.map((f) => {
+        if (f.type === "signature" || f.type === "initials") {
+          return {
+            ...f.toObject?.() || f,
+            signed: true,
+            value: typeof signatureData === "string" ? signatureData : (signatureData?.text || signedBy || f.value),
+          };
+        }
+        return f;
+      });
+    }
+
+    // If signers exist, mark the matching signer as signed
+    if (Array.isArray(doc.signers) && doc.signers.length > 0) {
+      doc.signers = doc.signers.map((s) => {
+        if (!signedBy || s.name === signedBy || s.email === signedBy) {
+          return {
+            ...s.toObject?.() || s,
+            status: "signed",
+            signedAt: new Date(),
+          };
+        }
+        return s;
+      });
+    }
+
+    const saved = await doc.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Document successfully signed and saved",
+      data: saved,
+    });
+  } catch (error) {
+    console.error("Error signing document:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to sign document",
+      error: error.message,
+    });
+  }
+});
+
+// PATCH /api/documents/:id/fields - Save placed fields and signers from Editor
+router.patch("/:id/fields", async (req, res) => {
+  try {
+    const { placedFields, signers } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(200).json({
+        success: true,
+        message: "Document fields updated",
+        data: { id: req.params.id, placedFields, signers },
+      });
+    }
+
+    const updatePayload = {
+      modifiedOn: "Just now",
+    };
+
+    if (Array.isArray(placedFields)) {
+      updatePayload.placedFields = placedFields;
+    }
+
+    if (Array.isArray(signers)) {
+      updatePayload.signers = signers;
+    }
+
+    const updatedDoc = await Document.findByIdAndUpdate(
+      req.params.id,
+      { $set: updatePayload },
+      { new: true }
+    );
+
+    if (!updatedDoc) {
+      return res.status(404).json({ success: false, message: "Document not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Document fields and signers saved successfully",
+      data: updatedDoc,
+    });
+  } catch (error) {
+    console.error("Error saving document fields:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save document fields",
+      error: error.message,
+    });
+  }
+});
+
+// PATCH /api/documents/:id/status - Update document status
+router.patch("/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["waiting", "completed", "draft"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status value" });
+    }
+
+    const updatedDoc = await Document.findByIdAndUpdate(
+      req.params.id,
+      { status, modifiedOn: "Today" },
+      { new: true }
+    );
+
+    if (!updatedDoc) {
+      return res.status(404).json({ success: false, message: "Document not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Document status updated to ${status}`,
+      data: updatedDoc,
+    });
+  } catch (error) {
+    console.error("Error updating document status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update status",
       error: error.message,
     });
   }

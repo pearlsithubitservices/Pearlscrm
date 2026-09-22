@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
@@ -9,6 +9,7 @@ import NotificationDrawer from "../components/NotificationDrawer";
 
 export default function EmployeeLayout() {
   const { user, isAdmin, loading } = useAuth();
+  const location = useLocation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   useEffect(() => {
@@ -42,6 +43,15 @@ export default function EmployeeLayout() {
   // If logged in user is Admin, redirect them to main Admin Dashboard
   if (isAdmin) {
     return <Navigate to="/" replace />;
+  }
+
+  // Full-page distraction-free signing view matching wireframes
+  const isFullPageSigner =
+    location.pathname.startsWith("/employee/e-signatures/sign") ||
+    location.pathname.startsWith("/employee/e-signatures/editor");
+
+  if (isFullPageSigner) {
+    return <Outlet />;
   }
 
   return (

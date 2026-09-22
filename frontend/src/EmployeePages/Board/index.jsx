@@ -251,10 +251,11 @@ export default function EmployeeBoards() {
                               </div>
                             </div>
                             <a
-                              href={file.filePath}
-                              download={file.fileName}
+                              href={apiUrl(file.filePath)}
+                              target="_blank"
+                              rel="noreferrer"
                               className="ml-4 p-2 hover:bg-white rounded-lg transition flex-shrink-0"
-                              title="Download file"
+                              title="Open file"
                             >
                               <Download className="w-5 h-5 text-blue-600 hover:text-blue-700" />
                             </a>

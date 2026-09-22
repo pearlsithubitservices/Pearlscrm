@@ -47,6 +47,7 @@ const BenefitRoutes = require("./routes/BenefitRoutes");
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
 const DocumentRoutes = require("./routes/DocumentRoutes");
+const emailRoutes = require("./routes/EmailRoutes");
 const { initSocket } = require("./Socket");
 
 const whatsappCampaignRoutes = require("./routes/WhatsAppCampaign/campaignRoutes");
@@ -89,6 +90,8 @@ initSocket(server);
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5175",
+  "http://127.0.0.1:5175",
   "http://localhost:3000",
   "https://pearlscrm.vercel.app",
 ];
@@ -178,6 +181,7 @@ app.use("/api/totalLeave", EmpTotalLeave);
 app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/documents", DocumentRoutes);
+app.use("/api/email", emailRoutes);
 
 // =====================================================
 // WHATSAPP CAMPAIGN ROUTES
@@ -222,7 +226,7 @@ const startServer = async () => {
 
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-      console.log("Connected to database with WebSocket support");
+      // console.log("Connected to database with WebSocket support");
       // Followup reminder scheduler disabled per user request to avoid duplicate notifications
       startAttendancePhotoCleanupScheduler();
       startRecycleBinCleanupScheduler();

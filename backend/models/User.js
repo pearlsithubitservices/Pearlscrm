@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { DEFAULT_DEPARTMENT } = require("../config/departments");
 
 const userSchema = new mongoose.Schema(
   {
@@ -42,7 +43,7 @@ const userSchema = new mongoose.Schema(
     },
     department: {
       type: String,
-      default: "Engineering",
+      default: DEFAULT_DEPARTMENT,
     },
     phone: {
       type: String,

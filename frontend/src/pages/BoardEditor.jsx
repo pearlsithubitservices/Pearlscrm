@@ -8,6 +8,7 @@ import {
   Eraser,
   Hand,
   Loader,
+  LayoutTemplate,
   Minus,
   MousePointer2,
   Paintbrush,
@@ -15,6 +16,7 @@ import {
   Redo2,
   RotateCcw,
   Save,
+  Search,
   Scissors,
   Share2,
   Square,
@@ -22,6 +24,7 @@ import {
   Trash2,
   Type,
   Undo2,
+  X,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -29,6 +32,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Tldraw } from "tldraw";
 import "tldraw/tldraw.css";
 import { apiUrl } from "../config/api.js";
+import {
+  boardTemplateCategories,
+  boardTemplates,
+} from "../data/boardTemplates.js";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -98,6 +105,10 @@ export default function BoardEditor() {
   const [loadError, setLoadError] = useState("");
   const [saveState, setSaveState] = useState("saved");
   const [shareState, setShareState] = useState("");
+  const [fileSaveState, setFileSaveState] = useState("idle");
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [templateCategory, setTemplateCategory] = useState("All Templates");
   const [editorState, setEditorState] = useState({
     activeTool: "select",
     canUndo: false,
@@ -160,9 +171,54 @@ export default function BoardEditor() {
       }
 
       setSaveState("saved");
+      return true;
     } catch (error) {
       console.error("Error saving board canvas:", error);
       setSaveState("error");
+      return false;
+    }
+  };
+
+  const saveEditedFile = async () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    try {
+      setFileSaveState("saving");
+      const canvasSaved = await saveCanvas();
+      if (!canvasSaved) {
+        throw new Error("Unable to save canvas changes");
+      }
+
+      const shapes = editor.getCurrentPageShapes();
+      const image = await editor.toImage(shapes, {
+        format: "png",
+        background: true,
+        padding: 80,
+      });
+      const formData = new FormData();
+      formData.append("file", image.blob, `${board.boardName || "board"}.png`);
+
+      const existingFile = board.files?.[0];
+      const endpoint = existingFile
+        ? `/boards/${id}/file/${existingFile._id}`
+        : `/boards/${id}/upload`;
+      const response = await fetch(apiUrl(endpoint), {
+        method: existingFile ? "PUT" : "POST",
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to save the edited file");
+      }
+
+      setBoard(data.data);
+      setFileSaveState("saved");
+    } catch (error) {
+      console.error("Error saving edited file:", error);
+      setFileSaveState("error");
     }
   };
 
@@ -184,7 +240,7 @@ export default function BoardEditor() {
         activeTool: editor.getCurrentToolId(),
         canUndo: editor.getCanUndo(),
         canRedo: editor.getCanRedo(),
-        zoom: editor.getZoom(),
+        zoom: editor.getZoomLevel(),
         selectedCount: editor.getSelectedShapeIds().length,
       });
       scheduleSave();
@@ -231,6 +287,47 @@ export default function BoardEditor() {
     } catch (error) {
       if (error.name !== "AbortError") setShareState("Unable to share");
     }
+  };
+
+  const imageFile = board?.files?.find((file) => file.fileType === "image");
+
+  const filteredTemplates = boardTemplates.filter((template) => {
+    const matchesCategory =
+      templateCategory === "All Templates" || template.category === templateCategory;
+    const searchValue = templateSearch.trim().toLowerCase();
+    const matchesSearch =
+      !searchValue ||
+      template.name.toLowerCase().includes(searchValue) ||
+      template.description.toLowerCase().includes(searchValue) ||
+      template.category.toLowerCase().includes(searchValue);
+
+    return matchesCategory && matchesSearch;
+  });
+
+  const applyTemplate = (template) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const currentShapes = editor.getCurrentPageShapes();
+    if (
+      currentShapes.length > 0 &&
+      !window.confirm(`Replace the current canvas with ${template.name}?`)
+    ) {
+      return;
+    }
+
+    if (currentShapes.length > 0) editor.deleteShapes(currentShapes);
+
+    const templateShapes = template.getShapes();
+    if (templateShapes.length > 0) editor.createShapes(templateShapes);
+
+    editor.setCurrentTool("select");
+    window.setTimeout(() => {
+      editor.zoomToFit({ animation: { duration: 180 }, padding: 80 });
+    }, 0);
+    setShowTemplates(false);
+    setTemplateSearch("");
+    setTemplateCategory("All Templates");
   };
 
   if (loading) {
@@ -304,6 +401,15 @@ export default function BoardEditor() {
           </button>
           <button
             type="button"
+            onClick={saveEditedFile}
+            disabled={fileSaveState === "saving"}
+            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Save className="h-3.5 w-3.5" />
+            {fileSaveState === "saving" ? "Saving file..." : "Save file"}
+          </button>
+          <button
+            type="button"
             onClick={shareBoard}
             className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 font-medium text-white hover:bg-gray-700"
           >
@@ -333,6 +439,21 @@ export default function BoardEditor() {
               ))}
             </div>
           ))}
+
+          <span className="mx-1 h-6 border-l border-gray-200" />
+          <button
+            type="button"
+            onClick={() => setShowTemplates((current) => !current)}
+            className={`flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium transition ${
+              showTemplates
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            }`}
+            aria-expanded={showTemplates}
+          >
+            <LayoutTemplate className="h-4 w-4" />
+            Templates
+          </button>
 
           <div className="ml-auto flex items-center gap-1 pl-1">
             <EditorButton
@@ -371,7 +492,117 @@ export default function BoardEditor() {
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <Tldraw onMount={handleEditorMount} />
+        <div className="flex h-full min-h-0">
+          {imageFile && (
+            <aside className="hidden w-80 shrink-0 overflow-y-auto border-r border-gray-200 bg-white p-4 lg:block">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold text-gray-900">Saved file</h2>
+                  <p className="truncate text-xs text-gray-500" title={imageFile.fileName}>
+                    {imageFile.fileName}
+                  </p>
+                </div>
+                <a
+                  href={apiUrl(imageFile.filePath)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
+                >
+                  Open
+                </a>
+              </div>
+              <div className="flex min-h-64 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-2">
+                <img
+                  src={apiUrl(imageFile.filePath)}
+                  alt={imageFile.fileName}
+                  className="max-h-[calc(100vh-15rem)] max-w-full object-contain"
+                />
+              </div>
+            </aside>
+          )}
+
+          <div className="relative min-w-0 flex-1">
+            <Tldraw onMount={handleEditorMount} />
+
+            {showTemplates && (
+          <aside className="absolute right-4 top-4 z-20 flex max-h-[calc(100%-2rem)] w-[min(22rem,calc(100%-2rem))] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">Templates</h2>
+                <p className="mt-0.5 text-xs text-gray-500">Start from a reusable canvas</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTemplates(false)}
+                className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                aria-label="Close templates"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="border-b border-gray-200 p-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <input
+                  type="search"
+                  value={templateSearch}
+                  onChange={(event) => setTemplateSearch(event.target.value)}
+                  placeholder="Search templates"
+                  className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1">
+              <nav className="w-36 shrink-0 overflow-y-auto border-r border-gray-200 p-2">
+                {boardTemplateCategories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setTemplateCategory(category)}
+                    className={`mb-1 w-full rounded-lg px-2.5 py-2 text-left text-xs transition ${
+                      templateCategory === category
+                        ? "bg-blue-50 font-medium text-blue-700"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </nav>
+
+              <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                <div className="space-y-2">
+                  {filteredTemplates.map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => applyTemplate(template)}
+                      className="w-full rounded-lg border border-gray-200 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-gray-900">{template.name}</span>
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                          {template.category === "All Templates" ? "Starter" : "Template"}
+                        </span>
+                      </div>
+                      <p className="text-xs leading-5 text-gray-500">{template.description}</p>
+                    </button>
+                  ))}
+
+                  {filteredTemplates.length === 0 && (
+                    <p className="px-2 py-8 text-center text-xs text-gray-500">
+                      No templates match your search.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </aside>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

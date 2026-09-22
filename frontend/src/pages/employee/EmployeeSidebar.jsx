@@ -18,6 +18,7 @@ import {
   Briefcase,
   UserRound,
   KanbanSquare,
+  PenLine,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -90,6 +91,11 @@ export default function Sidebar() {
       name: 'Payroll & Benefits',
       icon: CreditCardIcon,
       path: '/employee/payroll',
+    },
+    {
+      name: 'E- signatures',
+      icon: PenLine,
+      path: '/employee/e-signatures',
     },
   ];
 

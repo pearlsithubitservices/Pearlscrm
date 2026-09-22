@@ -1,4 +1,6 @@
 const dns = require("dns");
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 try {
   dns.setDefaultResultOrder("ipv4first");
@@ -10,7 +12,9 @@ let nodemailer = null;
 try {
   nodemailer = require("nodemailer");
 } catch (err) {
-  console.warn("[Email Service] nodemailer is not installed. Outgoing emails will be logged only.");
+  console.warn(
+    "[Email Service WARNING] 'nodemailer' package is not installed! Run 'npm install nodemailer' in backend to enable real email sending."
+  );
 }
 
 let transporter = null;
@@ -52,7 +56,7 @@ const sendEmail = async ({ to, subject, html }) => {
   }
 
   const info = await transporter.sendMail({
-    from: `CRM <${process.env.EMAIL_USER}>`,
+    from: `"Pearls CRM" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,

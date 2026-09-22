@@ -29,15 +29,16 @@ import {
   Calendar,
   User,
   Mail,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { apiUrl } from "../config/api";
-import { useAuth } from "../context/AuthContext";
-import SignatureStudioModal from "../components/SignatureStudioModal";
-import SendDocumentModal from "../components/SendDocumentModal";
+import { apiUrl } from "../../config/api";
+import { useAuth } from "../../context/AuthContext";
+import SignatureStudioModal from "../../components/SignatureStudioModal";
+import SendDocumentModal from "../../components/SendDocumentModal";
 
-// Initial mock data faithfully matching the user's provided UI screenshot
+// Initial documents to display while backend loads or as initial templates
 const INITIAL_SIGNATURE_DOCS = [
   {
     id: "doc-0",
@@ -118,7 +119,7 @@ const INITIAL_RECYCLED_DOCS = [
   },
 ];
 
-export default function ESignature() {
+export default function EmpESignature() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -151,14 +152,14 @@ export default function ESignature() {
     {
       id: "notif-1",
       title: "Signature Request",
-      message: "Client pending signature on 'crm planing'",
+      message: "Pending signature requested for 'crm planing'",
       time: "10 mins ago",
       unread: true,
     },
     {
       id: "notif-2",
-      title: "Document Approved",
-      message: "'pearls.doc' verified and ready for signing",
+      title: "Document Verified",
+      message: "'skills module certificate' certified and signed",
       time: "1 hour ago",
       unread: true,
     },
@@ -171,7 +172,7 @@ export default function ESignature() {
     },
   ]);
 
-  // Load from MongoDB backend if available
+  // Load from MongoDB backend on mount
   useEffect(() => {
     const fetchBackendDocs = async () => {
       try {
@@ -223,7 +224,7 @@ export default function ESignature() {
           }
         }
       } catch (err) {
-        console.log("Documents API offline, using interactive local state:", err);
+        console.log("Documents API offline, using local state:", err);
       } finally {
         setLoading(false);
       }
@@ -249,11 +250,9 @@ export default function ESignature() {
   // Dismiss dropdown or notifications when clicking outside, scrolling, or pressing Escape
   useEffect(() => {
     const handleDocumentMouseDown = (e) => {
-      // Close notifications if clicked outside
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setShowNotificationMenu(false);
       }
-      // If clicking inside dropdown or on trigger button, do not dismiss here
       if (
         (e.target.closest && e.target.closest("[data-esignature-dropdown]")) ||
         (e.target.closest && e.target.closest("[data-esignature-trigger]"))
@@ -314,7 +313,6 @@ export default function ESignature() {
     let top = openUpwards ? rect.top - menuHeight - 6 : rect.bottom + 6;
     let left = rect.right - menuWidth;
 
-    // Viewport clamp for mobile and tablet screens
     if (left < 12) left = 12;
     if (left + menuWidth > window.innerWidth - 12) {
       left = window.innerWidth - menuWidth - 12;
@@ -349,16 +347,14 @@ export default function ESignature() {
     );
   }, [recycledDocuments, searchTerm]);
 
-  // Handle Move to Recycle Bin (Delete from active)
+  // Handle Move to Recycle Bin
   const handleRecycle = async (doc) => {
     setActiveMenu(null);
     try {
-      // Backend call
       fetch(apiUrl(`/documents/${doc._id || doc.id}/recycle`), {
         method: "PATCH",
       }).catch(() => {});
 
-      // Optimistic state update
       setDocuments((prev) => prev.filter((d) => (d._id || d.id) !== (doc._id || doc.id)));
       setRecycledDocuments((prev) => [
         {
@@ -440,7 +436,7 @@ export default function ESignature() {
   // Handle Copy Link
   const handleCopyLink = (doc) => {
     setActiveMenu(null);
-    const link = `${window.location.origin}/e-signatures?doc=${doc._id || doc.id}`;
+    const link = `${window.location.origin}/employee/e-signatures?doc=${doc._id || doc.id}`;
     navigator.clipboard.writeText(link);
     toast.success("Document link copied to clipboard!", { icon: "📋" });
   };
@@ -455,12 +451,11 @@ export default function ESignature() {
     } else if (doc._id || doc.id) {
       window.open(apiUrl(`/documents/${doc._id || doc.id}/download`), "_blank");
     } else {
-      // Generate downloadable simulated document
       const element = document.createElement("a");
       const fileContent = `=== ${doc.name} ===\nStatus: ${
         doc.isSigned ? "Signed" : "Draft"
       }\nCreated: ${doc.createdOn}\nSize: ${doc.size}\nAuthor: ${
-        doc.author || "Admin"
+        doc.author || user?.name || "Employee"
       }\n\nPearls IT Hub E-Signature Document.`;
       const file = new Blob([fileContent], { type: "text/plain" });
       element.href = URL.createObjectURL(file);
@@ -514,15 +509,15 @@ export default function ESignature() {
 
       <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* ====================================================
-            PAGE HEADER (Admin - E signature)
+            PAGE HEADER (Employee - E signature)
         ==================================================== */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 sm:mb-4">
           <div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#0b2b57] tracking-tight">
-              Admin - E signature
+              Employee - E signature
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 font-normal mt-0.5">
-              Creating a design of Sprint Planning
+              Manage and sign your digital documents & sprint approvals
             </p>
           </div>
 
@@ -594,7 +589,7 @@ export default function ESignature() {
         </div>
 
         {/* ====================================================
-            MAIN WHITE CARD CONTAINER (Responsive Div)
+            MAIN WHITE CARD CONTAINER
         ==================================================== */}
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-gray-100/90 p-4 sm:p-6 lg:p-8 transition-all w-full">
           {/* CARD TOP TOOLBAR */}
@@ -750,7 +745,7 @@ export default function ESignature() {
                               />
                               <span
                                 onClick={() => {
-                                  navigate(`/e-signatures/editor/${doc._id || doc.id}`, {
+                                  navigate(`/employee/e-signatures/editor/${doc._id || doc.id}`, {
                                     state: { document: doc },
                                   });
                                 }}
@@ -937,7 +932,7 @@ export default function ESignature() {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    signedBy: sigData?.text || user?.name || user?.displayName || user?.email || "Admin",
+                    signedBy: sigData?.text || user?.name || user?.displayName || user?.email || "Employee",
                     signatureData: sigData,
                   }),
                 });
@@ -970,6 +965,7 @@ export default function ESignature() {
       <AnimatePresence>
         {uploadModalOpen && (
           <UploadDocumentModal
+            currentUser={user}
             onClose={() => setUploadModalOpen(false)}
             onUploaded={(newDoc) => {
               setDocuments((prev) => [newDoc, ...prev]);
@@ -1036,7 +1032,7 @@ export default function ESignature() {
       </AnimatePresence>
 
       {/* ====================================================
-          SEND FOR SIGNING MODAL (EXACT WIREFRAME MATCH)
+          SEND FOR SIGNING MODAL (EMAIL DISPATCH)
       ==================================================== */}
       <AnimatePresence>
         {sendSigningDoc && (
@@ -1047,7 +1043,7 @@ export default function ESignature() {
               setSendSigningDoc(null);
               toast.success(
                 <span>
-                  Document assigned & invitation sent to <b>{payload.email}</b>!
+                  Document invitation sent to <b>{payload.email}</b>!
                 </span>,
                 { icon: "✉️" }
               );
@@ -1075,15 +1071,13 @@ export default function ESignature() {
 
       {/* ====================================================
           PORTAL FLOATING ACTION DROPDOWN
-          Never clipped by table overflow-x-auto, position: fixed,
-          smart auto-direction (pops up or down)
       ==================================================== */}
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>
             {activeMenu && (
               <motion.div
-                key={`portal-menu-${activeMenu.doc._id || activeMenu.doc.id}`}
+                key={`emp-portal-menu-${activeMenu.doc._id || activeMenu.doc.id}`}
                 data-esignature-dropdown="true"
                 initial={{
                   opacity: 0,
@@ -1111,13 +1105,13 @@ export default function ESignature() {
                 className="bg-white rounded-2xl shadow-2xl border border-gray-200/90 py-1.5 text-left divide-y divide-gray-100 select-none pointer-events-auto"
               >
                 <div className="py-1">
-                  {/* OPEN */}
+                  {/* OPEN IN EDITOR */}
                   <button
                     type="button"
                     onClick={() => {
                       const doc = activeMenu.doc;
                       setActiveMenu(null);
-                      navigate(`/e-signatures/editor/${doc._id || doc.id}`, {
+                      navigate(`/employee/e-signatures/editor/${doc._id || doc.id}`, {
                         state: { document: doc },
                       });
                     }}
@@ -1238,9 +1232,9 @@ export default function ESignature() {
 }
 
 // ============================================================================
-// UPLOAD DOCUMENT MODAL
+// UPLOAD DOCUMENT MODAL (Employee side)
 // ============================================================================
-function UploadDocumentModal({ onClose, onUploaded }) {
+function UploadDocumentModal({ currentUser, onClose, onUploaded }) {
   const [docName, setDocName] = useState("");
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -1263,12 +1257,16 @@ function UploadDocumentModal({ onClose, onUploaded }) {
     }
 
     setLoading(true);
+    const authorName = currentUser?.name || currentUser?.displayName || currentUser?.email || "Employee";
+    const authorId = currentUser?._id || currentUser?.id || "";
+
     try {
-      // Backend upload if file is selected
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("name", docName.trim());
+        formData.append("author", authorName);
+        if (authorId) formData.append("authorId", authorId);
 
         const res = await fetch(apiUrl("/documents"), {
           method: "POST",
@@ -1286,7 +1284,7 @@ function UploadDocumentModal({ onClose, onUploaded }) {
               createdOn: "Just now",
               modifiedOn: "Today",
               isSigned: false,
-              author: json.data.author || "Admin",
+              author: authorName,
               url: json.data.url,
               fileUrl: json.data.url,
               type: json.data.type,
@@ -1301,7 +1299,7 @@ function UploadDocumentModal({ onClose, onUploaded }) {
         }
       }
 
-      // JSON creation if no file selected
+      // JSON creation
       const ext = docName.includes(".") ? docName.split(".").pop().toLowerCase() : "doc";
       const res = await fetch(apiUrl("/documents"), {
         method: "POST",
@@ -1310,7 +1308,8 @@ function UploadDocumentModal({ onClose, onUploaded }) {
           name: docName.trim(),
           type: ext,
           extension: ext,
-          author: "Admin",
+          author: authorName,
+          authorId: authorId,
         }),
       });
 
@@ -1325,7 +1324,7 @@ function UploadDocumentModal({ onClose, onUploaded }) {
             createdOn: "Just now",
             modifiedOn: "Today",
             isSigned: false,
-            author: "Admin",
+            author: authorName,
             type: ext,
             extension: ext,
             url: json.data.url || "",
@@ -1349,7 +1348,7 @@ function UploadDocumentModal({ onClose, onUploaded }) {
         createdOn: "Just now",
         modifiedOn: "Today",
         isSigned: false,
-        author: "Admin",
+        author: authorName,
         extension: ext,
         type: ext,
         url: localUrl,
@@ -1371,7 +1370,7 @@ function UploadDocumentModal({ onClose, onUploaded }) {
         createdOn: "Just now",
         modifiedOn: "Today",
         isSigned: false,
-        author: "Admin",
+        author: authorName,
         extension: ext,
         type: ext,
         url: localUrl,
@@ -1435,7 +1434,7 @@ function UploadDocumentModal({ onClose, onUploaded }) {
               type="text"
               value={docName}
               onChange={(e) => setDocName(e.target.value)}
-              placeholder="e.g. crm planing.doc"
+              placeholder="e.g. project sprint report.doc"
               className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:bg-white"
               required
             />
@@ -1454,7 +1453,14 @@ function UploadDocumentModal({ onClose, onUploaded }) {
               disabled={loading}
               className="px-5 py-2 text-xs font-semibold bg-[#1d68bd] hover:bg-[#18569c] text-white rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
-              {loading ? "Uploading..." : "Upload Document"}
+              {loading ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Uploading...</span>
+                </>
+              ) : (
+                <span>Upload Document</span>
+              )}
             </button>
           </div>
         </form>
@@ -1548,7 +1554,7 @@ function DocumentPreviewModal({ document, onClose, onSignClick }) {
                 </h4>
                 <p className="text-xs text-gray-600 leading-relaxed mb-3">
                   Electronic signature document managed by Pearls CRM. Prepared by{" "}
-                  <strong>{document.author || "Admin"}</strong>.
+                  <strong>{document.author || "Employee"}</strong>.
                 </p>
                 {docUrl && (
                   <a
@@ -1589,7 +1595,7 @@ function DocumentPreviewModal({ document, onClose, onSignClick }) {
             <button
               onClick={() => {
                 onClose();
-                navigate(`/e-signatures/editor/${document._id || document.id}`, {
+                navigate(`/employee/e-signatures/editor/${document._id || document.id}`, {
                   state: { document },
                 });
               }}

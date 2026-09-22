@@ -217,6 +217,15 @@ export default function AdminBoards() {
     }
   };
 
+  const openBoardFile = (file) => {
+    if (!file?.filePath) {
+      alert("This board has no file to open");
+      return;
+    }
+
+    window.open(apiUrl(file.filePath), "_blank", "noopener,noreferrer");
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -428,9 +437,17 @@ export default function AdminBoards() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-gray-400" />
-                          <span className="font-medium text-gray-900">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openBoardFile(boardFile);
+                            }}
+                            className="truncate text-left font-medium text-blue-700 hover:text-blue-900 hover:underline"
+                            title={boardFile ? "Open file" : "No file uploaded"}
+                          >
                             {boardFile?.fileName || board.boardName}
-                          </span>
+                          </button>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-gray-600 max-w-xs truncate">
@@ -472,9 +489,7 @@ export default function AdminBoards() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const file = board.files?.[0];
-                                  if (file?.filePath) window.open(file.filePath, "_blank");
-                                  else alert("This board has no files to download");
+                                  openBoardFile(board.files?.[0]);
                                   setShowBoardMenu(null);
                                 }}
                                 className="block w-full px-4 py-2 text-gray-700 hover:bg-gray-50"

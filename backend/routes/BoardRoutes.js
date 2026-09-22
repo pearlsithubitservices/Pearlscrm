@@ -268,6 +268,71 @@ router.post("/:id/upload", upload.single("file"), async (req, res) => {
 });
 
 // =====================================================
+// REPLACE BOARD FILE WITH EDITED CANVAS EXPORT
+// =====================================================
+router.put("/:id/file/:fileId", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file provided",
+      });
+    }
+
+    const board = await Board.findById(req.params.id);
+    if (!board) {
+      return res.status(404).json({
+        success: false,
+        message: "Board not found",
+      });
+    }
+
+    const file = board.files.id(req.params.fileId);
+    if (!file) {
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({
+        success: false,
+        message: "File not found",
+      });
+    }
+
+    const previousFilePath = path.join(
+      __dirname,
+      "..",
+      "uploads",
+      "boards",
+      file.filePath.split("/").pop()
+    );
+
+    file.fileName = req.file.originalname;
+    file.fileSize = req.file.size;
+    file.fileType = "image";
+    file.filePath = `/uploads/boards/${req.file.filename}`;
+    file.uploadedBy = req.body.uploadedBy || file.uploadedBy;
+    file.uploadedByName = req.body.uploadedByName || file.uploadedByName;
+    await board.save();
+
+    if (fs.existsSync(previousFilePath)) {
+      fs.unlinkSync(previousFilePath);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "File replaced successfully",
+      data: board,
+    });
+  } catch (error) {
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// =====================================================
 // DELETE FILE FROM BOARD
 // =====================================================
 router.delete("/:id/file/:fileId", async (req, res) => {
