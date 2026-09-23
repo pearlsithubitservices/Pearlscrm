@@ -9,6 +9,7 @@ import {
     NotebookTabs,
     Icon,
     X,
+    Trash2,
 } from "lucide-react";
 
 
@@ -22,6 +23,7 @@ import TaskDocuments from "../components/TaskDetails/TaskDocumentation";
 import { apiUrl } from "../config/api";
 import { socket } from "../config/socket";
 import useEmployees from "../Hooks/useEmployees";
+import { useAuth } from "../context/AuthContext";
 
 export default function TaskComponents() {
     const [activeTab, setActiveTab] = useState("Overview");
@@ -29,6 +31,14 @@ export default function TaskComponents() {
     const { id } = useParams();
     const { employees } = useEmployees();
     const navigate = useNavigate();
+    const { user, role, isAdmin: authIsAdmin } = useAuth();
+    const isAdmin = Boolean(
+        authIsAdmin ||
+        (typeof role === "string" && role.trim().toLowerCase() === "admin") ||
+        (typeof user?.role === "string" && user.role.trim().toLowerCase() === "admin") ||
+        (typeof user?.userType === "string" && user.userType.trim().toLowerCase() === "admin")
+    );
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const { lead, loading } = useLead();
     const [tasks, setTasks] = useState([]);
@@ -147,6 +157,34 @@ export default function TaskComponents() {
         } catch (err) {
             console.error("Error updating task:", err);
             alert("Failed to update task.");
+        }
+    };
+
+    const handleDeleteTask = async () => {
+        if (!window.confirm("Are you sure you want to permanently delete this task? This action cannot be undone.")) return;
+        setIsDeleting(true);
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(apiUrl(`/tasks/${id}`), {
+                method: "DELETE",
+                headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    "x-user-role": "admin",
+                },
+            });
+
+            if (res.ok) {
+                alert("Task deleted successfully!");
+                navigate("/tasks");
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.message || "Failed to delete task.");
+            }
+        } catch (err) {
+            console.error("Error deleting task:", err);
+            alert("Failed to delete task.");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -286,12 +324,24 @@ export default function TaskComponents() {
 
                             </div>
 
-                            <button
-                                onClick={openEditModal}
-                                className="border border-[#2563a9] bg-[#2563a9] text-white px-5 py-2 rounded-lg flex items-center gap-2 hover:bg-[#1d4ed8] hover:scale-105 transition-all shadow-xs font-semibold text-xs cursor-pointer">
-                                <Pencil size={16} />
-                                Edit Task
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={openEditModal}
+                                    className="border border-[#2563a9] bg-[#2563a9] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#1d4ed8] hover:scale-105 transition-all shadow-xs font-semibold text-xs cursor-pointer">
+                                    <Pencil size={15} />
+                                    Edit Task
+                                </button>
+
+                                {isAdmin && (
+                                    <button
+                                        onClick={handleDeleteTask}
+                                        disabled={isDeleting}
+                                        className="border border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 rounded-lg flex items-center gap-1.5 hover:scale-105 transition-all shadow-xs font-semibold text-xs cursor-pointer disabled:opacity-50">
+                                        <Trash2 size={15} />
+                                        <span>{isDeleting ? "Deleting..." : "Delete Task"}</span>
+                                    </button>
+                                )}
+                            </div>
 
                         </div>
 

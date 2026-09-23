@@ -229,7 +229,10 @@ router.put("/:id", async (req, res) => {
                 userUpdate["name"] = req.body.name || req.body.employeeName;
             }
             if (req.body.role || req.body.employeeRole) {
-                userUpdate["role"] = (req.body.role || req.body.employeeRole) === "admin" || (req.body.role || req.body.employeeRole) === "Admin" ? "Admin" : "Employee";
+                const rawRole = String(req.body.role || req.body.employeeRole).trim();
+                userUpdate["role"] = rawRole.toLowerCase() === "admin"
+                    ? "Admin"
+                    : (rawRole.toLowerCase() === "designer" ? "Designer" : "Employee");
             }
             if (req.body.notes !== undefined || req.body.description !== undefined) {
                 userUpdate["profile.description"] = req.body.notes || req.body.description;

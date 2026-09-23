@@ -106,20 +106,16 @@ export default function Sidebar() {
       path: '/employee/web-mail',
     },
     {
-      name: 'E-Signature',
-      icon: FileSignature,
-      path: '/employee/e-signature',
-    },
-    {
       name: 'Payroll & Benefits',
       icon: CreditCardIcon,
       path: '/employee/payroll',
       module: 'payroll',
     },
     {
-      name: 'E- signatures',
+      name: 'E-Signature',
       icon: PenLine,
       path: '/employee/e-signatures',
+      module: 'esignature',
     },
   ];
 
@@ -139,11 +135,12 @@ export default function Sidebar() {
   ];
 
   const department = user?.department || user?.profile?.department || user?.employeeDepartment || user?.dept || 'General';
+  const roleName = user?.role || user?.employeeRole || user?.profile?.role || role || '';
   const visibleMainItems = mainItems.filter((item) =>
-    !item.module || canAccessEmployeeModule(item.module, department)
+    !item.module || canAccessEmployeeModule(item.module, department, roleName)
   );
   const visibleManageItems = manageItems.filter((item) =>
-    !item.module || canAccessEmployeeModule(item.module, department)
+    !item.module || canAccessEmployeeModule(item.module, department, roleName)
   );
 
   const sidebarContent = (
@@ -263,10 +260,7 @@ export default function Sidebar() {
             <h3 className="font-semibold text-xs text-white truncate">
               {user?.name || user?.email?.split('@')[0] || 'Employee'}
             </h3>
-            {/* <p className="text-[11px] text-gray-300 truncate capitalize">
-              {role || 'Employee'}
-            </p> */}
-            <p className="text-[10px] text-blue-200 truncate">
+            <p className="text-[11px] text-blue-200 truncate capitalize font-medium">
               {department}
             </p>
           </div>

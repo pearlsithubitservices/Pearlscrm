@@ -121,11 +121,6 @@ export default function Sidebar() {
       path: "/web-mail",
     },
     {
-      name: "E-Signature",
-      icon: FileSignature,
-      path: "/e-signature",
-    },
-    {
       name: "LeaveManagement",
       icon: NotebookPenIcon,
       path: "/leave",
@@ -144,7 +139,7 @@ export default function Sidebar() {
       module: "performance",
     },
     {
-      name: "E- signatures",
+      name: "E-Signature",
       icon: PenLine,
       path: "/e-signatures",
     },

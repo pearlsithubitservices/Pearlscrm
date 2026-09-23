@@ -60,7 +60,7 @@ const userSchema = new mongoose.Schema(
     },
     profile: {
       dob: { type: Date },
-      gender: { type: String, enum: ["male", "female", "others", ""] , default: "" },
+      gender: { type: String, enum: ["male", "female", "others", ""], default: "" },
       phone: { type: String, default: "" },
       emergencyNo: { type: String, default: "" },
       empId: { type: String, default: "" },

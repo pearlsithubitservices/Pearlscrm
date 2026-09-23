@@ -38,94 +38,17 @@ import { useAuth } from "../../context/AuthContext";
 import SignatureStudioModal from "../../components/SignatureStudioModal";
 import SendDocumentModal from "../../components/SendDocumentModal";
 
-// Initial documents to display while backend loads or as initial templates
-const INITIAL_SIGNATURE_DOCS = [
-  {
-    id: "doc-0",
-    _id: "doc-0",
-    name: "skills module certificate",
-    size: "32.15 Kb",
-    sizeBytes: 32921,
-    createdOn: "12 minutes ago",
-    modifiedOn: "Sep, 14",
-    isSigned: true,
-    author: "Mankato University",
-    type: "doc",
-    extension: "doc",
-  },
-  {
-    id: "doc-1",
-    _id: "doc-1",
-    name: "crm planing",
-    size: "24.82 Kb",
-    sizeBytes: 25415,
-    createdOn: "37 minutes ago",
-    modifiedOn: "Jul, 21",
-    isSigned: false,
-    author: "Admin",
-    type: "doc",
-    extension: "doc",
-  },
-  {
-    id: "doc-2",
-    _id: "doc-2",
-    name: "pearls.doc",
-    size: "24.35 Kb",
-    sizeBytes: 24934,
-    createdOn: "today, 02:18",
-    modifiedOn: "Jun, 08",
-    isSigned: false,
-    author: "Admin",
-    type: "doc",
-    extension: "doc",
-  },
-  {
-    id: "doc-3",
-    _id: "doc-3",
-    name: "company",
-    size: "21.24 Kb",
-    sizeBytes: 21749,
-    createdOn: "today, 01:18",
-    modifiedOn: "Aug, 13",
-    isSigned: false,
-    author: "Admin",
-    type: "doc",
-    extension: "doc",
-  },
-];
-
-const INITIAL_RECYCLED_DOCS = [
-  {
-    id: "rec-1",
-    _id: "rec-1",
-    name: "quarterly_budget_v1.xls",
-    size: "45.10 Kb",
-    createdOn: "3 days ago",
-    modifiedOn: "Aug, 02",
-    recycledAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    daysRemaining: 28,
-    author: "Admin",
-  },
-  {
-    id: "rec-2",
-    _id: "rec-2",
-    name: "nda_partner_draft.doc",
-    size: "18.60 Kb",
-    createdOn: "1 week ago",
-    modifiedOn: "Jul, 29",
-    recycledAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    daysRemaining: 24,
-    author: "Admin",
-  },
-];
+// Clean document states initialized dynamically from database
+const INITIAL_SIGNATURE_DOCS = [];
+const INITIAL_RECYCLED_DOCS = [];
 
 export default function EmpESignature() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Primary document state
-  const [documents, setDocuments] = useState(INITIAL_SIGNATURE_DOCS);
-  const [recycledDocuments, setRecycledDocuments] = useState(INITIAL_RECYCLED_DOCS);
+  // Primary document state (dynamic from MongoDB)
+  const [documents, setDocuments] = useState([]);
+  const [recycledDocuments, setRecycledDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // View state: "active" | "recycle"
@@ -148,29 +71,103 @@ export default function EmpESignature() {
   // Notification menu state
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
   const notifRef = useRef(null);
-  const [notifications, setNotifications] = useState([
-    {
-      id: "notif-1",
-      title: "Signature Request",
-      message: "Pending signature requested for 'crm planing'",
-      time: "10 mins ago",
-      unread: true,
-    },
-    {
-      id: "notif-2",
-      title: "Document Verified",
-      message: "'skills module certificate' certified and signed",
-      time: "1 hour ago",
-      unread: true,
-    },
-    {
-      id: "notif-3",
-      title: "Recycle Notice",
-      message: "Files in Recycle Bin will be purged after 30 days",
-      time: "Yesterday",
-      unread: false,
-    },
-  ]);
+  const [dismissedNotifIds, setDismissedNotifIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("crm_dismissed_emp_esign_notifs");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("crm_dismissed_emp_esign_notifs", JSON.stringify(dismissedNotifIds));
+    } catch (e) {
+      console.error("Error saving dismissed emp esign notifications:", e);
+    }
+  }, [dismissedNotifIds]);
+
+  // Dynamic notifications generator matching Tasks.jsx and Admin ESignature
+  const notifications = useMemo(() => {
+    const list = [];
+
+    // 1. Pending Signature Notifications (unsigned documents)
+    (Array.isArray(documents) ? documents : []).forEach((doc) => {
+      const docId = doc._id || doc.id;
+      const notifId = `pending-sig-${docId}`;
+      if (!doc.isSigned && !dismissedNotifIds.includes(notifId)) {
+        list.push({
+          id: notifId,
+          type: "pending",
+          title: "Signature Required",
+          message: `Document "${doc.name}" is awaiting your signature (Created by ${doc.author || "Admin"}).`,
+          time: doc.createdOn || "Pending",
+          document: doc,
+        });
+      }
+    });
+
+    // 2. Signed & Certified Notifications
+    (Array.isArray(documents) ? documents : []).forEach((doc) => {
+      const docId = doc._id || doc.id;
+      const notifId = `signed-${docId}`;
+      if (doc.isSigned && !dismissedNotifIds.includes(notifId)) {
+        list.push({
+          id: notifId,
+          type: "signed",
+          title: "Document Signed & Certified",
+          message: `"${doc.name}" has been completed and verified with electronic signature.`,
+          time: doc.modifiedOn || "Signed",
+          document: doc,
+        });
+      }
+    });
+
+    // 3. Recycle Bin Retention Warnings
+    (Array.isArray(recycledDocuments) ? recycledDocuments : []).forEach((doc) => {
+      const docId = doc._id || doc.id;
+      const notifId = `recycle-${docId}`;
+      if (!dismissedNotifIds.includes(notifId)) {
+        const days = doc.daysRemaining !== undefined ? doc.daysRemaining : 30;
+        list.push({
+          id: notifId,
+          type: "recycle",
+          title: "Recycle Bin Warning",
+          message: `"${doc.name}" will be permanently purged in ${days} day${days === 1 ? "" : "s"}.`,
+          time: `${days}d remaining`,
+          document: doc,
+          isRecycled: true,
+        });
+      }
+    });
+
+    return list;
+  }, [documents, recycledDocuments, dismissedNotifIds]);
+
+  const handleClearAllNotifs = (e) => {
+    e.stopPropagation();
+    const allNotifIds = notifications.map((n) => n.id);
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+  };
+
+  const handleNotifClick = (e, notif) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    setShowNotificationMenu(false);
+    if (notif.isRecycled) {
+      setCurrentView("recycle");
+    } else {
+      navigate(`/employee/e-signatures/editor/${notif.document._id || notif.document.id}`, {
+        state: { document: notif.document },
+      });
+    }
+  };
+
+  const handleDismissNotif = (e, notifId) => {
+    e.stopPropagation();
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+  };
 
   // Load from MongoDB backend on mount
   useEffect(() => {
@@ -180,7 +177,7 @@ export default function EmpESignature() {
         const res = await fetch(apiUrl("/documents"));
         if (res.ok) {
           const json = await res.json();
-          if (Array.isArray(json.data) && json.data.length > 0) {
+          if (Array.isArray(json.data)) {
             setDocuments(
               json.data.map((d) => ({
                 id: d._id || d.id,
@@ -207,7 +204,7 @@ export default function EmpESignature() {
         const recRes = await fetch(apiUrl("/documents/recycle-bin"));
         if (recRes.ok) {
           const recJson = await recRes.json();
-          if (Array.isArray(recJson.data) && recJson.data.length > 0) {
+          if (Array.isArray(recJson.data)) {
             setRecycledDocuments(
               recJson.data.map((d) => ({
                 id: d._id || d.id,
@@ -231,6 +228,16 @@ export default function EmpESignature() {
     };
 
     fetchBackendDocs();
+
+    const handleDocSaved = () => {
+      fetchBackendDocs();
+    };
+    window.addEventListener("pearls_document_saved", handleDocSaved);
+    window.addEventListener("focus", handleDocSaved);
+    return () => {
+      window.removeEventListener("pearls_document_saved", handleDocSaved);
+      window.removeEventListener("focus", handleDocSaved);
+    };
   }, []);
 
   // Handle doc query param if present (e.g. from copy link or notifications)
@@ -436,20 +443,27 @@ export default function EmpESignature() {
   // Handle Copy Link
   const handleCopyLink = (doc) => {
     setActiveMenu(null);
-    const link = `${window.location.origin}/employee/e-signatures?doc=${doc._id || doc.id}`;
+    const docId = doc._id || doc.id || "";
+    const link = `${window.location.origin}/e-signatures/editor/${docId}?mode=signer`;
     navigator.clipboard.writeText(link);
-    toast.success("Document link copied to clipboard!", { icon: "📋" });
+    toast.success("Document signing link copied to clipboard!", { icon: "📋" });
   };
 
   // Handle Download
   const handleDownload = (doc) => {
     setActiveMenu(null);
+    const docId = doc._id || doc.id;
+    if (doc.placedFields?.length > 0 || doc.isSigned || docId) {
+      toast.success(`Preparing "${doc.name}" with all signatures...`, { icon: "📥" });
+      navigate(`/e-signatures/editor/${docId}?autoDownload=true`, {
+        state: { document: doc },
+      });
+      return;
+    }
     if (doc.url && doc.url.startsWith("http")) {
       window.open(doc.url, "_blank");
     } else if (doc.url && doc.url.startsWith("/uploads/")) {
       window.open(apiUrl(doc.url), "_blank");
-    } else if (doc._id || doc.id) {
-      window.open(apiUrl(`/documents/${doc._id || doc.id}/download`), "_blank");
     } else {
       const element = document.createElement("a");
       const fileContent = `=== ${doc.name} ===\nStatus: ${
@@ -514,73 +528,162 @@ export default function EmpESignature() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 sm:mb-4">
           <div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#0b2b57] tracking-tight">
-              Employee - E signature
+              {user?.role && user.role.toLowerCase() === "designer" ? "Designer - E signature" : "Employee - E signature"}
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 font-normal mt-0.5">
-              Manage and sign your digital documents & sprint approvals
+              {user?.role && user.role.toLowerCase() === "designer"
+                ? "Manage, review design briefs, and sign digital creative documents"
+                : "Manage and sign your digital documents & sprint approvals"}
             </p>
           </div>
 
-          {/* NOTIFICATION BELL */}
+          {/* NOTIFICATION BELL & TASK-STYLE INTERACTIVE DROPDOWN */}
           <div className="relative self-end sm:self-auto" ref={notifRef}>
             <button
               onClick={() => setShowNotificationMenu(!showNotificationMenu)}
               className="w-10 h-10 rounded-xl bg-[#2563a9] hover:bg-[#1d528f] text-white flex items-center justify-center shadow-sm transition-all duration-200 relative cursor-pointer"
-              title="Notifications"
+              title="E-Signature Notifications"
             >
               <Bell size={19} />
-              {notifications.filter((n) => n.unread).length > 0 && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-pulse" />
+              {notifications.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse">
+                  {notifications.length}
+                </span>
               )}
             </button>
 
-            {/* NOTIFICATION DROPDOWN */}
+            {/* NOTIFICATION MENU POPUP */}
             <AnimatePresence>
               {showNotificationMenu && (
                 <motion.div
                   initial={{ opacity: 0, y: 8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden"
+                  className="absolute right-0 mt-2 w-88 md:w-96 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 text-xs overflow-hidden"
                 >
                   <div className="bg-[#0b2b57] text-white px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Bell size={16} />
-                      <span className="font-semibold text-sm">Notifications</span>
+                      <h3 className="font-bold text-sm">Document Notifications</h3>
                     </div>
-                    <button
-                      onClick={() =>
-                        setNotifications((prev) =>
-                          prev.map((n) => ({ ...n, unread: false }))
-                        )
-                      }
-                      className="text-xs text-blue-200 hover:text-white transition cursor-pointer"
-                    >
-                      Mark all read
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={handleClearAllNotifs}
+                          className="text-[10px] bg-red-500/80 hover:bg-red-600 text-white px-2 py-0.5 rounded font-semibold transition cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                      <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                        {notifications.length} Active
+                      </span>
+                    </div>
                   </div>
-                  <div className="divide-y divide-gray-100 max-h-72 overflow-y-auto">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`p-3.5 hover:bg-gray-50 transition flex items-start gap-3 ${
-                          notif.unread ? "bg-blue-50/40" : ""
-                        }`}
-                      >
-                        <div className="w-2 h-2 rounded-full bg-[#2563a9] mt-1.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-gray-900">
-                            {notif.title}
-                          </p>
-                          <p className="text-xs text-gray-600 mt-0.5">
-                            {notif.message}
-                          </p>
-                          <span className="text-[10px] text-gray-400 mt-1 block">
-                            {notif.time}
-                          </span>
-                        </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 custom-scrollbar">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-gray-400">
+                        <CheckCircle2 size={32} className="mx-auto mb-2 text-green-500 opacity-80" />
+                        <p className="font-bold text-gray-700">All documents on track!</p>
+                        <p className="text-xs text-gray-400 mt-0.5">No pending signatures or alerts.</p>
                       </div>
-                    ))}
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={(e) => handleNotifClick(e, n)}
+                          className={`p-3.5 hover:bg-gray-50 transition-colors flex items-start gap-3 cursor-pointer ${
+                            n.type === "pending"
+                              ? "bg-amber-50/40"
+                              : n.type === "recycle"
+                              ? "bg-rose-50/30"
+                              : "bg-emerald-50/30"
+                          }`}
+                        >
+                          <div
+                            className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+                              n.type === "pending"
+                                ? "bg-amber-100 text-amber-700"
+                                : n.type === "recycle"
+                                ? "bg-rose-100 text-rose-700"
+                                : "bg-emerald-100 text-emerald-700"
+                            }`}
+                          >
+                            {n.type === "pending" ? (
+                              <PenLine size={16} />
+                            ) : n.type === "recycle" ? (
+                              <AlertCircle size={16} />
+                            ) : (
+                              <CheckCircle2 size={16} />
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-bold text-gray-900 text-xs truncate mr-2">{n.title}</h4>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[10px] text-gray-400 font-medium">{n.time}</span>
+                                <button
+                                  onClick={(e) => handleDismissNotif(e, n.id)}
+                                  className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition cursor-pointer"
+                                  title="Dismiss Notification"
+                                >
+                                  <X size={13} />
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-snug break-words">{n.message}</p>
+
+                            <div className="mt-2 flex items-center gap-2">
+                              {n.type === "pending" ? (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleNotifClick(e, n);
+                                    }}
+                                    className="px-2.5 py-1 bg-[#2563a9] hover:bg-[#1d528f] text-white rounded-lg font-bold text-[10px] transition shadow-xs cursor-pointer flex items-center gap-1"
+                                  >
+                                    <PenLine size={11} /> Sign Now
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleNotifClick(e, n);
+                                    }}
+                                    className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px] transition cursor-pointer"
+                                  >
+                                    Open in Editor
+                                  </button>
+                                </>
+                              ) : n.type === "recycle" ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRestore(n.document);
+                                    handleDismissNotif(e, n.id);
+                                  }}
+                                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] transition shadow-xs cursor-pointer flex items-center gap-1"
+                                >
+                                  <RotateCcw size={11} /> Restore File
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleNotifClick(e, n);
+                                  }}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] transition shadow-xs cursor-pointer flex items-center gap-1"
+                                >
+                                  <Eye size={11} /> View Document
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </motion.div>
               )}

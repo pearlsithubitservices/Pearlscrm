@@ -401,7 +401,7 @@ export default function App() {
 
               <Route
                 path="/e-signature"
-                element={<PlaceholderPage title="E-Signature" />}
+                element={<Navigate to="/e-signatures" replace />}
               />
 
               {/* LEAVE */}
@@ -664,7 +664,7 @@ export default function App() {
 
               <Route
                 path="/employee/e-signature"
-                element={<PlaceholderPage title="E-Signature" />}
+                element={<Navigate to="/employee/e-signatures" replace />}
               />
 
               <Route

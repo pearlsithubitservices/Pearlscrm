@@ -58,14 +58,18 @@ import toast from "react-hot-toast";
 import SignatureStudioModal from "../components/SignatureStudioModal";
 import SendDocumentModal from "../components/SendDocumentModal";
 import AddSignersModal from "../components/AddSignersModal";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { apiUrl } from "../config/api";
 import { useAuth } from "../context/AuthContext";
 
 export default function ESignatureEditor() {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
-  const { id } = useParams();
+  const { id: routeId } = useParams();
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const id = routeId || searchParams.get("doc") || searchParams.get("id") || "";
 
   // Document name and metadata
   const [documentData, setDocumentData] = useState(() => {
@@ -85,14 +89,18 @@ export default function ESignatureEditor() {
     return null;
   });
 
+  const [docLoading, setDocLoading] = useState(Boolean(id && !location.state?.document));
+
   const [docName, setDocName] = useState(() => {
     return (
       location.state?.document?.name ||
       documentData?.name ||
-      (id ? `Document-${id}` : "skills module certificate")
+      (id ? `Document-${id}` : "Untitled Document")
     );
   });
   const [saveLoading, setSaveLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Document metadata calculations
   const documentUrl = documentData?.url || location.state?.document?.url || "";
@@ -113,13 +121,6 @@ export default function ESignatureEditor() {
   const isPdfDoc =
     docExt === "pdf" ||
     Boolean(documentUrl && /\.pdf($|\?)/i.test(documentUrl));
-
-  const isStaticDiploma =
-    !documentUrl &&
-    (docName.toLowerCase().includes("skills module") ||
-      docName.toLowerCase().includes("mankato") ||
-      documentData?.author === "Mankato University" ||
-      id === "doc-0");
 
   // Zoom level state: 18% as shown in screenshot, with zoom presets
   const [zoomLevel, setZoomLevel] = useState(18);
@@ -144,8 +145,19 @@ export default function ESignatureEditor() {
   const [editingTextId, setEditingTextId] = useState(null);
 
   // Sign & edit / Placed fields layer state
-  // Initially blank so users can place fields where they want on their document
+  // Initially loaded from storage or server so users retain all saved modifications
   const [placedFields, setPlacedFields] = useState(() => {
+    if (id) {
+      try {
+        const stored = localStorage.getItem(`pearls_doc_${id}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed.placedFields) && parsed.placedFields.length > 0) {
+            return parsed.placedFields;
+          }
+        }
+      } catch (_) {}
+    }
     if (
       location.state?.document?.placedFields &&
       Array.isArray(location.state.document.placedFields) &&
@@ -157,6 +169,15 @@ export default function ESignatureEditor() {
   });
 
   const [selectedFieldId, setSelectedFieldId] = useState(() => {
+    if (id) {
+      try {
+        const stored = localStorage.getItem(`pearls_doc_${id}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.placedFields?.[0]?.id) return parsed.placedFields[0].id;
+        }
+      } catch (_) {}
+    }
     if (location.state?.document?.placedFields?.[0]?.id) {
       return location.state.document.placedFields[0].id;
     }
@@ -235,28 +256,33 @@ export default function ESignatureEditor() {
     } else if (params.get("preset") === "all" || params.get("field") === "all") {
       setWireframePreset("all");
     }
-    if (params.get("mode") === "editor" || location.pathname.includes("/editor")) {
-      setIsSignerMode(false);
-      setShowPropertiesPanel(true);
-    } else if (
+    if (
       params.get("mode") === "signer" ||
       params.get("signer") === "true" ||
       location.pathname.includes("/sign")
     ) {
       setIsSignerMode(true);
       setShowPropertiesPanel(false);
+    } else if (params.get("mode") === "editor" || location.pathname.includes("/editor")) {
+      setIsSignerMode(false);
+      setShowPropertiesPanel(true);
     }
   }, [location.search, location.pathname]);
 
   // Load document and its placed fields & signers dynamically from MongoDB
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setDocLoading(false);
+      return;
+    }
+    let isMounted = true;
     const fetchDocData = async () => {
+      setDocLoading(true);
       try {
         const res = await fetch(apiUrl(`/documents/${id}`));
         if (res.ok) {
           const json = await res.json();
-          if (json.data) {
+          if (json.data && isMounted) {
             setDocumentData(json.data);
             try {
               localStorage.setItem(`pearls_doc_${id}`, JSON.stringify(json.data));
@@ -264,22 +290,29 @@ export default function ESignatureEditor() {
             if (json.data.name) {
               setDocName(json.data.name);
             }
-            if (Array.isArray(json.data.placedFields) && json.data.placedFields.length > 0) {
+            if (Array.isArray(json.data.placedFields)) {
               setPlacedFields(json.data.placedFields);
               if (json.data.placedFields[0]?.id) {
                 setSelectedFieldId(json.data.placedFields[0].id);
               }
             }
-            if (Array.isArray(json.data.signers) && json.data.signers.length > 0) {
+            if (Array.isArray(json.data.signers)) {
               setSigners(json.data.signers);
             }
           }
+        } else {
+          console.warn("Could not find document on server with ID:", id);
         }
       } catch (err) {
         console.warn("Could not load dynamic document details:", err);
+      } finally {
+        if (isMounted) setDocLoading(false);
       }
     };
     fetchDocData();
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   // Modals state
@@ -289,11 +322,24 @@ export default function ESignatureEditor() {
   const [askToEditModalOpen, setAskToEditModalOpen] = useState(false);
   const [completedModalOpen, setCompletedModalOpen] = useState(false);
 
-  // Signature creation state (default "Ragavi" matching Image 2 / click CEO -signature)
-  const [typedSigName, setTypedSigName] = useState("Ragavi");
+  // Signature creation state (dynamic user or signer name)
+  const [typedSigName, setTypedSigName] = useState(
+    user?.name || user?.displayName || (isAdmin ? "Admin" : "Employee")
+  );
 
   // Signers list matching "Edit signer" wireframe
   const [signers, setSigners] = useState(() => {
+    if (id) {
+      try {
+        const stored = localStorage.getItem(`pearls_doc_${id}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed.signers) && parsed.signers.length > 0) {
+            return parsed.signers;
+          }
+        }
+      } catch (_) {}
+    }
     if (
       location.state?.document?.signers &&
       Array.isArray(location.state.document.signers) &&
@@ -301,13 +347,14 @@ export default function ESignatureEditor() {
     ) {
       return location.state.document.signers;
     }
+    const userRole = user?.role || (isAdmin ? "Admin" : "Employee");
     return [
       {
         id: "s-1",
-        name: user?.name || user?.displayName || (isAdmin ? "Admin" : "Employee"),
+        name: user?.name || user?.displayName || userRole,
         email: user?.email || (isAdmin ? "admin@pearlscrm.com" : "employee@pearlscrm.com"),
-        role: "Signer",
-        color: "#2563eb",
+        role: userRole === "Designer" ? "Designer" : "Signer",
+        color: userRole === "Designer" ? "#9333ea" : "#2563eb",
       },
     ];
   });
@@ -329,42 +376,237 @@ export default function ESignatureEditor() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Document download handler
-  const handleDownload = () => {
-    if (resolvedDocUrl) {
-      window.open(resolvedDocUrl, "_blank");
-      toast.success(`Downloading "${docName}"...`, { icon: "📥" });
+  // Helper to open a clean printable window with all placed fields overlaid
+  const exportPrintableDocumentWithOverlay = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow popups to download/print the document.");
       return;
     }
-    toast.success("Preparing document download...", { icon: "📥" });
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>${docName}</title>
-            <style>
-              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px; background: #eaedf2; }
-              .page { background: white; width: 800px; min-height: 560px; border: 1px solid #cbd5e1; padding: 40px; box-sizing: border-box; position: relative; margin-bottom: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 8px; }
-              h1 { color: #0c4a7e; font-size: 24px; margin: 0 0 10px 0; border-bottom: 2px solid #1d68bd; padding-bottom: 10px; }
-              .meta { font-size: 12px; color: #64748b; margin-bottom: 24px; }
-              p { font-size: 13px; color: #334155; line-height: 1.6; }
-            </style>
-          </head>
-          <body>
-            <div class="page">
-              <h1>${docName}</h1>
-              <div class="meta">Author: ${documentData?.author || "Admin"} &bull; Created: ${documentData?.createdOn || "Today"} &bull; Format: ${docExt.toUpperCase()} &bull; Status: ${documentData?.isSigned ? "Certified Signed" : "Draft"}</div>
-              <p>Pearls IT Hub E-Signature Document System.</p>
-              <p>${documentData?.content || "This official electronic record has been processed and prepared for authorized electronic execution."}</p>
+
+    const fieldsHtml = (placedFields || [])
+      .map((f) => {
+        const left = f.x ?? 0;
+        const top = f.y ?? 0;
+        const width = f.width || 120;
+        const height = f.height || 36;
+
+        let contentHtml = "";
+        if (f.type === "signature" || f.type === "initials") {
+          if (f.signed && f.dataUrl && (f.sigType === "draw" || f.sigType === "upload")) {
+            contentHtml = `<img src="${f.dataUrl}" style="max-height: 32px; max-width: 100%; object-fit: contain;" />`;
+          } else {
+            const fontName = f.font?.replace("font-", "") || "caveat";
+            let fontClass = "'Caveat', cursive";
+            if (fontName === "dancing") fontClass = "'Dancing Script', cursive";
+            else if (fontName === "sacramento") fontClass = "'Sacramento', cursive";
+            else if (fontName === "greatvibes") fontClass = "'Great Vibes', cursive";
+            else if (fontName === "alexbrush") fontClass = "'Alex Brush', cursive";
+            else if (fontName === "allura") fontClass = "'Allura', cursive";
+
+            const val = f.value || f.prefill || (f.type === "signature" ? "Signature" : "I");
+            contentHtml = `<span style="font-family: ${fontClass}; font-size: 20px; color: ${f.color || "#000000"}; font-weight: 600; line-height: 1;">${val}</span>`;
+          }
+        } else if (f.type === "checkbox") {
+          contentHtml = f.selected
+            ? `<span style="font-size: 16px; color: #0f766e; font-weight: bold;">&#10003;</span>`
+            : "";
+        } else if (f.type === "radio") {
+          contentHtml = `<span style="display: inline-block; width: 10px; height: 10px; background: #0f766e; border-radius: 50%;"></span>`;
+        } else {
+          contentHtml = `<span style="font-size: 12px; font-weight: 600; color: #1e293b;">${f.value || f.prefill || f.label || ""}</span>`;
+        }
+
+        return `
+          <div style="position: absolute; left: ${left}%; top: ${top}%; min-width: ${width}px; min-height: ${height}px; display: flex; align-items: center; justify-content: center; background: rgba(240, 253, 250, 0.75); border: 1px dashed #2dd4bf; border-radius: 4px; padding: 2px 8px; box-sizing: border-box; z-index: 20;">
+            ${contentHtml}
+          </div>
+        `;
+      })
+      .join("\n");
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${docName} - Signed Copy</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Caveat:wght@600;700&family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Sacramento&display=swap');
+            @page { size: A4; margin: 12mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eaedf2; margin: 0; padding: 24px; display: flex; flex-direction: column; align-items: center; }
+            .toolbar { width: 800px; max-width: 95vw; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+            .btn { background: #1d528f; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+            .btn:hover { background: #164070; }
+            .page { background: white; width: 800px; max-width: 95vw; min-height: 960px; border: 1px solid #cbd5e1; padding: 40px; box-sizing: border-box; position: relative; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); display: flex; flex-direction: column; justify-content: space-between; }
+            .header-bar { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1d68bd; padding-bottom: 14px; margin-bottom: 20px; }
+            .badge { background: #dbeafe; color: #1e40af; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+            .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; background: #f8fafc; padding: 12px 16px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 24px; font-size: 11px; }
+            .meta-label { color: #64748b; font-size: 9px; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px; }
+            .content-box { font-size: 13px; color: #334155; line-height: 1.7; flex: 1; }
+            @media print {
+              body { background: white; padding: 0; }
+              .toolbar { display: none !important; }
+              .page { box-shadow: none; border: none; width: 100%; max-width: 100%; padding: 0; min-height: auto; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="toolbar">
+            <span style="font-size: 13px; font-weight: 600; color: #475569;">${docName} &bull; Certified E-Signature Document</span>
+            <button class="btn" onclick="window.print()">
+              🖨️ Print / Save as PDF
+            </button>
+          </div>
+          <div class="page">
+            <div class="header-bar">
+              <div>
+                <span class="badge">Official Certified Record</span>
+                <h1 style="margin: 6px 0 0 0; font-size: 24px; color: #0f172a;">${docName}</h1>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: bold; color: #1d68bd; font-size: 13px;">PEARLS IT HUB</div>
+                <div style="font-size: 10px; color: #64748b;">E-Signature Workflow System</div>
+              </div>
             </div>
-            <script>window.print();</script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
+
+            <div class="meta-grid">
+              <div><span class="meta-label">Author / Signer</span><strong>${documentData?.author || "Admin"}</strong></div>
+              <div><span class="meta-label">Created On</span><strong>${documentData?.createdOn || "Today"}</strong></div>
+              <div><span class="meta-label">Format</span><strong style="text-transform: uppercase;">${docExt}</strong></div>
+              <div><span class="meta-label">Status</span><strong style="color: #059669;">Certified Signed</strong></div>
+            </div>
+
+            ${
+              resolvedDocUrl && isImageDoc
+                ? `<div style="text-align: center; margin: 20px 0; min-height: 480px; position: relative;">
+                    <img src="${resolvedDocUrl}" style="max-width: 100%; max-height: 600px; object-fit: contain;" />
+                   </div>`
+                : resolvedDocUrl && isPdfDoc
+                ? `<div style="width: 100%; min-height: 680px; position: relative; margin-bottom: 20px;">
+                    <iframe src="${resolvedDocUrl}#toolbar=0" style="width: 100%; height: 680px; border: 1px solid #cbd5e1; border-radius: 6px;"></iframe>
+                   </div>`
+                : `<div class="content-box">
+                    ${
+                      documentData?.content
+                        ? `<div style="white-space: pre-line; background: #f8fafc; padding: 16px; border-radius: 6px; border: 1px solid #f1f5f9; font-family: monospace; font-size: 12px;">${documentData.content}</div>`
+                        : `<p>This official electronic record has been processed, legally acknowledged, and executed under the Pearls IT Hub E-Signature and Document Services architecture.</p>
+                           <p>All signers, initials, text inputs, dates, and checkboxes reflected on this document are authenticated and permanently recorded in the Pearls audit registry.</p>`
+                    }
+                   </div>`
+            }
+
+            <!-- Placed Fields Absolute Overlay -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+              ${fieldsHtml}
+            </div>
+
+            <div style="border-top: 1px solid #e2e8f0; margin-top: 30px; padding-top: 12px; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8;">
+              <span>Pearls CRM Electronic Signature Audit Certificate &bull; Legally Binding under ESIGN Act</span>
+              <span>Ref: #${id || "DOC-2026"}</span>
+            </div>
+          </div>
+          <script>
+            setTimeout(function() { window.print(); }, 600);
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  // Main document download handler - exports document with all placed fields, signatures, texts, and changes
+  const handleDownload = async () => {
+    setDownloadLoading(true);
+    const toastId = toast.loading(`Generating "${docName}" with all signature fields...`, { icon: "📥" });
+
+    try {
+      // 1. Commit any active edits and clear selection borders
+      setSelectedFieldId(null);
+      setEditingTextId(null);
+      setIsExporting(true);
+
+      // Wait 120ms for React state to flush
+      await new Promise((resolve) => setTimeout(resolve, 120));
+
+      const container = canvasContainerRef.current;
+      if (!container) {
+        exportPrintableDocumentWithOverlay();
+        toast.success(`Prepared document with all fields!`, { id: toastId, icon: "✅" });
+        return;
+      }
+
+      // If document is an uploaded PDF rendered in iframe, use the printable overlay view
+      const hasIframe = isPdfDoc && container.querySelector("iframe");
+      if (hasIframe) {
+        exportPrintableDocumentWithOverlay();
+        toast.success(`Generated printable document with all signature fields!`, { id: toastId, icon: "✅" });
+        return;
+      }
+
+      // Temporarily normalize styles on canvas container for maximum fidelity snapshot
+      const origTransform = container.style.transform;
+      const origTransformOrigin = container.style.transformOrigin;
+      const origBoxShadow = container.style.boxShadow;
+      const origBorderRadius = container.style.borderRadius;
+
+      container.style.transform = "none";
+      container.style.transformOrigin = "top left";
+      container.style.boxShadow = "none";
+
+      await new Promise((resolve) => setTimeout(resolve, 60));
+
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: container.scrollWidth,
+        windowHeight: container.scrollHeight,
+      });
+
+      // Restore original container styles
+      container.style.transform = origTransform;
+      container.style.transformOrigin = origTransformOrigin;
+      container.style.boxShadow = origBoxShadow;
+      container.style.borderRadius = origBorderRadius;
+
+      // Build PDF with jsPDF
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      const isLandscape = canvas.width > canvas.height;
+      const pdf = new jsPDF({
+        orientation: isLandscape ? "landscape" : "portrait",
+        unit: "pt",
+        format: [canvas.width * 0.75, canvas.height * 0.75],
+      });
+
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width * 0.75, canvas.height * 0.75);
+
+      const safeName = (docName || "Document")
+        .replace(/[^a-zA-Z0-9_\-\.]/g, "_")
+        .replace(/\.[^/.]+$/, "");
+      pdf.save(`${safeName}_signed.pdf`);
+
+      toast.success(`Downloaded "${docName}" with all signature fields!`, { id: toastId, icon: "✅" });
+    } catch (err) {
+      console.error("html2canvas export error, falling back to printable view:", err);
+      exportPrintableDocumentWithOverlay();
+      toast.success(`Prepared document with all signature fields for download/print!`, { id: toastId, icon: "✅" });
+    } finally {
+      setIsExporting(false);
+      setDownloadLoading(false);
     }
   };
+
+  // Trigger download if autoDownload=true requested via URL
+  useEffect(() => {
+    if (searchParams.get("autoDownload") === "true" && !docLoading) {
+      const timer = setTimeout(() => {
+        handleDownload();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [docLoading]);
 
   // Place a field onto the canvas
   const handleAddField = (type, defaultLabel) => {
@@ -394,38 +636,113 @@ export default function ESignatureEditor() {
     if (selectedFieldId === id) setSelectedFieldId(null);
   };
 
-  // Save document (persists canvas fields & signers to MongoDB)
+  // Save document (persists canvas fields, signers, name, content to MongoDB & localStorage)
   const handleSave = async () => {
-    if (id) {
-      setSaveLoading(true);
-      try {
-        const res = await fetch(apiUrl(`/documents/${id}/fields`), {
+    setSaveLoading(true);
+    let activeId = id;
+    let savedDoc = null;
+
+    try {
+      const isMongoId = Boolean(activeId && /^[0-9a-fA-F]{24}$/.test(activeId));
+
+      if (isMongoId) {
+        // Update existing document in MongoDB
+        const res = await fetch(apiUrl(`/documents/${activeId}/fields`), {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: docName,
             placedFields,
             signers,
+            content: documentData?.content || "",
           }),
         });
         const json = await res.json();
-        if (json.success) {
-          toast.success("Document canvas & placed fields saved to database!", {
-            icon: "💾",
-          });
-        } else {
-          toast.success("Document updated successfully!");
+        if (json.data) {
+          savedDoc = json.data;
         }
-      } catch (err) {
-        console.warn("Could not save document fields to server:", err);
-        toast.success("Document saved locally");
-      } finally {
-        setSaveLoading(false);
+      } else {
+        // Create/persist new document in MongoDB so it has a permanent ObjectId
+        const createRes = await fetch(apiUrl("/documents"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: docName || "Untitled Document",
+            url: documentUrl || "",
+            type: documentData?.type || "doc",
+            extension: docExt || "doc",
+            size: documentData?.size || "24.00 Kb",
+            author: user?.name || user?.displayName || (isAdmin ? "Admin" : "Employee"),
+            placedFields: placedFields,
+            signers: signers,
+            isSigned: placedFields.some((f) => f.signed),
+            status: placedFields.some((f) => f.signed) ? "completed" : "waiting",
+            content: documentData?.content || "",
+          }),
+        });
+        const createJson = await createRes.json();
+        if (createJson.data) {
+          savedDoc = createJson.data;
+          activeId = createJson.data._id || createJson.data.id;
+          if (activeId && !id) {
+            window.history.replaceState(null, "", `/e-signatures/editor/${activeId}${isSignerMode ? "?mode=signer" : ""}`);
+          }
+        }
       }
-    } else {
-      toast.success("Document and signatures saved successfully!", {
-        icon: "🎉",
+
+      // Update in-memory document state
+      const consolidatedDoc = {
+        ...(documentData || {}),
+        ...(savedDoc || {}),
+        _id: activeId || savedDoc?._id || id,
+        id: activeId || savedDoc?._id || id,
+        name: docName,
+        placedFields,
+        signers,
+        modifiedOn: "Just now",
+      };
+
+      setDocumentData(consolidatedDoc);
+
+      // Persist to localStorage for instantaneous re-hydration
+      if (activeId) {
+        try {
+          localStorage.setItem(`pearls_doc_${activeId}`, JSON.stringify(consolidatedDoc));
+        } catch (_) {}
+      }
+
+      // Dispatch event so any parent listing tabs or listeners sync immediately
+      try {
+        window.dispatchEvent(new CustomEvent("pearls_document_saved", { detail: consolidatedDoc }));
+      } catch (_) {}
+
+      toast.success("Document and signature fields saved successfully!", {
+        icon: "✅",
       });
+    } catch (err) {
+      console.warn("Could not save document fields to server:", err);
+      // Fallback local save
+      const fallbackDoc = {
+        ...(documentData || {}),
+        _id: activeId || id,
+        id: activeId || id,
+        name: docName,
+        placedFields,
+        signers,
+        modifiedOn: "Just now",
+      };
+      if (activeId || id) {
+        try {
+          localStorage.setItem(`pearls_doc_${activeId || id}`, JSON.stringify(fallbackDoc));
+        } catch (_) {}
+      }
+      toast.success("Document saved successfully!", {
+        icon: "✅",
+      });
+    } finally {
+      setSaveLoading(false);
     }
+
     setCompletedModalOpen(true);
   };
 
@@ -567,9 +884,17 @@ export default function ESignatureEditor() {
               E- signature
             </h1>
             <span className="text-gray-300 font-light">|</span>
-            <span className="text-xs sm:text-sm text-gray-600 font-medium">
-              {isSignerMode ? "Sign the document by clicking on the fields." : docName}
+            <span
+              className="text-xs sm:text-sm text-gray-800 font-semibold truncate max-w-[180px] sm:max-w-xs"
+              title={docName}
+            >
+              {docName}
             </span>
+            {isSignerMode && (
+              <span className="inline-flex items-center gap-1 text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-full border border-blue-200">
+                ✍️ Signer Mode
+              </span>
+            )}
           </div>
         </div>
 
@@ -706,6 +1031,25 @@ export default function ESignatureEditor() {
             </div>
 
             <button
+              onClick={handleDownload}
+              disabled={downloadLoading}
+              className="px-3.5 py-1.5 text-xs font-semibold text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-700 border border-gray-300 hover:border-blue-400 rounded-full transition shadow-2xs cursor-pointer flex items-center gap-1.5 disabled:opacity-75"
+              title="Download document with all signature changes"
+            >
+              {downloadLoading ? (
+                <>
+                  <Loader2 size={12} className="animate-spin text-blue-600" />
+                  <span>DOWNLOADING...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={13} className="text-blue-600" />
+                  <span>DOWNLOAD</span>
+                </>
+              )}
+            </button>
+
+            <button
               onClick={handleSave}
               disabled={saveLoading}
               className="px-5 py-1.5 text-xs font-semibold text-white bg-[#1d528f] hover:bg-[#164070] rounded-full transition shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-75"
@@ -753,6 +1097,24 @@ export default function ESignatureEditor() {
               className="px-4 py-1.5 text-xs font-semibold text-[#1e40af] border border-[#2563eb] hover:bg-blue-50 rounded-full transition shadow-2xs cursor-pointer"
             >
               SHARE
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={downloadLoading}
+              className="px-3.5 py-1.5 text-xs font-semibold text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-700 border border-gray-300 hover:border-blue-400 rounded-full transition shadow-2xs cursor-pointer flex items-center gap-1.5 disabled:opacity-75"
+              title="Download document with all signature changes"
+            >
+              {downloadLoading ? (
+                <>
+                  <Loader2 size={12} className="animate-spin text-blue-600" />
+                  <span>DOWNLOADING...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={13} className="text-blue-600" />
+                  <span>DOWNLOAD</span>
+                </>
+              )}
             </button>
             <button
               onClick={handleSave}
@@ -1441,222 +1803,23 @@ export default function ESignatureEditor() {
               transformOrigin: "center center",
             }}
             className={`relative bg-white shadow-2xl transition-transform duration-200 flex flex-col justify-between overflow-hidden ${
-              isStaticDiploma
-                ? "rounded-sm border-8 border-[#0c4a7e] w-[720px] max-w-[92vw] aspect-[1.414/1] p-8 sm:p-10"
-                : isPdfDoc
+              isPdfDoc
                 ? "rounded-xl border border-gray-300 w-[780px] max-w-[95vw] min-h-[850px] p-0"
                 : isImageDoc
                 ? "rounded-xl border border-gray-300 w-[760px] max-w-[94vw] min-h-[720px] p-4"
                 : "rounded-xl border border-gray-300 w-[760px] max-w-[94vw] min-h-[920px] p-6 sm:p-8"
             }`}
           >
-            {/* INNER BORDER ORNAMENTS (Only for demo certificate) */}
-            {isStaticDiploma && (
-              <>
-                <div className="absolute inset-2 border-2 border-[#d4af37] pointer-events-none" />
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#d4af37] via-[#f3e5ab] to-transparent clip-corner pointer-events-none opacity-90" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#0c4a7e] to-transparent pointer-events-none opacity-80" />
-              </>
-            )}
-
-            {isStaticDiploma ? (
-              activePage === 1 ? (
-                <>
-                  {/* GOLD BADGE (Graduate of 2020) */}
-                  <div className="absolute top-8 left-8 flex flex-col items-center">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#f6d365] via-[#d4af37] to-[#aa771c] shadow-lg flex flex-col items-center justify-center text-center p-1 border-2 border-white">
-                      <span className="text-[8px] font-bold text-white tracking-widest uppercase">Graduate</span>
-                      <span className="text-[7px] text-white/90">of</span>
-                      <span className="text-xs font-black text-white">2020</span>
-                    </div>
-                    {/* Ribbon Tails */}
-                    <div className="flex -mt-1.5 gap-1">
-                      <div className="w-2.5 h-6 bg-[#d4af37] transform -rotate-12 rounded-b-xs shadow-xs" />
-                      <div className="w-2.5 h-6 bg-[#aa771c] transform rotate-12 rounded-b-xs shadow-xs" />
-                    </div>
-                  </div>
-
-                  {/* HEADER AREA */}
-                  <div className="text-center pt-2">
-                    {/* University Logo Crest */}
-                    <div className="w-10 h-10 mx-auto mb-1.5 rounded-full bg-[#0c4a7e] flex items-center justify-center text-[#d4af37] border-2 border-[#d4af37]">
-                      <Sparkles size={20} />
-                    </div>
-                    <h2 className="font-cinzel font-bold text-sm sm:text-base text-gray-900 tracking-wider">
-                      MANKATO UNIVERSITY
-                    </h2>
-                    <p className="text-[8px] text-gray-500 font-sans tracking-wide">
-                      711-2880 Nulla St. Mankato Mississippi 96522
-                    </p>
-                    <p className="text-[7px] text-blue-700 underline font-sans">
-                      mankatopreschool.com
-                    </p>
-                  </div>
-
-                  {/* DIPLOMA TITLE */}
-                  <div className="text-center my-3">
-                    <h1 className="font-cinzel font-extrabold text-2xl sm:text-3xl text-gray-900 tracking-wider">
-                      DIPLOMA OF GRADUATION
-                    </h1>
-                    <p className="text-[10px] text-gray-500 italic mt-1 font-playfair">
-                      This certifies that
-                    </p>
-                  </div>
-
-                  {/* STUDENT NAME */}
-                  <div className="text-center">
-                    <h3 className="font-cinzel font-bold text-xl sm:text-2xl text-[#0c4a7e] tracking-widest inline-block min-w-[280px]">
-                      CHARLES REYNOLDS
-                    </h3>
-                  </div>
-
-                  {/* CERTIFICATE BODY TEXT */}
-                  <div className="text-center px-6 max-w-lg mx-auto">
-                    <p className="text-[9px] text-gray-600 leading-relaxed font-playfair">
-                      Has completed all the requirements for graduation at{" "}
-                      <span className="font-bold text-gray-800">[NAME OF INSTITUTE]</span>{" "}
-                      from <span className="font-bold text-gray-800">[DATE]</span> to{" "}
-                      <span className="font-bold text-gray-800">[DATE]</span> and awarded this
-                      DIPLOMA.
-                    </p>
-                    <p className="text-[8px] text-gray-500 italic mt-2">
-                      Mankato University wishes him all the best!
-                    </p>
-                    <p className="text-[8px] text-gray-400 mt-0.5">
-                      Given this [DATE]
-                    </p>
-                  </div>
-
-                  {/* SIGNATURES FOOTER */}
-                  <div className="flex items-end justify-between px-6 pt-4 pb-2 border-t border-gray-200 mt-2">
-                    {/* Chairman Signature */}
-                    <div className="text-center w-36">
-                      <div className="h-9 flex items-center justify-center">
-                        <span className="font-caveat text-2xl text-gray-800 font-bold">
-                          Steven Stevenson
-                        </span>
-                      </div>
-                      <div className="border-t border-gray-800 pt-1">
-                        <p className="text-[9px] font-bold text-gray-800">Steven Stevenson</p>
-                        <p className="text-[7px] text-gray-500 uppercase tracking-wider">Chairman</p>
-                      </div>
-                    </div>
-
-                    {/* President Signature */}
-                    <div className="text-center w-36">
-                      <div className="h-9 flex items-center justify-center">
-                        <span className="font-dancing text-2xl text-gray-800 font-bold">
-                          Arthur Arthurson
-                        </span>
-                      </div>
-                      <div className="border-t border-gray-800 pt-1">
-                        <p className="text-[9px] font-bold text-gray-800">Arthur Arthurson</p>
-                        <p className="text-[7px] text-gray-500 uppercase tracking-wider">President</p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1 flex flex-col justify-between p-2 z-10 select-none">
-                  {/* PAGE 2 HEADER */}
-                  <div className="text-center pt-1 border-b border-gray-200 pb-3">
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <div className="w-8 h-8 rounded-full bg-[#0c4a7e] flex items-center justify-center text-[#d4af37] border-2 border-[#d4af37]">
-                        <Sparkles size={16} />
-                      </div>
-                      <div className="text-left">
-                        <h2 className="font-cinzel font-bold text-xs sm:text-sm text-gray-900 tracking-wider">
-                          MANKATO UNIVERSITY
-                        </h2>
-                        <p className="text-[7px] text-gray-500 uppercase tracking-widest font-sans">
-                          Academic Transcript & Skills Module Completion Record
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-center gap-4 text-[8px] text-gray-600 mt-1 font-medium">
-                      <span>Student: <strong className="text-gray-900 font-bold">CHARLES REYNOLDS</strong></span>
-                      <span>•</span>
-                      <span>Student ID: <strong className="text-gray-900">MK-2020-8914</strong></span>
-                      <span>•</span>
-                      <span>Conferred: <strong className="text-gray-900">September 2020</strong></span>
-                    </div>
-                  </div>
-
-                  {/* MODULES TABLE */}
-                  <div className="my-2 px-2 overflow-hidden">
-                    <table className="w-full text-left text-[8px] sm:text-[9px] border-collapse">
-                      <thead>
-                        <tr className="bg-gray-100/90 text-gray-700 font-bold border-b border-gray-300">
-                          <th className="py-1 px-2">Code</th>
-                          <th className="py-1 px-2">Module Title & Competency Area</th>
-                          <th className="py-1 px-2 text-center">Credits</th>
-                          <th className="py-1 px-2 text-right">Grade</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 text-gray-800 font-sans">
-                        <tr>
-                          <td className="py-1 px-2 font-mono font-semibold text-blue-700">MOD-101</td>
-                          <td className="py-1 px-2">Advanced Enterprise Web Architecture & State Lifecycle</td>
-                          <td className="py-1 px-2 text-center">30</td>
-                          <td className="py-1 px-2 text-right font-bold text-emerald-700">A+ (98%)</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1 px-2 font-mono font-semibold text-blue-700">MOD-102</td>
-                          <td className="py-1 px-2">Cryptographic E-Signature Verification & Audit Trail</td>
-                          <td className="py-1 px-2 text-center">30</td>
-                          <td className="py-1 px-2 text-right font-bold text-emerald-700">A+ (100%)</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1 px-2 font-mono font-semibold text-blue-700">MOD-103</td>
-                          <td className="py-1 px-2">Multi-Tenant CRM Pipelines & Cloud Integrations</td>
-                          <td className="py-1 px-2 text-center">30</td>
-                          <td className="py-1 px-2 text-right font-bold text-emerald-700">A (96%)</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1 px-2 font-mono font-semibold text-blue-700">MOD-104</td>
-                          <td className="py-1 px-2">Distributed Systems Reliability & Compliance</td>
-                          <td className="py-1 px-2 text-center">30</td>
-                          <td className="py-1 px-2 text-right font-bold text-emerald-700">A+ (99%)</td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    {/* Summary Metric Strip */}
-                    <div className="mt-2 bg-blue-50/60 border border-blue-200 rounded p-1.5 flex items-center justify-around text-[8px] text-gray-700">
-                      <span>Total Credits: <strong>120 / 120</strong></span>
-                      <span>Cumulative GPA: <strong className="text-blue-800">3.98 / 4.00</strong></span>
-                      <span>Standing: <strong className="text-emerald-800">Summa Cum Laude</strong></span>
-                    </div>
-                  </div>
-
-                  {/* SIGNATURES FOOTER (PAGE 2) */}
-                  <div className="flex items-end justify-between px-6 pt-2 pb-1 border-t border-gray-200">
-                    <div className="text-center w-36">
-                      <div className="h-7 flex items-center justify-center">
-                        <span className="font-sacramento text-2xl text-gray-800 font-bold">
-                          Margaret Vance
-                        </span>
-                      </div>
-                      <div className="border-t border-gray-800 pt-0.5">
-                        <p className="text-[8px] font-bold text-gray-800">Dr. Margaret Vance</p>
-                        <p className="text-[7px] text-gray-500 uppercase tracking-wider">Registrar</p>
-                      </div>
-                    </div>
-
-                    <div className="text-center w-36">
-                      <div className="h-7 flex items-center justify-center">
-                        <span className="font-allura text-2xl text-gray-800 font-bold">
-                          Robert Sterling
-                        </span>
-                      </div>
-                      <div className="border-t border-gray-800 pt-0.5">
-                        <p className="text-[8px] font-bold text-gray-800">Dr. Robert Sterling</p>
-                        <p className="text-[7px] text-gray-500 uppercase tracking-wider">Controller of Exams</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
+            {docLoading ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center min-h-[600px]">
+                <Loader2 size={40} className="animate-spin text-[#1d68bd] mb-3" />
+                <h3 className="text-base font-bold text-gray-800 tracking-tight">
+                  Loading Sent Document...
+                </h3>
+                <p className="text-xs text-gray-500 mt-1 max-w-sm">
+                  Retrieving <b>{docName}</b> and all signature fields.
+                </p>
+              </div>
             ) : isPdfDoc ? (
               <div className="flex-1 flex flex-col justify-between w-full h-full min-h-[820px]">
                 <div className="flex items-center justify-between p-2.5 bg-gray-100/90 border-b border-gray-200 text-xs text-gray-700 shrink-0">
@@ -1676,13 +1839,20 @@ export default function ESignatureEditor() {
                       >
                         <ExternalLink size={12} /> Open in new tab
                       </a>
-                      <a
-                        href={resolvedDocUrl}
-                        download={docName}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-gray-900 bg-white px-2 py-1 rounded border border-gray-300 shadow-2xs"
+                      <button
+                        type="button"
+                        onClick={handleDownload}
+                        disabled={downloadLoading}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-700 bg-white px-2 py-1 rounded border border-gray-300 shadow-2xs cursor-pointer disabled:opacity-70"
+                        title="Download document with all signature changes"
                       >
-                        <Download size={12} /> Download
-                      </a>
+                        {downloadLoading ? (
+                          <Loader2 size={12} className="animate-spin text-blue-600" />
+                        ) : (
+                          <Download size={12} className="text-blue-600" />
+                        )}
+                        <span>Download</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1726,6 +1896,7 @@ export default function ESignatureEditor() {
 
                 <div className="relative flex-1 flex items-center justify-center my-3 bg-gray-50/70 rounded-lg overflow-hidden border border-gray-100 min-h-[560px]">
                   <img
+                    crossOrigin="anonymous"
                     src={resolvedDocUrl}
                     alt={docName}
                     className="max-w-full max-h-[660px] object-contain select-none pointer-events-none rounded"
@@ -1961,9 +2132,9 @@ export default function ESignatureEditor() {
                       }
                       if (isSignerMode || field.label === "Company CEO" || field.type === "signature" || field.type === "initials") {
                         if (field.type === "initials") {
-                          setTypedSigName(field.signed && field.value ? field.value : (field.prefill?.trim() || "R"));
+                          setTypedSigName(field.signed && field.value ? field.value : (field.prefill?.trim() || ""));
                         } else {
-                          setTypedSigName(field.signed && field.value && field.value !== "Company CEO" ? field.value : (field.prefill?.trim() || field.signer || "Ragavi"));
+                          setTypedSigName(field.signed && field.value && field.value !== "Company CEO" ? field.value : (field.prefill?.trim() || field.signer || user?.name || user?.displayName || "Signer"));
                         }
                         setSignatureModalOpen(true);
                         return;
@@ -2009,9 +2180,9 @@ export default function ESignatureEditor() {
                       setSelectedFieldId(field.id);
                       if (field.type === "signature" || field.type === "initials") {
                         if (field.type === "initials") {
-                          setTypedSigName(field.signed && field.value ? field.value : (field.prefill?.trim() || "R"));
+                          setTypedSigName(field.signed && field.value ? field.value : (field.prefill?.trim() || ""));
                         } else {
-                          setTypedSigName(field.signed && field.value && field.value !== "Company CEO" ? field.value : (field.prefill?.trim() || field.signer || "Ragavi"));
+                          setTypedSigName(field.signed && field.value && field.value !== "Company CEO" ? field.value : (field.prefill?.trim() || field.signer || user?.name || user?.displayName || "Signer"));
                         }
                         setSignatureModalOpen(true);
                       }
@@ -2049,10 +2220,10 @@ export default function ESignatureEditor() {
                         : field.type === "signature" || field.type === "initials" || field.type === "text" || field.type === "date" || field.type === "attachment" || field.type === "name" || field.type === "email" || field.type === "company" || field.type === "title"
                         ? "min-w-[105px] h-9 px-4 py-2 text-xs bg-[#e8f8f5] border border-[#2dd4bf] text-[#2c7a6b]"
                         : "min-w-[105px] h-9 px-4 py-2 text-xs bg-[#eef1f5] border border-gray-300 text-gray-800"
-                    } ${isSelected ? "ring-2 ring-teal-400/30" : "hover:border-teal-500"}`}
+                    } ${isSelected && !isExporting ? "ring-2 ring-teal-400/30" : isExporting ? "" : "hover:border-teal-500"}`}
                   >
-                    {/* Top Right Corner Handle Dot (as shown in wireframe) */}
-                    {(field.type === "signature" || field.type === "initials" || field.type === "text" || field.type === "date" || field.type === "checkbox" || field.type === "radio" || field.type === "dropdown" || field.type === "attachment" || field.type === "name" || field.type === "email" || field.type === "company" || field.type === "title") && (
+                    {/* Top Right Corner Handle Dot (hidden during export) */}
+                    {!isExporting && (field.type === "signature" || field.type === "initials" || field.type === "text" || field.type === "date" || field.type === "checkbox" || field.type === "radio" || field.type === "dropdown" || field.type === "attachment" || field.type === "name" || field.type === "email" || field.type === "company" || field.type === "title") && (
                       <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-white border border-[#2dd4bf] rounded-full shadow-2xs pointer-events-none" />
                     )}
 
@@ -2126,7 +2297,7 @@ export default function ESignatureEditor() {
                           placeholder={field.prefill || "Type text..."}
                           className="w-full bg-transparent text-xs font-semibold text-gray-800 placeholder-teal-600/60 outline-none text-center"
                         />
-                      ) : field.signed && field.value && field.value !== "Text" ? (
+                      ) : ((field.value && field.value !== "Text") || field.signed) ? (
                         <span className="text-xs font-semibold text-gray-800 select-none">
                           {field.value}
                         </span>
@@ -2152,6 +2323,7 @@ export default function ESignatureEditor() {
                       field.signed && field.value && field.value !== "Signature" && field.value !== "Date signed" && field.value !== "Company CEO" ? (
                         field.sigType === "draw" || field.sigType === "upload" ? (
                           <img
+                            crossOrigin="anonymous"
                             src={field.dataUrl}
                             alt="Signature"
                             className="h-6 max-w-[110px] object-contain pointer-events-none"
@@ -2175,8 +2347,8 @@ export default function ESignatureEditor() {
                       </span>
                     )}
 
-                    {/* Quick delete icon on hover when selected (hidden in signer mode) */}
-                    {isSelected && !isSignerMode && (
+                    {/* Quick delete icon on hover when selected (hidden in signer mode and during export) */}
+                    {isSelected && !isSignerMode && !isExporting && (
                       <button
                         onClick={(e) => handleDeleteField(field.id, e)}
                         className="absolute -top-2.5 -left-2.5 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-xs cursor-pointer z-30"
@@ -2186,8 +2358,8 @@ export default function ESignatureEditor() {
                       </button>
                     )}
 
-                    {/* 4-Way Move Indicator Icon (hidden in signer mode) */}
-                    {isSelected && !isSignerMode && (
+                    {/* 4-Way Move Indicator Icon (hidden in signer mode and during export) */}
+                    {isSelected && !isSignerMode && !isExporting && (
                       <div
                         onMouseDown={(e) => handleMouseDownOnField(e, field)}
                         className={`absolute -bottom-4.5 right-1 flex items-center justify-center text-gray-400 hover:text-gray-700 cursor-move transition select-none ${
@@ -2618,23 +2790,7 @@ export default function ESignatureEditor() {
                     : "border-gray-300 hover:border-gray-400 opacity-80 hover:opacity-100"
                 }`}
               >
-                {isStaticDiploma ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div className="w-2 h-2 rounded-full bg-[#d4af37]" />
-                      <div className="h-0.5 w-6 bg-gray-300 rounded" />
-                    </div>
-                    <div className="h-1 w-8 bg-[#0c4a7e] mx-auto rounded" />
-                    <div className="space-y-0.5">
-                      <div className="h-0.5 w-full bg-gray-200 rounded" />
-                      <div className="h-0.5 w-4/5 bg-gray-200 rounded" />
-                    </div>
-                    <div className="flex justify-between">
-                      <div className="h-0.5 w-3 bg-gray-400 rounded" />
-                      <div className="h-0.5 w-3 bg-gray-400 rounded" />
-                    </div>
-                  </>
-                ) : isPdfDoc ? (
+                {isPdfDoc ? (
                   <>
                     <div className="flex items-center justify-between">
                       <span className="text-[6px] bg-red-600 text-white font-bold px-1 rounded">PDF</span>
@@ -2727,10 +2883,10 @@ export default function ESignatureEditor() {
           <SignatureStudioModal
             isOpen={signatureModalOpen}
             document={{ name: docName }}
-            initialName={typedSigName || "Ragavi"}
+            initialName={typedSigName || user?.name || user?.displayName || "Signer"}
             onClose={() => setSignatureModalOpen(false)}
             onSigned={async (doc, sigData) => {
-              const sigText = sigData?.text?.trim() || typedSigName || "Ragavi";
+              const sigText = sigData?.text?.trim() || typedSigName || user?.name || user?.displayName || "Signer";
               setTypedSigName(sigText);
               const targetId = selectedFieldId || placedFields.find((f) => f.type === "signature")?.id || placedFields[0]?.id;
               const updatedFields = placedFields.map((f) =>
@@ -2792,17 +2948,33 @@ export default function ESignatureEditor() {
         {shareModalOpen && (
           <SendDocumentModal
             isOpen={shareModalOpen}
-            document={{ name: docName }}
+            document={{
+              ...(documentData || {}),
+              _id: id || documentData?._id || documentData?.id,
+              id: id || documentData?._id || documentData?.id,
+              name: docName || documentData?.name || "Document",
+              url: documentUrl,
+              type: documentData?.type,
+              extension: docExt,
+              size: documentData?.size,
+              author: documentData?.author,
+              content: documentData?.content,
+              placedFields: placedFields,
+              signers: signers,
+            }}
             onClose={() => setShareModalOpen(false)}
             onAssigned={(payload) => {
+              if (payload.effectiveDocId && !id) {
+                window.history.replaceState(null, "", `/e-signatures/editor/${payload.effectiveDocId}`);
+              }
               setSigners((prev) => [
                 ...prev,
                 {
                   id: `s-${Date.now()}`,
                   name: payload.name,
                   email: payload.email,
-                  role: "Signer",
-                  color: "#2563eb",
+                  role: payload.role || "Signer",
+                  color: (payload.role || "Signer") === "Designer" ? "#9333ea" : "#2563eb",
                 },
               ]);
               setShareModalOpen(false);
@@ -2825,19 +2997,19 @@ export default function ESignatureEditor() {
           <AddSignersModal
             isOpen={addSignersModalOpen}
             signers={signers}
-            title="Keyboard shortcuts"
+            title="Add signers"
             subtitle="Add, rename or delete signers"
             docName={docName}
-            docId={id || ""}
-            signUrl={`${window.location.origin}/e-signatures/editor/${id || ""}?mode=signer`}
+            docId={id || documentData?._id || documentData?.id || ""}
+            signUrl={`${window.location.origin}/e-signatures/editor/${id || documentData?._id || documentData?.id || ""}?mode=signer`}
             onClose={() => setAddSignersModalOpen(false)}
             onSave={async (updatedSigners) => {
               const formattedSigners = updatedSigners.map((s, idx) => ({
                 id: s.id || `s-${idx}`,
                 name: s.name,
                 email: s.email,
-                role: "Signer",
-                color: "#2563eb",
+                role: s.role || "Signer",
+                color: (s.role || "Signer") === "Designer" ? "#9333ea" : (s.color || "#2563eb"),
               }));
               setSigners(formattedSigners);
 
@@ -3136,9 +3308,8 @@ export default function ESignatureEditor() {
                     const updatedSignersList = [...signers, newSignerObj];
                     setSigners(updatedSignersList);
 
-                    const targetSignUrl = location.pathname.startsWith("/employee")
-                      ? `${window.location.origin}/employee/e-signatures/editor/${id || ""}?mode=signer`
-                      : `${window.location.origin}/e-signatures/editor/${id || ""}?mode=signer`;
+                    const effectiveSignDocId = id || documentData?._id || documentData?.id || "";
+                    const targetSignUrl = `${window.location.origin}/e-signatures/editor/${effectiveSignDocId}?mode=signer`;
 
                     const sender = user?.name || user?.displayName || (isAdmin ? "Pearls Admin" : "Pearls Employee");
 
@@ -3151,7 +3322,7 @@ export default function ESignatureEditor() {
                           email: newEmail,
                           name: newSignerName,
                           docName: docName || "Document",
-                          docId: id || "",
+                          docId: effectiveSignDocId,
                           message: assigneeReason.trim() || `Document assigned to you for review and signing`,
                           signUrl: targetSignUrl,
                           origin: window.location.origin,

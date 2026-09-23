@@ -20,6 +20,7 @@ export default function SendDocumentModal({
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState("Signer");
   const [subject, setSubject] = useState(
     doc?.name ? `Signature Request: ${doc.name}` : ""
   );
@@ -41,8 +42,75 @@ export default function SendDocumentModal({
 
     setLoading(true);
     const docName = doc?.name || "Document";
-    const docId = doc?._id || doc?.id || "";
-    const targetSignUrl = `${window.location.origin}/e-signatures/editor/${docId}?mode=signer`;
+    let effectiveDocId = doc?._id || doc?.id || "";
+
+    // Validate if effectiveDocId is a valid 24-character hex MongoDB ObjectId
+    const isMongoId = Boolean(effectiveDocId && /^[0-9a-fA-F]{24}$/.test(effectiveDocId));
+
+    // If document is not yet saved in MongoDB, create it now so recipient has a real document to open
+    if (!isMongoId) {
+      try {
+        const createRes = await fetch(apiUrl("/documents"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: docName,
+            url: doc?.url || "",
+            type: doc?.type || "doc",
+            extension: doc?.extension || (docName.includes(".") ? docName.split(".").pop() : "doc"),
+            size: doc?.size || "24.00 Kb",
+            author: doc?.author || "Admin",
+            placedFields: doc?.placedFields || [],
+            signers: [
+              ...(doc?.signers || []),
+              {
+                id: `s-${Date.now()}`,
+                name: name.trim() || "Signer",
+                email: email.trim().toLowerCase(),
+                role: role || "Signer",
+                status: "pending",
+              },
+            ],
+            content: doc?.content || "",
+          }),
+        });
+
+        if (createRes.ok) {
+          const createJson = await createRes.json();
+          if (createJson.data?._id || createJson.data?.id) {
+            effectiveDocId = createJson.data._id || createJson.data.id;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not pre-save document to MongoDB:", err);
+      }
+    } else {
+      // If already in MongoDB, sync latest placed fields & signer to DB
+      try {
+        const updatedSigners = [
+          ...(doc?.signers || []),
+          {
+            id: `s-${Date.now()}`,
+            name: name.trim() || "Signer",
+            email: email.trim().toLowerCase(),
+            role: role || "Signer",
+            status: "pending",
+          },
+        ];
+        await fetch(apiUrl(`/documents/${effectiveDocId}/fields`), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            placedFields: doc?.placedFields || [],
+            signers: updatedSigners,
+          }),
+        });
+      } catch (err) {
+        console.warn("Could not sync document fields to MongoDB:", err);
+      }
+    }
+
+    const targetSignUrl = `${window.location.origin}/e-signatures/editor/${effectiveDocId}?mode=signer`;
 
     try {
       const res = await fetch(apiUrl("/email/esign-invite"), {
@@ -51,8 +119,9 @@ export default function SendDocumentModal({
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
           name: name.trim() || "Signer",
+          role: role || "Signer",
           docName: docName,
-          docId: docId,
+          docId: effectiveDocId,
           signUrl: targetSignUrl,
           message: message.trim(),
           origin: window.location.origin,
@@ -85,9 +154,15 @@ export default function SendDocumentModal({
     const payload = {
       name: name.trim() || "Signer",
       email: email.trim(),
+      role: role || "Signer",
       subject: subject.trim() || "Document Signing Request",
       message: message.trim(),
-      document: doc,
+      effectiveDocId: effectiveDocId,
+      document: {
+        ...(doc || {}),
+        _id: effectiveDocId,
+        id: effectiveDocId,
+      },
     };
 
     if (onAssigned) {

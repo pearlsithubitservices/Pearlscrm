@@ -318,12 +318,12 @@ const EmployeeDetails = () => {
             <h1 className="text-2xl font-semibold text-gray-900 truncate">
               {effectiveEmployee?.name || effectiveEmployee?.employeeName || "Employee"}
             </h1>
-            <p className="text-sm text-gray-500 mt-1 font-medium">
-              {effectiveEmployee?.role || effectiveEmployee?.employeeRole || "Employee"}
+            <p className="text-sm text-blue-600 mt-1 font-semibold">
+              {effectiveEmployee?.department || effectiveEmployee?.employeeDepartment || "General"}
             </p>
-            {(effectiveEmployee?.email || effectiveEmployee?.department) && (
-              <p className="text-xs text-gray-400 mt-1 truncate">
-                {[effectiveEmployee.department, effectiveEmployee.email].filter(Boolean).join(" • ")}
+            {effectiveEmployee?.email && (
+              <p className="text-xs text-gray-400 mt-0.5 truncate">
+                {effectiveEmployee.email}
               </p>
             )}
 

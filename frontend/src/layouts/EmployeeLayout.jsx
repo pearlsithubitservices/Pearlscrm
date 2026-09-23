@@ -55,7 +55,11 @@ export default function EmployeeLayout() {
     return <Outlet />;
   }
 
-  if (!canAccessEmployeePath(location.pathname, user.department || user.profile?.department)) {
+  if (!canAccessEmployeePath(
+    location.pathname,
+    user.department || user.profile?.department,
+    user.role || user.employeeRole || user.profile?.role
+  )) {
     return <Navigate to="/employee/overview" replace />;
   }
 

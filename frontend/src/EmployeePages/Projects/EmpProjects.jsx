@@ -189,6 +189,23 @@ export default function EmpProjects() {
     };
 
     userProjects.forEach((item) => {
+      const pId = item._id || item.id;
+      if (!pId) return;
+
+      const riskId = `risk-${pId}`;
+      const prioId = `prio-${pId}`;
+      const progId = `prog-${pId}`;
+
+      // If this project was already dismissed in any form, skip all alerts for it
+      if (
+        dismissedNotifIds.includes(riskId) ||
+        dismissedNotifIds.includes(prioId) ||
+        dismissedNotifIds.includes(progId) ||
+        dismissedNotifIds.includes(String(pId))
+      ) {
+        return;
+      }
+
       const health = getProjectHealthStatus(item);
       const statusLower = (item.status || "").toLowerCase();
       const priorityLower = (item.priority || "").toLowerCase();
@@ -198,11 +215,7 @@ export default function EmpProjects() {
       const itemDueDateStr = parseToYYYYMMDD(item.dueDate || item.date);
       const isOverdue = Boolean(itemDueDateStr && itemDueDateStr < todayStr);
 
-      const riskId = `risk-${item._id || item.id}`;
-      const prioId = `prio-${item._id || item.id}`;
-      const progId = `prog-${item._id || item.id}`;
-
-      if ((health === "At Risk" || isOverdue || statusLower === "at risk" || statusLower === "delayed") && !dismissedNotifIds.includes(riskId)) {
+      if (health === "At Risk" || isOverdue || statusLower === "at risk" || statusLower === "delayed") {
         list.push({
           id: riskId,
           type: "at_risk",
@@ -211,10 +224,7 @@ export default function EmpProjects() {
           time: itemDueDateStr || "Overdue",
           item,
         });
-      } else if (
-        (priorityLower === "urgent" || priorityLower === "high" || priorityLower === "hot") &&
-        !dismissedNotifIds.includes(prioId)
-      ) {
+      } else if (priorityLower === "urgent" || priorityLower === "high" || priorityLower === "hot") {
         list.push({
           id: prioId,
           type: "urgent",
@@ -223,13 +233,13 @@ export default function EmpProjects() {
           time: itemDueDateStr || "High Priority",
           item,
         });
-      } else if (!dismissedNotifIds.includes(progId)) {
+      } else if (statusLower === "pending" || Number(item.progress) === 0) {
         list.push({
           id: progId,
           type: "pending",
-          title: "⏳ Active Project In Progress",
-          message: `Project "${item.title || "Untitled"}" (${item.company || "Pearls Client"}) is active (${item.progress || 0}% complete).`,
-          time: itemDueDateStr || "In Progress",
+          title: "⏳ Project Pending Action",
+          message: `Project "${item.title || "Untitled"}" (${item.company || "Pearls Client"}) is pending or not started yet.`,
+          time: itemDueDateStr || "Pending",
           item,
         });
       }
@@ -240,20 +250,41 @@ export default function EmpProjects() {
 
   const handleClearAllNotifs = (e) => {
     e.stopPropagation();
-    const allNotifIds = notifications.map((n) => n.id);
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+    const allIds = [];
+    notifications.forEach((n) => {
+      allIds.push(n.id);
+      const pId = n.item?._id || n.item?.id;
+      if (pId) {
+        allIds.push(`risk-${pId}`, `prio-${pId}`, `prog-${pId}`, String(pId));
+      }
+    });
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allIds])));
   };
 
   const handleNotifClick = (e, notif) => {
     e.stopPropagation();
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    const pId = notif.item?._id || notif.item?.id;
+    const idsToDismiss = [notif.id];
+    if (pId) {
+      idsToDismiss.push(`risk-${pId}`, `prio-${pId}`, `prog-${pId}`, String(pId));
+    }
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...idsToDismiss])));
     setShowNotifications(false);
-    navigate(`/employee/projectDetails/${notif.item._id || notif.item.id}`);
+    navigate(`/employee/projectDetails/${pId}`);
   };
 
-  const handleDismissNotif = (e, notifId) => {
+  const handleDismissNotif = (e, notifOrId) => {
     e.stopPropagation();
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+    const notifId = typeof notifOrId === "object" && notifOrId !== null ? notifOrId.id : notifOrId;
+    const pId = typeof notifOrId === "object" && notifOrId !== null
+      ? (notifOrId.item?._id || notifOrId.item?.id)
+      : (notifId ? String(notifId).replace(/^(risk-|prio-|prog-)/, "") : null);
+
+    const idsToDismiss = [notifId];
+    if (pId) {
+      idsToDismiss.push(`risk-${pId}`, `prio-${pId}`, `prog-${pId}`, String(pId));
+    }
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...idsToDismiss])));
   };
 
   const filteredProjects = useMemo(() => {
@@ -419,7 +450,7 @@ export default function EmpProjects() {
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>
                             <button
-                              onClick={(e) => handleDismissNotif(e, n.id)}
+                              onClick={(e) => handleDismissNotif(e, n)}
                               className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition"
                               title="Dismiss Notification"
                             >

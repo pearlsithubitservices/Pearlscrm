@@ -40,8 +40,22 @@ const purgeSeedDocuments = async () => {
   try {
     await Document.deleteMany({
       $or: [
-        { name: { $in: ["vishnu.ppt", "pearls.doc", "company.xls", "ai img.jpg"] } },
-        { author: "Vishnu R" },
+        {
+          name: {
+            $in: [
+              "vishnu.ppt",
+              "pearls.doc",
+              "company.xls",
+              "ai img.jpg",
+              "skills module certificate",
+              "crm planing",
+              "company",
+              "quarterly_budget_v1.xls",
+              "nda_partner_draft.doc",
+            ],
+          },
+        },
+        { author: { $in: ["Vishnu R", "Mankato University"] } },
       ],
     });
   } catch (err) {
@@ -485,11 +499,15 @@ router.delete("/:id", async (req, res) => {
 // GET /api/documents/:id - Get a single document with full signature details
 router.get("/:id", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(404).json({ success: false, message: "Document not found" });
+    let doc = null;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      doc = await Document.findById(req.params.id);
     }
-
-    const doc = await Document.findById(req.params.id);
+    if (!doc) {
+      doc = await Document.findOne({
+        $or: [{ name: req.params.id }, { id: req.params.id }],
+      });
+    }
     if (!doc) {
       return res.status(404).json({ success: false, message: "Document not found" });
     }
@@ -599,37 +617,73 @@ router.patch("/:id/sign", async (req, res) => {
 // PATCH /api/documents/:id/fields - Save placed fields and signers from Editor
 router.patch("/:id/fields", async (req, res) => {
   try {
-    const { placedFields, signers } = req.body;
+    const { placedFields, signers, name, content } = req.body;
+    let doc = null;
 
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(200).json({
-        success: true,
-        message: "Document fields updated",
-        data: { id: req.params.id, placedFields, signers },
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      doc = await Document.findById(req.params.id);
+    }
+    if (!doc) {
+      doc = await Document.findOne({
+        $or: [{ name: req.params.id }, { id: req.params.id }],
       });
     }
 
-    const updatePayload = {
-      modifiedOn: "Just now",
-    };
+    const anySigned = Array.isArray(placedFields) && placedFields.some((f) => f && f.signed);
+
+    if (!doc) {
+      // If document doesn't exist yet in DB, create it with all the placed fields and signers
+      const newDoc = await Document.create({
+        name: name || req.params.id || "Untitled Document",
+        type: req.body.type || "doc",
+        extension: req.body.extension || "doc",
+        author: req.body.author || "Admin",
+        placedFields: Array.isArray(placedFields) ? placedFields : [],
+        signers: Array.isArray(signers) ? signers : [],
+        isSigned: anySigned,
+        status: anySigned ? "completed" : "waiting",
+        content: content || "",
+        createdOn: "Today",
+        modifiedOn: "Just now",
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Document created and saved successfully",
+        data: newDoc,
+      });
+    }
 
     if (Array.isArray(placedFields)) {
-      updatePayload.placedFields = placedFields;
+      doc.placedFields = placedFields;
+      doc.markModified("placedFields");
     }
 
     if (Array.isArray(signers)) {
-      updatePayload.signers = signers;
+      doc.signers = signers;
+      doc.markModified("signers");
     }
 
-    const updatedDoc = await Document.findByIdAndUpdate(
-      req.params.id,
-      { $set: updatePayload },
-      { new: true }
-    );
-
-    if (!updatedDoc) {
-      return res.status(404).json({ success: false, message: "Document not found" });
+    if (name && name.trim()) {
+      doc.name = name.trim();
     }
+
+    if (content !== undefined) {
+      doc.content = content;
+    }
+
+    if (anySigned) {
+      doc.isSigned = true;
+      doc.status = "completed";
+      doc.signedAt = new Date();
+      const signedField = placedFields.find((f) => f && f.signed && f.value);
+      if (signedField) {
+        doc.signedBy = signedField.value;
+      }
+    }
+
+    doc.modifiedOn = "Just now";
+    const updatedDoc = await doc.save();
 
     res.status(200).json({
       success: true,

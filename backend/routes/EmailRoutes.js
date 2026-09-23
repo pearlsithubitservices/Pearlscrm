@@ -130,12 +130,15 @@ router.post("/esign-invite", async (req, res) => {
             const recipientEmail = signer.email.trim();
             const recipientName = signer.name ? signer.name.trim() : "Valued Signer";
             
-            // Build the signing URL if not provided directly
-            const targetSignUrl =
-                signUrl ||
-                (docId
-                    ? `${baseUrl}/e-signatures/editor/${docId}?mode=signer`
-                    : `${baseUrl}/e-signatures/editor?mode=signer`);
+            // Build the signing URL, strictly ensuring docId is present if provided
+            let targetSignUrl = signUrl;
+            if (docId) {
+                if (!targetSignUrl || !targetSignUrl.includes(docId)) {
+                    targetSignUrl = `${baseUrl}/e-signatures/editor/${docId}?mode=signer`;
+                }
+            } else if (!targetSignUrl) {
+                targetSignUrl = `${baseUrl}/e-signatures/editor?mode=signer`;
+            }
 
             const htmlContent = `
 <!DOCTYPE html>

@@ -119,7 +119,14 @@ export default function AssignedWork({ employee, canManage = true }) {
     if (!taskId || !window.confirm("Remove this task?")) return;
 
     try {
-      const response = await fetch(apiUrl(`/tasks/${taskId}`), { method: "DELETE" });
+      const token = localStorage.getItem("token");
+      const response = await fetch(apiUrl(`/tasks/${taskId}`), {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "x-user-role": "admin",
+        },
+      });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to remove task");

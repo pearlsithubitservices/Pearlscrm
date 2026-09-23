@@ -17,7 +17,7 @@ import { apiUrl } from "../config/api";
 export default function AddSignersModal({
   isOpen = true,
   signers = [],
-  title = "Keyboard shortcuts",
+  title = "Add signers",
   subtitle = "Add, rename or delete signers",
   docName = "Document",
   docId = "",
@@ -32,9 +32,10 @@ export default function AddSignersModal({
         id: s.id || `s-${Math.random()}`,
         name: s.name || "",
         email: s.email || "",
+        role: s.role || "Signer",
       }));
     }
-    return [{ id: `s-${Date.now()}`, name: "", email: "" }];
+    return [{ id: `s-${Date.now()}`, name: "", email: "", role: "Signer" }];
   });
 
   const [sendInviteEmail, setSendInviteEmail] = useState(true);
@@ -51,13 +52,13 @@ export default function AddSignersModal({
   const handleAddRow = () => {
     setSignerRows((prev) => [
       ...prev,
-      { id: `s-${Date.now()}`, name: "", email: "" },
+      { id: `s-${Date.now()}`, name: "", email: "", role: "Signer" },
     ]);
   };
 
   const handleDeleteRow = (id) => {
     if (signerRows.length === 1) {
-      setSignerRows([{ id: `s-${Date.now()}`, name: "", email: "" }]);
+      setSignerRows([{ id: `s-${Date.now()}`, name: "", email: "", role: "Signer" }]);
       return;
     }
     setSignerRows((prev) => prev.filter((row) => row.id !== id));
@@ -177,7 +178,7 @@ export default function AddSignersModal({
                     handleRowChange(row.id, "name", e.target.value)
                   }
                   placeholder="Signer name"
-                  className="flex-1 bg-[#ededed] focus:bg-white border border-transparent focus:border-[#175ea8] rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-gray-800 placeholder-gray-400 outline-none transition"
+                  className="flex-1 min-w-[110px] bg-[#ededed] focus:bg-white border border-transparent focus:border-[#175ea8] rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-gray-800 placeholder-gray-400 outline-none transition"
                 />
                 <input
                   type="email"
@@ -186,7 +187,7 @@ export default function AddSignersModal({
                     handleRowChange(row.id, "email", e.target.value)
                   }
                   placeholder="Email"
-                  className="flex-1 bg-[#ededed] focus:bg-white border border-transparent focus:border-[#175ea8] rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-gray-800 placeholder-gray-400 outline-none transition"
+                  className="flex-1 min-w-[130px] bg-[#ededed] focus:bg-white border border-transparent focus:border-[#175ea8] rounded-md px-3.5 py-2.5 text-xs sm:text-sm text-gray-800 placeholder-gray-400 outline-none transition"
                 />
                 <button
                   type="button"

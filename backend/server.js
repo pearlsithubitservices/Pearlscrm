@@ -161,9 +161,23 @@ app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
 app.use("/api/boards", BoardRoutes);
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res) => {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+    },
+  })
+);
 
-app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/api/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res) => {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+    },
+  })
+);
 
 app.use("/api/feedback", FeedbackRoutes);
 app.use("/api/payslip", PayslipRoutes);

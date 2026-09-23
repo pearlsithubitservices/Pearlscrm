@@ -11,15 +11,24 @@ import {
   Calendar,
   Layers,
   ChevronRight,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react";
 import { apiUrl } from "../../config/api";
 import { socket } from "../../config/socket";
 import useEmployees from "../../Hooks/useEmployees";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ProjectTasks({ projects, project, fetchProjects, user, isLeader }) {
   const currentProject = project || (projects && projects[0]) || {};
   const { employees } = useEmployees();
+  const { user: authUser, role, isAdmin: authIsAdmin } = useAuth();
+  const isAdmin = Boolean(
+    authIsAdmin ||
+    (typeof role === "string" && role.trim().toLowerCase() === "admin") ||
+    (typeof user?.role === "string" && user.role.trim().toLowerCase() === "admin") ||
+    (typeof authUser?.role === "string" && authUser.role.trim().toLowerCase() === "admin")
+  );
   
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +143,29 @@ export default function ProjectTasks({ projects, project, fetchProjects, user, i
     }
   };
 
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm("Are you sure you want to permanently delete this task?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(apiUrl(`/tasks/${taskId}`), {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "x-user-role": "admin",
+        },
+      });
+      if (res.ok) {
+        fetchProjectTasks();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || "Failed to delete task.");
+      }
+    } catch (err) {
+      console.error("Error deleting project task:", err);
+      alert("Failed to delete task.");
+    }
+  };
+
   const completedCount = projectTasks.filter((t) => (t.status || "").toLowerCase() === "completed").length;
 
   return (
@@ -234,6 +266,17 @@ export default function ProjectTasks({ projects, project, fetchProjects, user, i
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
                   </select>
+
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTask(t._id)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border border-transparent hover:border-red-200 cursor-pointer"
+                      title="Delete Task (Admin Only)"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
               </motion.div>
             );

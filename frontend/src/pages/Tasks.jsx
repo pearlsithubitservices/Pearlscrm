@@ -26,7 +26,8 @@ import {
   Flame,
   AlertTriangle,
   ChevronDown,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import {
   collection,
@@ -42,8 +43,19 @@ import CreateTask from './createTask.jsx';
 import { AnimatePresence, motion } from "framer-motion";
 import AnimateModals from '../components/Dashboard/AnimateModals.jsx';
 import useTaskfilter from '../Hooks/useTaskfilter.js';
+import { useAuth } from '../context/AuthContext';
 
 export default function Tasks() {
+  const { user, role, isAdmin: authIsAdmin } = useAuth();
+  const isAdmin = Boolean(
+    authIsAdmin ||
+    (typeof role === 'string' && role.trim().toLowerCase() === 'admin') ||
+    (typeof user?.role === 'string' && user.role.trim().toLowerCase() === 'admin') ||
+    (typeof user?.userType === 'string' && user.userType.trim().toLowerCase() === 'admin')
+  );
+
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [deletingTaskId, setDeletingTaskId] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState('');
@@ -186,17 +198,32 @@ export default function Tasks() {
     now.setHours(0, 0, 0, 0);
 
     (Array.isArray(tasks) ? tasks : []).forEach((t) => {
+      const taskId = t._id || t.id || t.uid;
+      if (!taskId) return;
+
+      const ovId = `ov-${taskId}`;
+      const hotId = `hot-${taskId}`;
+      const pdId = `pd-${taskId}`;
+
+      // If this task was already dismissed in any form, skip all alerts for it
+      if (
+        dismissedNotifIds.includes(ovId) ||
+        dismissedNotifIds.includes(hotId) ||
+        dismissedNotifIds.includes(pdId) ||
+        dismissedNotifIds.includes(String(taskId))
+      ) {
+        return;
+      }
+
       const statusLower = (t.status || "").toLowerCase();
+      if (statusLower === "completed") return;
+
       const priorityLower = (t.priority || "").toLowerCase();
       const dueDate = t.dueDate ? new Date(t.dueDate) : null;
-      const isOverdue = dueDate && !isNaN(dueDate.getTime()) && dueDate < now && statusLower !== "completed";
+      const isOverdue = dueDate && !isNaN(dueDate.getTime()) && dueDate < now;
       const assignedToName = getDisplayName(t.assignedTo, "Unassigned");
 
-      const ovId = `ov-${t.id || t._id}`;
-      const hotId = `hot-${t.id || t._id}`;
-      const pdId = `pd-${t.id || t._id}`;
-
-      if (isOverdue && !dismissedNotifIds.includes(ovId)) {
+      if (isOverdue) {
         list.push({
           id: ovId,
           type: "overdue",
@@ -205,18 +232,16 @@ export default function Tasks() {
           time: dueDate ? `Due: ${dueDate.toLocaleDateString("en-IN")}` : "Overdue",
           task: t,
         });
-      } else if ((priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") && !dismissedNotifIds.includes(hotId)) {
-        if (statusLower !== "completed") {
-          list.push({
-            id: hotId,
-            type: "hot",
-            title: "High Priority Task",
-            message: `Hot task "${t.title || "Untitled"}" requires action (${assignedToName}).`,
-            time: statusLower === "in progress" ? "In Progress" : "Pending",
-            task: t,
-          });
-        }
-      } else if (statusLower === "pending" && !dismissedNotifIds.includes(pdId)) {
+      } else if (priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") {
+        list.push({
+          id: hotId,
+          type: "hot",
+          title: "High Priority Task",
+          message: `Hot task "${t.title || "Untitled"}" requires action (${assignedToName}).`,
+          time: statusLower === "in progress" ? "In Progress" : "Pending",
+          task: t,
+        });
+      } else if (statusLower === "pending") {
         list.push({
           id: pdId,
           type: "pending",
@@ -233,20 +258,41 @@ export default function Tasks() {
 
   const handleClearAllNotifs = (e) => {
     e.stopPropagation();
-    const allNotifIds = notifications.map((n) => n.id);
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+    const allIds = [];
+    notifications.forEach((n) => {
+      allIds.push(n.id);
+      const tId = n.task?._id || n.task?.id || n.task?.uid;
+      if (tId) {
+        allIds.push(`ov-${tId}`, `hot-${tId}`, `pd-${tId}`, String(tId));
+      }
+    });
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allIds])));
   };
 
   const handleNotifClick = (e, notif) => {
     e.stopPropagation();
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    const tId = notif.task?._id || notif.task?.id || notif.task?.uid;
+    const idsToDismiss = [notif.id];
+    if (tId) {
+      idsToDismiss.push(`ov-${tId}`, `hot-${tId}`, `pd-${tId}`, String(tId));
+    }
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...idsToDismiss])));
     setShowNotificationMenu(false);
-    navigate(`/taskDetails/${notif.task._id || notif.task.id || notif.task.uid}`);
+    navigate(`/taskDetails/${tId}`);
   };
 
-  const handleDismissNotif = (e, notifId) => {
+  const handleDismissNotif = (e, notifOrId) => {
     e.stopPropagation();
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+    const notifId = typeof notifOrId === "object" && notifOrId !== null ? notifOrId.id : notifOrId;
+    const tId = typeof notifOrId === "object" && notifOrId !== null
+      ? (notifOrId.task?._id || notifOrId.task?.id || notifOrId.task?.uid)
+      : (notifId ? String(notifId).replace(/^(ov-|hot-|pd-)/, "") : null);
+
+    const idsToDismiss = [notifId];
+    if (tId) {
+      idsToDismiss.push(`ov-${tId}`, `hot-${tId}`, `pd-${tId}`, String(tId));
+    }
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...idsToDismiss])));
   };
 
   const currentFiles = filterdata.slice(firstIndex, lastIndex);
@@ -371,12 +417,43 @@ export default function Tasks() {
       };
       socket.on("taskUpdated", handleTaskUpdated);
       socket.on("taskCreated", handleTaskUpdated);
+      socket.on("taskDeleted", handleTaskUpdated);
       return () => {
         socket.off("taskUpdated", handleTaskUpdated);
         socket.off("taskCreated", handleTaskUpdated);
+        socket.off("taskDeleted", handleTaskUpdated);
       };
     }
   }, []);
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+    const tId = taskToDelete.id || taskToDelete._id;
+    setDeletingTaskId(tId);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(apiUrl(`/tasks/${tId}`), {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "x-user-role": "admin",
+        },
+      });
+
+      if (res.ok) {
+        setTasks((prev) => prev.filter((t) => (t.id || t._id) !== tId));
+        setTaskToDelete(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || "Failed to delete task.");
+      }
+    } catch (err) {
+      console.error("Error deleting task:", err);
+      alert("Error deleting task.");
+    } finally {
+      setDeletingTaskId(null);
+    }
+  };
 
   const handleQuickStatusChange = async (task, newStatus) => {
     try {
@@ -692,7 +769,7 @@ export default function Tasks() {
                                 <div className="flex items-center gap-2">
                                   <span className="text-[10px] text-gray-400 font-medium">{n.time}</span>
                                   <button
-                                    onClick={(e) => handleDismissNotif(e, n.id)}
+                                    onClick={(e) => handleDismissNotif(e, n)}
                                     className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition"
                                     title="Dismiss Notification"
                                   >
@@ -896,6 +973,21 @@ export default function Tasks() {
                         <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border">
                           Assigned by: <span className="font-semibold text-gray-700">{assignedByName}</span>
                         </div>
+
+                        {/* ADMIN ONLY DELETE BUTTON */}
+                        {isAdmin && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setTaskToDelete(task)}
+                              disabled={deletingTaskId === (task.id || task._id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all text-xs font-semibold shadow-xs cursor-pointer disabled:opacity-50"
+                              title="Delete Task (Admin Only)"
+                            >
+                              <Trash2 size={13} />
+                              <span>{deletingTaskId === (task.id || task._id) ? "Deleting..." : "Delete"}</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -980,6 +1072,51 @@ export default function Tasks() {
           <CreateTask onClose={() => setOpen(false)} onSuccess={() => { setOpen(false); fetchTasksData(); }} />
         </AnimateModals>
       )}
+
+      {/* DELETE CONFIRMATION MODAL (ADMIN ONLY) */}
+      <AnimatePresence>
+        {taskToDelete && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
+            onClick={() => setTaskToDelete(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100"
+            >
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Delete Task</h3>
+              <p className="text-sm text-gray-600 mt-2">
+                Are you sure you want to permanently delete task <span className="font-bold text-gray-900">"{taskToDelete.title || 'Untitled'}"</span>? This action cannot be undone.
+              </p>
+
+              <div className="flex items-center justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setTaskToDelete(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteTask}
+                  disabled={deletingTaskId !== null}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Trash2 size={14} />
+                  <span>{deletingTaskId ? "Deleting..." : "Delete Task"}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

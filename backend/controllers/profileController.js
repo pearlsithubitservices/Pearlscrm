@@ -31,7 +31,25 @@ const serializeUser = (user) => {
 const getProfile = async (req, res) => {
   const user = await User.findById(req.user.id).select("-password");
   if (!user) return res.status(404).json({ success: false, message: "User not found" });
-  return res.json({ success: true, user: serializeUser(user) });
+
+  let emp = null;
+  try {
+    const Employee = require("../models/Employee");
+    emp = await Employee.findOne({ email: user.email.toLowerCase() });
+  } catch (_) {}
+
+  const serialized = serializeUser(user);
+  if (!serialized.profile.designation) {
+    serialized.profile.designation = emp?.employeeRole || emp?.role || user.role || "Employee";
+  }
+  if (!serialized.profile.empId && emp?.empId) {
+    serialized.profile.empId = emp.empId;
+  }
+  if (emp?.employeeRole) {
+    serialized.employeeRole = emp.employeeRole;
+  }
+
+  return res.json({ success: true, user: serialized });
 };
 
 const updateProfile = async (req, res) => {

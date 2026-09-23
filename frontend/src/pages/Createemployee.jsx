@@ -67,7 +67,9 @@ export default function Createemployee({ onClose, onSuccess }) {
       // 1. Create in MongoDB via hook / endpoint
       const created = await createEmployee({
         employeeName: employees.employeeName.trim(),
-        employeeRole: employees.employeeRole === "admin" ? "Admin" : "Employee",
+        employeeRole: employees.employeeRole === "admin"
+          ? "Admin"
+          : (employees.employeeRole === "designer" || employees.employeeRole === "Designer" ? "Designer" : "Employee"),
         department: employees.employeeDepartment.trim(),
         contact: employees.contact.trim(),
         email: employees.email.trim().toLowerCase(),
@@ -106,7 +108,9 @@ export default function Createemployee({ onClose, onSuccess }) {
             id: employeeId,
             name: employees.employeeName.trim(),
             email: employees.email.trim().toLowerCase(),
-            role: employees.employeeRole === "admin" ? "Admin" : "Employee",
+            role: employees.employeeRole === "admin"
+              ? "Admin"
+              : (employees.employeeRole === "designer" || employees.employeeRole === "Designer" ? "Designer" : "Employee"),
             department: employees.employeeDepartment.trim(),
             origin: window.location.origin,
           }),
@@ -177,6 +181,7 @@ export default function Createemployee({ onClose, onSuccess }) {
             type="select"
             options={[
               { value: "employee", label: "Employee" },
+              { value: "designer", label: "Designer" },
               { value: "admin", label: "Admin" },
             ]}
           />

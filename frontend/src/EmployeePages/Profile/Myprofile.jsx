@@ -8,6 +8,7 @@ import JobSalary from './BankDetails/JobSalary.jsx';
 import Accountinformation from './BankDetails/Accountinformation.jsx';
 import Verification from './BankDetails/Verification.jsx';
 import { uploadAvatar } from '../../services/profileApi';
+import useEmployees from '../../Hooks/useEmployees';
 
 export default function EmployeeProfile() {
 
@@ -17,7 +18,32 @@ export default function EmployeeProfile() {
   const [avatarMessage, setAvatarMessage] = useState('');
 
   const { user, logout, fetchCurrentUser } = useAuth();
+  const { employees } = useEmployees();
   const profile = user?.profile || {};
+
+  // Find corresponding employee record if available
+  const matchedEmployee = employees?.find((item) => {
+    const userIds = [user?.uid, user?.id, user?._id].filter(Boolean).map(String);
+    const itemIds = [item?.uid, item?.id, item?._id, item?.mongoId].filter(Boolean).map(String);
+    return (
+      itemIds.some((id) => userIds.includes(id)) ||
+      (item?.email && user?.email && item.email.toLowerCase() === user.email.toLowerCase())
+    );
+  });
+
+  const registeredRole =
+    profile.designation ||
+    matchedEmployee?.employeeRole ||
+    matchedEmployee?.role ||
+    user?.employeeRole ||
+    user?.role ||
+    profile.employeeRole ||
+    profile.role ||
+    (user?.department ? `${user.department}` : 'Employee');
+
+  const registeredEmpId = profile.empId || matchedEmployee?.empId || matchedEmployee?.employeeCode || 'Not Assigned';
+  const registeredStatus = matchedEmployee?.status || user?.status || 'Active Employee';
+
   const displayName = `${user?.firstName || user?.name?.split(' ')[0] || 'Employee'} ${user?.lastName || user?.name?.split(' ').slice(1).join(' ') || ''}`.trim();
   const initials = displayName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
   const handleAvatarUpload = async (event) => {
@@ -83,18 +109,20 @@ export default function EmployeeProfile() {
                 {displayName}
               </h1>
 
-              <p className="text-gray-500 mt-1">
-                {profile.designation || 'Designation not assigned'}
+              <p className="text-gray-700 font-semibold text-sm sm:text-base mt-1.5 flex items-center justify-center lg:justify-start gap-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-md bg-blue-50 text-[#175ea8] border border-blue-200/90 text-xs sm:text-sm font-bold tracking-wide">
+                  {user?.department || profile.department || matchedEmployee?.department || matchedEmployee?.employeeDepartment || "General"}
+                </span>
               </p>
 
               <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-4">
 
-                <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm">
-                  Active Employee
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                  {registeredStatus.toLowerCase().includes('active') ? 'Active Employee' : registeredStatus}
                 </span>
 
-                <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm">
-                  Employee ID: {profile.empId || 'Not Assigned'}
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                  Employee ID: {registeredEmpId}
                 </span>
 
               </div>

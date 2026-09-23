@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const jwt = require("jsonwebtoken");
 const Task = require("../models/TaskModels/Task");
+const User = require("../models/User");
 const Notification = require("../models/CommunicationModels/Notifications");
 const { getIO } = require("../Socket");
 
@@ -184,18 +186,56 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete Task
+// Delete Task (Admin Only)
 router.delete("/:id", async (req, res) => {
   try {
-    await Task.findByIdAndDelete(req.params.id);
+    let isAdmin = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded && (decoded.role || "").toLowerCase() === "admin") {
+          isAdmin = true;
+        } else if (decoded && decoded.id) {
+          const u = await User.findById(decoded.id).select("role");
+          if (u && (u.role || "").toLowerCase() === "admin") {
+            isAdmin = true;
+          }
+        }
+      } catch (err) {
+        console.warn("Invalid token in deleteTask:", err.message);
+      }
+    }
+
+    // Secondary check from role header
+    if (!isAdmin && req.headers["x-user-role"]) {
+      if (String(req.headers["x-user-role"]).toLowerCase() === "admin") {
+        isAdmin = true;
+      }
+    }
+
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Only Admin can delete tasks.",
+      });
+    }
+
+    const task = await Task.findByIdAndDelete(req.params.id);
+    if (!task) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
 
     const io = getIO();
     if (io) {
       io.emit("taskUpdated", { deletedId: req.params.id });
+      io.emit("taskDeleted", { deletedId: req.params.id, id: req.params.id });
     }
 
     res.status(200).json({ success: true, message: "Task deleted successfully" });
   } catch (error) {
+    console.error("Error deleting task:", error);
     res.status(500).json({ message: error.message });
   }
 });

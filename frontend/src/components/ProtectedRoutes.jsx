@@ -59,12 +59,7 @@ export default function ProtectedRoute({
             (item.email && user.email && item.email.toLowerCase() === user.email.toLowerCase());
     });
 
-    // Allow users through even if employee profile is not found
-    // (useful for newly created admin users)
-    if (!employee && role === "employee") {
-        return <Navigate to="/employee-dashboard" replace />;
-    }
-
+    // Allow authenticated non-admin users (Employee, Designer, etc.) through
     return children;
 }
 

@@ -56,8 +56,8 @@ const PersonalDetails = ({ startEditing = false }) => {
                     address: profile.address || '',
                 });
                 setJobDetails({
-                    designation: profile.designation || '',
-                    department: profile.department || '',
+                    designation: profile.designation || data.user?.role || data.user?.employeeRole || '',
+                    department: profile.department || data.user?.department || '',
                     joiningdate: profile.joiningDate ? profile.joiningDate.slice(0, 10) : '',
                     reportingmanager: profile.reportingManager || '',
                     workLocation: profile.workLocation || '',

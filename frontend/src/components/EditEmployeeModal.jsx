@@ -65,8 +65,12 @@ export default function EditEmployeeModal({ employee, onClose, onSuccess }) {
       const payload = {
         name: formData.employeeName.trim(),
         employeeName: formData.employeeName.trim(),
-        role: formData.employeeRole === "admin" || formData.employeeRole === "Admin" ? "Admin" : "Employee",
-        employeeRole: formData.employeeRole === "admin" || formData.employeeRole === "Admin" ? "Admin" : "Employee",
+        role: String(formData.employeeRole).toLowerCase() === "admin"
+          ? "Admin"
+          : (String(formData.employeeRole).toLowerCase() === "designer" ? "Designer" : "Employee"),
+        employeeRole: String(formData.employeeRole).toLowerCase() === "admin"
+          ? "Admin"
+          : (String(formData.employeeRole).toLowerCase() === "designer" ? "Designer" : "Employee"),
         department: formData.department.trim(),
         contact: formData.contact.trim(),
         phone: formData.contact.trim(),
@@ -227,6 +231,7 @@ export default function EditEmployeeModal({ employee, onClose, onSuccess }) {
                 type="select"
                 options={[
                   { value: "Employee", label: "Employee" },
+                  { value: "Designer", label: "Designer" },
                   { value: "Admin", label: "Admin" },
                 ]}
               />

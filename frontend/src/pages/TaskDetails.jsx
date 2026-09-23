@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { apiUrl } from '../config/api';
 import useEmployees from '../Hooks/useEmployees';
+import { useAuth } from '../context/AuthContext';
 
 export default function TaskDetails() {
 
   const { id } = useParams();
   const navigate = useNavigate();
   const { employees } = useEmployees();
+  const { user, role, isAdmin: authIsAdmin } = useAuth();
+  const isAdmin = Boolean(
+    authIsAdmin ||
+    (typeof role === "string" && role.trim().toLowerCase() === "admin") ||
+    (typeof user?.role === "string" && user.role.trim().toLowerCase() === "admin") ||
+    (typeof user?.userType === "string" && user.userType.trim().toLowerCase() === "admin")
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [task, setTask] = useState({
     title: '',
@@ -70,9 +80,35 @@ export default function TaskDetails() {
       navigate('/tasks');
 
     } catch (error) {
-
       console.log(error);
+    }
+  };
 
+  const deleteTask = async () => {
+    if (!window.confirm("Are you sure you want to permanently delete this task?")) return;
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(apiUrl(`/tasks/${id}`), {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "x-user-role": "admin",
+        },
+      });
+
+      if (response.ok) {
+        alert("Task Deleted");
+        navigate("/tasks");
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData.message || "Failed to delete task");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete task");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -167,12 +203,22 @@ export default function TaskDetails() {
 
           <button
             onClick={updateTask}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 font-bold"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 font-bold hover:opacity-90 transition cursor-pointer"
           >
-
             Save Changes
-
           </button>
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={deleteTask}
+              disabled={isDeleting}
+              className="w-full py-3.5 rounded-2xl bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 size={18} />
+              <span>{isDeleting ? "Deleting Task..." : "Delete Task (Admin Only)"}</span>
+            </button>
+          )}
 
         </div>
 

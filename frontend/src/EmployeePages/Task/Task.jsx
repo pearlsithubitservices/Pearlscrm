@@ -100,16 +100,31 @@ export default function Tasks() {
     now.setHours(0, 0, 0, 0);
 
     (Array.isArray(tasks) ? tasks : []).forEach((t) => {
+      const taskId = t._id || t.id || t.uid;
+      if (!taskId) return;
+
+      const ovId = `ov-${taskId}`;
+      const hotId = `hot-${taskId}`;
+      const pdId = `pd-${taskId}`;
+
+      // If this task was already dismissed in any form, skip all alerts for it
+      if (
+        dismissedNotifIds.includes(ovId) ||
+        dismissedNotifIds.includes(hotId) ||
+        dismissedNotifIds.includes(pdId) ||
+        dismissedNotifIds.includes(String(taskId))
+      ) {
+        return;
+      }
+
       const statusLower = (t.status || "").toLowerCase();
+      if (statusLower === "completed") return;
+
       const priorityLower = (t.priority || "").toLowerCase();
       const dueDate = t.dueDate ? new Date(t.dueDate) : null;
-      const isOverdue = dueDate && !isNaN(dueDate.getTime()) && dueDate < now && statusLower !== "completed";
+      const isOverdue = dueDate && !isNaN(dueDate.getTime()) && dueDate < now;
 
-      const ovId = `ov-${t.id || t._id}`;
-      const hotId = `hot-${t.id || t._id}`;
-      const pdId = `pd-${t.id || t._id}`;
-
-      if (isOverdue && !dismissedNotifIds.includes(ovId)) {
+      if (isOverdue) {
         list.push({
           id: ovId,
           type: "overdue",
@@ -118,18 +133,16 @@ export default function Tasks() {
           time: dueDate ? `Due: ${dueDate.toLocaleDateString("en-IN")}` : "Overdue",
           task: t,
         });
-      } else if ((priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") && !dismissedNotifIds.includes(hotId)) {
-        if (statusLower !== "completed") {
-          list.push({
-            id: hotId,
-            type: "hot",
-            title: "High Priority Task",
-            message: `Hot task "${t.title || "Untitled"}" requires immediate attention.`,
-            time: statusLower === "in progress" ? "In Progress" : "Pending",
-            task: t,
-          });
-        }
-      } else if (statusLower === "pending" && !dismissedNotifIds.includes(pdId)) {
+      } else if (priorityLower === "hot" || priorityLower === "urgent" || priorityLower === "high") {
+        list.push({
+          id: hotId,
+          type: "hot",
+          title: "High Priority Task",
+          message: `Hot task "${t.title || "Untitled"}" requires immediate attention.`,
+          time: statusLower === "in progress" ? "In Progress" : "Pending",
+          task: t,
+        });
+      } else if (statusLower === "pending") {
         list.push({
           id: pdId,
           type: "pending",
@@ -146,20 +159,41 @@ export default function Tasks() {
 
   const handleClearAllNotifs = (e) => {
     e.stopPropagation();
-    const allNotifIds = notifications.map((n) => n.id);
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allNotifIds])));
+    const allIds = [];
+    notifications.forEach((n) => {
+      allIds.push(n.id);
+      const tId = n.task?._id || n.task?.id || n.task?.uid;
+      if (tId) {
+        allIds.push(`ov-${tId}`, `hot-${tId}`, `pd-${tId}`, String(tId));
+      }
+    });
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...allIds])));
   };
 
   const handleNotifClick = (e, notif) => {
     e.stopPropagation();
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notif.id])));
+    const tId = notif.task?._id || notif.task?.id || notif.task?.uid;
+    const idsToDismiss = [notif.id];
+    if (tId) {
+      idsToDismiss.push(`ov-${tId}`, `hot-${tId}`, `pd-${tId}`, String(tId));
+    }
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...idsToDismiss])));
     setShowNotifications(false);
-    navigate(`/employee/taskDetails/${notif.task._id || notif.task.id || notif.task.uid}`);
+    navigate(`/employee/taskDetails/${tId}`);
   };
 
-  const handleDismissNotif = (e, notifId) => {
+  const handleDismissNotif = (e, notifOrId) => {
     e.stopPropagation();
-    setDismissedNotifIds((prev) => Array.from(new Set([...prev, notifId])));
+    const notifId = typeof notifOrId === "object" && notifOrId !== null ? notifOrId.id : notifOrId;
+    const tId = typeof notifOrId === "object" && notifOrId !== null
+      ? (notifOrId.task?._id || notifOrId.task?.id || notifOrId.task?.uid)
+      : (notifId ? String(notifId).replace(/^(ov-|hot-|pd-)/, "") : null);
+
+    const idsToDismiss = [notifId];
+    if (tId) {
+      idsToDismiss.push(`ov-${tId}`, `hot-${tId}`, `pd-${tId}`, String(tId));
+    }
+    setDismissedNotifIds((prev) => Array.from(new Set([...prev, ...idsToDismiss])));
   };
 
   const handleQuickStatusUpdate = async (e, taskItem, newStatus) => {
@@ -337,7 +371,7 @@ export default function Tasks() {
                             <div className="flex items-center gap-2">
                               <span className="text-[11px] text-gray-400 font-medium">{n.time}</span>
                               <button
-                                onClick={(e) => handleDismissNotif(e, n.id)}
+                                onClick={(e) => handleDismissNotif(e, n)}
                                 className="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-gray-100 transition"
                                 title="Dismiss Notification"
                               >

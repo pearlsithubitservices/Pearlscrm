@@ -1,4 +1,8 @@
-const normalizeDepartment = (department) => String(department || "").trim().toLowerCase();
+const normalizeDepartment = (department) => {
+  const d = String(department || "").trim().toLowerCase();
+  if (d === "designer") return "designers";
+  return d;
+};
 
 const ALL_DEPARTMENTS = [
   "digital marketing",
@@ -7,6 +11,7 @@ const ALL_DEPARTMENTS = [
   "management",
   "marketing",
   "designers",
+  "designer",
 ];
 
 export const EMPLOYEE_MODULE_DEPARTMENTS = {
@@ -20,6 +25,7 @@ export const EMPLOYEE_MODULE_DEPARTMENTS = {
   payroll: ["hr", "management", "marketing"],
   reports: ["hr", "management"],
   performance: ["hr", "management"],
+  esignature: ALL_DEPARTMENTS,
 };
 
 export const ADMIN_MODULE_DEPARTMENTS = {
@@ -35,6 +41,7 @@ export const ADMIN_MODULE_DEPARTMENTS = {
   employees: ALL_DEPARTMENTS,
   reports: ALL_DEPARTMENTS,
   performance: ALL_DEPARTMENTS,
+  esignature: ALL_DEPARTMENTS,
 };
 
 export const ADMIN_LANDING_PATHS = {
@@ -44,6 +51,7 @@ export const ADMIN_LANDING_PATHS = {
   management: "/",
   marketing: "/leads",
   designers: "/",
+  designer: "/",
 };
 
 export const COMMON_EMPLOYEE_PATHS = [
@@ -56,6 +64,9 @@ export const COMMON_EMPLOYEE_PATHS = [
   "/employee/meeting",
   "/employee/web-mail",
   "/employee/e-signature",
+  "/employee/e-signatures",
+  "/employee/e-signatures/sign",
+  "/employee/e-signatures/editor",
   "/employee/attendance",
   "/employee/leave",
 ];
@@ -77,6 +88,8 @@ const EMPLOYEE_PATH_MODULES = {
   "/employee/payroll": "payroll",
   "/employee/reports": "reports",
   "/employee/performance": "performance",
+  "/employee/e-signatures": "esignature",
+  "/employee/e-signature": "esignature",
 };
 
 const ADMIN_PATH_MODULES = {
@@ -103,23 +116,57 @@ const ADMIN_PATH_MODULES = {
   "/clientDetails": "clients",
   "/employeeDetails": "employees",
   "/payslipadmin": "payroll",
+  "/e-signatures": "esignature",
+  "/e-signature": "esignature",
 };
 
 const pathMatches = (path, basePath) => path === basePath || path.startsWith(`${basePath}/`);
 
-export const canAccessEmployeePath = (path, department) => {
+export const canAccessEmployeePath = (path, department, role) => {
   if (COMMON_EMPLOYEE_PATHS.some((basePath) => pathMatches(path, basePath))) return true;
+
+  const normalized = normalizeDepartment(department);
+  const normalizedRole = String(role || "").trim().toLowerCase();
+
+  if (normalizedRole === "designer" || normalizedRole === "admin") {
+    if (
+      pathMatches(path, "/employee/e-signatures") ||
+      pathMatches(path, "/employee/e-signature") ||
+      pathMatches(path, "/employee/projects") ||
+      pathMatches(path, "/employee/tasks")
+    ) {
+      return true;
+    }
+  }
 
   const moduleName = Object.entries(EMPLOYEE_PATH_MODULES).find(([basePath]) =>
     pathMatches(path, basePath)
   )?.[1];
 
   if (!moduleName) return true;
-  return EMPLOYEE_MODULE_DEPARTMENTS[moduleName].includes(normalizeDepartment(department));
+  return (
+    EMPLOYEE_MODULE_DEPARTMENTS[moduleName]?.includes(normalized) ||
+    EMPLOYEE_MODULE_DEPARTMENTS[moduleName]?.includes(normalizedRole) ||
+    false
+  );
 };
 
-export const canAccessEmployeeModule = (moduleName, department) =>
-  EMPLOYEE_MODULE_DEPARTMENTS[moduleName]?.includes(normalizeDepartment(department)) || false;
+export const canAccessEmployeeModule = (moduleName, department, role) => {
+  const normalized = normalizeDepartment(department);
+  const normalizedRole = String(role || "").trim().toLowerCase();
+
+  if (normalizedRole === "designer") {
+    if (moduleName === "esignature" || moduleName === "tasks" || moduleName === "projects") {
+      return true;
+    }
+  }
+
+  return (
+    EMPLOYEE_MODULE_DEPARTMENTS[moduleName]?.includes(normalized) ||
+    EMPLOYEE_MODULE_DEPARTMENTS[moduleName]?.includes(normalizedRole) ||
+    false
+  );
+};
 
 export const canAccessAdminPath = (path, department) => {
   if (
@@ -128,7 +175,8 @@ export const canAccessAdminPath = (path, department) => {
     pathMatches(path, "/communication") ||
     pathMatches(path, "/meeting") ||
     pathMatches(path, "/web-mail") ||
-    pathMatches(path, "/e-signature")
+    pathMatches(path, "/e-signature") ||
+    pathMatches(path, "/e-signatures")
   ) {
     return true;
   }
