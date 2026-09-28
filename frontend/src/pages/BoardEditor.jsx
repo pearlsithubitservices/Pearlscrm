@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -24,6 +24,7 @@ import {
   Trash2,
   Type,
   Undo2,
+  Upload,
   X,
   ZoomIn,
   ZoomOut,
@@ -100,6 +101,7 @@ export default function BoardEditor({ readOnly = false, employeeMode = false }) 
   const navigate = useNavigate();
   const { user } = useAuth();
   const editorRef = useRef(null);
+  const imageInputRef = useRef(null);
   const saveTimeoutRef = useRef(null);
   const unsubscribeRef = useRef(null);
   const canvasDirtyRef = useRef(false);
@@ -120,45 +122,9 @@ export default function BoardEditor({ readOnly = false, employeeMode = false }) 
     selectedCount: 0,
   });
   const imageFile = board?.files?.find((file) => file.fileType === "image");
+  const viewerId = user?._id || user?.id || user?.uid || user?.email || "";
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadBoard = async () => {
-      try {
-        setLoading(true);
-        setLoadError("");
-        const viewerQuery = readOnly || employeeMode
-          ? `?role=employee&userId=${encodeURIComponent(user?._id || user?.id || user?.uid || user?.email || "")}`
-          : "";
-        const response = await fetch(apiUrl(`/boards/${id}${viewerQuery}`), {
-          headers: getAuthHeaders(),
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(data.message || "Unable to load this board");
-        }
-
-        if (isMounted) setBoard(data.data);
-      } catch (error) {
-        if (isMounted) setLoadError(error.message || "Unable to load this board");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    loadBoard();
-
-    return () => {
-      isMounted = false;
-      window.clearTimeout(saveTimeoutRef.current);
-      if (!readOnly && canvasDirtyRef.current) saveCanvas();
-      unsubscribeRef.current?.();
-    };
-  }, [id, readOnly]);
-
-  const saveCanvas = async () => {
+  const saveCanvas = useCallback(async () => {
     const editor = editorRef.current;
     if (!editor) return;
 
@@ -186,7 +152,44 @@ export default function BoardEditor({ readOnly = false, employeeMode = false }) 
       setSaveState("error");
       return false;
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBoard = async () => {
+      try {
+        setLoading(true);
+        setLoadError("");
+        const viewerQuery = readOnly || employeeMode
+          ? `?role=employee&userId=${encodeURIComponent(viewerId)}`
+          : "";
+        const response = await fetch(apiUrl(`/boards/${id}${viewerQuery}`), {
+          headers: getAuthHeaders(),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.message || "Unable to load this board");
+        }
+
+        if (isMounted) setBoard(data.data);
+      } catch (error) {
+        if (isMounted) setLoadError(error.message || "Unable to load this board");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadBoard();
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(saveTimeoutRef.current);
+      if (!readOnly && canvasDirtyRef.current) saveCanvas();
+      unsubscribeRef.current?.();
+    };
+  }, [employeeMode, id, readOnly, saveCanvas, viewerId]);
 
   const saveEditedFile = async () => {
     const editor = editorRef.current;
@@ -213,7 +216,7 @@ export default function BoardEditor({ readOnly = false, employeeMode = false }) 
       );
       formData.append("uploadedByName", user?.name || board.createdByName || "Admin");
 
-      const existingFile = board.files?.[0];
+      const existingFile = imageFile;
       const endpoint = existingFile
         ? `/boards/${id}/file/${existingFile._id}`
         : `/boards/${id}/upload`;
@@ -232,6 +235,79 @@ export default function BoardEditor({ readOnly = false, employeeMode = false }) 
       setFileSaveState("saved");
     } catch (error) {
       console.error("Error saving edited file:", error);
+      setFileSaveState("error");
+    }
+  };
+
+  const addImageToCanvas = (file) => {
+    const editor = editorRef.current;
+    if (!editor || !file) return;
+
+    const imageElement = new Image();
+    imageElement.onload = () => {
+      const currentImageShapes = editor
+        .getCurrentPageShapes()
+        .filter((shape) => shape.type === "image");
+      if (currentImageShapes.length > 0) editor.deleteShapes(currentImageShapes);
+
+      const width = Math.min(imageElement.naturalWidth || 1200, 1200);
+      const height = width * ((imageElement.naturalHeight || 800) / (imageElement.naturalWidth || 1200));
+      const asset = AssetRecordType.create({
+        id: AssetRecordType.createId(),
+        type: "image",
+        props: {
+          src: apiUrl(file.filePath),
+          w: width,
+          h: height,
+          mimeType: file.mimeType || "image/png",
+          name: file.fileName,
+          isAnimated: false,
+        },
+      });
+
+      editor.createAssets([asset]);
+      editor.createShape({
+        type: "image",
+        x: 0,
+        y: 0,
+        props: { assetId: asset.id, w: width, h: height },
+      });
+      editor.zoomToFit({ animation: { duration: 180 }, padding: 80 });
+    };
+    imageElement.src = apiUrl(file.filePath);
+  };
+
+  const replaceImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      setFileSaveState("saving");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append(
+        "uploadedBy",
+        user?._id || user?.id || user?.uid || user?.email || board.createdBy
+      );
+      formData.append("uploadedByName", user?.name || board.createdByName || "Admin");
+
+      const endpoint = imageFile
+        ? `/boards/${id}/file/${imageFile._id}`
+        : `/boards/${id}/upload`;
+      const response = await fetch(apiUrl(endpoint), {
+        method: imageFile ? "PUT" : "POST",
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "Unable to upload image");
+
+      setBoard(data.data);
+      addImageToCanvas(data.data.files?.find((item) => item.fileType === "image"));
+      setFileSaveState("saved");
+    } catch (error) {
+      console.error("Error replacing board image:", error);
       setFileSaveState("error");
     }
   };
@@ -439,6 +515,22 @@ export default function BoardEditor({ readOnly = false, employeeMode = false }) 
           )}
           {!readOnly && (
             <>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={replaceImage}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={fileSaveState === "saving"}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {imageFile ? "Replace image" : "Add image"}
+              </button>
               <button
                 type="button"
                 onClick={saveCanvas}
