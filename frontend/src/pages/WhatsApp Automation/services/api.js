@@ -1,4 +1,5 @@
-const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL;
+const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL ||
+  "https://pearlscrm-1.onrender.com/api";
 
 /* =========================================================
    FETCH DASHBOARD STATS
