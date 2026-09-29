@@ -58,6 +58,7 @@ import PayslipAdmin from './pages/Payroll/PayslipAdmin.jsx';
 import Performance from './pages/Performance & Growth/Performance.jsx';
 import PerformanceList from './pages/Performance & Growth/PerformanceList.jsx';
 import AdminBoards from './pages/AdminBoards.jsx';
+import MeetingsPage from './pages/Meetings.jsx';
 import BoardEditor from './pages/BoardEditor.jsx';
 import ESignature from './pages/ESignature.jsx';
 import ESignatureEditor from './pages/ESignatureEditor.jsx';
@@ -390,8 +391,8 @@ export default function App() {
               />
 
               <Route
-                path="/meeting"
-                element={<PlaceholderPage title="Meeting" />}
+                path="/meeting/*"
+                element={<MeetingsPage />}
               />
 
               <Route
@@ -401,7 +402,7 @@ export default function App() {
 
               <Route
                 path="/e-signature"
-                element={<PlaceholderPage title="E-Signature" />}
+                element={<ESignature />}
               />
 
               {/* LEAVE */}
@@ -653,8 +654,8 @@ export default function App() {
               />
 
               <Route
-                path="/employee/meeting"
-                element={<PlaceholderPage title="Meeting" />}
+                path="/employee/meeting/*"
+                element={<MeetingsPage />}
               />
 
               <Route
@@ -664,7 +665,7 @@ export default function App() {
 
               <Route
                 path="/employee/e-signature"
-                element={<PlaceholderPage title="E-Signature" />}
+                element={<EmpESignature />}
               />
 
               <Route

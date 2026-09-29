@@ -20,6 +20,8 @@ export const EMPLOYEE_MODULE_DEPARTMENTS = {
   payroll: ["hr", "management", "marketing"],
   reports: ["hr", "management"],
   performance: ["hr", "management"],
+  esignature: ["development"],
+  meeting: ALL_DEPARTMENTS,
 };
 
 export const ADMIN_MODULE_DEPARTMENTS = {
@@ -35,6 +37,8 @@ export const ADMIN_MODULE_DEPARTMENTS = {
   employees: ALL_DEPARTMENTS,
   reports: ALL_DEPARTMENTS,
   performance: ALL_DEPARTMENTS,
+  esignature: ["development"],
+  meeting: ALL_DEPARTMENTS,
 };
 
 export const ADMIN_LANDING_PATHS = {
@@ -56,6 +60,7 @@ export const COMMON_EMPLOYEE_PATHS = [
   "/employee/meeting",
   "/employee/web-mail",
   "/employee/e-signature",
+  "/employee/e-signatures",
   "/employee/attendance",
   "/employee/leave",
 ];
@@ -77,6 +82,9 @@ const EMPLOYEE_PATH_MODULES = {
   "/employee/payroll": "payroll",
   "/employee/reports": "reports",
   "/employee/performance": "performance",
+  "/employee/e-signature": "esignature",
+  "/employee/e-signatures": "esignature",
+  "/employee/meeting": "meeting",
 };
 
 const ADMIN_PATH_MODULES = {
@@ -103,6 +111,9 @@ const ADMIN_PATH_MODULES = {
   "/clientDetails": "clients",
   "/employeeDetails": "employees",
   "/payslipadmin": "payroll",
+  "/e-signature": "esignature",
+  "/e-signatures": "esignature",
+  "/meeting": "meeting",
 };
 
 const pathMatches = (path, basePath) => path === basePath || path.startsWith(`${basePath}/`);
@@ -128,7 +139,8 @@ export const canAccessAdminPath = (path, department) => {
     pathMatches(path, "/communication") ||
     pathMatches(path, "/meeting") ||
     pathMatches(path, "/web-mail") ||
-    pathMatches(path, "/e-signature")
+    pathMatches(path, "/e-signature") ||
+    pathMatches(path, "/e-signatures")
   ) {
     return true;
   }
