@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { DeleteIcon, Pin, Search } from "lucide-react";
+import { Pin, Search } from "lucide-react";
 import FullAnnouncements from "./FullAnnouncements";
 import AnnouncementForm from "./AnnouncementForm";
 import useAnnouncement from "../../../Hooks/useAnnouncement";
+import { useAuth } from "../../../context/AuthContext";
 
 
 const CompanyAnnouncements = () => {
   const [showForm, setShowForm] = useState(false);
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
-  const { createAnnouncement, fetchAnnouncements, announcements, updateRead, togglePin, deleteAnnouncement } = useAnnouncement();
+  const { fetchAnnouncements, announcements, updateRead, togglePin } = useAnnouncement();
 
   const [selectedAnnouncements, setSelectedAnnouncements] = useState([]);
-  const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
+  const { user } = useAuth();
 
   const handleRead = async (item) => {
     setShowForm(true)
@@ -30,6 +31,13 @@ const CompanyAnnouncements = () => {
   }
 
   const filteredAnnouncements = announcements.filter((item) => {
+    const department = user?.department || user?.profile?.department;
+    const announcementDepartment = item.role?.trim().toLowerCase();
+    const matchesDepartment = !department ||
+      announcementDepartment === "all" ||
+      announcementDepartment === department.trim().toLowerCase();
+
+    if (!matchesDepartment) return false;
     if (!search) return true;
     const searchLower = search.toLowerCase();
     return (

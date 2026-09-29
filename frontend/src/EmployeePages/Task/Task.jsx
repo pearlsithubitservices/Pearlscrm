@@ -30,6 +30,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 
 import TaskContribution from "./TaskContribution.jsx";
 import TaskActivity from "./TaskActivity.jsx";
+import CreateTask from "../../pages/createTask.jsx";
 
 export default function Tasks() {
 

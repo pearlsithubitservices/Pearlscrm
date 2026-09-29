@@ -33,22 +33,9 @@ import { useAuth } from "../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import useChat from "../Hooks/chat.js";
 import { apiUrl } from "../config/api.js";
+import DocumentsView from "../components/messager/documents/DocumentsView";
 
-const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
-        return { status: "unsupported", message: "Browser notifications are not supported." };
-    }
-
-    const permission = await Notification.requestPermission();
-    return {
-        status: permission,
-        message: permission === "granted"
-            ? "Browser notifications enabled."
-            : "Browser notifications were not enabled.",
-    };
-};
-
-const TABS = ["Chats", "Task Chats", "Collabs"];
+const TABS = ["Chats", "Task Chats", "Documents"];
 
 // Options shown in the "+" dropdown
 const ADD_NEW_OPTIONS = [
@@ -241,32 +228,6 @@ export default function Messenger() {
             };
         }
         return { name: id ? (id.length > 15 ? "User" : id) : "Member", role: "User", email: "" };
-    };
-
-    const [toast, setToast] = useState(null);
-
-    const showToastMessage = (message, type = "success") => {
-        setToast({ message, type });
-        setTimeout(() => {
-            setToast(null);
-        }, 4000);
-    };
-
-    // Listen for incoming app notifications (from any module) to display toast banner
-    useEffect(() => {
-        const handleAppNotif = (e) => {
-            const data = e.detail;
-            if (data) {
-                showToastMessage(`${data.title}: ${data.body}`, "info");
-            }
-        };
-        window.addEventListener("appNotification", handleAppNotif);
-        return () => window.removeEventListener("appNotification", handleAppNotif);
-    }, []);
-
-    const handleEnableNotifications = async () => {
-        const res = await requestNotificationPermission();
-        showToastMessage(res.message, res.status === "granted" ? "success" : "info");
     };
 
     const filteredChats = chats.filter((c) => {
@@ -638,43 +599,43 @@ export default function Messenger() {
         <>
             <div className="flex flex-col h-screen w-full bg-[#f4f2ec] overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+                <div className="flex items-center justify-between px-6 py-3.5 bg-white border-b border-gray-200 shrink-0">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-900">
-                            {user?.role === 'Admin' ? 'Admin Messenger' : 'Employee Messenger'}
+                        <h1 className="text-xl font-bold text-gray-900">
+                            {user?.role === 'Admin' ? 'Admin - Messenger' : 'Employee - Messenger'}
                         </h1>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs text-gray-500 mt-0.5">
                             Manage and Connecting Client and employees
                         </p>
                     </div>
-                    {/* <button
-                        onClick={handleEnableNotifications}
-                        title="Enable Desktop Notifications"
-                        className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition relative"
-                    >
-                        <Bell size={18} />
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 border-2 border-white rounded-full"></span>
-                    </button> */}
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-6 px-6 pt-3 bg-white border-b border-gray-200 text-sm">
+                <div className="flex items-center gap-8 px-6 bg-white border-b border-gray-200 text-sm shrink-0 h-12 overflow-x-auto">
                     {TABS.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-3 font-medium transition ${activeTab === tab
-                                    ? "text-blue-600 border-b-2 border-blue-600"
+                            className={`h-full flex items-center font-medium transition relative whitespace-nowrap px-1 text-sm ${
+                                activeTab === tab
+                                    ? "text-blue-600 font-semibold"
                                     : "text-gray-500 hover:text-gray-700"
-                                }`}
+                            }`}
                         >
-                            {tab}
+                            <span>{tab}</span>
+                            {activeTab === tab && (
+                                <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-blue-600 rounded-t-full"></span>
+                            )}
                         </button>
                     ))}
                 </div>
 
-                {/* Body */}
-                <div className="flex flex-1 min-h-0">
+                {/* Body Content Container */}
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                    {activeTab === "Documents" ? (
+                        <DocumentsView onClose={() => setActiveTab("Chats")} />
+                    ) : (
+                        <div className="flex flex-1 min-h-0">
                     {/* Chat list */}
                     <div className="w-80 flex flex-col border-r border-gray-200 bg-white">
                         <div className="flex items-center gap-2 p-3 border-b border-gray-100">
@@ -1246,6 +1207,8 @@ export default function Messenger() {
                         </div>
                     )}
                 </div>
+                )}
+                </div>
             </div>
 
             {/* New Chat / Group Chat picker modal */}
@@ -1732,32 +1695,6 @@ export default function Messenger() {
                             </table>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Toast Notification Banner */}
-            {toast && (
-                <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-gray-900 text-white rounded-xl shadow-2xl border border-gray-700 transition-all duration-300">
-                    <div
-                        className={`p-2 rounded-full ${toast.type === "error"
-                                ? "bg-red-500/20 text-red-400"
-                                : toast.type === "info"
-                                    ? "bg-blue-500/20 text-blue-400"
-                                    : "bg-emerald-500/20 text-emerald-400"
-                            }`}
-                    >
-                        <Bell size={18} />
-                    </div>
-                    <div className="flex-1 pr-2 min-w-[200px]">
-                        <p className="text-xs font-semibold text-gray-200">System Notification</p>
-                        <p className="text-xs text-gray-300 mt-0.5">{toast.message}</p>
-                    </div>
-                    <button
-                        onClick={() => setToast(null)}
-                        className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition"
-                    >
-                        <X size={14} />
-                    </button>
                 </div>
             )}
         </>

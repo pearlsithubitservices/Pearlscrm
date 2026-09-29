@@ -1,0 +1,157 @@
+const text = (x, y, value, options = {}) => ({
+  type: "text",
+  x,
+  y,
+  props: {
+    text: value,
+    color: options.color || "black",
+    size: options.size || "m",
+    font: options.font || "draw",
+    align: options.align || "start",
+    w: options.w || 240,
+  },
+});
+
+const geo = (x, y, w, h, shape = "rectangle", options = {}) => ({
+  type: "geo",
+  x,
+  y,
+  props: {
+    geo: shape,
+    w,
+    h,
+    color: options.color || "blue",
+    fill: options.fill || "semi",
+    dash: options.dash || "draw",
+    size: options.size || "m",
+  },
+});
+
+const arrow = (x, y, endX, endY, options = {}) => ({
+  type: "arrow",
+  x,
+  y,
+  props: {
+    start: { x: 0, y: 0 },
+    end: { x: endX - x, y: endY - y },
+    color: options.color || "black",
+    size: options.size || "m",
+    dash: options.dash || "draw",
+    arrowheadEnd: "arrow",
+  },
+});
+
+const emptyTemplate = {
+  id: "empty",
+  name: "Empty Template",
+  category: "All Templates",
+  description: "Start with a clean, blank canvas.",
+  getShapes: () => [],
+};
+
+export const boardTemplateCategories = [
+  "All Templates",
+  "Charts and Diagrams",
+  "Meetings and Workshops",
+  "Ideas and Brainstorming",
+  "Product and Research",
+  "Retrospective",
+];
+
+export const boardTemplates = [
+  emptyTemplate,
+  {
+    id: "bpmn",
+    name: "BPMN",
+    category: "Charts and Diagrams",
+    description: "A simple process flow with events, tasks, and decisions.",
+    getShapes: () => [
+      text(80, 50, "Business Process", { size: "l", w: 360 }),
+      geo(80, 140, 110, 70, "ellipse", { color: "green" }),
+      text(98, 163, "Start", { w: 72, align: "middle" }),
+      arrow(190, 175, 280, 175),
+      geo(280, 140, 150, 70, "rectangle", { color: "blue" }),
+      text(305, 163, "Review request", { w: 100, align: "middle" }),
+      arrow(430, 175, 520, 175),
+      geo(520, 140, 110, 70, "diamond", { color: "orange" }),
+      text(540, 163, "Approve?", { w: 70, align: "middle" }),
+      arrow(575, 210, 575, 300, { color: "orange" }),
+      geo(520, 300, 110, 70, "ellipse", { color: "red" }),
+      text(538, 323, "End", { w: 74, align: "middle" }),
+    ],
+  },
+  {
+    id: "pi-planning",
+    name: "PI Planning",
+    category: "Meetings and Workshops",
+    description: "Plan objectives, dependencies, and delivery across teams.",
+    getShapes: () => [
+      text(80, 50, "PI Planning", { size: "l", w: 400 }),
+      geo(80, 130, 220, 110, "pill", { color: "blue" }),
+      text(105, 155, "Team A objectives", { w: 170, align: "middle" }),
+      geo(340, 130, 220, 110, "pill", { color: "violet" }),
+      text(365, 155, "Team B objectives", { w: 170, align: "middle" }),
+      geo(600, 130, 220, 110, "pill", { color: "green" }),
+      text(625, 155, "Team C objectives", { w: 170, align: "middle" }),
+      arrow(300, 185, 340, 185),
+      arrow(560, 185, 600, 185),
+      geo(210, 330, 480, 110, "rectangle", { color: "orange" }),
+      text(270, 355, "Program increment goals and dependencies", { w: 360, align: "middle" }),
+      arrow(190, 240, 300, 330, { color: "blue" }),
+      arrow(450, 240, 450, 330, { color: "violet" }),
+      arrow(710, 240, 600, 330, { color: "green" }),
+    ],
+  },
+  {
+    id: "brainstorming-board",
+    name: "Brainstorming Board",
+    category: "Ideas and Brainstorming",
+    description: "Collect ideas, group themes, and choose next steps.",
+    getShapes: () => [
+      text(80, 50, "Brainstorming", { size: "l", w: 360 }),
+      geo(90, 150, 190, 120, "rectangle", { color: "yellow", fill: "solid" }),
+      text(115, 180, "Ideas", { size: "l", w: 140, align: "middle" }),
+      geo(350, 150, 190, 120, "rectangle", { color: "green", fill: "solid" }),
+      text(375, 180, "Themes", { size: "l", w: 140, align: "middle" }),
+      geo(610, 150, 190, 120, "rectangle", { color: "blue", fill: "solid" }),
+      text(635, 180, "Next steps", { size: "l", w: 140, align: "middle" }),
+      arrow(280, 210, 350, 210),
+      arrow(540, 210, 610, 210),
+    ],
+  },
+  {
+    id: "research-map",
+    name: "Research Map",
+    category: "Product and Research",
+    description: "Map users, evidence, insights, and opportunities.",
+    getShapes: () => [
+      text(80, 50, "Product Research Map", { size: "l", w: 480 }),
+      geo(80, 150, 180, 100, "ellipse", { color: "violet" }),
+      text(115, 178, "Users", { size: "l", w: 110, align: "middle" }),
+      geo(340, 120, 190, 100, "rectangle", { color: "blue" }),
+      text(375, 148, "Evidence", { w: 120, align: "middle" }),
+      geo(340, 280, 190, 100, "rectangle", { color: "green" }),
+      text(375, 308, "Insights", { w: 120, align: "middle" }),
+      geo(600, 200, 190, 100, "diamond", { color: "orange" }),
+      text(635, 228, "Opportunity", { w: 120, align: "middle" }),
+      arrow(260, 195, 340, 170, { color: "violet" }),
+      arrow(435, 220, 435, 280, { color: "blue" }),
+      arrow(530, 330, 600, 260, { color: "green" }),
+    ],
+  },
+  {
+    id: "retrospective",
+    name: "Retrospective",
+    category: "Retrospective",
+    description: "Reflect on what went well and define improvements.",
+    getShapes: () => [
+      text(80, 50, "Sprint Retrospective", { size: "l", w: 480 }),
+      geo(80, 140, 210, 150, "rectangle", { color: "green" }),
+      text(110, 175, "What went well?", { size: "l", w: 150, align: "middle" }),
+      geo(340, 140, 210, 150, "rectangle", { color: "red" }),
+      text(370, 175, "What was hard?", { size: "l", w: 150, align: "middle" }),
+      geo(600, 140, 210, 150, "rectangle", { color: "blue" }),
+      text(630, 175, "Action items", { size: "l", w: 150, align: "middle" }),
+    ],
+  },
+];

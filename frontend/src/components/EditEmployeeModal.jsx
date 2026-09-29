@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, User, Phone, Mail, Building2, Locate, Calendar, CreditCard, ShieldCheck, Loader2 } from "lucide-react";
 import useEmployees from "../Hooks/useEmployees";
 import InputField from "./InputField";
+import { DEFAULT_DEPARTMENT, DEPARTMENT_OPTIONS } from "../data/departments";
 
 export default function EditEmployeeModal({ employee, onClose, onSuccess }) {
   const { updateEmployee } = useEmployees();
@@ -17,7 +18,7 @@ export default function EditEmployeeModal({ employee, onClose, onSuccess }) {
     // Basic
     employeeName: employee?.name || employee?.employeeName || "",
     employeeRole: employee?.role || employee?.employeeRole || "Employee",
-    department: employee?.department || profile.department || employee?.employeeDepartment || "Engineering",
+    department: employee?.department || profile.department || employee?.employeeDepartment || DEFAULT_DEPARTMENT,
     contact: employee?.contact || employee?.phone || profile.phone || "",
     email: employee?.email || "",
     location: employee?.location || profile.workLocation || "",
@@ -215,16 +216,7 @@ export default function EditEmployeeModal({ employee, onClose, onSuccess }) {
                 onChange={handleChange}
                 type="select"
                 Icon={Building2}
-                options={[
-                  { value: "Engineering", label: "Engineering" },
-                  { value: "Sales", label: "Sales" },
-                  { value: "Design", label: "Design" },
-                  { value: "HR Department", label: "HR Department" },
-                  { value: "Finance", label: "Finance" },
-                  { value: "Marketing", label: "Marketing" },
-                  { value: "Operations", label: "Operations" },
-                  { value: "IT Support", label: "IT Support" },
-                ]}
+                options={DEPARTMENT_OPTIONS}
               />
 
               <InputField

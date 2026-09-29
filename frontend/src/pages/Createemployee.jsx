@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import useEmployees from "../Hooks/useEmployees";
 import { apiUrl } from "../config/api";
+import { DEFAULT_DEPARTMENT, DEPARTMENT_OPTIONS } from "../data/departments";
 
 export default function Createemployee({ onClose, onSuccess }) {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function Createemployee({ onClose, onSuccess }) {
 
   const [employees, setEmployees] = useState({
     employeeName: "",
-    employeeDepartment: "Engineering",
+    employeeDepartment: DEFAULT_DEPARTMENT,
     employeeRole: "employee",
     contact: "",
     email: "",
@@ -164,16 +165,7 @@ export default function Createemployee({ onClose, onSuccess }) {
             placeholder="Select or enter department"
             Icon={Building2}
             type="select"
-            options={[
-              { value: "Engineering", label: "Engineering" },
-              { value: "Sales", label: "Sales" },
-              { value: "Design", label: "Design" },
-              { value: "HR Department", label: "HR Department" },
-              { value: "Finance", label: "Finance" },
-              { value: "Marketing", label: "Marketing" },
-              { value: "Operations", label: "Operations" },
-              { value: "IT Support", label: "IT Support" },
-            ]}
+            options={DEPARTMENT_OPTIONS}
           />
 
           <InputField

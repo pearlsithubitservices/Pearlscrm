@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Search, Mail, MapPin, Phone, Building2, User, Loader2 } from "lucide-react";
 import EmployeeDetails from "./EmployeeDetails";
 import useEmployees from "../../../Hooks/useEmployees";
+import { DEPARTMENTS } from "../../../data/departments";
 
 export default function CompanyDirectory() {
   const { employees, loading } = useEmployees();
@@ -13,12 +14,7 @@ export default function CompanyDirectory() {
 
   const departments = [
     { name: "All Departments", value: "all" },
-    { name: "Engineering", value: "engineering" },
-    { name: "Design", value: "design" },
-    { name: "HR Department", value: "hr" },
-    { name: "Finance", value: "finance" },
-    { name: "Sales & Marketing", value: "sales" },
-    { name: "Operations", value: "operations" },
+    ...DEPARTMENTS.map((department) => ({ name: department, value: department })),
   ];
 
   // Filter employees dynamically based on Search & Department

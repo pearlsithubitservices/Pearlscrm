@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const Employee = require("../models/Employee");
+const { DEFAULT_DEPARTMENT } = require("../config/departments");
 
 // CREATE EMPLOYEE
 router.post("/", async (req, res) => {
@@ -28,7 +29,7 @@ router.post("/", async (req, res) => {
         const resolvedEmail = (email || "").trim().toLowerCase();
         const resolvedRole = (employeeRole || role || "Employee").trim();
         const resolvedContact = (contact || phone || "").trim();
-        const resolvedDepartment = (department || employeeDepartment || "Engineering").trim();
+        const resolvedDepartment = (department || employeeDepartment || DEFAULT_DEPARTMENT).trim();
         const resolvedStatus = status || "Active";
 
         if (!resolvedName || !resolvedEmail) {

@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const User = require("../models/User");
 const cloudinary = require("../cloudinary");
+const { DEFAULT_DEPARTMENT } = require("../config/departments");
 
 const documentTypes = new Set(["resume", "panCard", "aadhaarCard", "certificates", "experience"]);
 
@@ -21,7 +22,7 @@ const serializeUser = (user) => {
     email: user.email,
     role: user.role,
     industry: user.industry,
-    department: user.department || user.profile?.department || "Engineering",
+    department: user.department || user.profile?.department || DEFAULT_DEPARTMENT,
     avatar: user.avatar,
     profile: user.profile || {},
   };

@@ -46,6 +46,8 @@ const BenefitRoutes = require("./routes/BenefitRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
+const DocumentRoutes = require("./routes/DocumentRoutes");
+const emailRoutes = require("./routes/EmailRoutes");
 const { initSocket } = require("./Socket");
 
 const whatsappCampaignRoutes = require("./routes/WhatsAppCampaign/campaignRoutes");
@@ -67,6 +69,7 @@ const humanHandoffRoutes = require("./routes/Whatsapp Automation/HumanHandoffRou
 
 const ReimbursementPolicyroutes = require("./routes/ReimbursementPolicyroutes");
 const TaxDocumentsRoutes = require("./routes/TaxDocumentsRoutes");
+const BoardRoutes = require("./routes/BoardRoutes");
 
 const {
   startFollowupReminderScheduler,
@@ -76,6 +79,10 @@ const {
   startAttendancePhotoCleanupScheduler,
 } = require("./services/attendancePhotoCleanupScheduler");
 
+const {
+  startRecycleBinCleanupScheduler,
+} = require("./services/recycleBinCleanupScheduler");
+
 const app = express();
 const server = http.createServer(app);
 
@@ -83,6 +90,8 @@ initSocket(server);
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5175",
+  "http://127.0.0.1:5175",
   "http://localhost:3000",
   "https://pearlscrm.vercel.app",
 ];
@@ -90,7 +99,16 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      const isLocalDevelopmentOrigin =
+        process.env.NODE_ENV !== "production" &&
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin || "");
+
+      if (
+        !origin ||
+        isLocalDevelopmentOrigin ||
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin)
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -150,6 +168,7 @@ app.use("/api/empattendancenew", EmpAttendanceRoutes);
 app.use("/api/announcement", AnnouncementSchema);
 app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
+app.use("/api/boards", BoardRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -170,6 +189,8 @@ app.use("/api/totalLeave", EmpTotalLeave);
 
 app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/documents", DocumentRoutes);
+app.use("/api/email", emailRoutes);
 
 // =====================================================
 // WHATSAPP CAMPAIGN ROUTES
@@ -214,9 +235,10 @@ const startServer = async () => {
 
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-      console.log("Connected to database with WebSocket support");
+      // console.log("Connected to database with WebSocket support");
       // Followup reminder scheduler disabled per user request to avoid duplicate notifications
       startAttendancePhotoCleanupScheduler();
+      startRecycleBinCleanupScheduler();
     });
   } catch (error) {
     console.error("Failed to start server:", error.message);

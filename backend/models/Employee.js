@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { DEFAULT_DEPARTMENT } = require("../config/departments");
 
 const employeeSchema = new mongoose.Schema(
   {
@@ -23,7 +24,7 @@ const employeeSchema = new mongoose.Schema(
     department: {
       type: String,
       trim: true,
-      default: "Engineering",
+      default: DEFAULT_DEPARTMENT,
     },
 
     status: {
@@ -76,4 +77,4 @@ const employeeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Employee", employeeSchema);
+module.exports = mongoose.model("Employee", employeeSchema);

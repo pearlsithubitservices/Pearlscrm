@@ -1,9 +1,8 @@
-import React from 'react'
+import React from 'react';
+import EmpESignature from '../ESignature/EmpESignature';
 
 const Document = () => {
-  return (
-    <div>Document</div>
-  )
-}
+  return <EmpESignature />;
+};
 
-export default Document
+export default Document;
