@@ -109,17 +109,13 @@ export default function Sidebar() {
       name: 'E-Signature',
       icon: FileSignature,
       path: '/employee/e-signature',
+      module: 'esignature',
     },
     {
       name: 'Payroll & Benefits',
       icon: CreditCardIcon,
       path: '/employee/payroll',
       module: 'payroll',
-    },
-    {
-      name: 'E- signatures',
-      icon: PenLine,
-      path: '/employee/e-signatures',
     },
   ];
 
