@@ -116,13 +116,13 @@ export default function Login() {
               <Sparkles className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             </div>
             <h1 className="text-xl lg:text-2xl font-bold tracking-tight">
-              Pearls CRM
+              Pearls CRM 
             </h1>
           </div>
 
           <div className="max-w-xl">
             <h2 className="text-3xl lg:text-5xl leading-tight font-black mb-6 lg:mb-8 tracking-tight">
-              Manage your business with premium CRM experience.
+              Manage your business with CRM experience.
             </h2>
             <p className="text-gray-400 text-base lg:text-lg leading-relaxed font-normal">
               Powerful analytics, lead management, automation and employee
