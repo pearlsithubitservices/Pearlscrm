@@ -46,6 +46,7 @@ const BenefitRoutes = require("./routes/BenefitRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
 const messageRoutes = require("./routes/messageRoute");
+const messengerRoutes = require("./routes/messengerRoutes");
 const DocumentRoutes = require("./routes/DocumentRoutes");
 const emailRoutes = require("./routes/EmailRoutes");
 const { initSocket } = require("./Socket");
@@ -191,6 +192,7 @@ app.use("/api/totalLeave", EmpTotalLeave);
 
 app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/messenger", messengerRoutes);
 app.use("/api/documents", DocumentRoutes);
 app.use("/api/email", emailRoutes);
 

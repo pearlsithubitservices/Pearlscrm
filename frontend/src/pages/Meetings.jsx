@@ -104,6 +104,9 @@ export default function MeetingsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const route = getRouteState(location.pathname);
+  const meetingBasePath = location.pathname.startsWith('/employee/meeting')
+    ? '/employee/meeting'
+    : '/meeting';
 
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -322,7 +325,7 @@ export default function MeetingsPage() {
       }
 
       setShowForm(false);
-      navigate('/meeting');
+      navigate(meetingBasePath);
       await loadMeetings();
     } catch (error) {
       toast.error(error?.response?.data?.message || 'Unable to save meeting');
@@ -346,14 +349,14 @@ export default function MeetingsPage() {
       }
 
       await loadMeetings();
-      navigate('/meeting');
+      navigate(meetingBasePath);
     } catch (error) {
       toast.error(error?.response?.data?.message || 'Action failed');
     }
   };
 
-  const openMeeting = (id) => navigate(`/meeting/${id}`);
-  const openEdit = (id) => navigate(`/meeting/${id}/edit`);
+  const openMeeting = (id) => navigate(`${meetingBasePath}/${id}`);
+  const openEdit = (id) => navigate(`${meetingBasePath}/${id}/edit`);
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -380,7 +383,7 @@ export default function MeetingsPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-900">Recent Meetings</h3>
-            <button onClick={() => navigate('/meeting')} className="text-sm font-medium text-indigo-600">View all</button>
+            <button onClick={() => navigate(meetingBasePath)} className="text-sm font-medium text-indigo-600">View all</button>
           </div>
 
           <div className="space-y-3">
@@ -549,7 +552,7 @@ export default function MeetingsPage() {
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-5 flex items-center justify-between">
         <h3 className="text-xl font-semibold text-slate-900">{route.mode === 'edit' ? 'Edit Meeting' : 'Schedule Meeting'}</h3>
-        <button onClick={() => { setShowForm(false); navigate('/meeting'); }} className="text-sm text-slate-500">Close</button>
+        <button onClick={() => { setShowForm(false); navigate(meetingBasePath); }} className="text-sm text-slate-500">Close</button>
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
@@ -656,7 +659,7 @@ export default function MeetingsPage() {
         </div>
 
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => { setShowForm(false); navigate('/meeting'); }} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button>
+          <button type="button" onClick={() => { setShowForm(false); navigate(meetingBasePath); }} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button>
           <button type="submit" className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white">{route.mode === 'edit' ? 'Save Changes' : 'Schedule Meeting'}</button>
         </div>
       </form>
@@ -675,7 +678,7 @@ export default function MeetingsPage() {
             <Search size={16} />
             <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search meetings" className="w-40 border-0 bg-transparent outline-none placeholder:text-slate-400" />
           </div>
-          <button onClick={() => navigate('/meeting/create')} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
+          <button onClick={() => navigate(`${meetingBasePath}/create`)} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
             <Plus size={16} />
             Schedule Meeting
           </button>
@@ -692,10 +695,10 @@ export default function MeetingsPage() {
           <button
             key={tab.value}
             onClick={() => {
-              if (tab.value === 'dashboard') navigate('/meeting');
-              if (tab.value === 'calendar') navigate('/meeting/calendar');
-              if (tab.value === 'myMeetings') navigate('/meeting/my-meetings');
-              if (tab.value === 'list') navigate('/meeting');
+              if (tab.value === 'dashboard') navigate(meetingBasePath);
+              if (tab.value === 'calendar') navigate(`${meetingBasePath}/calendar`);
+              if (tab.value === 'myMeetings') navigate(`${meetingBasePath}/my-meetings`);
+              if (tab.value === 'list') navigate(meetingBasePath);
             }}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium ${route.mode === tab.value ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
           >
