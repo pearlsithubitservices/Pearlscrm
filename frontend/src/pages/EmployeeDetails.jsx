@@ -70,7 +70,7 @@ const formatMapForInput = (map) => {
   return String(map);
 };
 
-const EmployeeDetails = () => {
+const EmployeeDetails = ({ employeeWorkspace = false }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const navigate = useNavigate();
@@ -408,7 +408,7 @@ const EmployeeDetails = () => {
                   try {
                     await deleteEmployee(currentEmployee?.id || currentEmployee?._id || id);
                     alert("Employee deleted successfully.");
-                    navigate("/employees");
+                    navigate(employeeWorkspace ? "/employee/employees" : "/employees");
                   } catch (err) {
                     alert(err.message || "Failed to delete employee");
                   }

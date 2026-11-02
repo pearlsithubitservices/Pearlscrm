@@ -98,7 +98,10 @@ import EmpFollowupDetails from './EmployeePages/FollowUps/FollowupDetails/EmpFol
 import EmpProjectDetails from './EmployeePages/Projects/EmpProjectDetails.jsx';
 import EmployeeBoards from './EmployeePages/Board/index.jsx';
 import Messager from './pages/Messager.jsx';
+import WebMail from './pages/WebMail.jsx';
 import EmpESignature from './EmployeePages/ESignature/EmpESignature.jsx';
+import QuotationManagement from './pages/QuotationManagement.jsx';
+import HRManagement from './pages/HRManagement.jsx';
 
 // ============================================================
 // EXISTING WHATSAPP CAMPAIGN
@@ -341,6 +344,13 @@ export default function App() {
                 element={<ClientManagement />}
               />
 
+              {/* QUOTATIONS */}
+
+              <Route
+                path="/quotations/*"
+                element={<QuotationManagement />}
+              />
+
               {/* PAYMENTS */}
 
               <Route
@@ -353,6 +363,11 @@ export default function App() {
               <Route
                 path="/employees"
                 element={<Employees />}
+              />
+
+              <Route
+                path="/hr-management"
+                element={<HRManagement />}
               />
 
               {/* CREATE LEAD */}
@@ -397,7 +412,7 @@ export default function App() {
 
               <Route
                 path="/web-mail"
-                element={<PlaceholderPage title="Web Mail" />}
+                element={<WebMail />}
               />
 
               <Route
@@ -594,6 +609,16 @@ export default function App() {
               />
 
               <Route
+                path="/employee/employees"
+                element={<Employees employeeWorkspace />}
+              />
+
+              <Route
+                path="/employee/employeeDetails/:id"
+                element={<EmployeeDetails employeeWorkspace />}
+              />
+
+              <Route
                 path="/employee/tasks"
                 element={<EmpTask />}
               />
@@ -616,6 +641,11 @@ export default function App() {
               <Route
                 path="/employee/leads"
                 element={<EmployeeLeads />}
+              />
+
+              <Route
+                path="/employee/quotations/*"
+                element={<QuotationManagement />}
               />
 
               <Route
@@ -660,7 +690,7 @@ export default function App() {
 
               <Route
                 path="/employee/web-mail"
-                element={<PlaceholderPage title="Web Mail" />}
+                element={<WebMail />}
               />
 
               <Route

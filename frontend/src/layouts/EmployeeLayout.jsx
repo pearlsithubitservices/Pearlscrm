@@ -4,14 +4,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import EmployeeSidebar from "../pages/employee/EmployeeSidebar";
+import AdminSidebar from "../components/sidebar";
 import { socket } from "../config/socket";
 import NotificationDrawer from "../components/NotificationDrawer";
-import { canAccessEmployeePath } from "../data/departmentModuleAccess";
+import { canAccessEmployeePath, getUserDepartment, isHRDepartment } from "../data/departmentModuleAccess";
 
 export default function EmployeeLayout() {
   const { user, isAdmin, loading } = useAuth();
   const location = useLocation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const department = getUserDepartment(user);
+  const isHrEmployee =
+    !isAdmin &&
+    user?.role?.trim().toLowerCase() === "employee" &&
+    isHRDepartment(department);
 
   useEffect(() => {
     if (!socket) return;
@@ -55,13 +61,13 @@ export default function EmployeeLayout() {
     return <Outlet />;
   }
 
-  if (!canAccessEmployeePath(location.pathname, user.department || user.profile?.department)) {
+  if (!canAccessEmployeePath(location.pathname, department)) {
     return <Navigate to="/employee/overview" replace />;
   }
 
   return (
     <div className="flex min-h-screen bg-[#FBFBFA]">
-      <EmployeeSidebar />
+      {isHrEmployee ? <AdminSidebar /> : <EmployeeSidebar />}
 
       <main className="flex-1 overflow-auto pt-14 lg:pt-0">
         <AnimatePresence mode="wait">

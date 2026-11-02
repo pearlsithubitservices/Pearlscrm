@@ -45,6 +45,7 @@ const TaskDocumentRoutes = require("./routes/TaskDocumentRoutes");
 const BenefitRoutes = require("./routes/BenefitRoutes");
 
 const chatRoutes = require("./routes/ChatRoute");
+const teamChatRoutes = require("./routes/teamChatRoutes");
 const messageRoutes = require("./routes/messageRoute");
 const messengerRoutes = require("./routes/messengerRoutes");
 const DocumentRoutes = require("./routes/DocumentRoutes");
@@ -72,6 +73,8 @@ const ReimbursementPolicyroutes = require("./routes/ReimbursementPolicyroutes");
 const TaxDocumentsRoutes = require("./routes/TaxDocumentsRoutes");
 const BoardRoutes = require("./routes/BoardRoutes");
 const meetingRoutes = require("./routes/meetingRoutes");
+const quotationRoutes = require("./routes/QuotationRoutes");
+const HRRoutes = require("./routes/HRRoutes");
 
 const {
   startFollowupReminderScheduler,
@@ -172,6 +175,8 @@ app.use("/api/notification", NotificationRoutes);
 app.use("/api/ticket", TicketRoutes);
 app.use("/api/boards", BoardRoutes);
 app.use("/api/meetings", meetingRoutes);
+app.use("/api/quotations", quotationRoutes);
+app.use("/api/hr", HRRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -191,6 +196,7 @@ app.use("/api/activity", EmpActivityRoutes);
 app.use("/api/totalLeave", EmpTotalLeave);
 
 app.use("/api/chat", chatRoutes);
+app.use("/api/team-chat", teamChatRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/messenger", messengerRoutes);
 app.use("/api/documents", DocumentRoutes);

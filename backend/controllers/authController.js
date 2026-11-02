@@ -4,6 +4,15 @@ const User = require("../models/User");
 const Employee = require("../models/Employee");
 const { DEFAULT_DEPARTMENT } = require("../config/departments");
 
+const resolveDepartment = (user) => {
+  const departments = [user?.department, user?.profile?.department].filter(Boolean);
+  const normalized = departments.map((department) => String(department).trim().toLowerCase());
+  if (normalized.some((department) => ["hr", "hr department", "human resources", "human resource"].includes(department))) {
+    return "HR";
+  }
+  return departments[0] || DEFAULT_DEPARTMENT;
+};
+
 const generateToken = (user) => {
   return jwt.sign(
     {
@@ -28,6 +37,12 @@ const register = async (req, res) => {
 
     const normalizedEmail = String(email).trim().toLowerCase();
     const safeDepartment = String(department || DEFAULT_DEPARTMENT).trim() || DEFAULT_DEPARTMENT;
+    if (["hr", "hr department", "human resources", "human resource"].includes(safeDepartment.toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        message: "HR department accounts must be assigned by an administrator",
+      });
+    }
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -62,8 +77,7 @@ const register = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department:
-          user.department || user.profile?.department || DEFAULT_DEPARTMENT,
+        department: resolveDepartment(user),
         avatar: user.avatar,
       },
     });
@@ -126,8 +140,7 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department:
-          user.department || user.profile?.department || DEFAULT_DEPARTMENT,
+        department: resolveDepartment(user),
         avatar: user.avatar,
       },
     });
@@ -159,8 +172,7 @@ const getMe = async (req, res) => {
         email: user.email,
         role: user.role,
         industry: user.industry,
-        department:
-          user.department || user.profile?.department || DEFAULT_DEPARTMENT,
+        department: resolveDepartment(user),
         avatar: user.avatar,
       },
     });

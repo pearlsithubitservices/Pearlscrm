@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -6,22 +6,14 @@ import toast from 'react-hot-toast';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import useEmployees from '../Hooks/useEmployees';
+import LiveMeetingRoom from './LiveMeetingRoom';
 import {
   CalendarDays,
-  CheckCircle2,
-  Clock3,
-  Eye,
   ListTodo,
-  PenSquare,
   Plus,
   Search,
   Trash2,
-  UserPlus,
   Video,
-  XCircle,
-  BellRing,
-  Filter,
-  ChevronRight,
 } from 'lucide-react';
 
 const meetingTypes = [
@@ -54,6 +46,7 @@ const createDefaultForm = () => ({
   locationType: 'Office',
   address: '',
   meetingUrl: '',
+  liveMeeting: false,
   status: 'Scheduled',
 });
 
@@ -65,6 +58,7 @@ const getRouteState = (pathname) => {
   if (afterMeeting[0] === 'calendar') return { mode: 'calendar' };
   if (afterMeeting[0] === 'my-meetings') return { mode: 'myMeetings' };
   if (afterMeeting[0] === 'create') return { mode: 'create' };
+  if (afterMeeting[1] === 'live') return { mode: 'live', id: afterMeeting[0] };
   if (afterMeeting[0] && afterMeeting[1] === 'edit') return { mode: 'edit', id: afterMeeting[0] };
   if (afterMeeting[0]) return { mode: 'details', id: afterMeeting[0] };
 
@@ -84,6 +78,24 @@ const formatDateTime = (value) => {
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 };
+
+const getMeetingFormData = (meeting, fallbackOrganizer = '') => ({
+  title: meeting.title || '',
+  description: meeting.description || '',
+  type: meeting.type || 'Team Meeting',
+  priority: meeting.priority || 'Normal',
+  date: formatDate(meeting.date),
+  startTime: meeting.startTime || '09:00',
+  endTime: meeting.endTime || '10:00',
+  timezone: meeting.timezone || 'UTC',
+  organizer: meeting.organizer?._id || meeting.organizer || fallbackOrganizer,
+  participants: meeting.participants || [],
+  locationType: meeting.location?.type || 'Office',
+  address: meeting.location?.address || '',
+  meetingUrl: meeting.location?.meetingUrl || '',
+  liveMeeting: Boolean(meeting.liveMeeting),
+  status: meeting.status || 'Scheduled',
+});
 
 const getStatusClass = (status) => {
   const classes = {
@@ -110,13 +122,17 @@ export default function MeetingsPage() {
 
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const selectedMeeting = useMemo(
+    () => meetings.find((item) => String(item._id) === String(route.id)) || null,
+    [meetings, route.id],
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [showForm, setShowForm] = useState(route.mode === 'create' || route.mode === 'edit');
+  const showForm = route.mode === 'create' || route.mode === 'edit';
   const [formData, setFormData] = useState(createDefaultForm());
+  const initializedEditIdRef = useRef(null);
   const [newParticipant, setNewParticipant] = useState({ name: '', email: '', role: 'Attendee' });
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [activeDate, setActiveDate] = useState(new Date());
@@ -144,7 +160,6 @@ export default function MeetingsPage() {
 
   const loadMeetings = async (filters = {}) => {
     try {
-      setLoading(true);
       const response = await api.get('/meetings', { params: filters });
       const items = response?.data?.data || [];
       setMeetings(items);
@@ -157,59 +172,42 @@ export default function MeetingsPage() {
   };
 
   useEffect(() => {
+    let active = true;
     const params = {};
     if (route.mode === 'myMeetings') params.mine = 'true';
     if (searchTerm) params.search = searchTerm;
     if (statusFilter !== 'all') params.status = statusFilter;
     if (typeFilter !== 'all') params.type = typeFilter;
     if (priorityFilter !== 'all') params.priority = priorityFilter;
-    loadMeetings(params);
-  }, [route.mode, searchTerm, statusFilter, typeFilter, priorityFilter, user]);
 
-  useEffect(() => {
-    const activeId = route.id;
-    if (!activeId) {
-      setSelectedMeeting(null);
-      return;
-    }
-
-    const current = meetings.find((item) => String(item._id) === String(activeId));
-    if (current) {
-      setSelectedMeeting(current);
-    }
-  }, [meetings, route.id]);
-
-  useEffect(() => {
-    const shouldOpenForm = route.mode === 'create' || route.mode === 'edit';
-    setShowForm(shouldOpenForm);
-
-    if (route.mode === 'edit' && route.id) {
-      const meeting = meetings.find((item) => String(item._id) === String(route.id));
-      if (meeting) {
-        setFormData({
-          title: meeting.title || '',
-          description: meeting.description || '',
-          type: meeting.type || 'Team Meeting',
-          priority: meeting.priority || 'Normal',
-          date: formatDate(meeting.date),
-          startTime: meeting.startTime || '09:00',
-          endTime: meeting.endTime || '10:00',
-          timezone: meeting.timezone || 'UTC',
-          organizer: meeting.organizer?._id || meeting.organizer || user?.id || '',
-          participants: meeting.participants || [],
-          locationType: meeting.location?.type || 'Office',
-          address: meeting.location?.address || '',
-          meetingUrl: meeting.location?.meetingUrl || '',
-          status: meeting.status || 'Scheduled',
-        });
+    const fetchMeetings = async () => {
+      try {
+        const response = await api.get('/meetings', { params });
+        if (!active) return;
+        const items = response?.data?.data || [];
+        setMeetings(items);
+        if (route.mode === 'edit' && route.id && initializedEditIdRef.current !== route.id) {
+          const meeting = items.find((item) => String(item._id) === String(route.id));
+          if (meeting) {
+            setFormData(getMeetingFormData(meeting, user?.id || user?._id || ''));
+            initializedEditIdRef.current = route.id;
+          }
+        }
+      } catch (error) {
+        if (active) {
+          console.error(error);
+          toast.error(error?.response?.data?.message || 'Unable to load meetings');
+        }
+      } finally {
+        if (active) setLoading(false);
       }
-    }
+    };
 
-    if (route.mode === 'create') {
-      setFormData(createDefaultForm());
-      setFormData((prev) => ({ ...prev, organizer: user?.id || '' }));
-    }
-  }, [route.mode, route.id, meetings, user]);
+    void fetchMeetings();
+    return () => {
+      active = false;
+    };
+  }, [route.mode, route.id, searchTerm, statusFilter, typeFilter, priorityFilter, user?.id, user?._id]);
 
   const filteredMeetings = useMemo(() => {
     let items = [...meetings];
@@ -324,7 +322,6 @@ export default function MeetingsPage() {
         toast.success('Meeting scheduled');
       }
 
-      setShowForm(false);
       navigate(meetingBasePath);
       await loadMeetings();
     } catch (error) {
@@ -333,6 +330,12 @@ export default function MeetingsPage() {
   };
 
   const handleStatusAction = async (meetingId, action) => {
+    if (action === 'delete') {
+      const meeting = meetings.find((item) => String(item._id) === String(meetingId));
+      const meetingTitle = meeting?.title || 'this meeting';
+      if (!window.confirm(`Delete "${meetingTitle}"? This cannot be undone.`)) return;
+    }
+
     try {
       if (action === 'delete') {
         await api.delete(`/meetings/${meetingId}`);
@@ -356,7 +359,20 @@ export default function MeetingsPage() {
   };
 
   const openMeeting = (id) => navigate(`${meetingBasePath}/${id}`);
-  const openEdit = (id) => navigate(`${meetingBasePath}/${id}/edit`);
+  const openEdit = (id) => {
+    const meeting = meetings.find((item) => String(item._id) === String(id));
+    if (meeting) {
+      setFormData(getMeetingFormData(meeting, user?.id || user?._id || ''));
+      initializedEditIdRef.current = String(id);
+    }
+    navigate(`${meetingBasePath}/${id}/edit`);
+  };
+  const openCreate = () => {
+    setFormData({ ...createDefaultForm(), organizer: user?.id || user?._id || '' });
+    initializedEditIdRef.current = null;
+    navigate(`${meetingBasePath}/create`);
+  };
+  const joinMeeting = (id) => navigate(`${meetingBasePath}/${id}/live`);
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -398,7 +414,21 @@ export default function MeetingsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => openMeeting(meeting._id)} className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white">View</button>
+                  {meeting.liveMeeting && !['Cancelled', 'Completed'].includes(meeting.status) && (
+                    <button onClick={() => joinMeeting(meeting._id)} className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white">
+                      <Video size={14} /> Join
+                    </button>
+                  )}
                   <button onClick={() => openEdit(meeting._id)} className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700">Edit</button>
+                  <button
+                    onClick={() => handleStatusAction(meeting._id, 'delete')}
+                    aria-label={`Delete ${meeting.title}`}
+                    title="Delete meeting"
+                    className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}
@@ -437,7 +467,10 @@ export default function MeetingsPage() {
           <tbody className="divide-y divide-slate-200">
             {filteredMeetings.map((meeting) => (
               <tr key={meeting._id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-900">{meeting.title}</td>
+                <td className="px-4 py-3 font-medium text-slate-900">
+                  {meeting.title}
+                  {meeting.liveMeeting && <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-700">Live</span>}
+                </td>
                 <td className="px-4 py-3 text-sm text-slate-600">{formatDate(meeting.date)}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{meeting.startTime} - {meeting.endTime}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{meeting.type}</td>
@@ -448,7 +481,18 @@ export default function MeetingsPage() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button onClick={() => openMeeting(meeting._id)} className="text-indigo-600">View</button>
-                    <button onClick={() => openEdit(meeting._id)} className="text-slate-600">Edit</button>
+                        {meeting.liveMeeting && !['Cancelled', 'Completed'].includes(meeting.status) && (
+                          <button onClick={() => joinMeeting(meeting._id)} className="font-medium text-emerald-700">Join</button>
+                        )}
+                        <button onClick={() => openEdit(meeting._id)} className="text-slate-600">Edit</button>
+                    <button
+                      onClick={() => handleStatusAction(meeting._id, 'delete')}
+                      aria-label={`Delete ${meeting.title}`}
+                      title="Delete meeting"
+                      className="font-medium text-rose-600"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -499,7 +543,18 @@ export default function MeetingsPage() {
             </div>
             <div className="flex gap-2">
               <button onClick={() => openMeeting(meeting._id)} className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white">View</button>
+              {meeting.liveMeeting && !['Cancelled', 'Completed'].includes(meeting.status) && (
+                <button onClick={() => joinMeeting(meeting._id)} className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white">Join</button>
+              )}
               <button onClick={() => handleStatusAction(meeting._id, 'start')} className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700">Start</button>
+              <button
+                onClick={() => handleStatusAction(meeting._id, 'delete')}
+                aria-label={`Delete ${meeting.title}`}
+                className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600"
+              >
+                <Trash2 size={14} />
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -538,6 +593,11 @@ export default function MeetingsPage() {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
+          {selectedMeeting.liveMeeting && !['Cancelled', 'Completed'].includes(selectedMeeting.status) && (
+            <button onClick={() => joinMeeting(selectedMeeting._id)} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+              <Video size={16} /> Join live meeting
+            </button>
+          )}
           <button onClick={() => openEdit(selectedMeeting._id)} className="rounded-md bg-indigo-600 px-3 py-2 text-xs font-medium text-white">Edit</button>
           <button onClick={() => handleStatusAction(selectedMeeting._id, 'start')} className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700">Start</button>
           <button onClick={() => handleStatusAction(selectedMeeting._id, 'complete')} className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700">Complete</button>
@@ -552,7 +612,7 @@ export default function MeetingsPage() {
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-5 flex items-center justify-between">
         <h3 className="text-xl font-semibold text-slate-900">{route.mode === 'edit' ? 'Edit Meeting' : 'Schedule Meeting'}</h3>
-        <button onClick={() => { setShowForm(false); navigate(meetingBasePath); }} className="text-sm text-slate-500">Close</button>
+        <button onClick={() => navigate(meetingBasePath)} className="text-sm text-slate-500">Close</button>
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
@@ -617,6 +677,20 @@ export default function MeetingsPage() {
             <span className="font-medium">Meeting URL</span>
             <input name="meetingUrl" value={formData.meetingUrl} onChange={handleFormChange} className="w-full rounded-xl border border-slate-200 px-3 py-2" placeholder="https://..." />
           </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-slate-700 md:col-span-2">
+            <input
+              type="checkbox"
+              name="liveMeeting"
+              checked={Boolean(formData.liveMeeting)}
+              onChange={(event) => setFormData((prev) => ({ ...prev, liveMeeting: event.target.checked }))}
+              className="mt-0.5 h-4 w-4 accent-indigo-600"
+            />
+            <span>
+              <span className="block font-semibold text-slate-900">Enable in-app live meeting</span>
+              <span className="mt-1 block text-xs text-slate-600">Invitees can join a live audio/video room from this meeting. Only the organizer and selected CRM employees can join.</span>
+            </span>
+          </label>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -659,12 +733,16 @@ export default function MeetingsPage() {
         </div>
 
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => { setShowForm(false); navigate(meetingBasePath); }} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button>
+          <button type="button" onClick={() => navigate(meetingBasePath)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button>
           <button type="submit" className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white">{route.mode === 'edit' ? 'Save Changes' : 'Schedule Meeting'}</button>
         </div>
       </form>
     </div>
   );
+
+  if (route.mode === 'live' && route.id) {
+    return <LiveMeetingRoom meetingId={route.id} onLeave={() => navigate(meetingBasePath)} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 lg:p-6">
@@ -678,7 +756,7 @@ export default function MeetingsPage() {
             <Search size={16} />
             <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search meetings" className="w-40 border-0 bg-transparent outline-none placeholder:text-slate-400" />
           </div>
-          <button onClick={() => navigate(`${meetingBasePath}/create`)} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
+          <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
             <Plus size={16} />
             Schedule Meeting
           </button>

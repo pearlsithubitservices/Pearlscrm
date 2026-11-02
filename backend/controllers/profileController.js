@@ -11,6 +11,15 @@ const splitName = (name = "") => {
   return { firstName: parts.shift() || "", lastName: parts.join(" ") };
 };
 
+const resolveDepartment = (user) => {
+  const departments = [user?.department, user?.profile?.department].filter(Boolean);
+  const normalized = departments.map((department) => String(department).trim().toLowerCase());
+  if (normalized.some((department) => ["hr", "hr department", "human resources", "human resource"].includes(department))) {
+    return "HR";
+  }
+  return departments[0] || DEFAULT_DEPARTMENT;
+};
+
 const serializeUser = (user) => {
   const fallback = splitName(user.name);
   return {
@@ -22,7 +31,7 @@ const serializeUser = (user) => {
     email: user.email,
     role: user.role,
     industry: user.industry,
-    department: user.department || user.profile?.department || DEFAULT_DEPARTMENT,
+    department: resolveDepartment(user),
     avatar: user.avatar,
     profile: user.profile || {},
   };
