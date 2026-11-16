@@ -5,6 +5,7 @@ import {
   BarChart3,
   Users,
   CheckSquare,
+  FileText,
   LogOut,
   CalendarDays,
   CircleUser,
@@ -27,7 +28,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useIndustry } from '../../context/IndustryContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { canAccessEmployeeModule } from '../../data/departmentModuleAccess';
+import { canAccessEmployeeModule, getUserDepartment } from '../../data/departmentModuleAccess';
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -48,6 +49,12 @@ export default function Sidebar() {
       module: 'dashboard',
     },
     {
+      name: 'Employee Management',
+      icon: Users,
+      path: '/employee/employees',
+      module: 'employeeManagement',
+    },
+    {
       name: 'Projects',
       icon: Briefcase,
       path: '/employee/projects',
@@ -62,6 +69,12 @@ export default function Sidebar() {
       icon: Users,
       path: '/employee/leads',
       module: 'leads',
+    },
+    {
+      name: 'Quotation Management',
+      icon: FileText,
+      path: '/employee/quotations',
+      module: 'quotation',
     },
     {
       name: "Tasks & Activities",
@@ -134,7 +147,7 @@ export default function Sidebar() {
     },
   ];
 
-  const department = user?.department || user?.profile?.department || user?.employeeDepartment || user?.dept || 'General';
+  const department = getUserDepartment(user) || 'General';
   const visibleMainItems = mainItems.filter((item) =>
     !item.module || canAccessEmployeeModule(item.module, department)
   );

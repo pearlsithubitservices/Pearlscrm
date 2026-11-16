@@ -1,4 +1,34 @@
-const normalizeDepartment = (department) => String(department || "").trim().toLowerCase();
+const normalizeDepartment = (department) => {
+  const normalized = String(department || "").trim().toLowerCase();
+  if (["hr department", "human resources", "human resource"].includes(normalized)) return "hr";
+  if (normalized === "sales department") return "sales";
+  return normalized;
+};
+
+export const isHRDepartment = (department) => normalizeDepartment(department) === "hr";
+
+export const getUserDepartment = (user) => {
+  const departments = [
+    user?.department,
+    user?.profile?.department,
+    user?.employeeDepartment,
+    user?.dept,
+  ].filter(Boolean);
+
+  if (departments.some(isHRDepartment)) return "HR";
+  const rootDepartment = String(user?.department || "").trim();
+  const profileDepartment = String(user?.profile?.department || "").trim();
+  const rootIsDefault = normalizeDepartment(rootDepartment) === "digital marketing";
+  const resolvedDepartment =
+    profileDepartment &&
+    (!rootDepartment ||
+      (rootIsDefault && normalizeDepartment(profileDepartment) !== "digital marketing"))
+      ? profileDepartment
+      : rootDepartment || departments[0] || "";
+  return normalizeDepartment(resolvedDepartment) === "sales"
+    ? "Sales"
+    : resolvedDepartment || "";
+};
 
 const ALL_DEPARTMENTS = [
   "digital marketing",
@@ -6,12 +36,15 @@ const ALL_DEPARTMENTS = [
   "hr",
   "management",
   "marketing",
+  "sales",
   "designers",
 ];
 
 export const EMPLOYEE_MODULE_DEPARTMENTS = {
   dashboard: ["hr", "management"],
+  employeeManagement: ["hr"],
   leads: ["marketing"],
+  quotation: ["sales", "marketing", "digital marketing"],
   tasks: ALL_DEPARTMENTS,
   projects: ALL_DEPARTMENTS,
   followUps: ["management", "marketing"],
@@ -20,17 +53,19 @@ export const EMPLOYEE_MODULE_DEPARTMENTS = {
   payroll: ["hr", "management", "marketing"],
   reports: ["hr", "management"],
   performance: ["hr", "management"],
+  hrManagement: ["hr"],
   esignature: ["development"],
   meeting: ALL_DEPARTMENTS,
 };
 
 export const ADMIN_MODULE_DEPARTMENTS = {
   dashboard: ALL_DEPARTMENTS,
-  leads: ["marketing"],
+  leads: ["marketing", "sales"],
   tasks: ALL_DEPARTMENTS,
   projects: ALL_DEPARTMENTS,
   followUps: ALL_DEPARTMENTS,
   clients: ALL_DEPARTMENTS,
+  quotation: ["sales", "marketing", "digital marketing", "admin"],
   attendance: ALL_DEPARTMENTS,
   leave: ALL_DEPARTMENTS,
   payroll: ALL_DEPARTMENTS,
@@ -44,9 +79,10 @@ export const ADMIN_MODULE_DEPARTMENTS = {
 export const ADMIN_LANDING_PATHS = {
   "digital marketing": "/",
   development: "/",
-  hr: "/",
+  hr: "/hr-management",
   management: "/",
   marketing: "/leads",
+  sales: "/quotations",
   designers: "/",
 };
 
@@ -68,7 +104,10 @@ export const COMMON_EMPLOYEE_PATHS = [
 const EMPLOYEE_PATH_MODULES = {
   "/employee-dashboard": "dashboard",
   "/employee/dashboard": "dashboard",
+  "/employee/employees": "employeeManagement",
+  "/employee/employeeDetails": "employeeManagement",
   "/employee/leads": "leads",
+  "/employee/quotations": "quotation",
   "/employee/tasks": "tasks",
   "/employee/task": "tasks",
   "/employee/taskDetails": "tasks",
@@ -102,6 +141,7 @@ const ADMIN_PATH_MODULES = {
   "/leave": "leave",
   "/admin-payroll": "payroll",
   "/admin-performance": "performance",
+  "/hr-management": "hrManagement",
   "/boards": "boards",
   "/leadDetails": "leads",
   "/taskDetails": "tasks",
@@ -114,6 +154,7 @@ const ADMIN_PATH_MODULES = {
   "/e-signature": "esignature",
   "/e-signatures": "esignature",
   "/meeting": "meeting",
+  "/quotations": "quotation",
 };
 
 const pathMatches = (path, basePath) => path === basePath || path.startsWith(`${basePath}/`);
@@ -133,6 +174,8 @@ export const canAccessEmployeeModule = (moduleName, department) =>
   EMPLOYEE_MODULE_DEPARTMENTS[moduleName]?.includes(normalizeDepartment(department)) || false;
 
 export const canAccessAdminPath = (path, department) => {
+  if (isHRDepartment(department)) return true;
+
   if (
     pathMatches(path, "/boards") ||
     pathMatches(path, "/collaboration") ||
@@ -153,8 +196,10 @@ export const canAccessAdminPath = (path, department) => {
   return ADMIN_MODULE_DEPARTMENTS[moduleName].includes(normalizeDepartment(department));
 };
 
-export const canAccessAdminModule = (moduleName, department) =>
-  ADMIN_MODULE_DEPARTMENTS[moduleName]?.includes(normalizeDepartment(department)) || false;
+export const canAccessAdminModule = (moduleName, department) => {
+  if (isHRDepartment(department)) return true;
+  return ADMIN_MODULE_DEPARTMENTS[moduleName]?.includes(normalizeDepartment(department)) || false;
+};
 
 export const getAdminLandingPath = (department) =>
   ADMIN_LANDING_PATHS[normalizeDepartment(department)] || "/";

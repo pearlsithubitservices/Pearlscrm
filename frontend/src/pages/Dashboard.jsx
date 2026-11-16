@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useIndustry } from '../context/IndustryContext';
-import { canAccessAdminModule } from '../data/departmentModuleAccess';
+import { canAccessAdminModule, getUserDepartment } from '../data/departmentModuleAccess';
 import Employeecomp from '../components/Dashboard/Employeecomp.jsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import CreateLead from './CreateLead.jsx';
@@ -54,6 +54,7 @@ const moduleGroups = [
       { name: 'Meetings', path: '/meeting', icon: Video },
       { name: 'Web Mail', path: '/web-mail', icon: Mail },
       { name: 'E-Signature', path: '/e-signature', icon: FileSignature, access: 'esignature' },
+      { name: 'Quotation Management', path: '/quotations', icon: FileText, access: 'quotation' },
     ],
   },
   {
@@ -300,7 +301,7 @@ export default function Dashboard() {
     day: "numeric",
   });
 
-  const department = user?.department || user?.profile?.department;
+  const department = getUserDepartment(user);
   const visibleModuleGroups = moduleGroups.map((group) => ({
     ...group,
     modules: group.modules.filter((module) =>

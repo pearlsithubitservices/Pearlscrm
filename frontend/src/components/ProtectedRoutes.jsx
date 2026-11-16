@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import useEmployees from "../Hooks/useEmployees";
+import { getUserDepartment, isHRDepartment } from "../data/departmentModuleAccess";
 
 export default function ProtectedRoute({
     children,
@@ -8,6 +9,10 @@ export default function ProtectedRoute({
 }) {
     const { user, loading, isAdmin } = useAuth();
     const { employees, loading: employeesLoading } = useEmployees();
+    const canAccessAdminWorkspace =
+        isAdmin ||
+        (user?.role?.trim().toLowerCase() === "employee" &&
+            isHRDepartment(getUserDepartment(user)));
 
     // Wait for auth to complete
     if (loading) {
@@ -24,11 +29,11 @@ export default function ProtectedRoute({
     }
 
     // Protect admin-only routes
-    if (role === "admin" && !isAdmin) {
+    if (role === "admin" && !canAccessAdminWorkspace) {
         return <Navigate to="/employee-dashboard" replace />;
     }
 
-    if (role === "admin" && isAdmin) {
+    if (role === "admin" && canAccessAdminWorkspace) {
         return children;
     }
 

@@ -4,6 +4,7 @@ export const DEPARTMENTS = [
   "HR",
   "Management",
   "Marketing",
+  "Sales",
   "Designers",
 ];
 

@@ -33,9 +33,10 @@ import { useAuth } from "../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import useChat from "../Hooks/chat.js";
 import { apiUrl } from "../config/api.js";
+import messengerApi from "../services/messengerApi.js";
 import DocumentsView from "../components/messager/documents/DocumentsView";
 
-const TABS = ["Chats", "Task Chats", "Documents"];
+const TABS = ["Chats", "Task Chats", "Documents", "Announcements"];
 
 // Options shown in the "+" dropdown
 const ADD_NEW_OPTIONS = [
@@ -76,6 +77,18 @@ export default function Messenger() {
     const [messageText, setMessageText] = useState("");
     const [showAbout, setShowAbout] = useState(false);
     const [search, setSearch] = useState("");
+    const [announcements, setAnnouncements] = useState([]);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+    const [notifications, setNotifications] = useState([]);
+    const [searchResults, setSearchResults] = useState({
+        employees: [],
+        clients: [],
+        conversations: [],
+        messages: [],
+        files: [],
+        projects: [],
+        tasks: [],
+    });
 
     // "+" dropdown menu
     const [showAddMenu, setShowAddMenu] = useState(false);
@@ -138,6 +151,57 @@ export default function Messenger() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    useEffect(() => {
+        const loadMessengerMeta = async () => {
+            try {
+                const [announcementData, notificationData] = await Promise.all([
+                    messengerApi.getAnnouncements(),
+                    messengerApi.getNotifications(),
+                ]);
+                setAnnouncements(Array.isArray(announcementData) ? announcementData : []);
+                setNotifications(Array.isArray(notificationData) ? notificationData : []);
+            } catch (error) {
+                console.error("Error fetching messenger summary data:", error);
+            }
+        };
+
+        loadMessengerMeta();
+    }, []);
+
+    useEffect(() => {
+        const delay = setTimeout(async () => {
+            if (!search.trim()) {
+                setSearchResults({
+                    employees: [],
+                    clients: [],
+                    conversations: [],
+                    messages: [],
+                    files: [],
+                    projects: [],
+                    tasks: [],
+                });
+                return;
+            }
+
+            try {
+                const result = await messengerApi.search(search.trim());
+                setSearchResults(result || {
+                    employees: [],
+                    clients: [],
+                    conversations: [],
+                    messages: [],
+                    files: [],
+                    projects: [],
+                    tasks: [],
+                });
+            } catch (error) {
+                console.error("Messenger search failed:", error);
+            }
+        }, 250);
+
+        return () => clearTimeout(delay);
+    }, [search]);
+
     // Fetch employee directory on mount to display names
     useEffect(() => {
         fetchEmployees();
@@ -159,6 +223,34 @@ export default function Messenger() {
     }, [chats, activeChatId]);
 
     const activeChat = chats.find((c) => c._id === activeChatId);
+
+    const handleOpenAnnouncement = async (announcement) => {
+        if (!announcement) return;
+
+        setSelectedAnnouncement(announcement);
+
+        if (!announcement.isRead) {
+            try {
+                const token = localStorage.getItem("token");
+                await fetch(apiUrl(`/announcement/${announcement._id}`), {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                    body: JSON.stringify({ isRead: true }),
+                });
+
+                setAnnouncements((prev) =>
+                    prev.map((item) =>
+                        item._id === announcement._id ? { ...item, isRead: true } : item
+                    )
+                );
+            } catch (error) {
+                console.error("Failed to mark announcement as read:", error);
+            }
+        }
+    };
 
     const isUserMe = (idOrObj) => {
         if (!idOrObj) return false;
@@ -634,6 +726,95 @@ export default function Messenger() {
                 <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                     {activeTab === "Documents" ? (
                         <DocumentsView onClose={() => setActiveTab("Chats")} />
+                    ) : activeTab === "Announcements" ? (
+                        <div className="flex-1 overflow-y-auto bg-white p-6">
+                            <div className="max-w-4xl mx-auto space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900">Announcements</h2>
+                                        <p className="text-sm text-gray-500">Company updates, policy notices, and priority alerts.</p>
+                                    </div>
+                                    <span className="rounded-full bg-blue-50 text-blue-700 px-3 py-1 text-xs font-semibold">
+                                        {announcements.length} active
+                                    </span>
+                                </div>
+
+                                {announcements.length === 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
+                                        No announcements available right now.
+                                    </div>
+                                ) : (
+                                    announcements.map((announcement) => (
+                                        <div
+                                            key={announcement._id || announcement.id}
+                                            onClick={() => handleOpenAnnouncement(announcement)}
+                                            className="cursor-pointer rounded-2xl border border-gray-200 bg-white shadow-sm p-5 transition hover:shadow-md hover:border-blue-200"
+                                        >
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div>
+                                                    <h3 className="font-semibold text-gray-900">{announcement.title || "Announcement"}</h3>
+                                                    <p className="text-xs text-gray-500">{announcement.author || "Admin"} • {announcement.priority || "Normal"}</p>
+                                                </div>
+                                                <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${announcement.priority === "Urgent" ? "bg-red-100 text-red-700" : announcement.priority === "Important" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                                                    {announcement.priority || "Normal"}
+                                                </span>
+                                            </div>
+                                            <p className="mt-3 text-sm text-gray-600 leading-6">{announcement.description || announcement.message || "No description provided."}</p>
+                                            <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
+                                                <span>{announcement.date || new Date(announcement.createdAt || Date.now()).toLocaleString()}</span>
+                                                {!announcement.isRead && (
+                                                    <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700">Unread</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {selectedAnnouncement && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                                    <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
+                                        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                                            <div>
+                                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Announcement</p>
+                                                <h3 className="mt-1 text-xl font-bold text-gray-900">{selectedAnnouncement.title || "Announcement"}</h3>
+                                            </div>
+                                            <button
+                                                onClick={() => setSelectedAnnouncement(null)}
+                                                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                                                aria-label="Close announcement"
+                                            >
+                                                <X size={18} />
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-5 p-6">
+                                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                                                <span className="font-medium text-gray-800">{selectedAnnouncement.author || "Admin"}</span>
+                                                <span>•</span>
+                                                <span>{selectedAnnouncement.role || "Company Wide"}</span>
+                                                <span>•</span>
+                                                <span>
+                                                    {selectedAnnouncement.priority || "Normal"}
+                                                </span>
+                                            </div>
+
+                                            <div className="rounded-2xl bg-gray-50 p-4 text-sm text-gray-600">
+                                                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                                                    <Calendar size={14} />
+                                                    Date
+                                                </div>
+                                                <p>{selectedAnnouncement.date || new Date(selectedAnnouncement.createdAt || Date.now()).toLocaleString()}</p>
+                                            </div>
+
+                                            <div className="prose max-w-none text-sm leading-7 text-gray-700">
+                                                <p>{selectedAnnouncement.description || selectedAnnouncement.message || "No details provided for this announcement."}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <div className="flex flex-1 min-h-0">
                     {/* Chat list */}
@@ -681,6 +862,22 @@ export default function Messenger() {
 
 
                         <div className="flex-1 overflow-y-auto page-scroll">
+                            {search.trim() && searchResults.conversations.length > 0 && (
+                                <div className="px-3 pt-3">
+                                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-700">
+                                        <div className="font-semibold mb-1">Global search results</div>
+                                        <div className="space-y-1">
+                                            {searchResults.conversations.slice(0, 3).map((item) => (
+                                                <div key={item._id} className="truncate">• {item.chatName || item.name || "Conversation"}</div>
+                                            ))}
+                                            {(searchResults.employees.length || searchResults.tasks.length || searchResults.clients.length) > 0 && (
+                                                <div className="mt-1">• {searchResults.employees.length + searchResults.tasks.length + searchResults.clients.length} additional records found</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {loadingChats && (
                                 <p className="text-center text-sm text-gray-400 py-6">
                                     Loading chats...

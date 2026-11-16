@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { socket } from '../config/socket';
-import { canAccessAdminPath, getAdminLandingPath } from '../data/departmentModuleAccess';
+import { canAccessAdminPath, getAdminLandingPath, getUserDepartment, isHRDepartment } from '../data/departmentModuleAccess';
 
 export default function Layout() {
   const { user, isAdmin, loading } = useAuth();
@@ -36,12 +36,14 @@ export default function Layout() {
     return <Navigate to="/login" replace />;
   }
 
-  if (!isAdmin) {
+  const department = getUserDepartment(user);
+
+  if (!isAdmin && !isHRDepartment(department)) {
     return <Navigate to="/employee-dashboard" replace />;
   }
 
-  if (!canAccessAdminPath(location.pathname, user.department || user.profile?.department)) {
-    return <Navigate to={getAdminLandingPath(user.department || user.profile?.department)} replace />;
+  if (!canAccessAdminPath(location.pathname, department)) {
+    return <Navigate to={getAdminLandingPath(department)} replace />;
   }
 
   return (

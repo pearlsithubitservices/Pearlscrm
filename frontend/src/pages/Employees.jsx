@@ -33,7 +33,7 @@ import AnimateModals from "../components/Dashboard/AnimateModals";
 import useEmployees from "../Hooks/useEmployees";
 import { apiUrl } from "../config/api";
 
-export default function Employees() {
+export default function Employees({ employeeWorkspace = false }) {
   const [active, setActive] = useState(0);
   const [statusFilter, setStatusFilter] = useState("All");
   const [open, setOpen] = useState(false);
@@ -523,7 +523,7 @@ export default function Employees() {
                       className="hover:bg-blue-50/60 cursor-pointer transition-colors"
                       onClick={() =>
                         navigate(
-                          `/employeeDetails/${
+                          `${employeeWorkspace ? "/employee/employeeDetails/" : "/employeeDetails/"}${
                             employee.id ||
                             employee._id
                           }`

@@ -6,6 +6,7 @@ const Notification = require("../models/CommunicationModels/Notifications");
 const Followup = require("../models/Followup");
 const Task = require("../models/TaskModels/Task");
 const { protect } = require("../middlewares/authMiddleware");
+const { AccessToken } = require("livekit-server-sdk");
 
 router.use(protect);
 
@@ -256,6 +257,91 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error("Error creating meeting:", error);
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post("/:id/livekit-token", async (req, res) => {
+  try {
+    const { LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET } = process.env;
+    if (!LIVEKIT_URL || !LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
+      return res.status(503).json({
+        success: false,
+        message: "Live meetings are not configured. Contact your CRM administrator.",
+      });
+    }
+
+    if (!/^[a-f\d]{24}$/i.test(req.params.id)) {
+      return res.status(404).json({ success: false, message: "Meeting not found." });
+    }
+
+    const [meeting, user] = await Promise.all([
+      Meeting.findById(req.params.id).select("title status liveMeeting organizer participants").lean(),
+      User.findById(req.user.id).select("_id name email status").lean(),
+    ]);
+    if (!meeting || !meeting.liveMeeting) {
+      return res.status(404).json({ success: false, message: "Live meeting not found." });
+    }
+    if (!user || user.status !== "Active") {
+      return res.status(403).json({ success: false, message: "An active CRM account is required." });
+    }
+    if (["Cancelled", "Completed"].includes(meeting.status)) {
+      return res.status(403).json({ success: false, message: "This meeting is no longer available." });
+    }
+
+    const userId = String(user._id);
+    const isOrganizer = String(meeting.organizer) === userId;
+    const isParticipant = (meeting.participants || []).some(
+      (participant) =>
+        String(participant.user || "") === userId ||
+        String(participant.email || "").trim().toLowerCase() === String(user.email || "").toLowerCase(),
+    );
+    if (!isOrganizer && !isParticipant) {
+      return res.status(403).json({ success: false, message: "You are not invited to this meeting." });
+    }
+
+    const roomName = `pearls-meeting-${meeting._id}`;
+    const token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
+      identity: userId,
+      name: user.name || "CRM user",
+      ttl: "2h",
+    });
+    token.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: true,
+      canSubscribe: true,
+      canPublishData: true,
+    });
+
+    if (meeting.status === "Scheduled") {
+      await Meeting.updateOne(
+        { _id: meeting._id, status: "Scheduled" },
+        {
+          $set: { status: "In Progress", actualStartTime: new Date() },
+          $push: {
+            activityLog: {
+              action: "Live meeting started",
+              performedBy: userId,
+              timestamp: new Date(),
+              metadata: { roomName },
+            },
+          },
+        },
+      );
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        token: await token.toJwt(),
+        serverUrl: LIVEKIT_URL,
+        roomName,
+        meeting: { id: String(meeting._id), title: meeting.title },
+      },
+    });
+  } catch (error) {
+    console.error("Live meeting token creation failed:", error);
+    return res.status(500).json({ success: false, message: "Unable to join this meeting." });
   }
 });
 

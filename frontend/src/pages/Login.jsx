@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 import { Mail, Lock, Sparkles } from "lucide-react";
 import { DEFAULT_DEPARTMENT, DEPARTMENTS } from "../data/departments";
+import { getAdminLandingPath, getUserDepartment, isHRDepartment } from "../data/departmentModuleAccess";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,15 +16,18 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const departmentOptions = DEPARTMENTS;
+  const departmentOptions = DEPARTMENTS.filter((option) => !isHRDepartment(option));
 
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading, login, register } = useAuth();
 
   useEffect(() => {
     if (user && !authLoading) {
+      const userDepartment = getUserDepartment(user);
       if (isAdmin) {
-        navigate("/", { replace: true });
+        navigate(getAdminLandingPath(userDepartment), { replace: true });
+      } else if (isHRDepartment(userDepartment)) {
+        navigate("/hr-management", { replace: true });
       } else {
         navigate("/employee-dashboard", { replace: true });
       }
@@ -75,9 +79,12 @@ export default function Login() {
     try {
       if (isLogin) {
         const authUser = await login(normalizedEmail, password);
+        const userDepartment = getUserDepartment(authUser);
 
         if (authUser?.role?.trim().toLowerCase() === "admin") {
-          navigate("/", { replace: true });
+          navigate(getAdminLandingPath(userDepartment), { replace: true });
+        } else if (isHRDepartment(userDepartment)) {
+          navigate("/hr-management", { replace: true });
         } else {
           navigate("/employee-dashboard", { replace: true });
         }
@@ -90,9 +97,12 @@ export default function Login() {
           industry,
           department,
         });
+        const userDepartment = getUserDepartment(authUser);
 
         if (authUser?.role?.trim().toLowerCase() === "admin") {
-          navigate("/", { replace: true });
+          navigate(getAdminLandingPath(userDepartment), { replace: true });
+        } else if (isHRDepartment(userDepartment)) {
+          navigate("/hr-management", { replace: true });
         } else {
           navigate("/employee-dashboard", { replace: true });
         }

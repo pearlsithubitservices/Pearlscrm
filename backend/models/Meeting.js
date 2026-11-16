@@ -145,6 +145,7 @@ const meetingSchema = new mongoose.Schema(
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
     timezone: { type: String, default: "UTC" },
+    liveMeeting: { type: Boolean, default: false },
     isAllDay: { type: Boolean, default: false },
     recurrence: {
       enabled: { type: Boolean, default: false },

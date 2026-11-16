@@ -34,13 +34,14 @@ import {
   Mail,
   FileSignature,
   PenLine,
+  BriefcaseBusiness,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
 import { useIndustry } from "../context/IndustryContext";
 import useEmployees from "../Hooks/useEmployees";
 import useWhatsApp from "../Hooks/useWhatsApp";
-import { canAccessAdminModule } from "../data/departmentModuleAccess";
+import { canAccessAdminModule, getUserDepartment, isHRDepartment } from "../data/departmentModuleAccess";
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
@@ -88,6 +89,12 @@ export default function Sidebar() {
       icon: FolderOpen,
       path: "/projects",
       module: "projects",
+    },
+    {
+      name: "Quotation",
+      icon: FileText,
+      path: "/quotations",
+      module: "quotation",
     },
     {
       name: "Boards",
@@ -143,6 +150,12 @@ export default function Sidebar() {
       icon: ChartNoAxesColumnIncreasingIcon,
       path: "/admin-performance",
       module: "performance",
+    },
+    {
+      name: "HR Management",
+      icon: BriefcaseBusiness,
+      path: "/hr-management",
+      module: "hrManagement",
     },
   ];
 
@@ -277,12 +290,24 @@ export default function Sidebar() {
     },
   ];
 
-  const department = user?.department || user?.profile?.department;
-  const visibleMainItems = mainItems.filter((item) =>
+  const department = getUserDepartment(user);
+  const isHrDepartment = isHRDepartment(department);
+  const visibleMainItems = [
+    ...mainItems.filter((item) =>
     !item.module || canAccessAdminModule(item.module, department)
-  );
+    ),
+    ...(isHrDepartment
+      ? [{
+          name: "Employee Management",
+          icon: Users,
+          path: "/employees",
+          module: "employees",
+        }]
+      : []),
+  ];
   const visibleManageItems = manageItems.filter((item) =>
-    !item.module || canAccessAdminModule(item.module, department)
+    (!isHrDepartment || item.path !== "/employees") &&
+    (!item.module || canAccessAdminModule(item.module, department))
   );
 
   // ============================================================
@@ -293,14 +318,34 @@ export default function Sidebar() {
 
   const employeeMap = useMemo(() => {
     return employees.reduce((map, employee) => {
-      map[employee.uid] = {
+      const employeeInfo = {
         name: employee.name || employee.employeeName,
         role: employee.role || employee.employeeRole,
       };
+      [employee.uid, employee.id, employee._id, employee.email]
+        .filter(Boolean)
+        .forEach((identifier) => {
+          map[String(identifier).toLowerCase()] = employeeInfo;
+        });
 
       return map;
     }, {});
   }, [employees]);
+  const signedInEmployee =
+    employeeMap[String(user?.uid || "").toLowerCase()] ||
+    employeeMap[String(user?.id || user?._id || "").toLowerCase()] ||
+    employeeMap[String(user?.email || "").toLowerCase()];
+  const displayName =
+    user?.name ||
+    user?.displayName ||
+    signedInEmployee?.name ||
+    user?.email?.split("@")[0] ||
+    "User";
+  const displayRole = isHrDepartment
+    ? (String(user?.role || "").toLowerCase() === "employee"
+        ? "HR"
+        : signedInEmployee?.role || user?.role || "Admin")
+    : signedInEmployee?.role || user?.role || "Admin";
 
   // ============================================================
   // ACTIVE STATES
@@ -480,18 +525,18 @@ export default function Sidebar() {
       <div className="shrink-0 px-6 pb-6 pt-4 border-t border-white/10 bg-[#0b2b57]">
         <div className="bg-[#2563a9] rounded-lg px-3 py-3 flex items-center gap-3">
           <img
-            src={user?.photoURL || "https://i.pravatar.cc/100"}
+          src={user?.avatar || user?.photoURL || "https://i.pravatar.cc/100"}
             alt=""
             className="w-10 h-10 rounded-full object-cover shrink-0"
           />
 
           <div className="min-w-0">
             <h3 className="font-semibold text-sm truncate">
-              {employeeMap[user?.uid]?.name || user?.displayName || "User"}
+              {displayName}
             </h3>
 
             <p className="text-xs text-white/80 truncate">
-              {employeeMap[user?.uid]?.role || "Admin"}
+              {displayRole}
             </p>
           </div>
         </div>
