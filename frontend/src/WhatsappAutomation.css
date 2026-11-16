@@ -82,8 +82,8 @@ body {
 
 /* Main Content */
 .content {
-flex: 1;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -108,7 +108,7 @@ flex: 1;
   min-height: 0;
   padding: 0;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   background: #ffffff !important;
   color: #111827;
   box-sizing: border-box;
@@ -959,7 +959,7 @@ td {
   overflow: hidden;
   background: #ffffff;
   box-sizing: border-box;
-  height: 100px;
+  height: 100%;
 }
 
 /* ================================
@@ -1474,22 +1474,27 @@ td {
 /* ================================
    CONVERSATIONS PAGE
 ================================ */
-
 .conversations-page {
   width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
 }
 
 .conversation-layout {
-display: grid;
-  grid-template-columns: 260px minmax(0, 1fr) 280px;
-  width: 100%;
-  height: calc(100vh - 100px);
-  gap: 0;
+  display: grid;
+  grid-template-columns: 350px minmax(500px, 1fr) 320px;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
   border: 1px solid #dbe3ef;
   border-radius: 10px;
   overflow: hidden;
   background: #ffffff;
-  box-sizing: border-box;
 }
 .conversation-middle {
   min-width: 0;
@@ -2065,7 +2070,7 @@ width: 100%;
 .conversation-layout {
   display: grid;
   grid-template-columns: 350px minmax(500px, 1fr) 320px;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 64px);
   border: 1px solid #dbe3ef;
   border-radius: 10px;
   overflow: hidden;
@@ -2271,6 +2276,126 @@ width: 100%;
   color: #dc2626;
   font-size: 15px;
   cursor: pointer;
+}
+
+.conversations-page {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.conversation-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.conversation-left {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.conversation-center {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.conversation-chat {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-window {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.conversation-right {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* =================================
+   FINAL SPACING / HEIGHT FIX
+================================ */
+
+.conversations-page {
+  width: 100%;
+  height: calc(100vh - 80px);
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.conversation-layout {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  border-radius: 10px;
+}
+
+/* Give the chat workspace more breathing room */
+.conversation-left,
+.conversation-center,
+.conversation-right {
+  min-height: 0;
+}
+
+/* Keep scrolling independent */
+.conversation-left {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.conversation-center {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.conversation-chat {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.conversation-right {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Chat messages only */
+.messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 /* =====================================================
    CONTACTS PAGE

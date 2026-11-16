@@ -13,7 +13,8 @@ import {
   RefreshCcw,
 } from "lucide-react";
 
-const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL;
+//const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
 
 const emptyForm = {
   phoneNumberId: "",
@@ -49,7 +50,7 @@ export default function Integrations() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${VITE_API_URL}/whatsapp-integration`);
+      const response = await fetch(`${API_BASE_URL}/whatsapp-integration`);
 
       const data = await response.json();
 
@@ -108,7 +109,7 @@ export default function Integrations() {
       setMessage("");
       setError("");
 
-      const response = await fetch(`${VITE_API_URL}/whatsapp-integration`, {
+      const response = await fetch(`${API_BASE_URL}/whatsapp-integration`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -151,7 +152,7 @@ export default function Integrations() {
       setError("");
 
       const response = await fetch(
-        `${VITE_API_URL}/whatsapp-integration/test`,
+        `${API_BASE_URL}/whatsapp-integration/test`,
         {
           method: "POST",
           headers: {

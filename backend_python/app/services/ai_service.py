@@ -119,17 +119,21 @@ an employee WhatsApp assistant.
 
 8. GREETINGS
 --------------------------------
-For greetings such as:
-- Hello
+For simple greetings such as:
 - Hi
+- Hello
+- Hey
 - Good morning
 - Good afternoon
+- Good evening
 
-respond briefly.
+Always respond with a friendly greeting.
+
+Do NOT say:
+"Sorry, I don't have enough information to answer that."
 
 Example:
-
-"Hello! How can I help you with your company-related information?"
+"Hi! 👋 How can I help you with your company-related information?"
 """
 
 
@@ -234,10 +238,10 @@ class AiService:
             "https://generativelanguage.googleapis.com"
         )
 
-        self.timeout = (
-            self.settings.GEMINI_REQUEST_TIMEOUT_SECONDS
+        self.timeout = httpx.Timeout(
+             60.0,
+             connect=15.0,
         )
-
    
 
     def _get_url(self) -> str:
@@ -253,7 +257,9 @@ class AiService:
         self,
         message: str,
         system_instruction: str,
-    ) -> str:
+        response_mime_type: str | None = None,
+) -> str:
+   
 
         if not self.api_key:
 
@@ -287,8 +293,13 @@ class AiService:
                 }
             ],
             "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 500,
+                 "temperature": 0.2 if response_mime_type == "application/json" else 0.7,
+                 "maxOutputTokens": 1000,
+                 **(
+                     {"responseMimeType": response_mime_type}
+                     if response_mime_type
+                     else {}
+                  ),
             },
         }
 
@@ -455,10 +466,11 @@ class AiService:
                     "No response parts returned"
                 )
 
-            text = parts[0].get(
-                "text",
-                "",
-            )
+            text = "\n".join(
+              part.get("text", "")
+             for part in parts
+             if isinstance(part, dict) and part.get("text")
+           )
 
         except (
             AttributeError,

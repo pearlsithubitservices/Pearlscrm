@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
    API
 ========================================================= */
 
-const VITE_API_URL = import.meta.env.VITE_PYTHON_API_URL;
+const API_BASE_URL = "http://localhost:5000/api";
+//const API_BASE_URL = "https://pearlscrm-1.onrender.com/api";
 
 /* =========================================================
    ACTION OPTIONS
@@ -16,10 +17,25 @@ const actionOptions = [
   "Fetch Leave Balance",
   "Fetch Leave Status",
   "Provide Payslip",
+  "Fetch My Payroll",
+  "Fetch Paid Payroll",
+  "Fetch Pending Payroll",
+  "Handle Payroll Request",
   "Route to HR",
   "Assign to Human",
   "Send Normal Response",
   "Send Away Message",
+  "Fetch My Tasks",
+  "Fetch Pending Tasks",
+  "Fetch Completed Tasks",
+  "Update Task Status",
+  "Handle Task Request",
+  "Fetch My Projects",
+  "Fetch Project Progress",
+  "Fetch Project Deadlines",
+  "Fetch Project Team",
+  "Fetch Project Milestones",
+  "Handle Project Request",
 ];
 
 /* =========================================================
@@ -32,8 +48,23 @@ const messageConditions = [
   "Leave Balance",
   "Leave Status",
   "Payslip",
+  "Paid Payslip",
+  "Pending Payslip",
   "HR Help",
   "Talk to HR",
+  "Leave",
+   // Task conditions
+   "Tasks",
+   "My Tasks",
+  "Pending Tasks",
+  "Completed Tasks",
+  "Update Task Status",
+  "Projects",
+  "My Projects",
+  "Project Progress",
+  "Project Deadlines",
+  "Project Team",
+  "Project Milestones",
 ];
 
 const timeConditions = ["Working Hours", "Outside Working Hours"];
@@ -82,7 +113,7 @@ export default function AutomationRules() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${VITE_API_URL}/automation-rules`);
+      const response = await fetch(`${API_BASE_URL}/automation-rules`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch automation rules: ${response.status}`);
@@ -205,7 +236,7 @@ export default function AutomationRules() {
         const ruleId = editingRule._id || editingRule.id;
 
         const response = await fetch(
-          `${VITE_API_URL}/automation-rules/${ruleId}`,
+          `${API_BASE_URL}/automation-rules/${ruleId}`,
           {
             method: "PUT",
 
@@ -227,10 +258,11 @@ export default function AutomationRules() {
           throw new Error(`Failed to update rule: ${response.status}`);
         }
       } else {
-        /* =====================================================
+
+      /* =====================================================
          CREATE NEW RULE
       ===================================================== */
-        const response = await fetch(`${VITE_API_URL}/automation-rules`, {
+        const response = await fetch(`${API_BASE_URL}/automation-rules`, {
           method: "POST",
 
           headers: {
@@ -247,8 +279,17 @@ export default function AutomationRules() {
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to create rule: ${response.status}`);
-        }
+  const details = await response.text();
+
+  console.error("Create automation rule failed:", {
+    status: response.status,
+    details,
+  });
+
+  throw new Error(
+    `Failed to create rule (${response.status}): ${details}`
+  );
+}
       }
 
       await fetchRules();
@@ -276,7 +317,7 @@ export default function AutomationRules() {
       const ruleId = rule._id || rule.id;
 
       const response = await fetch(
-        `${VITE_API_URL}/automation-rules/${ruleId}/status`,
+        `${API_BASE_URL}/automation-rules/${ruleId}/status`,
         {
           method: "PATCH",
 
@@ -321,7 +362,7 @@ export default function AutomationRules() {
       const ruleId = rule._id || rule.id;
 
       const response = await fetch(
-        `${VITE_API_URL}/automation-rules/${ruleId}`,
+        `${API_BASE_URL}/automation-rules/${ruleId}`,
         {
           method: "DELETE",
         },

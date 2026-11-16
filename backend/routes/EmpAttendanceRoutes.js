@@ -39,6 +39,7 @@ const parseDateOnly = (dateString) => {
   );
 };
 
+
 const findAttendanceForDate = async (employee_uid, dateString) => {
   const startOfDay =
     parseDateOnly(dateString) || parseDateOnly(new Date());
@@ -50,31 +51,21 @@ const findAttendanceForDate = async (employee_uid, dateString) => {
   const endOfDay = new Date(startOfDay);
   endOfDay.setDate(endOfDay.getDate() + 1);
 
-  let attendance = await EmpAttendanceModel.findOne({
+  // Find attendance only for the requested date.
+  // Do not reuse an unfinished record from a previous day.
+  const attendance = await EmpAttendanceModel.findOne({
     employee_uid,
     date: {
       $gte: startOfDay,
       $lt: endOfDay,
     },
+  }).sort({
+    clockIn: -1,
   });
-
-  if (!attendance) {
-    attendance = await EmpAttendanceModel.findOne({
-      employee_uid,
-      date: startOfDay,
-    });
-  }
-
-  if (!attendance) {
-    attendance = await EmpAttendanceModel.findOne({
-      employee_uid,
-      clockIn: { $ne: null },
-      clockOut: null,
-    }).sort({ clockIn: -1 });
-  }
 
   return attendance;
 };
+
 
 // =====================================================
 // GET ALL ATTENDANCE

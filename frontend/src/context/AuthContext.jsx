@@ -34,6 +34,11 @@ export const AuthProvider = ({ children }) => {
 
       const profileResponse = await api.get("/profile");
       const profileUser = profileResponse?.data?.user || currentUser;
+      console.log(
+  "CURRENT LOGGED-IN USER:",
+  JSON.stringify(profileUser, null, 2)
+);
+
       setAuthState(profileUser);
       return profileUser;
     } catch (error) {

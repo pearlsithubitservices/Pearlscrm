@@ -142,62 +142,144 @@ router.post("/", async (req, res) => {
     }
 });
 
-// ======================
-// UPDATE PROJECT
-// ======================
+
+/* ======================
+   UPDATE PROJECT
+====================== */
 router.put("/:id", async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(404).json({ message: "Project not found" });
+            return res.status(404).json({
+                message: "Project not found",
+            });
         }
+
         const existing = await Project.findById(req.params.id);
+
         if (!existing) {
-            return res.status(404).json({ message: "Project not found" });
+            return res.status(404).json({
+                message: "Project not found",
+            });
         }
 
         const updateData = { ...req.body };
 
+        // Preserve existing notes when adding or updating notes.
+        // A note with an existing _id is updated; a new note is appended.
+        if (Array.isArray(updateData.notes)) {
+            const existingNotes = (existing.notes || []).map(
+                (note) => note.toObject
+                    ? note.toObject()
+                    : { ...note }
+            );
+
+            const incomingNotes = updateData.notes;
+            const mergedNotes = [...existingNotes];
+            const addedNotes = [];
+
+            for (const incoming of incomingNotes) {
+                if (!incoming || typeof incoming !== "object") {
+                    continue;
+                }
+
+                if (incoming._id) {
+                    const index = mergedNotes.findIndex(
+                        (note) =>
+                            String(note._id) === String(incoming._id)
+                    );
+
+                    if (index !== -1) {
+                        // Update only the supplied fields of this note.
+                        mergedNotes[index] = {
+                            ...mergedNotes[index],
+                            ...incoming,
+                        };
+                    } else {
+                        // Do not silently overwrite another note.
+                        return res.status(400).json({
+                            message: "Note not found in this project",
+                        });
+                    }
+                } else {
+                    // New note: preserve all existing notes.
+                    const newNote = {
+                        title: incoming.title || "",
+                        description: incoming.description || "",
+                        date: incoming.date || "",
+                    };
+
+                    mergedNotes.unshift(newNote);
+                    addedNotes.push(newNote);
+                }
+            }
+
+            updateData.notes = mergedNotes;
+
+            // Log activity only when a note is added.
+            if (addedNotes.length > 0) {
+                const latestNote = addedNotes[addedNotes.length - 1];
+
+                const newActivity = {
+                    title: `New Note Added: ${latestNote.title || "Note"}`,
+                    desc: latestNote.description ||
+                        "Note added to project timeline",
+                    time: new Date().toLocaleString(),
+                    iconType: "note",
+                };
+
+                updateData.activities = [
+                    newActivity,
+                    ...(existing.activities || []),
+                ];
+            }
+        }
+
         if (!updateData.clientId || updateData.clientId === "") {
             delete updateData.clientId;
         }
+
         if (!updateData.assignedDate || updateData.assignedDate === "") {
             delete updateData.assignedDate;
         }
+
         if (!updateData.dueDate || updateData.dueDate === "") {
             delete updateData.dueDate;
         }
 
-        // If notes were added, append activity log if not provided
-        if (updateData.notes && Array.isArray(updateData.notes) && updateData.notes.length > (existing.notes || []).length) {
-            const latestNote = updateData.notes[0] || {};
-            const newActivity = {
-                title: `New Note Added: ${latestNote.title || "Note"}`,
-                desc: latestNote.description || "Note added to project timeline",
-                time: new Date().toLocaleString(),
-                iconType: "note",
-            };
-            updateData.activities = [newActivity, ...(existing.activities || updateData.activities || [])];
-        }
-
-        // If milestones were updated, append milestone activity log & auto-calculate progress
-        if (updateData.milestones && Array.isArray(updateData.milestones)) {
+        // Milestone activity and automatic progress calculation.
+        if (
+            updateData.milestones &&
+            Array.isArray(updateData.milestones)
+        ) {
             const newCount = updateData.milestones.length;
             const oldCount = (existing.milestones || []).length;
+
             if (newCount > oldCount) {
-                const addedMs = updateData.milestones[newCount - 1] || updateData.milestones[0];
+                const addedMs =
+                    updateData.milestones[newCount - 1] ||
+                    updateData.milestones[0];
+
                 const msActivity = {
                     title: `Milestone Added: ${addedMs.title || "New Milestone"}`,
                     desc: `Target Date: ${addedMs.date || "TBD"}`,
                     time: new Date().toLocaleString(),
                     iconType: "note",
                 };
-                updateData.activities = [msActivity, ...(existing.activities || updateData.activities || [])];
+
+                updateData.activities = [
+                    msActivity,
+                    ...(updateData.activities || existing.activities || []),
+                ];
             }
 
-            // Auto progress calculation
             if (newCount > 0) {
-                const completedCount = updateData.milestones.filter((m) => m.completed).length;
-                updateData.progress = Math.round((completedCount / newCount) * 100);
+                const completedCount = updateData.milestones.filter(
+                    (milestone) => milestone.completed
+                ).length;
+
+                updateData.progress = Math.round(
+                    (completedCount / newCount) * 100
+                );
             }
         }
 
@@ -211,13 +293,16 @@ router.put("/:id", async (req, res) => {
         );
 
         const io = getIO();
+
         if (io) {
             io.emit("projectUpdated", project);
         }
 
-        res.json(project);
+        return res.json(project);
     } catch (error) {
-        res.status(400).json({
+        console.error("Update project error:", error);
+
+        return res.status(400).json({
             message: error.message,
         });
     }

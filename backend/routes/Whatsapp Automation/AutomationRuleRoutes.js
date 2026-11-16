@@ -26,7 +26,34 @@ router.get("/", async (req, res) => {
     });
   }
 });
+// =====================================================
+// GET ACTIVE AUTOMATION RULES
+// =====================================================
 
+router.get("/active", async (req, res) => {
+  try {
+    const rules = await AutomationRule.find({
+      status: "Active",
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: rules.length,
+      data: rules,
+    });
+
+  } catch (error) {
+    console.error(
+      "Get Active Automation Rules Error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 // =====================================================
 // CREATE AUTOMATION RULE
@@ -42,13 +69,26 @@ router.post("/", async (req, res) => {
       status,
     } = req.body;
 
-    const rule = await AutomationRule.create({
-      name,
-      trigger,
-      condition,
-      action,
-      status,
-    });
+    
+console.log(
+  "Allowed automation actions:",
+  AutomationRule.schema.path("action").enumValues
+);
+
+console.log("Requested automation action:", action);
+console.log("Received action:", JSON.stringify(action));
+console.log(
+  "Exact enum match:",
+  AutomationRule.schema.path("action").enumValues.includes(action)
+);
+const rule = await AutomationRule.create({
+  name,
+  trigger,
+  condition,
+  action,
+  status,
+});
+
 
     res.status(201).json({
       success: true,

@@ -71,6 +71,7 @@ import ProtectedRoute from './components/ProtectedRoutes.jsx';
 
 import EmployeeLayout from './layouts/EmployeeLayout';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+import EmployeeWhatsApp from './pages/EmployeeWhatsApp';
 import EmployeeLeads from './pages/employee/EmployeeLeads';
 import EmployeeFollowups from './pages/employee/EmployeeFollowups';
 
@@ -587,12 +588,15 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-
+            
               <Route
                 path="/employee-dashboard"
                 element={<EmployeeDashboard />}
               />
-
+              <Route
+                 path="/employee/whatsapp"
+                 element={<EmployeeWhatsApp />}
+              />
               <Route
                 path="/employee/tasks"
                 element={<EmpTask />}

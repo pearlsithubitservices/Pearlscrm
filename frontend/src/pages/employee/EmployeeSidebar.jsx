@@ -222,7 +222,16 @@ export default function Sidebar() {
                 <span className="truncate">{item.name}</span>
               </NavLink>
             ))}
-
+           <a
+  href="https://wa.me/918525906562"
+  target="_blank"
+  rel="noopener noreferrer"
+  onClick={() => setMobileOpen(false)}
+  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-300 font-medium text-gray-300 hover:bg-white/10 hover:text-white"
+>
+  <span className="text-green-400">●</span>
+  <span>WhatsApp</span>
+</a>
             {/* LOGOUT */}
             <button
               onClick={() => {
